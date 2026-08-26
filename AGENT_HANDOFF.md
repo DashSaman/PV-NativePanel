@@ -4,7 +4,11 @@
 
 ## قانون ادامه استقرار
 
-قبل از هر اقدام روی سرور، `ops/DEPLOYMENT_PROGRESS.md` را بخوان. فقط Stage دارای وضعیت `NEXT` اجرا شود و خروجی/خطا پیش از حرکت ثبت گردد. وضعیت فعلی: `S01-PREFLIGHT=PASSED` و `S02-FOUNDATION=NEXT`.
+قبل از هر اقدام روی سرور، `ops/DEPLOYMENT_PROGRESS.md` را بخوان. فقط Stage دارای وضعیت `NEXT` اجرا شود و خروجی/خطا پیش از حرکت ثبت گردد. وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=NEXT`.
+
+## آخرین استقرار سرور
+
+S02 در `testAmir5-3` موفق شد. Backup سالم: `/var/backups/pvnaive/20260826T201857Z`. Caddy/SSH/Firewall تغییر نکردند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.
 
 ## وضعیت
 
