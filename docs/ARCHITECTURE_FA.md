@@ -1,107 +1,84 @@
-# معماری پیشنهادی Production
+# معماری پیشنهادی
 
-## توپولوژی
+## Scope نسخهٔ اول: Standalone
 
 ```mermaid
 flowchart TB
-  U["کاربرها"] --> D["DNS و Subscription"]
-  D --> N["۴ نود مستقیم خارج"]
-  D -. "فقط هنگام اختلال" .-> IR["Gateway ایران 100Mbps"]
-  C["Controller خارج"] --> A["Node Agentها"]
-  A --> N
-  A --> IR
+  U["کاربرها"] --> S["DNS و Subscription"]
+  S --> R["Naive Runtime روی سرور خارج"]
+  L["Local Manager"] --> R
+  L --> DB["Usage و State محلی"]
 ```
 
-پنل در مسیر ترافیک کاربر قرار نمی‌گیرد. قطع Controller نباید sessionهای موجود یا login جدید با state قبلی را متوقف کند.
+در نسخهٔ اول هیچ سرور ایران، تونل ایران، Controller خارجی یا fleet چندنودی در مسیر نیست. محصول باید روی یک سرور خارج مستقل نصب و اداره شود.
 
-## اجزا
+## اجزای نسخهٔ مستقل
 
-### Controller
+### Local Manager
 
-- API و Web UI
-- PostgreSQL
-- Redis/queue برای job و lock
-- desired-state store و audit log
-- user/quota/expiry/group/RBAC
-- node/host/routing policy
-- subscription renderer
-- scheduler، health aggregation و alert
-- append-only usage ledger
-
-### Node Agent
-
-- اتصال خروجی‌محور به Controller با mTLS
-- ثبت هویت پایدار نود
-- pull/watch desired state
-- validate → stage → apply → verify → ack
-- نگه‌داشتن last-known-good و rollback
-- مدیریت runtime، certificate و credential
-- ارسال delta آمار، health و capacity
-- drain، maintenance و canary
-
-Controller نباید برای مدیریت روزمره SSH مستقیم لازم داشته باشد.
+- API و Web UI محلی
+- user/credential/quota/expiry
+- Subscription token و renderer
+- مدیریت certificate و runtime
+- health، usage، audit و backup
+- validate → stage → apply → verify → rollback
+- نگه‌داری last-known-good
 
 ### Data plane
 
-- Listener اصلی: TCP/443، TLS معتبر، HTTP/2
+- Listener اصلی TCP/443 با TLS معتبر و HTTP/2
 - Naive استاندارد و به‌روز
-- credential یکتا برای هر subscription/user/device policy
-- fallback web واقعی در پاسخ probe نامعتبر
-- محدودسازی connection/rate با احتیاط و بدون ایجاد fingerprint غیرعادی
+- credential یکتا برای هر user یا policy
+- وب‌سایت عادی برای درخواست نامعتبر و probe
+- محدودسازی connection/rate بدون تغییر غیرضروری fingerprint
+- عدم وابستگی sessionهای فعال به Web UI
 
-## مدل‌های اصلی داده
+### ذخیره‌سازی
 
-- `User`: وضعیت، حجم، انقضا، گروه، owner/reseller
-- `Credential`: secret hash/identifier، user، revision، زمان rotation
-- `Node`: identity، region، capacity، labels، state
-- `Host`: domain/SNI/port، node scope، priority، state
-- `Assignment`: نگاشت user/group به node pool
-- `Policy`: quota/reset/device/concurrency/routing
-- `DesiredRevision` و `AppliedRevision`
+برای PoC و نصب کوچک می‌توان SQLite را بررسی کرد. برای بار Production و ledger قابل اتکا، PostgreSQL گزینهٔ اصلی باقی می‌ماند. انتخاب نهایی بعد از benchmark انجام می‌شود.
+
+## مدل‌های اصلی داده در Standalone
+
+- `User`: وضعیت، حجم، انقضا و گروه
+- `Credential`: شناسه، secret امن، user و revision
+- `Policy`: quota/reset/concurrency
+- `RuntimeRevision`: staged/applied/last-known-good
 - `UsageDelta` و `UsageLedger`
-- `HealthSample` و `Incident`
-- `SubscriptionToken`: hash، expiry، revoke و rotation
+- `SubscriptionToken`
+- `HealthSample`
 - `AuditEvent`
 
 ## حسابداری مصرف
 
-قاعده‌ها:
+1. Runtime باید delta قابل اتکا برای هر credential تولید کند.
+2. هر delta دارای `boot_id + sequence` باشد.
+3. ذخیره‌سازی با idempotency از دوباره‌شماری جلوگیری کند.
+4. restart و counter reset صریح تشخیص داده شوند.
+5. ledger append-only باشد و aggregateها قابل بازسازی باشند.
+6. enforcement quota محلی باشد.
 
-1. Node فقط delta دارای `node_id + boot_id + sequence` می‌فرستد.
-2. Controller با کلید idempotency از دوباره‌شماری جلوگیری می‌کند.
-3. counter reset/restart با boot_id تشخیص داده می‌شود.
-4. ledger append-only است؛ aggregateها قابل بازسازی‌اند.
-5. اختلاف node total، interface total و user total پایش می‌شود.
-6. enforcement محلی روی نود انجام می‌شود تا قطعی Controller موجب مصرف نامحدود نشود.
+تا قبل از اثبات این موارد، quota دقیق آماده محسوب نمی‌شود.
 
-## انتخاب و fallback
+## آمادگی برای اتصال به پنل آینده
 
-- Subscription شامل چند endpoint مرتب‌شده است.
-- Primary pool: چهار نود خارجی، با weight بر اساس capacity و health.
-- تغییر assignment با consistent hashing انجام شود تا جابه‌جایی بی‌دلیل کم شود.
-- Host ناسالم از subscription جدید حذف می‌شود، ولی credential فوراً حذف نمی‌شود.
-- مسیر ایران در حالت عادی منتشر یا اولویت‌دار نیست.
-- فعال‌سازی ایران با policy و TTL کوتاه؛ بازگشت به خارج تدریجی.
-- چون 100Mbps کم‌تر از بار متوسط است، fallback ایران باید rate cap و پیام degraded service داشته باشد.
+Standalone نباید از ابتدا به Controller نیاز داشته باشد؛ اما boundaryهای زیر حفظ می‌شوند:
 
-**نکته:** subscription به‌تنهایی failover session جاری را تضمین نمی‌کند. قابلیت client و زمان refresh تعیین‌کننده است.
+- Manager از Runtime از طریق یک adapter داخلی استفاده کند.
+- desired state و applied revision از هم جدا باشند.
+- شناسهٔ نصب و schema دارای version باشند.
+- بعداً Agent بتواند به‌صورت outbound-only و با mTLS به Controller وصل شود.
+- حالت متصل اختیاری باشد و با قطع Controller به standalone last-known-good برگردد.
+- API داخلی با contract نسخه‌بندی‌شده طراحی شود.
+
+## معماری آینده؛ خارج از Scope فعلی
+
+بعداً همین نرم‌افزار می‌تواند roleهای `controller` و `node` بگیرد و چند سرور خارجی را مدیریت کند. سرور یا پهنای‌باند ایران فقط در یک پروژه/مرحلهٔ جداگانه بررسی خواهد شد و بخشی از طراحی فعلی نیست.
 
 ## امنیت
 
-- پنل و node API روی دامنه/IP جدا از data plane
-- mTLS برای Agent؛ short-lived enrollment token فقط برای bootstrap
-- secretها encrypted-at-rest؛ هرگز plaintext در log/audit
-- RBAC و scope برای reseller/admin
-- backup رمزنگاری‌شده و restore drill
-- signed release و checksum برای installer/agent
-- rotation بدون downtime
-- عدم ذخیره مقصدهای مرور کاربران؛ فقط متریک حداقلی لازم برای عملیات و billing
-
-## حالت‌های نصب
-
-- `standalone`: Controller + Agent + Runtime روی یک سرور
-- `controller`: فقط کنترل‌پلین
-- `node`: Agent + Runtime، با enrollment
-- `fallback-node`: همان node با policy ظرفیت محدود
-
-هستهٔ نرم‌افزار یکی است؛ تفاوت فقط profile نصب و role است.
+- پنل مدیریت و data plane در صورت امکان دامنه یا سطح دسترسی جدا داشته باشند.
+- secret plaintext در log و audit نوشته نشود.
+- credential و subscription token قابل revoke و rotate باشند.
+- backup رمزنگاری‌شده و restore قابل آزمایش باشد.
+- release و installer دارای version pin و checksum باشند.
+- مقصدهای مرور کاربران ذخیره نشوند؛ فقط دادهٔ حداقلی لازم برای عملیات و billing.
