@@ -1,11 +1,14 @@
-# مشخصات محصول Standalone
+# مشخصات محصول Standalone — PVNaive
 
-## نقش‌ها
+## نقش‌ها و مرز نمایندگی
 
-- `owner`: همه دسترسی‌ها، تنظیم امنیت و backup
-- `admin`: کاربران، credential، subscription و گزارش
+- `owner`: همه دسترسی‌ها، اعتبار نمایندگان، امنیت، Runtime و Backup
+- `admin`: کاربران، نمایندگان، پلن، Subscription و گزارش
+- `reseller`: فقط کاربران، پلن‌های مجاز و مصرف زیر tenant خودش
 - `operator`: مشاهده و عملیات محدود؛ بدون secret و تنظیم امنیت
 - `auditor`: فقط مشاهده audit و گزارش
+
+هر رکورد تجاری `tenant_id` دارد. نماینده هرگز با ID قابل‌حدس یا فیلتر UI به اطلاعات نماینده دیگر دسترسی ندارد؛ isolation در query و policy backend اجباری است. اعتبار نماینده append-only ledger، سقف بدهی، هشدار کمبود اعتبار و audit دارد.
 
 ## صفحات نسخه اول
 
@@ -13,41 +16,43 @@
 |---|---|---|
 | `/login` | ورود | عمومی |
 | `/` | Dashboard | authenticated |
-| `/users` | کاربران، جستجو و bulk actions | admin |
-| `/users/:id` | جزئیات، حجم، انقضا و credential | admin |
-| `/subscriptions` | tokenها و preview خروجی | admin |
+| `/users` | کاربران، جستجو و bulk actions | reseller+ |
+| `/users/:id` | جزئیات، حجم، انقضا، خرید و credential | reseller+ |
+| `/resellers` | نمایندگان و اعتبار | admin+ |
+| `/plans` | پلن‌ها، قیمت و reset policy | reseller+ |
+| `/subscriptions` | tokenها و preview خروجی | reseller+ |
+| `/notifications` | قواعد و صف اعلان‌ها | admin+ |
 | `/runtime` | وضعیت Naive، config revision و rollback | owner/admin |
-| `/usage` | نمودار مصرف و reconciliation | admin/auditor |
+| `/usage` | مصرف و reconciliation | admin/auditor |
 | `/system` | CPU/RAM/disk/TLS/version | operator+ |
 | `/audit` | رویدادهای امنیتی و مدیریتی | owner/auditor |
 | `/settings/security` | MFA/session/password policy | owner |
 | `/settings/backup` | backup و restore test | owner |
-| `/setup` | bootstrap اولیه، فقط قبل از ساخت owner | loopback/setup token |
+| `/setup` | bootstrap اولیه | loopback/setup token |
 
-صفحات Node/Fleet/Routing/Iran در MVP وجود ندارند.
+## صفحه Subscription کاربر
 
-## چرخه کاربر
+صفحه `/s/:token` باید بدون افشای اطلاعات داخلی نشان دهد:
 
-`draft → active → suspended → expired/depleted → revoked`
+- نام نمایشی سرویس و وضعیت فعال/تعلیق/منقضی/حجم‌تمام
+- تاریخ خرید، تاریخ اولین اتصال و تاریخ انقضا
+- روز و ساعت باقی‌مانده با timezone صریح
+- حجم کل، مصرف‌شده، باقی‌مانده و درصد
+- تاریخ reset بعدی
+- تعداد دستگاه/اتصال مجاز
+- آخرین به‌روزرسانی اطلاعات
+- دکمه کپی لینک و deep-link کلاینت‌های پشتیبانی‌شده
+- اعلان‌های قابل نمایش و راهنمای رفع خطا
+- ETag و Cache-Control: no-store
 
-- تغییر وضعیت و دلیل در Audit ثبت می‌شود.
-- حذف سخت کاربر در UI وجود ندارد؛ ابتدا revoke و سپس retention policy.
-- secret credential بعد از صدور کامل دوباره نمایش داده نمی‌شود؛ rotation، secret تازه صادر می‌کند.
-- quota reset یک event مستقل است و ledger قبلی را پاک نمی‌کند.
+## اعلان‌ها
 
-## حجم
+قواعد پیش‌فرض قابل تغییر: حجم در 80% و 95%، تمام‌شدن حجم، 7/3/1 روز تا انقضا، انقضا، TLS نزدیک انقضا، Runtime down، backup failed و اعتبار کم نماینده. ارسال از Outbox با idempotency، dedup، retry محدود و ثبت نتیجه است. کانال‌ها در MVP: داخل پنل و Webhook؛ Telegram/Email بعد از secret management.
 
-- ورودی و خروجی جدا ذخیره می‌شوند.
-- UI مجموع را با مبنای واحد صریح نمایش می‌دهد.
-- billing بر اساس usage ledger است، نه جمع access log.
-- هر delta دارای boot_id، sequence و بازه زمانی است.
-- وضعیت reconciliation و آخرین counter معتبر در صفحه Usage دیده می‌شود.
-- quota enforcement محلی و fail-closed برای کاربر depleted است؛ خرابی UI سرویس کاربران سالم را قطع نمی‌کند.
+## چرخه کاربر و حجم
 
-## Subscription
+`draft → active → suspended → expired/depleted → revoked`. وضعیت حساب، حضور آنلاین، quota و Runtime جدا هستند. Upload/Download جدا و مجموع با واحد صریح نمایش داده می‌شود. reset یک event است و ledger قبلی حذف نمی‌شود. تاریخ خرید با شروع سرویس و اولین اتصال یکی فرض نمی‌شود.
 
-- token تصادفی با entropy کافی و hash ذخیره‌شده
-- revoke/rotate/expiry
-- پاسخ با `Cache-Control: no-store`
-- عدم قرار دادن username داخلی یا اطلاعات شخصی در remark
-- خروجی Naive استاندارد و config مناسب clientهای تأییدشده
+## Subscription security
+
+token تصادفی با entropy کافی و فقط hash ذخیره‌شده، rotate/revoke/expiry، rate limit و پاسخ no-store. username داخلی، tenant، قیمت خرید یا اطلاعات شخصی در remark قرار نمی‌گیرد.
