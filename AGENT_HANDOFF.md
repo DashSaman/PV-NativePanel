@@ -4,55 +4,53 @@
 
 ## وضعیت
 
-Repository دارای تحقیق و معماری اولیه است. هیچ backend، frontend، runtime adapter یا installer قابل اجرا هنوز وجود ندارد.
+نام محصول **PVNative** و برند مادر **PVNETWORK** تثبیت شد. اسکلت Go API و React/TypeScript UI ایجاد شده، اما هنوز Runtime، DB، auth و business logic واقعی ندارد و Production-ready نیست.
 
-## آخرین تغییر Scope
+## تغییرات موجود
 
-مالک پروژه تصمیم گرفت:
+- اسناد Brand، Product، API و Security
+- SVG اختصاصی طلایی PVNative
+- Route Registry مرکزی Backend
+- صفحات UI و permission manifest
+- health endpoint و security headers
+- fail-closed برای routeهای مدیریتی
+- تست route/public allowlist/header
+- GitHub Actions برای Go و Web
 
-- فعلاً پنل مرکزی کنار گذاشته شود.
-- سرور، تونل و پهنای‌باند ایران کاملاً از Scope فعلی حذف شود.
-- نسخهٔ اول یک پروژهٔ مستقل NaiveProxy روی سرور خارج باشد.
-- فقط امکان اتصال اختیاری به پنل مرکزی برای آینده در معماری پیش‌بینی شود.
+## Scope تثبیت‌شده
 
-## تصمیم تثبیت‌شده
-
+- Standalone-first روی سرور خارج
+- بدون ایران و بدون پنل مرکزی در MVP
 - Naive استاندارد
-- Standalone-first
-- مدیریت و enforcement محلی
-- اتصال مستقیم کاربران به سرور خارج
-- accounting per-credential یک PoC blocker
 - اتصال Controller/Node بعداً و اختیاری
-- هیچ fallback ایران در MVP
+- accounting per-credential یک PoC blocker
+
+## وضعیت تست
+
+- تست‌های Backend و Frontend در Repository و Workflow تعریف شده‌اند.
+- محیط scratch فعلی Go toolchain ندارد؛ اجرای محلی Go با `go: command not found` متوقف شد.
+- GitHub در زمان این به‌روزرسانی هنوز status check قابل مشاهده‌ای برای commit آخر برنگرداند.
+- نباید تست‌ها را Passed فرض کرد تا Workflow واقعی سبز شود.
+- lockfile وب هنوز تولید نشده؛ direct dependencyها دقیق pin شده‌اند و CI موقتاً از `npm install --ignore-scripts` استفاده می‌کند. پس از اولین resolution بازبینی‌شده باید `package-lock.json` commit و CI به `npm ci` تبدیل شود.
 
 ## کار بعدی دقیق
 
-یک Research Snapshot و PoC حسابداری بازتولیدپذیر بساز:
+1. اجرای CI و رفع هر خطای build/test
+2. ثبت lockfile بازبینی‌شده
+3. Research Snapshot با commit/tag دقیق upstream
+4. PoC accounting برای Caddy forwardproxy و sing-box Naive
+5. ثبت نتیجه در `docs/POC_ACCOUNTING_FA.md`
+6. انتخاب Runtime Adapter
+7. سپس schema PostgreSQL، migration و auth/session امن
 
-1. commit SHA/tag منابع upstream را ثبت کن.
-2. semantics counter در Caddy forwardproxy fork و sing-box Naive را از کد مشخص کن.
-3. harness آزمایش userهای مجزا، H2 multiplex، reconnect، restart و counter reset را طراحی کن.
-4. نتیجه را در `docs/POC_ACCOUNTING_FA.md` ثبت کن.
-5. قبل از انتخاب Runtime، دقت آمار، fingerprint، performance و هزینه نگهداری را مقایسه کن.
+## خطوط قرمز مرحله بعد
 
-## اطلاعات مورد نیاز از مالک در زمان تست
+- قبل از PoC، quota واقعی پیاده‌سازی یا تبلیغ نشود.
+- auth نمایشی، token ثابت یا default password اضافه نشود.
+- Runtime config با shell interpolation ساخته نشود.
+- secret در log/API response ذخیره نشود.
+- endpoint جدید بدون Access در Route Registry اضافه نشود.
 
-- مشخصات سرور خارجی PoC
-- ماتریس clientهای واقعی و درصد هر پلتفرم
-- سیاست quota/reset
-- سیاست همزمانی/device
-- تعداد کاربران pilot
+## اطلاعات مورد نیاز از مالک هنگام Pilot
 
-اطلاعات پنل PVNetwork فعلی برای MVP مستقل blocker نیست.
-
-## ریسک‌های باز
-
-- نبود counter رسمی دقیق per credential در Runtime مرجع
-- سازگاری Ubuntu 26.04 با dependencyهای انتخابی
-- rotation دامنه/IP بدون session storm
-- عملکرد clientهای iOS
-- رسیدن یک سرور به ظرفیت هدف
-
-## قاعدهٔ تحویل
-
-هر ایجنت پس از کار باید این فایل را به‌روز کند: تغییرات، تست‌ها، blocker و قدم بعدی دقیق.
+مشخصات سرور PoC، client matrix، سیاست quota/reset، همزمانی/device و تعداد کاربران Pilot.
