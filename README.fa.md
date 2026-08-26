@@ -1,46 +1,42 @@
 # PVNative
 
-پروژهٔ اختصاصی **PVNETWORK** برای راه‌اندازی و مدیریت مستقل NaiveProxy روی سرور خارج، با امکان اتصال به پنل مرکزی در آینده.
+پروژهٔ اختصاصی **PVNETWORK** برای مدیریت مستقل NaiveProxy روی سرور خارج، همراه یک سایت عمومی واقعی و امکان اتصال به پنل مرکزی در آینده.
 
-> وضعیت فعلی: **اسکلت مهندسی اولیه — غیرقابل استفاده در Production**.
+> وضعیت: **اسکلت و specification مهندسی — غیرقابل استفاده در Production**.
 
-## Scope فعلی
+## Scope
 
-- Standalone روی سرور خارج
-- بدون سرور، تونل یا پهنای‌باند ایران
+- Standalone خارج؛ بدون ایران در MVP
 - NaiveProxy استاندارد
-- مدیریت محلی کاربر، credential، حجم، انقضا و Subscription
-- نصب آسان در مرحلهٔ بعد
-- Controller/Node فقط به‌عنوان قابلیت آینده
+- کاربر تک‌اتصاله، چنداتصاله یا نامحدود با policy
+- حجم، انقضا، reset دوره‌ای، on-hold، credential و session
+- Online/Idle/Offline مستقل از Active/Expired/Depleted
+- Dark/Light/System
+- logs، audit، diagnostics و Domain Activity اختیاری
+- سایت عمومی Static و دانلودهای مجاز
+- Easy Installer پس از تکمیل Runtime و accounting
 
 ## اسکلت موجود
 
-- Go API با Route Registry مرکزی
-- health endpoint و secure response headers
-- fail-closed بودن تمام routeهای مدیریتی پیاده‌سازی‌نشده
-- React/TypeScript UI با برند طلایی PVNative/PVNETWORK
-- manifest صفحات و مجوز هر صفحه
-- تست route تکراری، public allowlist، security headers و fail-closed
-- CI برای Go test/vet/format و Web test/build
+Go API با Route Registry و fail-closed، React/TypeScript UI، state model کاربر، Theme tokenها، سایت عمومی، تست مجوز routeها و security headers، و CI.
 
-## صفحات طراحی‌شده
+## اسناد اصلی
 
-Dashboard، کاربران، جزئیات کاربر، Subscription، Runtime، حجم، وضعیت سیستم، Audit، امنیت و Backup.
-
-صفحات Node، Fleet، Routing و Iran در MVP وجود ندارند.
-
-## اسناد
-
-- [هویت برند](docs/BRAND_FA.md)
-- [مشخصات محصول و صفحات](docs/PRODUCT_SPEC_FA.md)
+- [ممیزی عمیق پنل‌ها](docs/PANEL_DEEP_AUDIT_FA.md)
+- [UI/UX و تمام وضعیت‌ها](docs/UI_UX_SPEC_FA.md)
+- [Logging و Privacy](docs/OBSERVABILITY_PRIVACY_FA.md)
+- [سایت عمومی](docs/PUBLIC_SITE_FA.md)
+- [Easy Installer](docs/EASY_INSTALLER_FA.md)
+- [مشخصات محصول](docs/PRODUCT_SPEC_FA.md)
 - [قرارداد API](docs/API_FA.md)
 - [Security Policy](SECURITY.md)
 - [معماری](docs/ARCHITECTURE_FA.md)
-- [تحقیق تطبیقی](docs/RESEARCH_FA.md)
 - [نقشه راه](docs/ROADMAP_FA.md)
 - [راهنمای ایجنت‌ها](AGENTS.md)
-- [وضعیت تحویل](AGENT_HANDOFF.md)
+- [وضعیت ادامه](AGENT_HANDOFF.md)
 
-## مانع بعدی
+## محدودیت صریح
 
-قبل از پیاده‌سازی quota و فروش واقعی باید حسابداری byte برای هر credential زیر HTTP/2 multiplex، reconnect و restart اثبات شود. تا آن زمان endpointهای تجاری عمداً `501 Not Implemented` یا `401` برمی‌گردانند.
+Domain Activity نمی‌تواند صفحه و Path داخل HTTPS را ببیند؛ فقط مقصد CONNECT مثل hostname:port قابل مشاهده است. PVNative TLS MITM نمی‌کند. این collector پیش‌فرض خاموش و مستقل از دیتاپلین است.
+
+قبل از quota واقعی، حسابداری byte هر credential زیر HTTP/2 multiplex، reconnect و restart باید اثبات شود. endpointهای تجاری تا آن زمان عمداً بسته‌اند.
