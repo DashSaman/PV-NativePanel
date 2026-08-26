@@ -4,9 +4,14 @@
 
 ## وضعیت
 
-PVNative دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر، Routeهای logs/diagnostics و boundary چندپروتکلی است. Runtime، DB، auth و business logic هنوز پیاده‌سازی نشده‌اند؛ Production-ready نیست.
+PVNaive دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر، Routeهای logs/diagnostics و boundary چندپروتکلی است. Runtime، DB، auth و business logic هنوز پیاده‌سازی نشده‌اند؛ Production-ready نیست.
 
 ## آخرین تغییرات
+
+- اصلاح نام محصول از PVNative به PVNaive
+- افزودن Routeهای نمایندگی، پلن، تمدید، اعلان و Subscription usage
+- افزودن preflight فقط‌خواندنی برای testAmir5-3
+- ایجاد executable اولیه cmd/pvnaive؛ هنوز Production-ready نیست
 
 - تحقیق تکمیلی بازخوردهای قابل‌ردیابی 3x-ui، Marzban، Remnawave و NaiveProxy
 - ثبت محدودیت بازیابی YouTube Comments؛ ادعای خواندن کامل کامنت‌ها ممنوع
