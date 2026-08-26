@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pvnative.local/schemas/content-pack.json",
+  "title": "PVNative public site content pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "locale", "site"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "locale": {"type": "string"},
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description"],
+      "properties": {
+        "title": {"type": "string", "maxLength": 120},
+        "description": {"type": "string", "maxLength": 300},
+        "navigation": {"type": "array", "items": {"type": "object"}},
+        "articles": {"type": "array", "items": {"type": "object"}},
+        "media": {"type": "array", "items": {"type": "object"}},
+        "downloads": {"type": "array", "items": {"type": "object"}}
+      }
+    }
+  }
+}
