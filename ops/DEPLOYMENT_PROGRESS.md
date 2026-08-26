@@ -34,8 +34,8 @@
 |---|---|---|---|
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
-| S02-FOUNDATION | NEXT | Backup محلی و ساخت directory/user پایه | هنوز اجرا نشده |
-| S03-DATABASE | BLOCKED | PostgreSQL schema و migration | منتظر S02 و کد migration |
+| S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
+| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | قبل از اجرا باید کد، rollback و تست آماده شود |
 | S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
@@ -66,6 +66,20 @@
 - Swap صفر است: برای Pilot blocker نیست؛ قبل از PostgreSQL و load test دوباره ارزیابی شود.
 - 30 update موجود است که 23 مورد security است: قبل از Production باید maintenance window و reboot impact مشخص شود.
 
+## گزارش S02-FOUNDATION — 2026-08-26 20:18:57 UTC
+
+- نتیجه: `PASSED`
+- Backup: `/var/backups/pvnaive/20260826T201857Z`
+- checksum فایل‌های Caddyfile، service و public-site: همگی `OK`
+- user: `pvnaive` با UID 995 و GID 982
+- `/opt/pvnaive`: `750 root:pvnaive`
+- data/secrets: `700 pvnaive:pvnaive`
+- `/etc/pvnaive`: `750 root:pvnaive`
+- Caddy پس از مرحله همچنان `active`
+- portهای 22/80/443 بدون تغییر
+- Caddy restart/reload، Firewall/SSH change و package install انجام نشد.
+- هشدار formatting قبلی Caddyfile تکرار شد؛ config معتبر است و تغییری داده نشد.
+
 ## مرحله بعد
 
-فقط `S02-FOUNDATION`: backup رمزدار/محافظت‌شده محلی از تنظیمات موجود، ساخت user و directoryهای PVNaive و ثبت manifest. این مرحله Caddy را reload/restart نمی‌کند، Firewall و SSH را تغییر نمی‌دهد و package نصب نمی‌کند.
+`S03-DATABASE` اکنون `NEXT` است، اما تا زمانی که schema، migration، rollback، secret handling و تست در Repository آماده و CI بررسی نشده، هیچ دستور نصب PostgreSQL روی سرور صادر نشود.
