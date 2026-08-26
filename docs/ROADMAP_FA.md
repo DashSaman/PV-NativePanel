@@ -3,67 +3,67 @@
 ## فاز 0 — Research snapshot
 
 - [x] بررسی اولیهٔ 3x-ui، PasarGuard، Marzban، Remnawave، NaiveProxy و OV-PvNetwork
-- [x] تعریف معماری و ریسک اصلی accounting
+- [x] انتخاب Standalone خارج به‌عنوان Scope نسخهٔ اول
+- [x] حذف ایران و پنل مرکزی از Scope فعلی
 - [ ] ثبت commit/tag دقیق upstreamها
-- [ ] دریافت لینک سورس پنل Production فعلی PVNetwork، در صورت وجود
-- [ ] benchmark پایه روی نود آزمایشی
+- [ ] benchmark پایه روی یک سرور آزمایشی خارج
 
 ## فاز 1 — PoCهای مسدودکننده
 
-1. Runtime accounting per credential
-2. apply/rollback اتمیک Caddy config
-3. 400 اتصال همزمان و throughput هدف
-4. restart/reconnect و جلوگیری از دوباره‌شماری
-5. client matrix: Windows، Android/Karing، iOS، macOS
+1. accounting مصرف per credential
+2. apply/rollback اتمیک Runtime config
+3. restart/reconnect و جلوگیری از double count
+4. تست H2 multiplex و چند credential
+5. client matrix: Windows، Android/Karing، iOS و macOS
 6. certificate/domain rotation
-7. health/failure آزمایشی چهار نود
+7. تست تدریجی تا 400 اتصال همزمان و throughput هدف
 
-معیار عبور: خطای billing قابل اندازه‌گیری، بدون double count، بدون قطع گسترده در config apply.
+معیار عبور: خطای billing اندازه‌گیری‌شده، بدون double count و بدون قطعی گسترده هنگام اعمال config.
 
-## فاز 2 — Backend MVP
+## فاز 2 — Standalone Core
 
-- PostgreSQL schema و migration
-- Auth/RBAC/audit
-- User/credential/quota/expiry
-- Node enrollment و desired/applied revision
-- Usage ledger و enforcement
-- Host/pool/assignment
+- schema و migration
+- user/credential/quota/expiry
+- Runtime Adapter
+- Usage ledger و enforcement محلی
 - Subscription token و renderer
-- Job queue و alert
+- audit، health و backup
+- API versioned
 
-## فاز 3 — Agent و Runtime
+## فاز 3 — Standalone UI و عملیات
 
-- Agent service
-- mTLS enrollment
-- validate/stage/apply/verify/rollback
-- health/capacity/usage stream
-- drain/maintenance/canary
-- local cache و offline behavior
-
-## فاز 4 — UI و عملیات
-
-- dashboard، users، nodes، hosts، groups
+- dashboard و users
 - bulk actions و import
-- incident/fallback controls
+- runtime/certificate management
+- usage reports
 - backup/restore
-- Telegram/webhook
-- Persian/English UI
+- alert و diagnostics
+- رابط فارسی/انگلیسی
 
-## فاز 5 — Installer
+## فاز 4 — Installer مستقل
 
-- profileهای standalone/controller/node
+- profile `standalone`
 - preflight غیرمخرب
 - version pin و checksum
-- idempotent upgrade
+- upgrade idempotent
 - backup قبل از migration
-- uninstall محافظه‌کارانه
+- rollback و uninstall محافظه‌کارانه
 - smoke test و diagnostics bundle
 
-## فاز 6 — مهاجرت Production
+## فاز 5 — Pilot Production
 
-- pilot داخلی
-- 5% canary
-- 25% و 50%
-- primary direct خارجی
-- ایران فقط fallback
-- rollback plan و بازهٔ مشاهده
+- تست داخلی
+- canary محدود
+- افزایش تدریجی کاربران
+- بررسی مصرف، CPU/RAM، reconnect و کیفیت clientها
+- rollback plan
+
+## فاز 6 — اتصال اختیاری به پنل مرکزی؛ بعداً
+
+- Agent outbound-only
+- enrollment و mTLS
+- desired/applied revision از راه دور
+- multi-node، host pool و assignment
+- حفظ standalone در قطع Controller
+
+سناریوی ایران در این Roadmap وجود ندارد و در صورت نیاز باید سند و فاز جدا داشته باشد.
