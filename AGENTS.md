@@ -1,50 +1,47 @@
 # AGENTS.md — دستور کار اجباری ایجنت‌ها
 
-## مأموریت
+## مأموریت فعلی
 
-PV NativePanel یک control plane برای NaiveProxy استاندارد است که هم standalone و هم controller/node را پشتیبانی می‌کند. هدف فعلی ساخت محصول Production برای حدود 400 اتصال همزمان، چهار نود خارجی و fallback محدود ایران است.
+PV NativePanel فعلاً یک پروژهٔ **Standalone-first** برای NaiveProxy استاندارد روی سرور خارج است. پنل مرکزی، چندنود و سناریوی ایران بخشی از MVP نیستند. فقط boundary لازم برای اتصال اختیاری آینده حفظ می‌شود.
 
 ## قبل از هر تغییر
 
 1. `README.fa.md`، `docs/ARCHITECTURE_FA.md`، `docs/DECISIONS_FA.md`، `docs/ROADMAP_FA.md` و `AGENT_HANDOFF.md` را کامل بخوان.
-2. وضعیت repo، branch و تغییرات موجود را بررسی کن.
-3. تغییرات کاربر یا ایجنت دیگر را overwrite نکن.
-4. ادعای «آماده Production» یا «ضدفیلتر تضمینی» نکن.
-5. اگر تصمیم معماری عوض شد، DECISIONS و HANDOFF را همان commit به‌روز کن.
+2. وضعیت repo و تغییرات موجود را بررسی کن.
+3. تغییرات دیگران را overwrite نکن.
+4. ادعای «Production-ready» یا «ضدفیلتر تضمینی» نکن.
+5. تغییر تصمیم معماری باید همراه به‌روزرسانی DECISIONS و HANDOFF باشد.
 
 ## خطوط قرمز
 
-- wire protocol Naive را بدون ADR، benchmark و client compatibility fork نکن.
-- accounting را از access log تخمینی برای billing نهایی استفاده نکن.
-- secret واقعی، IP حساس، password، token یا subscription مشتری را commit نکن.
-- data plane را به availability پنل وابسته نکن.
+- MVP را به Controller، Node fleet یا ایران وابسته نکن.
+- wire protocol Naive را بدون ADR، benchmark و client compatibility تغییر نده.
+- access log تخمینی را مبنای billing نهایی نکن.
+- secret، password، token یا subscription واقعی commit نکن.
+- Web UI را در مسیر availability دیتا قرار نده.
 - SSH را در installer نبند.
-- destructive migration/uninstall بدون backup و تأیید نساز.
+- migration یا uninstall مخرب بدون backup نساز.
 - Cloudflare orange proxy را پیش‌فرض data plane معرفی نکن.
-- از `latest` بدون version pin در Production استفاده نکن.
+- از نسخهٔ `latest` بدون pin استفاده نکن.
 
 ## ترتیب پیاده‌سازی
 
-1. PoC accounting و atomic config
-2. schema/API tests
-3. Agent reconcile و rollback
-4. Subscription و assignment
-5. UI
-6. installer
-7. canary migration
+1. Research snapshot
+2. PoC accounting و atomic config
+3. Standalone schema/API/Runtime Adapter
+4. UI و Subscription
+5. installer
+6. pilot و benchmark
+7. اتصال اختیاری پنل در فاز بعد
 
 ## تعریف Done
 
 - test خودکار و failure-path وجود دارد
-- migration/rollback مستند است
-- metrics و log فاقد secret است
-- docs فارسی با رفتار واقعی یکی است
-- HANDOFF شامل آخرین commit، کار انجام‌شده، ریسک و قدم بعدی به‌روز شده است
-
-## استاندارد commit
-
-commit کوچک و موضوعی؛ پیام انگلیسی imperative. تغییر schema همراه migration و test. تغییر API همراه contract. تغییر runtime همراه benchmark و rollback.
+- migration و rollback مستند است
+- metrics/log فاقد secret است
+- مستند فارسی با رفتار واقعی یکی است
+- HANDOFF بعد از هر تغییر مهم به‌روز شده است
 
 ## وقتی ادامهٔ کار مبهم است
 
-به ترتیب ROADMAP جلو برو. اولویت فعلی همیشه در AGENT_HANDOFF است. اگر دادهٔ لازم نیست، فرض پنهان نساز؛ blocker را ثبت کن.
+طبق ROADMAP و سپس AGENT_HANDOFF جلو برو. اگر داده‌ای موجود نیست، blocker ثبت کن و فرض پنهان نساز.
