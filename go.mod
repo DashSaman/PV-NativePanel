@@ -1,3 +1,3 @@
-module github.com/DashSaman/PV-NativePanel
+module github.com/DashSaman/PV-NaivePanel
 
 go 1.24
