@@ -7,6 +7,8 @@ export type AppRoute = {
 
 export const appRoutes: AppRoute[] = [
   { path: "/login", label: "ورود", permission: "public", navigation: false },
+  { path: "/setup", label: "راه‌اندازی اولیه", permission: "public", navigation: false },
+  { path: "/s/:token", label: "صفحه اشتراک", permission: "public", navigation: false },
   { path: "/", label: "داشبورد", permission: "authenticated", navigation: true },
   { path: "/users", label: "کاربران", permission: "admin", navigation: true },
   { path: "/users/:id", label: "جزئیات کاربر", permission: "admin", navigation: false },
@@ -14,10 +16,15 @@ export const appRoutes: AppRoute[] = [
   { path: "/runtime", label: "Naive Runtime", permission: "admin", navigation: true },
   { path: "/usage", label: "حجم و مصرف", permission: "auditor", navigation: true },
   { path: "/system", label: "وضعیت سیستم", permission: "operator", navigation: true },
+  { path: "/logs/application", label: "لاگ برنامه", permission: "operator", navigation: true },
+  { path: "/logs/runtime", label: "لاگ Runtime", permission: "operator", navigation: false },
+  { path: "/logs/security", label: "لاگ امنیت", permission: "auditor", navigation: false },
+  { path: "/diagnostics/domain-activity", label: "فعالیت دامنه‌ها", permission: "owner", navigation: false },
+  { path: "/diagnostics/requests/:requestId", label: "ردیابی درخواست", permission: "operator", navigation: false },
   { path: "/audit", label: "گزارش امنیتی", permission: "auditor", navigation: true },
   { path: "/settings/security", label: "امنیت", permission: "owner", navigation: true },
-  { path: "/settings/backup", label: "پشتیبان‌گیری", permission: "owner", navigation: true },
-  { path: "/setup", label: "راه‌اندازی اولیه", permission: "public", navigation: false }
+  { path: "/settings/appearance", label: "ظاهر", permission: "authenticated", navigation: false },
+  { path: "/settings/backup", label: "پشتیبان‌گیری", permission: "owner", navigation: true }
 ];
 
 export function assertRouteManifest(): void {
@@ -27,6 +34,9 @@ export function assertRouteManifest(): void {
     paths.add(route.path);
     if (route.navigation && route.permission === "public") {
       throw new Error(`Public route cannot be in authenticated navigation: ${route.path}`);
+    }
+    if (route.path.includes("domain-activity") && route.permission !== "owner") {
+      throw new Error("Domain activity must remain owner-only.");
     }
   }
 }
