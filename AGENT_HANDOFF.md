@@ -4,53 +4,48 @@
 
 ## وضعیت
 
-نام محصول **PVNative** و برند مادر **PVNETWORK** تثبیت شد. اسکلت Go API و React/TypeScript UI ایجاد شده، اما هنوز Runtime، DB، auth و business logic واقعی ندارد و Production-ready نیست.
+PVNative دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر و routeهای logs/diagnostics است. Runtime، DB، auth و business logic هنوز پیاده‌سازی نشده‌اند؛ Production-ready نیست.
 
-## تغییرات موجود
+## آخرین تغییرات
 
-- اسناد Brand، Product، API و Security
-- SVG اختصاصی طلایی PVNative
-- Route Registry مرکزی Backend
-- صفحات UI و permission manifest
-- health endpoint و security headers
-- fail-closed برای routeهای مدیریتی
-- تست route/public allowlist/header
-- GitHub Actions برای Go و Web
+- ممیزی pinned از 3x-ui، PasarGuard، Marzban، Remnawave و OV-PvNetwork
+- Account status، Presence، Quota state و Runtime health جدا شدند
+- تک/چندکاربره با concurrency_limit
+- رنگ و threshold حجم و تست state
+- Dark/Light/System token
+- Application/Runtime/Security logs و diagnostics routes
+- Domain Activity owner-only، disabled-by-default و بدون path/query
+- سایت عمومی Static و policy دانلود امن
+- specification کامل Easy Installer
+- تست public allowlist و owner-only بودن Domain Activity
 
-## Scope تثبیت‌شده
+## Scope
 
-- Standalone-first روی سرور خارج
-- بدون ایران و بدون پنل مرکزی در MVP
-- Naive استاندارد
-- اتصال Controller/Node بعداً و اختیاری
-- accounting per-credential یک PoC blocker
+Standalone خارج، بدون ایران و بدون Controller در MVP. Controller/Node آینده اختیاری است.
 
 ## وضعیت تست
 
-- تست‌های Backend و Frontend در Repository و Workflow تعریف شده‌اند.
-- محیط scratch فعلی Go toolchain ندارد؛ اجرای محلی Go با `go: command not found` متوقف شد.
-- GitHub در زمان این به‌روزرسانی هنوز status check قابل مشاهده‌ای برای commit آخر برنگرداند.
-- نباید تست‌ها را Passed فرض کرد تا Workflow واقعی سبز شود.
-- lockfile وب هنوز تولید نشده؛ direct dependencyها دقیق pin شده‌اند و CI موقتاً از `npm install --ignore-scripts` استفاده می‌کند. پس از اولین resolution بازبینی‌شده باید `package-lock.json` commit و CI به `npm ci` تبدیل شود.
+تست‌ها و CI تعریف شده‌اند، اما محیط scratch Go ندارد و GitHub status قابل مشاهده برنگردانده است. Passed فرض نشود. lockfile وب نیز باید پس از resolution بازبینی‌شده commit و CI به npm ci تغییر کند.
 
 ## کار بعدی دقیق
 
-1. اجرای CI و رفع هر خطای build/test
-2. ثبت lockfile بازبینی‌شده
-3. Research Snapshot با commit/tag دقیق upstream
-4. PoC accounting برای Caddy forwardproxy و sing-box Naive
-5. ثبت نتیجه در `docs/POC_ACCOUNTING_FA.md`
-6. انتخاب Runtime Adapter
-7. سپس schema PostgreSQL، migration و auth/session امن
+1. سبزکردن CI و lockfile
+2. تکمیل Research Snapshot
+3. PoC accounting بین Caddy forwardproxy و sing-box Naive
+4. انتخاب Runtime Adapter
+5. PostgreSQL schema: users، credentials، sessions، usage ledger، reset events، audit و logs metadata
+6. Auth/session/MFA امن
+7. سپس User CRUD و UI واقعی
+8. در پایان Installer امضاشده و Pilot
 
-## خطوط قرمز مرحله بعد
+## الزامات غیرقابل حذف
 
-- قبل از PoC، quota واقعی پیاده‌سازی یا تبلیغ نشود.
-- auth نمایشی، token ثابت یا default password اضافه نشود.
-- Runtime config با shell interpolation ساخته نشود.
-- secret در log/API response ذخیره نشود.
-- endpoint جدید بدون Access در Route Registry اضافه نشود.
-
-## اطلاعات مورد نیاز از مالک هنگام Pilot
-
-مشخصات سرور PoC، client matrix، سیاست quota/reset، همزمانی/device و تعداد کاربران Pilot.
+- status حساب و online یکی نشوند
+- depleted/expired با متن و رنگ/آیکن جدا
+- Domain Activity پیش‌فرض خاموش
+- عدم TLS MITM
+- optional collector نباید data plane را متوقف کند
+- سایت عمومی ترافیک مصنوعی نسازد
+- هیچ default password/token
+- endpoint بدون Access ممنوع
+- log بدون secret/token/query
