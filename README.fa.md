@@ -1,42 +1,40 @@
-# PVNative
+# PVNaive
 
-پروژهٔ اختصاصی **PVNETWORK** برای مدیریت مستقل NaiveProxy روی سرور خارج، همراه یک سایت عمومی واقعی و امکان اتصال به پنل مرکزی در آینده.
+پروژه اختصاصی **PVNETWORK** برای مدیریت NaiveProxy استاندارد، با معماری قابل‌گسترش برای Runtimeهای آینده.
 
-> وضعیت: **اسکلت و specification مهندسی — غیرقابل استفاده در Production**.
+> وضعیت فعلی: **Engineering preview؛ هنوز برای Production آماده نیست.**
 
-## Scope
+## محدوده محصول
 
-- Standalone خارج؛ بدون ایران در MVP
-- NaiveProxy استاندارد
-- کاربر تک‌اتصاله، چنداتصاله یا نامحدود با policy
-- حجم، انقضا، reset دوره‌ای، on-hold، credential و session
-- Online/Idle/Offline مستقل از Active/Expired/Depleted
-- Dark/Light/System
-- logs، audit، diagnostics و Domain Activity اختیاری
-- سایت عمومی Static و دانلودهای مجاز
-- Easy Installer پس از تکمیل Runtime و accounting
+- Standalone روی سرور خارج؛ بدون وابستگی به Controller
+- کاربر تک‌اتصاله، چنداتصاله و نامحدود
+- حجم، انقضا، reset، خرید، اولین اتصال، credential و session
+- صفحه Subscription با تاریخ خرید، روز باقی‌مانده و مصرف
+- نقش owner/admin/reseller/operator/auditor با tenant isolation
+- اعتبار و ledger نماینده
+- اعلان 80/95/100 درصد حجم و 7/3/1 روز تا انقضا
+- Dark/Light/System و Responsive دسکتاپ/موبایل
+- audit، logs، diagnostics و backup/restore
+- سایت عمومی Static و Content Pack قابل تعویض
+- Runtime Adapter برای افزودن پروتکل‌های آینده
 
-## اسکلت موجود
+## وضعیت کد
 
-Go API با Route Registry و fail-closed، React/TypeScript UI، state model کاربر، Theme tokenها، سایت عمومی، تست مجوز routeها و security headers، و CI.
+API health قابل اجرا و Route Registry ثبت شده است، اما Auth، PostgreSQL، Accounting و عملیات تجاری هنوز پیاده‌سازی نشده‌اند. endpointهای ناقص fail-closed هستند و نصب Production تا سبز شدن gateها ممنوع است.
 
-## اسناد اصلی
+## سرور Pilot شناخته‌شده
 
-- [ممیزی عمیق پنل‌ها](docs/PANEL_DEEP_AUDIT_FA.md)
-- [UI/UX و تمام وضعیت‌ها](docs/UI_UX_SPEC_FA.md)
-- [Logging و Privacy](docs/OBSERVABILITY_PRIVACY_FA.md)
-- [سایت عمومی](docs/PUBLIC_SITE_FA.md)
-- [Easy Installer](docs/EASY_INSTALLER_FA.md)
+`testAmir5-3`، IP `91.107.182.147`، Ubuntu 26.04، دامنه `namir.softarg.ir`، Caddy سفارشی v2.11.2 با forward_proxy روی 443. اسکریپت `scripts/preflight-testamir5-3.sh` فقط وضعیت را می‌خواند و هیچ تغییری ایجاد نمی‌کند.
+
+## اسناد
+
 - [مشخصات محصول](docs/PRODUCT_SPEC_FA.md)
-- [قرارداد API](docs/API_FA.md)
-- [Security Policy](SECURITY.md)
-- [معماری](docs/ARCHITECTURE_FA.md)
-- [نقشه راه](docs/ROADMAP_FA.md)
-- [راهنمای ایجنت‌ها](AGENTS.md)
-- [وضعیت ادامه](AGENT_HANDOFF.md)
+- [معماری توسعه‌پذیر](docs/EXTENSIBILITY_FA.md)
+- [ممیزی پنل‌ها](docs/PANEL_DEEP_AUDIT_FA.md)
+- [UI/UX](docs/UI_UX_SPEC_FA.md)
+- [امنیت](SECURITY.md)
+- [Roadmap](docs/ROADMAP_FA.md)
+- [Easy Installer](docs/EASY_INSTALLER_FA.md)
+- [Handoff](AGENT_HANDOFF.md)
 
-## محدودیت صریح
-
-Domain Activity نمی‌تواند صفحه و Path داخل HTTPS را ببیند؛ فقط مقصد CONNECT مثل hostname:port قابل مشاهده است. PVNative TLS MITM نمی‌کند. این collector پیش‌فرض خاموش و مستقل از دیتاپلین است.
-
-قبل از quota واقعی، حسابداری byte هر credential زیر HTTP/2 multiplex، reconnect و restart باید اثبات شود. endpointهای تجاری تا آن زمان عمداً بسته‌اند.
+PVNaive TLS MITM نمی‌کند. Accounting تخمینی مبنای فروش نیست و ترافیک ساختگی تولید نمی‌شود.
