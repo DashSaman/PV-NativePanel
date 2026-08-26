@@ -4,32 +4,32 @@
 
 **تصمیم:** NaiveProxy استاندارد و کلاینت‌های سازگار حفظ می‌شوند.
 
-**دلیل:** fork کردن wire behavior ریسک fingerprint تازه، ناسازگاری client و بار نگهداری همگام با Chromium را بالا می‌برد. اختصاصی‌بودن در control plane، policy و عملیات خواهد بود.
+**دلیل:** تغییر wire behavior ریسک fingerprint تازه، ناسازگاری client و بار نگهداری همگام با Chromium را بالا می‌برد. اختصاصی‌بودن در مدیریت، حسابداری و عملیات خواهد بود.
 
-## ADR-002 — Controller در مسیر دیتا نیست
+## ADR-002 — نسخهٔ اول کاملاً Standalone است
 
-قطع پنل نباید دیتاپلین را قطع کند. Node با last-known-good کار می‌کند و enforcement quota محلی دارد.
+پروژه ابتدا روی یک سرور خارج و بدون پنل مرکزی کار می‌کند. Web UI/Manager محلی نباید availability دیتاپلین را کنترل کند.
 
-## ADR-003 — Agent کوچک به‌جای panel-to-panel
+## ADR-003 — سرور و پهنای‌باند ایران خارج از Scope فعلی است
 
-هر نود یک Agent خروجی‌محور با mTLS دارد. این مدل سطح حمله و هزینهٔ upgrade را نسبت به نصب پنل کامل روی هر نود کم می‌کند.
+هیچ gateway، tunnel یا fallback ایران در MVP ساخته نمی‌شود. این موضوع اگر لازم شد بعداً به‌عنوان integration جدا بررسی می‌شود.
 
-## ADR-004 — PostgreSQL مبنای Production
+## ADR-004 — قابلیت اتصال آینده، بدون وابستگی امروز
 
-SQLite فقط development یا standalone کوچک. برای ledger، lock، job و گزارش حجمی production از PostgreSQL استفاده می‌شود.
+boundaryهای Runtime Adapter و Desired/Applied Revision حفظ می‌شوند تا بعداً Agent/Controller اضافه شود؛ اما پیاده‌سازی MVP به Controller وابسته نیست.
 
-## ADR-005 — حسابداری PoC blocker است
+## ADR-005 — انتخاب DB با benchmark
 
-تا زمانی که byte counter per-credential زیر restart، reconnect، multiplex و failure آزمون نشده، quota به‌عنوان قابلیت آماده علامت نمی‌خورد.
+PostgreSQL مبنای Production است. SQLite فقط برای PoC یا نصب کوچک بررسی می‌شود و نباید مسیر migration را ببندد.
 
-## ADR-006 — ایران fallback تنزل‌یافته است
+## ADR-006 — حسابداری PoC blocker است
 
-100Mbps جایگزین کامل بار روزانهٔ هدف نیست. ایران فقط با rate cap، TTL و بازگشت تدریجی فعال می‌شود.
+تا زمانی که byte counter per-credential زیر restart، reconnect، multiplex و failure آزمون نشده، quota آماده علامت نمی‌خورد.
 
 ## ADR-007 — Cloudflare فقط برای control surfaces
 
-Panel/subscription می‌توانند پشت Cloudflare باشند. data-plane Naive به‌صورت پیش‌فرض DNS-only است.
+صفحه مدیریت و Subscription می‌توانند پشت Cloudflare باشند. data-plane Naive به‌صورت پیش‌فرض DNS-only است.
 
-## ADR-008 — secrets قابل بازیابی در log نیستند
+## ADR-008 — secret قابل بازیابی در log نیست
 
-credential plaintext فقط هنگام صدور/rotation و delivery لازم دیده می‌شود؛ در DB تا حد ممکن hash یا envelope encryption استفاده می‌شود.
+credential plaintext فقط هنگام صدور/rotation و delivery لازم دیده می‌شود؛ در ذخیره‌سازی از hash یا envelope encryption مناسب استفاده می‌شود.
