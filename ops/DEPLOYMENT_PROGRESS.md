@@ -199,3 +199,4 @@
 - فایل‌های تغییرکرده در این ثبت: `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`. bundle artifact عمداً داخل Repository commit نشده است.
 - Backup/Rollback سرور: هیچ command جدیدی روی سرور اجرا نشده و rollback لازم نیست. bundle قدیمی `6d4e5ce` و candidate `f9f0d57f...` نباید استفاده شوند.
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: فایل نهایی را به `/root/pvnaive-s03-95a2689.tar.gz` upload، یک launcher SHA/inventory-gated اجرا و خروجی کامل را ثبت کن.
+- launcher نهایی نیز با `bash -n` پاس شد. negative test محلی عمداً به‌علت نبود `/opt/pvnaive/FOUNDATION.json` با exit 1 متوقف و دقیقاً یک‌بار `S03_LAUNCHER_RESULT=FAILED` چاپ کرد؛ این نشان می‌دهد trap ریشه‌ای launcher fail-closed است و این تست هیچ ارتباطی با وضعیت سرور هدف ندارد.

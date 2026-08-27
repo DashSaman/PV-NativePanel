@@ -69,6 +69,8 @@ hardening چندعاملی بعد از `133d36b` نیز کامل شد: rollback 
 
 CI run `33073904109` روی head مستندات `95a2689a0770e71db16dbd11bb436e9a3e6d92ab` دوباره پیش از runner شکست خورد؛ `go/web/database` همگی `runner_id=0` و `steps=[]` داشتند، پس هیچ تست CI اجرا نشد. bundle قطعی `pvnaive-s03-95a2689.tar.gz` با SHA-256 `9decbd705f548160343bdc41894b66ece86d53634e7fbf3719bac02f09be2b47` و اندازه 20358 byte، inventory ۱۳فایلی، مقایسه byte-for-byte، syntax، mode و migration checksums را پاس کرده است. check اولیه mode به‌علت glob منبع، S02 خارج از bundle را اشتباه طلب کرد و fail-fast شد؛ check صریح اصلاح و `BUNDLE_VERIFICATION=PASSED` شد. فایل باید دقیقاً به `/root/pvnaive-s03-95a2689.tar.gz` upload شود و فقط launcher نهایی S03 اجرا گردد. Stage همچنان `NEXT` است.
 
+launcher نهایی `bash -n` را پاس کرد و negative test محلیِ فقدان Foundation با exit 1 و تنها یک `S03_LAUNCHER_RESULT=FAILED` متوقف شد؛ هیچ extract یا mutation انجام نشد. این تست فقط trap fail-closed launcher را تأیید می‌کند و وضعیت سرور هدف را تغییر نمی‌دهد.
+
 ## کار بعدی دقیق
 
 1. ساخت و upload bundle جدید fixشده با SHA-256 تازه
