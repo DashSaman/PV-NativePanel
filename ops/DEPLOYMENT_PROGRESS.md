@@ -133,4 +133,5 @@
 - فایل‌های اصلاح‌شده: `cmd/pvnaive/main.go`، `internal/httpapi/routes.go`، `internal/httpapi/server_test.go`، `internal/protocol/adapter.go` و `internal/protocol/registry_test.go`.
 - Commit اصلاح Go/ثبت failure: `fbf21e8fdc38a8c50bbc5704e407e9df4414171f` (`fix: format Go and align public route test`).
 - GitHub Actions run دوم: `33032317065`، run number 62؛ هر سه Job دوباره `runner_id=0` و `steps=[]` و conclusion=`failure` داشتند. تکرار مستقل تأیید می‌کند blocker مربوط به تخصیص runner است، نه workflow step یا کد.
+- hardening نهایی: migration و rollback اکنون connection بدون حق assume کردن `pvnaive_owner` را پیش از DDL رد می‌کنند؛ app credential مسیر schema change ندارد.
 - وضعیت Stage بدون تغییر: `S03-DATABASE=NEXT`؛ S03 هنوز اجرا یا PASSED نشده است.

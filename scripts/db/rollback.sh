@@ -15,6 +15,9 @@ pvnaive_require_command sed
 [[ -z "${PVNAIVE_RUN_AS_OS_USER:-}" ]] || pvnaive_require_command runuser
 pvnaive_db_defaults
 
+can_assume_owner="$(pvnaive_psql_at --command "SELECT pg_has_role(current_user, 'pvnaive_owner', 'USAGE')")"
+[[ "${can_assume_owner}" == "t" ]] || pvnaive_die "rollback connection cannot assume pvnaive_owner"
+
 migrations_dir="${PVNAIVE_MIGRATIONS_DIR:-${repo_root}/db/migrations}"
 (
   cd "${migrations_dir}"

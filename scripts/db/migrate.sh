@@ -63,6 +63,9 @@ for migration_file in "${migration_files[@]}"; do
   [[ "${down_entries}" == "1" ]] || pvnaive_die "down migration must appear exactly once in SHA256SUMS: ${down_filename}"
 done
 
+can_assume_owner="$(pvnaive_psql_at --command "SELECT pg_has_role(current_user, 'pvnaive_owner', 'USAGE')")"
+[[ "${can_assume_owner}" == "t" ]] || pvnaive_die "migration connection cannot assume pvnaive_owner"
+
 migrations_table="$(pvnaive_psql_at --command "SELECT to_regclass('pvnaive.schema_migrations') IS NOT NULL")"
 if [[ "${migrations_table}" == "t" ]]; then
   current_version="$(pvnaive_psql_at --command 'SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations')"

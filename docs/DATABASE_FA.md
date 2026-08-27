@@ -41,6 +41,7 @@ RLS جای RBAC endpoint را نمی‌گیرد. Route و business layer همچ�
 - الگوهای DROP/TRUNCATE/DELETE/ALTER-DROP/COPY-PROGRAM و include خارجی رد شوند.
 - Migration اعمال‌شده با filename/checksum ثبت‌شده دقیقاً یکسان باشد.
 - advisory transaction lock از اجرای همزمان جلوگیری کند.
+- connection اجرای DDL باید صریحاً امکان assume کردن `pvnaive_owner` را داشته باشد؛ credential برنامه رد می‌شود.
 
 `scripts/db/rollback.sh` عمداً destructive است. روی دیتابیس واقعی فقط با تأیید صریح، backup رمزنگاری‌شده، manifest سالم، metadata سالم، schema version یکسان، کلید age و parse موفق archive اجرا می‌شود. اجرای down روی دیتابیس disposable تست از gate جداگانه استفاده می‌کند.
 
