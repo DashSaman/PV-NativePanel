@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify PVNaive database reachability, schema and loopback binding.
+# Verify PVNaive database reachability, schema, identity, privilege boundaries and loopback binding.
 set -Eeuo pipefail
 umask 077
 
@@ -11,9 +11,32 @@ pvnaive_require_command psql
 pvnaive_require_command pg_isready
 pvnaive_db_defaults
 expected_version="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-1}"
+expected_db_user="${PVNAIVE_EXPECTED_DB_USER:-pvnaive_app}"
 [[ "${expected_version}" =~ ^[0-9]+$ ]] || pvnaive_die "invalid expected schema version"
+[[ "${expected_db_user}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "invalid expected database user"
+[[ "${PVNAIVE_DB_USER}" == "${expected_db_user}" ]] || pvnaive_die "health check must connect as ${expected_db_user}, got ${PVNAIVE_DB_USER}"
+[[ -z "${PVNAIVE_RUN_AS_OS_USER:-}" ]] || pvnaive_die "health check refuses PVNAIVE_RUN_AS_OS_USER=${PVNAIVE_RUN_AS_OS_USER}"
 
 pg_isready --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --dbname "${PVNAIVE_DB_NAME}" --username "${PVNAIVE_DB_USER}" --timeout "${PVNAIVE_DB_CONNECT_TIMEOUT}" >/dev/null
+
+identity_row="$(pvnaive_psql_at --command "SELECT current_user || '|' || session_user || '|' || current_setting('row_security') || '|' || COALESCE(inet_server_addr()::text, '')")"
+IFS='|' read -r database_user session_user row_security_setting server_address <<< "${identity_row}"
+[[ "${database_user}" == "${expected_db_user}" ]] || pvnaive_die "database user mismatch: current_user=${database_user}, expected=${expected_db_user}"
+[[ "${session_user}" == "${expected_db_user}" ]] || pvnaive_die "database session user mismatch: session_user=${session_user}, expected=${expected_db_user}"
+[[ "${row_security_setting}" == "on" ]] || pvnaive_die "row_security is not forced on"
+[[ "${server_address}" == "127.0.0.1" || "${server_address}" == "::1" ]] || pvnaive_die "database connection is not loopback: ${server_address:-unknown}"
+
+key_table_exists="$(pvnaive_psql_at --command "SELECT to_regclass('pvnaive.security_context_keys') IS NOT NULL")"
+[[ "${key_table_exists}" == "t" ]] || pvnaive_die "RLS signing-key table is missing"
+
+can_read_context_key="$(pvnaive_psql_at --command "SELECT has_table_privilege(current_user, 'pvnaive.security_context_keys', 'SELECT')")"
+[[ "${can_read_context_key}" == "f" ]] || pvnaive_die "application role has SELECT privilege on the RLS signing-key table (current_user=${database_user})"
+
+# Prove the effective boundary with a real SELECT permission check. LIMIT 0 keeps
+# the signing key out of output while PostgreSQL still performs access control.
+if pvnaive_psql_at --command 'SELECT signing_key FROM pvnaive.security_context_keys LIMIT 0' >/dev/null 2>&1; then
+  pvnaive_die "application role can directly SELECT the RLS signing key"
+fi
 
 health_row="$(pvnaive_psql_at --command "
 WITH required(name) AS (
@@ -30,25 +53,18 @@ WITH required(name) AS (
     (SELECT COUNT(*) FROM required r WHERE to_regclass('pvnaive.' || r.name) IS NOT NULL) AS required_tables,
     (SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'pvnaive' AND c.relkind = 'r' AND c.relrowsecurity) AS rls_tables,
-    (SELECT COUNT(*) FROM pvnaive.schema_migrations WHERE destructive) AS destructive_migrations,
-    has_table_privilege(current_user, 'pvnaive.security_context_keys', 'SELECT') AS can_read_context_key,
-    current_setting('row_security') AS row_security_setting,
-    inet_server_addr() AS server_address,
-    current_user AS database_user
+    (SELECT COUNT(*) FROM pvnaive.schema_migrations WHERE destructive) AS destructive_migrations
 )
-SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || destructive_migrations || '|' ||
-       can_read_context_key || '|' || row_security_setting || '|' || server_address || '|' || database_user FROM checks;")"
+SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || destructive_migrations FROM checks;")"
 
-IFS='|' read -r schema_version required_tables rls_tables destructive_migrations can_read_context_key row_security_setting server_address database_user <<< "${health_row}"
+IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
 [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 [[ "${rls_tables}" == "25" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/25"
 [[ "${destructive_migrations}" == "0" ]] || pvnaive_die "destructive migration record detected"
-[[ "${can_read_context_key}" == "f" ]] || pvnaive_die "application role can read the RLS signing key"
-[[ "${row_security_setting}" == "on" ]] || pvnaive_die "row_security is not forced on"
-[[ "${server_address}" == "127.0.0.1" || "${server_address}" == "::1" ]] || pvnaive_die "database connection is not loopback"
-[[ "${database_user}" == "${PVNAIVE_DB_USER}" ]] || pvnaive_die "database user mismatch"
 
 echo "PVNAIVE_DB_HEALTH=OK"
 echo "PVNAIVE_SCHEMA_VERSION=${schema_version}"
+echo "PVNAIVE_DB_USER=${database_user}"
 echo "PVNAIVE_DB_SERVER_ADDRESS=${server_address}"
+echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
