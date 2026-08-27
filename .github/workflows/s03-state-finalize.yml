@@ -1,3 +1,4 @@
+# one-shot state finalizer; delete after successful run
 name: Finalize S03 deployment state
 
 on:
