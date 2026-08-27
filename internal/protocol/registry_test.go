@@ -12,9 +12,9 @@ func (fakeAdapter) Validate(context.Context, DesiredState) (ValidationResult, er
 	return ValidationResult{Valid: true}, nil
 }
 func (fakeAdapter) Stage(context.Context, DesiredState) error { return nil }
-func (fakeAdapter) Apply(context.Context, string) error { return nil }
-func (fakeAdapter) Rollback(context.Context, string) error { return nil }
-func (fakeAdapter) Health(context.Context) (Health, error) { return Health{Status: "ok"}, nil }
+func (fakeAdapter) Apply(context.Context, string) error       { return nil }
+func (fakeAdapter) Rollback(context.Context, string) error    { return nil }
+func (fakeAdapter) Health(context.Context) (Health, error)    { return Health{Status: "ok"}, nil }
 
 func TestRegistryRejectsMissingAccountingDeclaration(t *testing.T) {
 	r := NewRegistry()

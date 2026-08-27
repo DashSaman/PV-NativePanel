@@ -119,4 +119,17 @@
 - هیچ دستور S03 روی `testAmir5-3` اجرا نشده است.
 - PostgreSQL نصب نشده و Caddy/NaiveProxy/SSH/Firewall تغییر نکرده‌اند.
 - Rollback پیش‌بینی‌شده در ابتدای Stage چاپ می‌شود؛ packageها در failure برای inspection باقی می‌مانند، اما DB/role/secret/unit/release جدید حذف و config قبلی PostgreSQL restore می‌شود.
-- Commit پیاده‌سازی: در اولین Commit S03 ثبت و پس از Push با SHA دقیق جایگزین می‌شود.
+- Commit پیاده‌سازی: `45ba5c4c0c061a392a4e118ef99ae517d6eaead4` (`feat: implement guarded S03 PostgreSQL foundation`).
+
+### خطای CI و تست جایگزین — 2026-08-27 01:59 UTC
+
+- GitHub Actions run: `33031844663`، run number 61، conclusion=`failure`.
+- هر سه Job با نام‌های `database`، `web` و `go` دارای `runner_id=0`، `runner_name=""` و `steps=[]` بودند؛ هیچ runner، step یا log کد ایجاد نشد. علت در سطح تخصیص runner/زیرساخت GitHub است و build/test failure محسوب نمی‌شود.
+- برای جایگزینی، Go `1.24.4` رسمی Ubuntu در محیط محلی نصب و suite واقعی اجرا شد.
+- اجرای اول Go دو failure واقعی نشان داد: فایل‌های قدیمی gofmt نبودند و `subscriptions.usage` در public-route allowlist تست نبود.
+- اصلاح: `gofmt` روی تمام Go sourceها و افزودن route مورد انتظار به allowlist.
+- اجرای دوم: `gofmt -l` خالی، `go vet ./...` PASSED و `go test ./...` برای `internal/database`، `internal/httpapi` و `internal/protocol` PASSED.
+- تلاش نصب PostgreSQL server محلی به‌دلیل محدودیت user namespace محیط در configure پکیج `ssl-cert` با خطای `Cannot open audit interface` و failure ساخت OS group متوقف شد. از دورزدن permission خودداری شد؛ بنابراین database integration باید در Stage واقعی اجرا و PASSED شود.
+- فایل‌های اصلاح‌شده: `cmd/pvnaive/main.go`، `internal/httpapi/routes.go`، `internal/httpapi/server_test.go`، `internal/protocol/adapter.go` و `internal/protocol/registry_test.go`.
+- Commit اصلاح Go/ثبت failure: در Commit بعدی ثبت و سپس SHA دقیق جایگزین می‌شود.
+- وضعیت Stage بدون تغییر: `S03-DATABASE=NEXT`؛ S03 هنوز اجرا یا PASSED نشده است.

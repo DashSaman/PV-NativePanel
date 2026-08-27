@@ -26,6 +26,7 @@ func TestOnlyAllowlistedRoutesArePublic(t *testing.T) {
 	allowed := map[string]bool{
 		"health.live": true, "health.ready": true, "auth.login": true,
 		"auth.refresh": true, "subscriptions.show": true, "subscriptions.info": true,
+		"subscriptions.usage": true,
 	}
 	for _, route := range Routes {
 		if route.Access == Public && !allowed[route.Name] {

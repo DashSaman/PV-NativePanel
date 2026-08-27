@@ -11,18 +11,18 @@ const (
 )
 
 type Capabilities struct {
-	Accounting           AccountingLevel
-	SessionVisibility    bool
-	SpeedLimit            bool
-	ConcurrencyLimit      bool
-	DeviceLimit           bool
-	IPObservation         bool
-	AtomicApply           bool
-	ZeroDowntimeReload    bool
-	Rollback              bool
-	PaddingControl        bool
-	DestinationMetadata  bool
-	MultiEndpoint         bool
+	Accounting          AccountingLevel
+	SessionVisibility   bool
+	SpeedLimit          bool
+	ConcurrencyLimit    bool
+	DeviceLimit         bool
+	IPObservation       bool
+	AtomicApply         bool
+	ZeroDowntimeReload  bool
+	Rollback            bool
+	PaddingControl      bool
+	DestinationMetadata bool
+	MultiEndpoint       bool
 }
 
 type Descriptor struct {
