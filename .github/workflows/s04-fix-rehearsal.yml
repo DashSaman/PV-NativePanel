@@ -1,0 +1,60 @@
+name: S04 fix rehearsal
+
+on:
+  push:
+    branches: [s04-auth]
+    paths:
+      - .github/workflows/s04-fix-rehearsal.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: s04-auth
+      - name: Patch audit insert and rehearsal query
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          migration = Path('db/migrations/0002_auth_foundation.up.sql')
+          text = migration.read_text()
+          old = """    INSERT INTO pvnaive.audit_events (\n        tenant_id, actor_id, action, object_type, request_id,\n        source_ip, outcome, reason_code\n    )\n    VALUES (\n        actor_tenant_id, p_actor_id, p_action, 'auth', p_request_id,\n        p_source_ip, p_outcome, p_reason_code\n    )\n    RETURNING id INTO audit_id;\n    RETURN audit_id;\n"""
+          new = """    audit_id := public.gen_random_uuid();\n    INSERT INTO pvnaive.audit_events (\n        id, tenant_id, actor_id, action, object_type, request_id,\n        source_ip, outcome, reason_code\n    )\n    VALUES (\n        audit_id, actor_tenant_id, p_actor_id, p_action, 'auth', p_request_id,\n        p_source_ip, p_outcome, p_reason_code\n    );\n    RETURN audit_id;\n"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one audit INSERT block, found {text.count(old)}')
+          migration.write_text(text.replace(old, new))
+
+          rehearsal = Path('tests/stages/S04_auth_rehearsal.sh')
+          text = rehearsal.read_text()
+          old_token = "lower(:'owner_email')"
+          new_token = "lower('owner-s04@example.invalid')"
+          if text.count(old_token) != 1:
+              raise SystemExit(f'expected exactly one psql variable token, found {text.count(old_token)}')
+          rehearsal.write_text(text.replace(old_token, new_token))
+
+          manifest = Path('db/migrations/SHA256SUMS')
+          lines = []
+          for path in sorted(Path('db/migrations').glob('*.sql')):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              lines.append(f'{digest}  {path.name}')
+          manifest.write_text('\n'.join(lines) + '\n')
+          PY
+          bash -n tests/stages/S04_auth_rehearsal.sh
+          git diff --check
+      - name: Commit patch
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add db/migrations/0002_auth_foundation.up.sql db/migrations/SHA256SUMS tests/stages/S04_auth_rehearsal.sh
+          git diff --cached --quiet && { echo 'ERROR: patch produced no changes' >&2; exit 1; }
+          git commit -m 'fix: make S04 audit rehearsal RLS-safe'
+          git push origin HEAD:s04-auth
