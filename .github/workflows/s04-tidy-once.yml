@@ -1,0 +1,34 @@
+name: S04 tidy once
+
+on:
+  push:
+    branches: [s04-auth]
+
+permissions:
+  contents: write
+
+jobs:
+  tidy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: s04-auth
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Tidy, verify, self-remove, commit
+        run: |
+          set -Eeuo pipefail
+          go mod tidy
+          go mod verify
+          go vet ./...
+          go test ./...
+          git rm .github/workflows/s04-tidy-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add go.mod go.sum
+          git commit -m 'build: tidy S04 Go dependencies'
+          git push origin HEAD:s04-auth
