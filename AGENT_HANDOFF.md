@@ -53,7 +53,7 @@ Standalone خارج، بدون ایران و بدون Controller در MVP. Contr
 
 ## وضعیت تست
 
-تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions run `33031844663` پیش از تخصیص runner شکست خورد: هر سه Job `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. lockfile ساخته و `npm ci` فعال شده است.
+تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions runهای `33031844663` و `33032317065` پیش از تخصیص runner شکست خوردند: هر سه Job در هر دو run، `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. Commitهای S03: `45ba5c4` و fix `fbf21e8`. lockfile ساخته و `npm ci` فعال شده است.
 
 ## کار بعدی دقیق
 

@@ -131,5 +131,6 @@
 - اجرای دوم: `gofmt -l` خالی، `go vet ./...` PASSED و `go test ./...` برای `internal/database`، `internal/httpapi` و `internal/protocol` PASSED.
 - تلاش نصب PostgreSQL server محلی به‌دلیل محدودیت user namespace محیط در configure پکیج `ssl-cert` با خطای `Cannot open audit interface` و failure ساخت OS group متوقف شد. از دورزدن permission خودداری شد؛ بنابراین database integration باید در Stage واقعی اجرا و PASSED شود.
 - فایل‌های اصلاح‌شده: `cmd/pvnaive/main.go`، `internal/httpapi/routes.go`، `internal/httpapi/server_test.go`، `internal/protocol/adapter.go` و `internal/protocol/registry_test.go`.
-- Commit اصلاح Go/ثبت failure: در Commit بعدی ثبت و سپس SHA دقیق جایگزین می‌شود.
+- Commit اصلاح Go/ثبت failure: `fbf21e8fdc38a8c50bbc5704e407e9df4414171f` (`fix: format Go and align public route test`).
+- GitHub Actions run دوم: `33032317065`، run number 62؛ هر سه Job دوباره `runner_id=0` و `steps=[]` و conclusion=`failure` داشتند. تکرار مستقل تأیید می‌کند blocker مربوط به تخصیص runner است، نه workflow step یا کد.
 - وضعیت Stage بدون تغییر: `S03-DATABASE=NEXT`؛ S03 هنوز اجرا یا PASSED نشده است.
