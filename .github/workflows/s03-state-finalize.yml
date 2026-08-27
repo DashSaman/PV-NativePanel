@@ -19,8 +19,58 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCByZQoKcHJvZ3Jlc3MgPSBQYXRoKCJvcHMvREVQTE9ZTUVOVF9QUk9HUkVTUy5tZCIpCnAgPSBwcm9ncmVzcy5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKcCwgbjEgPSByZS5zdWJuKHIiXlx8IFMwMy1EQVRBQkFTRSBcfCBORVhUIFx8LiokIiwgInwgUzAzLURBVEFCQVNFIHwgUEFTU0VEIHwgUG9zdGdyZVNRTCBzY2hlbWEvbWlncmF0aW9uL2JhY2t1cC9yZXN0b3JlL2hlYWx0aCB8IHByb2R1Y3Rpb24gKyBpbmRlcGVuZGVudCBwb3N0ZmxpZ2h0IHBhc3NlZCB8IiwgcCwgY291bnQ9MSwgZmxhZ3M9cmUuTSkKcCwgbjIgPSByZS5zdWJuKHIiXlx8IFMwNC1BVVRIIFx8IEJMT0NLRUQgXHwuKiQiLCAifCBTMDQtQVVUSCB8IE5FWFQgfCBvd25lciBib290c3RyYXAsIHNlc3Npb24sIE1GQSwgUkJBQyB8IGFjdGl2ZSBuZXh0IHN0YWdlIHwiLCBwLCBjb3VudD0xLCBmbGFncz1yZS5NKQpwID0gcC5yZXBsYWNlKCJ8IEtlcm5lbCB8IDcuMC4wLTI5LWdlbmVyaWMgfCIsICJ8IEtlcm5lbCB8IDcuMC4wLTMwLWdlbmVyaWMgfCIsIDEpCmlmIG4xICE9IDEgb3IgbjIgIT0gMToKICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJsZWRnZXIgcGF0Y2ggbWlzbWF0Y2g6IFMwMz17bjF9IFMwND17bjJ9IikKCm1hcmtlciA9ICIjIyBTMDMgRklOQUwgUFJPRFVDVElPTiBSRVNVTFQgLS0gMjAyNi0wOC0yNyAyMTo1My0yMTo1NSBVVEMiCmlmIG1hcmtlciBub3QgaW4gcDoKICAgIHAgKz0gIiIiCgojIyBTMDMgRklOQUwgUFJPRFVDVElPTiBSRVNVTFQgLS0gMjAyNi0wOC0yNyAyMTo1My0yMTo1NSBVVEMKCi0gYFMwMy1EQVRBQkFTRT1QQVNTRURgOyBgUzA0LUFVVEg9TkVYVGAuCi0gUHJvZHVjdGlvbiBzb3VyY2UgY29tbWl0OiBgMDJiMDJlMGMyYTBjMmRiYWRhMDQ0MjBiN2E4NTNhZGMwOGIwMDBhYmAuCi0gUG9zdGdyZVNRTCBgMTgvbWFpbmAsIHBvcnQgNTQzMiwgbG9vcGJhY2stb25seSBvbiBgMTI3LjAuMC4xYCBhbmQgYDo6MWAuCi0gU2NoZW1hIHZlcnNpb24gMTsgbWlncmF0aW9uIFNIQS0yNTYgYDdmNjZhZGVmZDhmMDk4NTNkYjQwZTMxNjBkMGQ3NzkzZjFiZDBiY2FmNDIyYTk0ZDYzZDlkOTVhM2E0M2EwNTlgLgotIDI1IFJMUyB0YWJsZXM7IG5vIGBwZ19oYmFfZmlsZV9ydWxlc2AgZXJyb3JzOyBgcGdjcnlwdG9gIHByZXNlbnQuCi0gYHB2bmFpdmVfYXBwYCBoYXMgbm8gc3VwZXJ1c2VyL2NyZWF0ZWRiL2NyZWF0ZXJvbGUvaW5oZXJpdC9yZXBsaWNhdGlvbi9ieXBhc3NybHMgY2FwYWJpbGl0eS4KLSBBcHBsaWNhdGlvbiBoZWFsdGggcGFzc2VkIGFzIGBwdm5haXZlX2FwcGA7IHNlcnZlci9jbGllbnQgbG9vcGJhY2s7IGRpcmVjdCBzaWduaW5nLWtleSBTRUxFQ1QgZGVuaWVkLgotIEVuY3J5cHRlZCBiYWNrdXA6IGAvdmFyL2JhY2t1cHMvcHZuYWl2ZS9kYXRhYmFzZS8yMDI2MDgyN1QyMTUzMTdaL3B2bmFpdmUuZHVtcC5hZ2VgOyBjaGVja3N1bSBwYXNzZWQ7IG5vIHBsYWludGV4dCBkdW1wLgotIFByZWNoYW5nZSBiYWNrdXA6IGAvdmFyL2JhY2t1cHMvcHZuYWl2ZS8yMDI2MDgyN1QyMTUzMTBaLVMwMy1wcmVgOyBjaGVja3N1bXMgcGFzc2VkLgotIFJlc3RvcmUgZHJpbGwgcGFzc2VkIHNjaGVtYS9vd25lcnNoaXAvQUNML3NpZ25pbmcta2V5IHZlcmlmaWNhdGlvbi4KLSBBY3RpdmUgREIgcmVsZWFzZTogYC9vcHQvcHZuYWl2ZS9kYi9yZWxlYXNlcy8wMDAxLTdmNjZhZGVmZDhmMGAuCi0gSGVhbHRoIHRpbWVyIGVuYWJsZWQrYWN0aXZlOyBsYXRlc3Qgc2VydmljZSByZXN1bHQgc3VjY2VzcyB3aXRoIGV4aXQgc3RhdHVzIDAuCi0gQ2FkZHkgU0hBIHVuY2hhbmdlZDogYDEwMTg4NGRlMmRkMTFjYjlkMjc2ZGY4ZTcyY2QwNjhiZWQ1MGU0ZWM2ZWI0ZWJiNDc3MTg0ZGRhN2E4NmU4YjFgLgotIFNTSCBhbmQgZmlyZXdhbGwgdW5jaGFuZ2VkOyBDYWRkeSB3YXMgbm90IHJlc3RhcnRlZC4KLSBJbmRlcGVuZGVudCBwb3N0ZmxpZ2h0IHBhc3NlZCBhZnRlciBmaXhpbmcgYSByZWFkLW9ubHkgSlNPTiBwYXJzZXIgYnVnIGluIHRoZSBmaXJzdCBwb3N0ZmxpZ2h0IGNvbW1hbmQuCi0gU3dhcCByZW1haW5zIGRpc2FibGVkOyByZWFzc2VzcyBiZWZvcmUgbG9hZCB0ZXN0L3BpbG90LgoiIiIKcHJvZ3Jlc3Mud3JpdGVfdGV4dChwLCBlbmNvZGluZz0idXRmLTgiKQoKaGFuZG9mZiA9IFBhdGgoIkFHRU5UX0hBTkRPRi5tZCIpCmggPSBoYW5kb2ZmLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpoID0gaC5yZXBsYWNlKCJgUzAzLURBVEFCQVNFPU5FWFRgIiwgImBTMDMtREFUQUJBU0U9UEFTU0VEYCwgYFMwNC1BVVRIPU5FWFRgIiwgMSkKaWYgIiMjIFMwMyBGSU5BTCAtLSAyMDI2LTA4LTI3IDIxOjUzLTIxOjU1IFVUQyIgbm90IGluIGg6CiAgICBoICs9ICIiIgoKIyMgUzAzIEZJTkFMIC0tIDIwMjYtMDgtMjcgMjE6NTMtMjE6NTUgVVRDCgotIGBTMDMtREFUQUJBU0U9UEFTU0VEYDsgYFMwNC1BVVRIPU5FWFRgLgotIFBvc3RncmVTUUwgMTgvbWFpbiBpcyBpbnN0YWxsZWQgYW5kIGxvb3BiYWNrLW9ubHkuCi0gUHJvZHVjdGlvbiBtaWdyYXRpb24sIGFwcGxpY2F0aW9uIGhlYWx0aCwgZW5jcnlwdGVkIGJhY2t1cCwgcmVzdG9yZSBkcmlsbCwgUkxTL3JvbGUgY2hlY2tzIGFuZCBpbmRlcGVuZGVudCBwb3N0ZmxpZ2h0IGFsbCBwYXNzZWQuCi0gQ2FkZHkvU1NIL0ZpcmV3YWxsIGludmFyaWFudHMgd2VyZSBwcmVzZXJ2ZWQuCi0gQ29udGludWUgb25seSB3aXRoIFMwNC1BVVRIOyBTMDUrIHJlbWFpbiBibG9ja2VkIHVudGlsIFMwNCBwYXNzZXMuCiIiIgpoYW5kb2ZmLndyaXRlX3RleHQoaCwgZW5jb2Rpbmc9InV0Zi04IikK' | base64 -d > /tmp/finalize.py
-          python3 /tmp/finalize.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          progress = Path('ops/DEPLOYMENT_PROGRESS.md')
+          p = progress.read_text(encoding='utf-8')
+          p, s03 = re.subn(r'^\| S03-DATABASE \| NEXT \|.*$', '| S03-DATABASE | PASSED | PostgreSQL schema/migration/backup/restore/health | production + independent postflight passed |', p, count=1, flags=re.M)
+          p, s04 = re.subn(r'^\| S04-AUTH \| BLOCKED \|.*$', '| S04-AUTH | NEXT | owner bootstrap, session, MFA, RBAC | active next stage |', p, count=1, flags=re.M)
+          p = p.replace('| Kernel | 7.0.0-29-generic |', '| Kernel | 7.0.0-30-generic |', 1)
+          if (s03, s04) != (1, 1):
+              raise SystemExit(f'ledger patch mismatch: S03={s03} S04={s04}')
+          marker = '## S03 FINAL PRODUCTION RESULT -- 2026-08-27 21:53-21:55 UTC'
+          if marker not in p:
+              lines = [
+                  '', '', marker, '',
+                  '- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.',
+                  '- Production source commit: `02b02e0c2a0c2dbada04420b7a853adc08b000ab`.',
+                  '- PostgreSQL `18/main`, port 5432, loopback-only on `127.0.0.1` and `::1`.',
+                  '- Schema version 1; migration SHA-256 `7f66adefd8f09853db40e3160d0d7793f1bd0bcaf422a94d63d9d95a3a43a059`.',
+                  '- 25 RLS tables; pg_hba_file_rules errors=0; pgcrypto present.',
+                  '- pvnaive_app has no superuser/createdb/createrole/inherit/replication/bypassrls capability.',
+                  '- Application health passed as pvnaive_app; server/client loopback; direct signing-key SELECT denied.',
+                  '- Encrypted backup `/var/backups/pvnaive/database/20260827T215317Z/pvnaive.dump.age`; checksum passed; no plaintext dump.',
+                  '- Prechange backup `/var/backups/pvnaive/20260827T215310Z-S03-pre`; checksums passed.',
+                  '- Restore drill passed schema/ownership/ACL/signing-key verification.',
+                  '- Active DB release `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.',
+                  '- Health timer enabled+active; latest service result success with exit status 0.',
+                  '- Caddy SHA unchanged `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.',
+                  '- SSH and firewall unchanged; Caddy was not restarted.',
+                  '- Independent postflight passed after correcting a read-only JSON parser bug in the first postflight command.',
+                  '- Swap remains disabled; reassess before load test/pilot.',
+              ]
+              p += '\n'.join(lines) + '\n'
+          progress.write_text(p, encoding='utf-8')
+
+          handoff = Path('AGENT_HANDOFF.md')
+          h = handoff.read_text(encoding='utf-8')
+          if '`S03-DATABASE=NEXT`' in h:
+              h = h.replace('`S03-DATABASE=NEXT`', '`S03-DATABASE=PASSED`, `S04-AUTH=NEXT`', 1)
+          marker2 = '## S03 FINAL -- 2026-08-27 21:53-21:55 UTC'
+          if marker2 not in h:
+              lines2 = [
+                  '', '', marker2, '',
+                  '- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.',
+                  '- PostgreSQL 18/main is installed and loopback-only.',
+                  '- Production migration, application health, encrypted backup, restore drill, RLS/role checks and independent postflight all passed.',
+                  '- Caddy/SSH/Firewall invariants were preserved.',
+                  '- Continue only with S04-AUTH; S05+ remain blocked until S04 passes.',
+              ]
+              h += '\n'.join(lines2) + '\n'
+          handoff.write_text(h, encoding='utf-8')
+          PY
           git diff --check
           grep -F '| S03-DATABASE | PASSED |' ops/DEPLOYMENT_PROGRESS.md
           grep -F '| S04-AUTH | NEXT |' ops/DEPLOYMENT_PROGRESS.md
