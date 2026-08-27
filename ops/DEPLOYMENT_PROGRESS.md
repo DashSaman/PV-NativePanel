@@ -187,3 +187,15 @@
 - Commit fix اول: `133d36b79b68c57d8bd75361f287ec87ff5edd7c` (`fix: harden S03 listener preflight and failure trap`). Commit اتمیک hardening نهایی: `ded5af275d8e0000de25ce97d1de268fe54f58f8` (`fix: make S03 rollback and database backups fail-closed`).
 - Backup/Rollback سرور: هیچ دستور جدیدی روی سرور اجرا نشد؛ PostgreSQL هنوز نصب نشده و marker مالکیت/Stage هنوز روی سرور ساخته نشده است. Caddy/NaiveProxy/SSH/UFW دست‌نخورده‌اند؛ rollback سرور لازم نشد.
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: commit اتمیک، بررسی CI، ساخت bundle قطعی byte-for-byte، upload و اجرای تنها S03؛ فقط `S03_RESULT=PASSED` واقعی وضعیت Stage را تغییر می‌دهد.
+
+### Commit، CI و bundle نهایی S03 — 2026-08-27 12:52 UTC
+
+- Commit کد hardening: `ded5af275d8e0000de25ce97d1de268fe54f58f8`. Commit ثبت SHA در مستندات: `95a2689a0770e71db16dbd11bb436e9a3e6d92ab`.
+- CI بررسی‌شده: GitHub Actions run `33073904109`، run number 74، head=`95a2689a0770e71db16dbd11bb436e9a3e6d92ab` و conclusion=`failure`.
+- خروجی/خطای دقیق CI: هر سه Job `web`، `go` و `database` دارای `runner_id=0`، `runner_name=""` و `steps=[]` بودند؛ هیچ step، runner یا log کد اجرا نشد. علت همان failure زیرساخت تخصیص runner قبلی است و build/test failure جدید محسوب نمی‌شود. اصلاح کدی برای این رخداد انجام نشد؛ testهای محلی ثبت‌شده مرجع فعلی‌اند و integration واقعی DB باید در S03 پاس شود.
+- bundle نهایی: `pvnaive-s03-95a2689.tar.gz`، اندازه 20358 byte، SHA-256 برابر `9decbd705f548160343bdc41894b66ece86d53634e7fbf3719bac02f09be2b47` و شامل فقط ۱۳ فایل موردنیاز migration/DB scripts/S03+lib/systemd است.
+- اعتبارسنجی bundle: inventory صریح، مقایسه byte-for-byte با source commit‌شده، Bash syntax، modeهای 0755/0644 و هر دو checksum Migration پاس شدند؛ خروجی `BUNDLE_VERIFICATION=PASSED` است.
+- خطای validation: check اولیه mode از glob منبع `scripts/stages/*.sh` استفاده کرد و در extract به‌اشتباه `S02-foundation.sh` خارج از inventory را جست‌وجو کرد؛ دستور fail-fast متوقف شد. archive تغییر نکرد؛ check با آرایه صریح هشت executable و پنج regular file اصلاح و کامل پاس شد.
+- فایل‌های تغییرکرده در این ثبت: `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`. bundle artifact عمداً داخل Repository commit نشده است.
+- Backup/Rollback سرور: هیچ command جدیدی روی سرور اجرا نشده و rollback لازم نیست. bundle قدیمی `6d4e5ce` و candidate `f9f0d57f...` نباید استفاده شوند.
+- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: فایل نهایی را به `/root/pvnaive-s03-95a2689.tar.gz` upload، یک launcher SHA/inventory-gated اجرا و خروجی کامل را ثبت کن.

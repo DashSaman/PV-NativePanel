@@ -67,6 +67,8 @@ bundle نهایی دوباره extract و با source مقایسه شد؛ syntax
 
 hardening چندعاملی بعد از `133d36b` نیز کامل شد: rollback با نگهبان root `BASHPID` دقیقاً یک‌بار اجرا می‌شود؛ signal و rollback-step failure گزارش می‌شوند؛ marker موفقیت فقط پس از final gate و اتمیک نوشته می‌شود؛ marker قبلی در verify failure حذف نمی‌شود؛ health oneshot از `Result=success` سنجیده می‌شود؛ و provenance marker پایدار اجازه retry cluster متعلق به S03 را می‌دهد ولی cluster ناشناس را رد می‌کند. backup/restore کاملاً streaming و بدون dump plaintext است، storage root و DB port fail-closed هستند و تست‌های جدید پاس شدند. candidate با SHA `f9f0d57f...` منسوخ است و نباید استفاده شود. دو failure محیطی npm با اجرای مستقیم binaryهای موجود دور زده شد و ۸ test/build مجدداً پاس شد؛ Go در Runtime جاری موجود نیست و هیچ Go file تغییر نکرد. ممیزی نهایی agentها blocker کدی دیگری پیدا نکرد. Commit کامل hardening: `ded5af275d8e0000de25ce97d1de268fe54f58f8`. S03 هنوز `NEXT` است و هیچ اقدام جدیدی روی سرور نشده است.
 
+CI run `33073904109` روی head مستندات `95a2689a0770e71db16dbd11bb436e9a3e6d92ab` دوباره پیش از runner شکست خورد؛ `go/web/database` همگی `runner_id=0` و `steps=[]` داشتند، پس هیچ تست CI اجرا نشد. bundle قطعی `pvnaive-s03-95a2689.tar.gz` با SHA-256 `9decbd705f548160343bdc41894b66ece86d53634e7fbf3719bac02f09be2b47` و اندازه 20358 byte، inventory ۱۳فایلی، مقایسه byte-for-byte، syntax، mode و migration checksums را پاس کرده است. check اولیه mode به‌علت glob منبع، S02 خارج از bundle را اشتباه طلب کرد و fail-fast شد؛ check صریح اصلاح و `BUNDLE_VERIFICATION=PASSED` شد. فایل باید دقیقاً به `/root/pvnaive-s03-95a2689.tar.gz` upload شود و فقط launcher نهایی S03 اجرا گردد. Stage همچنان `NEXT` است.
+
 ## کار بعدی دقیق
 
 1. ساخت و upload bundle جدید fixشده با SHA-256 تازه
