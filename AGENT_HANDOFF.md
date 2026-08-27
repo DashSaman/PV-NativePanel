@@ -61,17 +61,20 @@ bootstrap مربوط به Commit `6d4e5ce` پیش از اجرای Stage با `ba
 
 bundle نهایی دوباره extract و با source مقایسه شد؛ syntax اسکریپت‌ها و هر دو checksum Migration پاس شدند. یک اجرای اولیه checksum از cwd اشتباه فقط `no file was verified` داد و با اجرای manifest از directory صحیح اصلاح شد؛ این مورد تغییری روی سرور نداشت.
 
+تلاش دوم در `2026-08-27 02:52:22 UTC` انتقال bundle را با SHA صحیح و هر دو checksum Migration پاس کرد، اما preflight با syntax error عبارت awk بررسی پورت متوقف شد و پیام اشتباه port 22 داد؛ همان SSH session نشان می‌دهد پورت باز بوده است. اجرا پیش از APT و هر mutation دیتابیس متوقف شد و Caddy/NaiveProxy، SSH و UFW تغییر نکردند. `die()` نیز به‌علت استفاده از `exit 1`، `ERR` trap مرکزی را اجرا نکرد؛ هر دو نقص باید همراه regression test اصلاح شوند. S03 همچنان `NEXT` است.
+
 ## کار بعدی دقیق
 
-1. upload کردن bundle معتبر S03 و تأیید SHA-256 آن پیش از extract
-2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
-3. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
-4. سپس Auth/session/MFA امن
-5. fake adapter و capability/UI visibility tests
-6. PoC accounting بین Caddy forwardproxy و sing-box Naive
-7. User CRUD و UI واقعی responsive
-8. content-pack loader + schema validation
-9. Installer امضاشده و Pilot
+1. اصلاح predicate پورت و مسیر `die()`/ERR trap و اجرای regression test
+2. ساخت و upload bundle جدید با SHA-256 تازه
+3. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
+4. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
+5. سپس Auth/session/MFA امن
+6. fake adapter و capability/UI visibility tests
+7. PoC accounting بین Caddy forwardproxy و sing-box Naive
+8. User CRUD و UI واقعی responsive
+9. content-pack loader + schema validation
+10. Installer امضاشده و Pilot
 
 ## الزامات غیرقابل حذف
 
