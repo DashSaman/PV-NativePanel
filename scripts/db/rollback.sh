@@ -38,8 +38,14 @@ grep -qx -- "-- pvnaive:destructive true" "${down_file}" || pvnaive_die "rollbac
 if [[ "${PVNAIVE_DISPOSABLE_DB:-0}" == "1" && "${PVNAIVE_DB_NAME}" =~ ^pvnaive_(migration|restore)_test_[a-z0-9_]+$ ]]; then
   :
 else
-  [[ "${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}" == "DROP_PVNAIVE_SCHEMA" ]] || \
-    pvnaive_die "production rollback requires PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=DROP_PVNAIVE_SCHEMA"
+  if ((current_version == 1)); then
+    [[ "${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}" == "DROP_PVNAIVE_SCHEMA" ]] || \
+      pvnaive_die "schema-v1 production rollback requires PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=DROP_PVNAIVE_SCHEMA"
+  else
+    [[ "${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}" == "ROLLBACK_ONE_MIGRATION" ]] || \
+      pvnaive_die "production rollback requires PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION"
+  fi
+
   backup_file="${PVNAIVE_CONFIRMED_BACKUP:-}"
   identity_file="${PVNAIVE_BACKUP_IDENTITY_FILE:-/etc/pvnaive/backup.agekey}"
   [[ -f "${backup_file}" && -f "${identity_file}" ]] || pvnaive_die "verified encrypted backup and identity are required"
@@ -66,6 +72,18 @@ echo "ROLLBACK_IS_DESTRUCTIVE=true"
   cat -- "${down_file}"
 } | pvnaive_psql --single-transaction --file - >/dev/null
 
-remaining_schema="$(pvnaive_psql_at --command "SELECT to_regnamespace('pvnaive') IS NOT NULL")"
-[[ "${remaining_schema}" == "f" ]] || pvnaive_die "rollback verification failed"
+if ((current_version == 1)); then
+  remaining_schema="$(pvnaive_psql_at --command "SELECT to_regnamespace('pvnaive') IS NOT NULL")"
+  [[ "${remaining_schema}" == "f" ]] || pvnaive_die "schema-v1 rollback verification failed"
+  echo "PVNAIVE_SCHEMA_VERSION=0"
+else
+  remaining_schema="$(pvnaive_psql_at --command "SELECT to_regnamespace('pvnaive') IS NOT NULL")"
+  [[ "${remaining_schema}" == "t" ]] || pvnaive_die "migration rollback unexpectedly removed pvnaive schema"
+  remaining_version="$(pvnaive_psql_at --command 'SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations')"
+  expected_remaining=$((current_version - 1))
+  [[ "${remaining_version}" == "${expected_remaining}" ]] || \
+    pvnaive_die "migration rollback version mismatch: got ${remaining_version}, expected ${expected_remaining}"
+  echo "PVNAIVE_SCHEMA_VERSION=${remaining_version}"
+fi
+
 echo "PVNAIVE_ROLLBACK_RESULT=PASSED"
