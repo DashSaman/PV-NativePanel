@@ -1,0 +1,1 @@
+Canonical S03 deployment remains on main. The temporary branch s03-pgcrypto-schema-fix is experimental/debug-only and MUST NOT be deployed.
