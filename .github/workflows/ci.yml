@@ -41,40 +41,63 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        # ubuntu-latest ships the matching PostgreSQL 16 client used by the
-        # encrypted pg_dump/pg_restore drill below. S03 also repeats the drill
-        # against the server's pinned APT candidate before it can pass.
-        image: postgres:16-bookworm
-        env:
-          POSTGRES_PASSWORD: pvnaive-ci-only
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready --username postgres --dbname postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
-    env:
-      PGPASSWORD: pvnaive-ci-only
-      PVNAIVE_DB_HOST: 127.0.0.1
-      PVNAIVE_DB_PORT: "5432"
-      PVNAIVE_DB_USER: postgres
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Install PostgreSQL client
+
+      - name: Start PostgreSQL 18 on the runner network
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends age postgresql-client
-      - name: Verify shell syntax
-        run: bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh
-      - name: Test S03 preflight predicates and failure trap
-        run: tests/stages/S03_preflight_test.sh
-      - name: Test database helper validation
-        run: tests/db/lib_test.sh
-      - name: Test migration, RLS, safety gates and rollback
-        run: tests/db/migration_test.sh
-      - name: Test encrypted backup and restore drill
-        run: tests/db/backup_restore_test.sh
+          set -Eeuo pipefail
+          docker pull postgres:18-bookworm
+          docker run --detach \
+            --name pvnaive-postgres18 \
+            --network host \
+            --env POSTGRES_PASSWORD=pvnaive-ci-only \
+            postgres:18-bookworm
+
+          for i in $(seq 1 60); do
+            if docker exec pvnaive-postgres18 pg_isready --username postgres --dbname postgres >/dev/null 2>&1; then
+              echo "POSTGRES18_READY=PASSED"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          docker logs pvnaive-postgres18
+          echo "POSTGRES18_READY=FAILED" >&2
+          exit 1
+
+      - name: Run shell, migration, health, backup and restore gates
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --volume "${GITHUB_WORKSPACE}:/repo" \
+            --workdir /repo \
+            postgres:18-bookworm \
+            bash -lc '
+              set -Eeuo pipefail
+              apt-get update >/dev/null
+              apt-get install --yes --no-install-recommends age >/dev/null
+
+              bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh
+              tests/stages/S03_preflight_test.sh
+              tests/stages/S03_apt_candidate_pipefail_test.sh
+              tests/stages/S03_ubuntu2604_contract_test.sh
+              tests/db/lib_test.sh
+              tests/db/migration_test.sh
+              tests/db/health_test.sh
+              tests/db/backup_restore_test.sh
+            '
+
+      - name: PostgreSQL 18 logs on failure
+        if: failure()
+        run: docker logs pvnaive-postgres18 || true
+
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-postgres18 >/dev/null 2>&1 || true
