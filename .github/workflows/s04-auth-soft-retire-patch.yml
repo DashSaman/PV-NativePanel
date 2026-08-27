@@ -85,3 +85,5 @@ jobs:
           git add db/migrations/0002_auth_foundation.up.sql db/migrations/SHA256SUMS .github/workflows/s04-auth-soft-retire-patch.yml
           git commit -m 'db: soft-retire MFA material in auth migration'
           git push origin HEAD:s04-auth
+
+# trigger: 2026-08-28
