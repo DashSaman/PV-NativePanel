@@ -21,7 +21,7 @@ suffix="${suffix//[^a-zA-Z0-9_]/_}"
 test_db="pvnaive_migration_test_s04_${suffix,,}"
 api_port="18080"
 api_pid=""
-tmpdir="$(mktemp -d)"
+tmpdir=""
 password='S04-Rehearsal-Password-Only'
 owner_email='owner-s04@example.invalid'
 
@@ -41,10 +41,12 @@ cleanup() {
     "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${test_db}' AND pid <> pg_backend_pid()" >/dev/null 2>&1 || true
   dropdb --if-exists --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command 'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
-  rm -rf -- "${tmpdir}"
+  if [[ -n "${tmpdir}" ]]; then
+    rm -rf -- "${tmpdir}"
+  fi
 }
-trap cleanup EXIT HUP INT TERM
 cleanup
+tmpdir="$(mktemp -d)"
 trap cleanup EXIT HUP INT TERM
 
 psql_admin --dbname postgres <<'SQL' >/dev/null
