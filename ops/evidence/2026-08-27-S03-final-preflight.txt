@@ -1,0 +1,45 @@
+PVNaive S03 final read-only preflight evidence
+UTC: 2026-08-27T20:27:03Z
+Host: testAmir5-3
+
+Bundle:
+- path: /root/pvnaive-s03-95a2689-verified.tar.gz
+- sha256: c3b160711ea74ec05ad213dbcf7540befc173aa06f075c8e1301ddb872dcf302
+- size: 20525 bytes
+- verified files: 13
+- bundle content verification: PASSED
+
+Foundation/DNS/Caddy/listeners:
+- FOUNDATION=PASSED
+- DNS=PASSED (namir.softarg.ir -> 91.107.182.147)
+- caddy-naive.service active
+- Caddyfile sha256: 101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1
+- Caddy validate: Valid configuration
+- listeners 22/80/443: PASSED
+
+PostgreSQL pre-state:
+- pg_lsclusters not installed
+- psql not installed
+- no S03_DATABASE marker
+- no S03 cluster owner marker
+- no db.env
+- POSTGRES_PRESTATE=CLEAN
+
+OS/resources:
+- Ubuntu 26.04
+- MemAvailable: 3360140 kB
+- SwapTotal: 0 kB
+- root/var available: ~34G
+
+Reboot status:
+- REBOOT_REQUIRED=YES
+- reboot-required packages:
+  - linux-image-7.0.0-30-generic
+  - linux-base
+- running kernel observed before this preflight in login banner: 7.0.0-29-generic
+- upgradable package count: 13
+
+Result:
+- FINAL_PREFLIGHT=PASSED
+- NO_CHANGES_MADE=true
+- S03 must not run until reboot readiness/default kernel is checked and the server is rebooted successfully.
