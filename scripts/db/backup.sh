@@ -13,22 +13,37 @@ pvnaive_db_defaults
 
 backup_root="${PVNAIVE_BACKUP_ROOT:-/var/backups/pvnaive/database}"
 recipient_file="${PVNAIVE_BACKUP_RECIPIENT_FILE:-/etc/pvnaive/backup.recipient}"
+identity_file="${PVNAIVE_BACKUP_IDENTITY_FILE:-/etc/pvnaive/backup.agekey}"
 [[ -r "${recipient_file}" ]] || pvnaive_die "age recipient file is not readable"
+[[ -r "${identity_file}" ]] || pvnaive_die "age identity file is not readable"
 recipient="$(tr -d '[:space:]' < "${recipient_file}")"
 [[ "${recipient}" == age1* ]] || pvnaive_die "invalid age recipient"
+pvnaive_validate_storage_root "${backup_root}"
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 install -d -m 0700 "${backup_root}"
-temp_dir="$(mktemp -d "${backup_root}/.tmp.${stamp}.XXXXXX")"
+temp_dir=""
 final_dir="${backup_root}/${stamp}"
-cleanup() { rm -rf -- "${temp_dir}"; }
-trap cleanup EXIT
+cleanup() {
+  local code="$1"
+  trap - EXIT HUP INT TERM
+  if [[ -n "${temp_dir}" && -d "${temp_dir}" ]]; then
+    rm -rf -- "${temp_dir}" || true
+  fi
+  exit "${code}"
+}
+trap 'cleanup "$?"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+temp_dir="$(mktemp -d "${backup_root}/.tmp.${stamp}.XXXXXX")"
 [[ ! -e "${final_dir}" ]] || pvnaive_die "backup destination already exists"
 
-pvnaive_db_tool pg_dump --format custom --compress 6 --no-owner --no-acl --dbname "${PVNAIVE_DB_NAME}" > "${temp_dir}/pvnaive.dump"
-pg_restore --list "${temp_dir}/pvnaive.dump" >/dev/null || pvnaive_die "pg_dump archive validation failed"
-age --recipient "${recipient}" --output "${temp_dir}/pvnaive.dump.age" "${temp_dir}/pvnaive.dump"
-rm -f -- "${temp_dir}/pvnaive.dump"
+pvnaive_db_tool pg_dump --format custom --compress 6 --no-owner --no-acl --dbname "${PVNAIVE_DB_NAME}" |
+  age --recipient "${recipient}" --output "${temp_dir}/pvnaive.dump.age" ||
+  pvnaive_die "encrypted pg_dump stream failed"
+age --decrypt --identity "${identity_file}" "${temp_dir}/pvnaive.dump.age" |
+  pg_restore --list >/dev/null || pvnaive_die "encrypted pg_dump archive validation failed"
 
 schema_version="$(pvnaive_psql_at --command 'SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations')"
 ((schema_version > 0)) || pvnaive_die "database has no applied PVNaive migration"
@@ -42,6 +57,7 @@ printf '{\n  "product": "PVNaive",\n  "created_at_utc": "%s",\n  "database": "%s
 )
 chmod 0600 "${temp_dir}"/*
 mv -- "${temp_dir}" "${final_dir}"
-trap - EXIT
+temp_dir=""
+trap - EXIT HUP INT TERM
 echo "PVNAIVE_BACKUP_RESULT=PASSED"
 echo "PVNAIVE_BACKUP_PATH=${final_dir}/pvnaive.dump.age"

@@ -50,7 +50,7 @@ RLS جای RBAC endpoint را نمی‌گیرد. Route و business layer همچ�
 - password برنامه با ۲۵۶ بیت randomness ساخته می‌شود و فقط در `/etc/pvnaive/db.pgpass` با mode `0600` و owner `pvnaive` قرار می‌گیرد.
 - `/etc/pvnaive/db.env` secret ندارد و فقط host/port/name/user/schema version و مسیر pgpass را نگه می‌دارد.
 - PostgreSQL فقط روی `127.0.0.1` و `::1` گوش می‌دهد؛ HBA فقط SCRAM-SHA-256 را برای `pvnaive_app` می‌پذیرد.
-- backup با custom-format `pg_dump` ساخته، با age رمزنگاری و سپس نسخهٔ plaintext حذف می‌شود.
+- backup از `pg_dump` مستقیماً به age stream می‌شود و archive plaintext هیچ‌گاه روی دیسک نوشته نمی‌شود؛ اعتبار archive نیز با decrypt stream و `pg_restore --list` بررسی می‌شود.
 - `metadata.json` و archive هر دو داخل `SHA256SUMS` هستند.
 - restore فقط به نام جدید `pvnaive_restore_test_*` مجاز است؛ دیتابیس موجود overwrite نمی‌شود و schema/data بعد از restore بررسی می‌شوند.
 

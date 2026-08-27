@@ -53,7 +53,7 @@ Standalone خارج، بدون ایران و بدون Controller در MVP. Contr
 
 ## وضعیت تست
 
-تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions runهای `33031844663` و `33032317065` پیش از تخصیص runner شکست خوردند: هر سه Job در هر دو run، `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. Commitهای S03: `45ba5c4` و fix `fbf21e8`. lockfile ساخته و `npm ci` فعال شده است.
+تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions runهای `33031844663` و `33032317065` پیش از تخصیص runner شکست خوردند: هر سه Job در هر دو run، `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. Commitهای S03: `45ba5c4`، `fbf21e8` و preflight fix `133d36b`. lockfile ساخته و `npm ci` فعال شده است.
 
 ## آخرین تلاش S03 — 2026-08-27 02:27 UTC
 
@@ -64,6 +64,8 @@ bundle نهایی دوباره extract و با source مقایسه شد؛ syntax
 تلاش دوم در `2026-08-27 02:52:22 UTC` انتقال bundle را با SHA صحیح و هر دو checksum Migration پاس کرد، اما preflight با syntax error عبارت awk بررسی پورت متوقف شد و پیام اشتباه port 22 داد؛ همان SSH session نشان می‌دهد پورت باز بوده است. اجرا پیش از APT و هر mutation دیتابیس متوقف شد و Caddy/NaiveProxy، SSH و UFW تغییر نکردند. `die()` نیز به‌علت استفاده از `exit 1`، `ERR` trap مرکزی را اجرا نکرد؛ هر دو نقص باید همراه regression test اصلاح شوند. S03 همچنان `NEXT` است.
 
 اصلاح انجام شد: predicate پورت به helper تست‌پذیر منتقل و `die()` به return غیرصفر تغییر کرد. regression test واقعی IPv4/IPv6، پورت غایب/نامعتبر و `ERR` trap پاس شد؛ shell/SQL checksum و frontend ۸ test/build نیز پاس شدند. test اولیه trap به‌علت semantics شرط `if` شکست خورد و harness با shell مستقل اصلاح شد؛ فرمان validation نیز fail-fast شد. Go در Runtime فعلی در PATH نبود، اما هیچ فایل Go تغییر نکرده و اجرای کامل قبلی Go 1.24.4 پاس است. bundle جدید هنوز باید ساخته و روی سرور اجرا شود؛ S03 همچنان `NEXT` است.
+
+hardening چندعاملی بعد از `133d36b` نیز کامل شد: rollback با نگهبان root `BASHPID` دقیقاً یک‌بار اجرا می‌شود؛ signal و rollback-step failure گزارش می‌شوند؛ marker موفقیت فقط پس از final gate و اتمیک نوشته می‌شود؛ marker قبلی در verify failure حذف نمی‌شود؛ health oneshot از `Result=success` سنجیده می‌شود؛ و provenance marker پایدار اجازه retry cluster متعلق به S03 را می‌دهد ولی cluster ناشناس را رد می‌کند. backup/restore کاملاً streaming و بدون dump plaintext است، storage root و DB port fail-closed هستند و تست‌های جدید پاس شدند. candidate با SHA `f9f0d57f...` منسوخ است و نباید استفاده شود. دو failure محیطی npm با اجرای مستقیم binaryهای موجود دور زده شد و ۸ test/build مجدداً پاس شد؛ Go در Runtime جاری موجود نیست و هیچ Go file تغییر نکرد. ممیزی نهایی agentها blocker کدی دیگری پیدا نکرد. Commit کامل hardening بلافاصله پس از این ثبت ساخته و SHA آن در update بعدی نوشته می‌شود؛ S03 هنوز `NEXT` است و هیچ اقدام جدیدی روی سرور نشده است.
 
 ## کار بعدی دقیق
 

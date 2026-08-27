@@ -33,31 +33,36 @@ metadata_schema_version="$(sed -n 's/^  "schema_version": \([0-9][0-9]*\),$/\1/p
 exists="$(pvnaive_psql_at --dbname postgres --command "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = '${target_db}')")"
 [[ "${exists}" == "f" ]] || pvnaive_die "restore target already exists"
 
-temp_dir="$(mktemp -d)"
 target_created=0
 cleanup() {
-  rm -rf -- "${temp_dir}"
+  local code="$1"
+  trap - EXIT HUP INT TERM
   if [[ "${target_created}" == "1" ]]; then
-    pvnaive_admin_tool dropdb --if-exists "${target_db}" >/dev/null 2>&1 || true
+    if ! pvnaive_admin_tool dropdb --if-exists --force "${target_db}" >/dev/null 2>&1; then
+      echo "ERROR: cleanup could not drop restore target: ${target_db}" >&2
+    fi
   fi
+  exit "${code}"
 }
-trap cleanup EXIT
+trap 'cleanup "$?"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-age --decrypt --identity "${identity_file}" --output "${temp_dir}/restore.dump" "${backup_file}"
-pg_restore --list "${temp_dir}/restore.dump" >/dev/null || pvnaive_die "restore archive parse failed"
-pvnaive_admin_tool createdb --owner pvnaive_owner --encoding UTF8 --template template0 "${target_db}"
+age --decrypt --identity "${identity_file}" "${backup_file}" |
+  pg_restore --list >/dev/null || pvnaive_die "restore archive parse failed"
 target_created=1
-# The caller may run PostgreSQL tools as the postgres OS account while this
-# script owns the mode-0700 temporary directory. Open the archive as the
-# current account and pass it through stdin so pg_restore never needs path
-# access to that directory.
-pvnaive_db_tool pg_restore --dbname "${target_db}" --exit-on-error --single-transaction --no-owner --no-acl --role pvnaive_owner < "${temp_dir}/restore.dump" >/dev/null
+pvnaive_admin_tool createdb --owner pvnaive_owner --encoding UTF8 --template template0 "${target_db}"
+# Decrypt directly to pg_restore. No plaintext database archive is written to
+# disk, including when PostgreSQL tools run under a different OS account.
+age --decrypt --identity "${identity_file}" "${backup_file}" |
+  pvnaive_db_tool pg_restore --dbname "${target_db}" --exit-on-error --single-transaction --no-owner --no-acl --role pvnaive_owner >/dev/null ||
+  pvnaive_die "restore execution failed"
 
 restored_version="$(pvnaive_psql_at --dbname "${target_db}" --command 'SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations')"
 [[ "${restored_version}" == "${metadata_schema_version}" ]] || pvnaive_die "restored schema version does not match backup metadata"
+target_created=0
+trap - EXIT HUP INT TERM
 echo "PVNAIVE_RESTORE_RESULT=PASSED"
 echo "PVNAIVE_RESTORE_TARGET=${target_db}"
 echo "PVNAIVE_RESTORE_SCHEMA_VERSION=${restored_version}"
-target_created=0
-rm -rf -- "${temp_dir}"
-trap - EXIT

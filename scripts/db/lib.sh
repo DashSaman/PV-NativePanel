@@ -16,6 +16,17 @@ pvnaive_require_identifier() {
   [[ "${value}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "unsafe ${label}: ${value}"
 }
 
+pvnaive_validate_storage_root() {
+  local storage_root="$1"
+  local canonical_storage_root
+  pvnaive_require_command realpath
+  canonical_storage_root="$(realpath --canonicalize-missing -- "${storage_root}")"
+  [[ "${storage_root%/}" == "${canonical_storage_root}" ]] || \
+    pvnaive_die "storage root must be an absolute canonical path without symlink traversal"
+  [[ "${canonical_storage_root}" =~ ^/[^/]+/[^/]+/[^/]+(/.*)?$ ]] || \
+    pvnaive_die "storage root is too broad"
+}
+
 pvnaive_db_defaults() {
   : "${PVNAIVE_DB_HOST:=127.0.0.1}"
   : "${PVNAIVE_DB_PORT:=5432}"
@@ -26,7 +37,8 @@ pvnaive_db_defaults() {
   export PGCONNECT_TIMEOUT="${PVNAIVE_DB_CONNECT_TIMEOUT}"
   pvnaive_require_identifier "database name" "${PVNAIVE_DB_NAME}"
   pvnaive_require_identifier "database user" "${PVNAIVE_DB_USER}"
-  [[ "${PVNAIVE_DB_PORT}" =~ ^[0-9]{1,5}$ ]] || pvnaive_die "invalid database port"
+  [[ "${PVNAIVE_DB_PORT}" =~ ^[1-9][0-9]{0,4}$ ]] || pvnaive_die "invalid database port"
+  ((10#${PVNAIVE_DB_PORT} <= 65535)) || pvnaive_die "invalid database port"
 }
 
 pvnaive_db_tool() {
