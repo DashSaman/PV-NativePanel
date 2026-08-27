@@ -91,6 +91,7 @@ jobs:
               bash tests/db/migration_test.sh
               bash tests/db/health_test.sh
               bash tests/db/backup_restore_test.sh
+              bash tests/db/auth_migration_test.sh
             '
 
       - name: PostgreSQL 18 logs on failure
