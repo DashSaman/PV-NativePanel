@@ -1,10 +1,9 @@
-# one-shot state finalizer; delete after successful run
 name: Finalize S03 deployment state
 
 on:
   push:
     paths:
-      - .github/workflows/s03-state-finalize.yml
+      - '.github/workflows/s03-state-finalize.yml'
 
 permissions:
   contents: write
@@ -16,106 +15,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Patch deployment progress and handoff
+      - name: Patch deployment state
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          progress = Path('ops/DEPLOYMENT_PROGRESS.md')
-          p = progress.read_text()
-
-          replacements = {
-              '| Kernel | 7.0.0-29-generic |': '| Kernel | 7.0.0-30-generic |',
-              '| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | hardening چندعاملی و تست محلی پاس شد؛ اجرای واقعی با bundle نهایی لازم است |': '| S03-DATABASE | PASSED | PostgreSQL schema/migration/backup/restore/health | اجرای production و postflight مستقل کامل پاس شد |',
-              '| S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |': '| S04-AUTH | NEXT | bootstrap owner، session، MFA و RBAC | مرحله بعدی فعال |',
-              '`S03-DATABASE` اکنون `NEXT` است. GitHub Actions پیش از تخصیص runner متوقف شده، اما testهای محلی در ادامه ثبت شده‌اند؛ اکنون bundle تأییدشده فقط با فایل upload و launcher کوتاه اجرا و تمام خروجی آن ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.': '`S03-DATABASE` در 2026-08-27 کامل `PASSED` شد. مرحله فعال اکنون `S04-AUTH` است. قبل از هر اقدام سروری برای S04، طراحی و تست auth/session/MFA/RBAC باید با schema موجود هماهنگ و fail-closed باشد.'
-          }
-          for old, new in replacements.items():
-              if old not in p:
-                  raise SystemExit(f'missing expected progress text: {old[:80]}')
-              p = p.replace(old, new, 1)
-
-          final_section = '''
-
-## گزارش نهایی S03-DATABASE — 2026-08-27 21:53–21:55 UTC
-
-- نتیجه اجرای production: `S03_RESULT=PASSED` و launcher با `S03_EXIT_CODE=0` تمام شد.
-- Source production: commit `02b02e0c2a0c2dbada04420b7a853adc08b000ab`؛ source/blob/migration manifest پیش از اجرا verify شد.
-- PostgreSQL: cluster `18/main` روی port `5432` و فقط روی `127.0.0.1` و `::1`.
-- schema version: `1`؛ migration SHA-256: `7f66adefd8f09853db40e3160d0d7793f1bd0bcaf422a94d63d9d95a3a43a059`.
-- RLS: 25 table؛ `pg_hba_file_rules` بدون error؛ `pgcrypto` حاضر.
-- app role `pvnaive_app`: superuser/createdb/createrole/inherit/replication/bypassrls همگی false.
-- application health: `PVNAIVE_DB_HEALTH=OK`، user=`pvnaive_app`، server/client loopback و direct SELECT روی signing key=`DENIED`.
-- encrypted backup: `/var/backups/pvnaive/database/20260827T215317Z/pvnaive.dump.age`؛ checksum پاس و plaintext dump وجود ندارد.
-- prechange backup: `/var/backups/pvnaive/20260827T215310Z-S03-pre`؛ checksum تمام فایل‌ها پاس.
-- restore drill: schema/ownership/ACL/signing-key همگی پاس.
-- DB release: `/opt/pvnaive/db/current -> /opt/pvnaive/db/releases/0001-7f66adefd8f0`.
-- health timer enabled+active و health service آخرین اجرا `Result=success`, `ExecMainStatus=0`.
-- Caddy active و SHA-256 بدون تغییر `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
-- SSH/Firewall تغییر نکردند؛ Caddy restart نشد.
-- rehearsal disposable قبل از production مسیر migration→health→encrypted backup→restore→rollback را کامل پاس کرد.
-- postflight مستقل نهایی: `S03_POSTFLIGHT=PASSED`, `S03_DATABASE=PASSED`, `NEXT_STAGE=S04-AUTH`.
-- هشدار غیرمسدودکننده: swap همچنان صفر است؛ برای load test/Pilot دوباره ارزیابی شود.
-
-### وضعیت رسمی پس از S03
-
-- `S03-DATABASE=PASSED`
-- `S04-AUTH=NEXT`
-- S05 به بعد تا عبور S04 همچنان `BLOCKED` هستند.
-'''
-          if '## گزارش نهایی S03-DATABASE — 2026-08-27 21:53–21:55 UTC' not in p:
-              p += final_section
-          progress.write_text(p)
-
-          handoff = Path('AGENT_HANDOFF.md')
-          h = handoff.read_text()
-          h = h.replace(
-              'وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=NEXT`.',
-              'وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED`، `S03-DATABASE=PASSED` و `S04-AUTH=NEXT`.',
-              1,
-          )
-          h = h.replace(
-              'S02 در `testAmir5-3` موفق شد. Backup سالم: `/var/backups/pvnaive/20260826T201857Z`. Caddy/SSH/Firewall تغییر نکردند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.',
-              'S03 در `testAmir5-3` در 2026-08-27 21:53 UTC موفق شد و postflight مستقل نیز PASSED شد. PostgreSQL 18/main فقط loopback است، backup/restore/health پاس‌اند و Caddy/SSH/Firewall بدون تغییر مانده‌اند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.',
-              1,
-          )
-          h = h.replace(
-              'Schema و ابزارهای امن S03 PostgreSQL آماده‌اند، اما هنوز روی سرور اجرا نشده‌اند. Runtime، auth و business logic پیاده‌سازی نشده‌اند؛ Production-ready نیست.',
-              'S03 PostgreSQL روی سرور اجرا و مستقل postflight شده است. Runtime، auth و business logic هنوز کامل نیستند؛ Production-ready نیست. Stage فعال اکنون S04-AUTH است.',
-              1,
-          )
-
-          summary = '''
-
-## S03 نهایی — 2026-08-27 21:53–21:55 UTC
-
-- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
-- production source commit: `02b02e0c2a0c2dbada04420b7a853adc08b000ab`.
-- PostgreSQL `18/main`, port 5432, loopback-only (`127.0.0.1`, `::1`).
-- schema version 1; 25 RLS tables; app health با `pvnaive_app` پاس و signing-key direct SELECT denied.
-- encrypted backup و prechange backup checksum پاس؛ restore drill ownership/ACL/signing-key پاس.
-- release فعال: `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
-- health timer enabled+active؛ آخرین service result success/0.
-- Caddy SHA بدون تغییر؛ SSH/Firewall تغییر نکردند.
-- postflight مستقل نهایی PASSED؛ خطای اولیه postflight فقط parser کامای JSON بود و با JSON parser دوباره verify شد.
-
-### قدم بعدی دقیق
-
-S04-AUTH را پیاده‌سازی و تست کن: owner bootstrap یک‌بارمصرف، password hashing امن، session token hash-only در DB، CSRF/session rotation، RBAC و MFA recovery-safe. تا S04 پاس نشده، S05 و مراحل بعد BLOCKED بمانند.
-'''
-          if '## S03 نهایی — 2026-08-27 21:53–21:55 UTC' not in h:
-              h += summary
-          handoff.write_text(h)
-          PY
-
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwcm9ncmVzcyA9IFBhdGgoIm9wcy9ERVBMT1lNRU5UX1BST0dSRVNTLm1kIikKcCA9IHByb2dyZXNzLnJlYWRfdGV4dCgpCgpyZXBsYWNlbWVudHMgPSB7CiAgICAifCBLZXJuZWwgfCA3LjAuMC0yOS1nZW5lcmljIHwiOiAifCBLZXJuZWwgfCA3LjAuMC0zMC1nZW5lcmljIHwiLAogICAgInwgUzAzLURBVEFCQVNFIHwgTkVYVCB8INi32LHYp9it24wg2Ygg2KfYrNix2KfbjCBQb3N0Z3JlU1FMIHNjaGVtYS9taWdyYXRpb24gfCBoYXJkZW5pbmcg2obZhtiv2LnYp9mF2YTbjCDZiCDYqtiz2Kog2YXYrdmE24wg2b7Yp9izINi02K/YmyDYp9is2LHYp9uMINmI2KfZgti524wg2KjYpyBidW5kbGUg2YbZh9in24zbjCDZhNin2LLZhSDYp9iz2KogfCI6ICJ8IFMwMy1EQVRBQkFTRSB8IFBBU1NFRCB8IFBvc3RncmVTUUwgc2NoZW1hL21pZ3JhdGlvbi9iYWNrdXAvcmVzdG9yZS9oZWFsdGggfCDYp9is2LHYp9uMIHByb2R1Y3Rpb24g2YggcG9zdGZsaWdodCDZhdiz2KrZgtmEINqp2KfZhdmEINm+2KfYsyDYtNivIHwiLAogICAgInwgUzA0LUFVVEggfCBCTE9DS0VEIHwgYm9vdHN0cmFwIG93bmVy2Iwgc2Vzc2lvbtiMIE1GQSDZiCBSQkFDIHwg2YXZhtiq2LjYsSBTMDMgfCI6ICJ8IFMwNC1BVVRIIHwgTkVYVCB8IGJvb3RzdHJhcCBvd25lctiMIHNlc3Npb27YjCBNRkEg2YggUkJBQyB8INmF2LHYrdmE2Ycg2KjYudiv24wg2YHYudin2YQgfCIsCiAgICAiYFMwMy1EQVRBQkFTRWAg2KfaqdmG2YjZhiBgTkVYVGAg2KfYs9iqLiBHaXRIdWIgQWN0aW9ucyDZvtuM2LQg2KfYsiDYqtiu2LXbjNi1IHJ1bm5lciDZhdiq2YjZgtmBINi02K/Zh9iMINin2YXYpyB0ZXN02YfYp9uMINmF2K3ZhNuMINiv2LEg2KfYr9in2YXZhyDYq9io2Kog2LTYr9mH4oCM2KfZhtiv2Jsg2KfaqdmG2YjZhiBidW5kbGUg2KrYo9uM24zYr9i02K/ZhyDZgdmC2Lcg2KjYpyDZgdin24zZhCB1cGxvYWQg2YggbGF1bmNoZXIg2qnZiNiq2KfZhyDYp9is2LHYpyDZiCDYqtmF2KfZhSDYrtix2YjYrNuMINii2YYg2KvYqNiqINi02YjYry4g2KrYpyDZgtio2YQg2KfYsiDYrtix2YjYrNuMIGBTMDNfUkVTVUxUPVBBU1NFRGDYjCBTMDQg2YfZhdqG2YbYp9mGIGBCTE9DS0VEYCDYp9iz2KouIjogImBTMDMtREFUQUJBU0VgINiv2LEgMjAyNi0wOC0yNyDaqdin2YXZhCBgUEFTU0VEYCDYtNivLiDZhdix2K3ZhNmHINmB2LnYp9mEINin2qnZhtmI2YYgYFMwNC1BVVRIYCDYp9iz2KouINmC2KjZhCDYp9iyINmH2LEg2KfZgtiv2KfZhSDYs9ix2YjYsduMINio2LHYp9uMIFMwNNiMINi32LHYp9it24wg2Ygg2KrYs9iqIGF1dGgvc2Vzc2lvbi9NRkEvUkJBQyDYqNin24zYryDYqNinIHNjaGVtYSDZhdmI2KzZiNivINmH2YXYp9mH2YbaryDZiCBmYWlsLWNsb3NlZCDYqNin2LTYry4iCn0KZm9yIG9sZCwgbmV3IGluIHJlcGxhY2VtZW50cy5pdGVtcygpOgogICAgaWYgb2xkIG5vdCBpbiBwOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJtaXNzaW5nIGV4cGVjdGVkIHByb2dyZXNzIHRleHQ6IHtvbGRbOjgwXX0iKQogICAgcCA9IHAucmVwbGFjZShvbGQsIG5ldywgMSkKCmZpbmFsX3NlY3Rpb24gPSAiIiIKCiMjINqv2LLYp9ix2LQg2YbZh9in24zbjCBTMDMtREFUQUJBU0Ug4oCUIDIwMjYtMDgtMjcgMjE6NTPigJMyMTo1NSBVVEMKCi0g2YbYqtuM2KzZhyDYp9is2LHYp9uMIHByb2R1Y3Rpb246IGBTMDNfUkVTVUxUPVBBU1NFRGAg2YggbGF1bmNoZXIg2KjYpyBgUzAzX0VYSVRfQ09ERT0wYCDYqtmF2KfZhSDYtNivLgotIFNvdXJjZSBwcm9kdWN0aW9uOiBjb21taXQgYDAyYjAyZTBjMmEwYzJkYmFkYTA0NDIwYjdhODUzYWRjMDhiMDAwYWJg2Jsgc291cmNlL2Jsb2IvbWlncmF0aW9uIG1hbmlmZXN0INm+24zYtCDYp9iyINin2KzYsdinIHZlcmlmeSDYtNivLgotIFBvc3RncmVTUUw6IGNsdXN0ZXIgYDE4L21haW5gINix2YjbjCBwb3J0IGA1NDMyYCDZiCDZgdmC2Lcg2LHZiNuMIGAxMjcuMC4wLjFgINmIIGA6OjFgLgotIHNjaGVtYSB2ZXJzaW9uOiBgMWDYmyBtaWdyYXRpb24gU0hBLTI1NjogYDdmNjZhZGVmZDhmMDk4NTNkYjQwZTMxNjBkMGQ3NzkzZjFiZDBiY2FmNDIyYTk0ZDYzZDlkOTVhM2E0M2EwNTlgLgotIFJMUzogMjUgdGFibGXYmyBgcGdfaGJhX2ZpbGVfcnVsZXNgINio2K/ZiNmGIGVycm9y2JsgYHBnY3J5cHRvYCDYrdin2LbYsS4KLSBhcHAgcm9sZSBgcHZuYWl2ZV9hcHBgOiBzdXBlcnVzZXIvY3JlYXRlZGIvY3JlYXRlcm9sZS9pbmhlcml0L3JlcGxpY2F0aW9uL2J5cGFzc3JscyDZh9mF2q/bjCBmYWxzZS4KLSBhcHBsaWNhdGlvbiBoZWFsdGg6IGBQVk5BSVZFX0RCX0hFQUxUSD1PS2DYjCB1c2VyPWBwdm5haXZlX2FwcGDYjCBzZXJ2ZXIvY2xpZW50IGxvb3BiYWNrINmIIGRpcmVjdCBTRUxFQ1Qg2LHZiNuMIHNpZ25pbmcga2V5PWBERU5JRURgLgotIGVuY3J5cHRlZCBiYWNrdXA6IGAvdmFyL2JhY2t1cHMvcHZuYWl2ZS9kYXRhYmFzZS8yMDI2MDgyN1QyMTUzMTdaL3B2bmFpdmUuZHVtcC5hZ2Vg2JsgY2hlY2tzdW0g2b7Yp9izINmIIHBsYWludGV4dCBkdW1wINmI2KzZiNivINmG2K/Yp9ix2K8uCi0gcHJlY2hhbmdlIGJhY2t1cDogYC92YXIvYmFja3Vwcy9wdm5haXZlLzIwMjYwODI3VDIxNTMxMFotUzAzLXByZWDYmyBjaGVja3N1bSDYqtmF2KfZhSDZgdin24zZhOKAjNmH2Kcg2b7Yp9izLgotIHJlc3RvcmUgZHJpbGw6IHNjaGVtYS9vd25lcnNoaXAvQUNML3NpZ25pbmcta2V5INmH2YXar9uMINm+2KfYsy4KLSBEQiByZWxlYXNlOiBgL29wdC9wdm5haXZlL2RiL2N1cnJlbnQgLT4gL29wdC9wdm5haXZlL2RiL3JlbGVhc2VzLzAwMDEtN2Y2NmFkZWZkOGYwYC4KLSBoZWFsdGggdGltZXIgZW5hYmxlZCthY3RpdmUg2YggaGVhbHRoIHNlcnZpY2Ug2KLYrtix24zZhiDYp9is2LHYpyBgUmVzdWx0PXN1Y2Nlc3NgLCBgRXhlY01haW5TdGF0dXM9MGAuCi0gQ2FkZHkgYWN0aXZlINmIIFNIQS0yNTYg2KjYr9mI2YYg2KrYutuM24zYsSBgMTAxODg0ZGUyZGQxMWNiOWQyNzZkZjhlNzJjZDA2OGJlZDUwZTRlYzZlYjRlYmI0NzcxODRkZGE3YTg2ZThiMWAuCi0gU1NIL0ZpcmV3YWxsINiq2LrbjNuM2LEg2Ybaqdix2K/Zhtiv2JsgQ2FkZHkgcmVzdGFydCDZhti02K8uCi0gcmVoZWFyc2FsIGRpc3Bvc2FibGUg2YLYqNmEINin2LIgcHJvZHVjdGlvbiDZhdiz24zYsSBtaWdyYXRpb27ihpJoZWFsdGjihpJlbmNyeXB0ZWQgYmFja3Vw4oaScmVzdG9yZeKGknJvbGxiYWNrINix2Kcg2qnYp9mEINm+2KfYsyDaqLHYry4KLSBwb3N0ZmxpZ2h0INmF2LPYqtmC2YQg2YbZh9in24zbjDogYFMwM19QT1NURkxJR0hUPVBBU1NFRGAsIGBTMDNfREFUQUJBU0U9UEFTU0VEYCwgYE5FWFRfU1RBR0U9UzA0LUFVVEhgLgotINmH2LTYr9in2LEg2LrbjNix2YXYs9iv2YjYr9qp2YbZhtiv2Yc6IHN3YXAg2YfZhdqG2YbYp9mGINi12YHYsSDYp9iz2KrYmyDYqNix2KfbjCBsb2FkIHRlc3QvUGlsb3Qg2K/ZiNio2KfYsdmHINin2LHYstuM2KfYqNuMINi02YjYry4KCiMjIyDZiNi22LnbjNiqINix2LPZhduMINm+2LMg2KfYsiBTMDMKCi0gYFMwMy1EQVRBQkFTRT1QQVNTRURgCi0gYFMwNC1BVVRIPU5FWFRgCi0gUzA1INio2Ycg2KjYudivINiq2Kcg2LnYqNmI2LEgUzA0INmH2YXahtmG2KfZhiBgQkxPQ0tFRGAg2YfYs9iq2YbYry4KIiIiCmlmICIjIyDar9iy2KfYsdi0INmG2YfYp9uM24wgUzAzLURBVEFCQVNFIOKAlCAyMDI2LTA4LTI3IDIxOjUz4oCTMjE6NTUgVVRDIiBub3QgaW4gcDoKICAgIHAgKz0gZmluYWxfc2VjdGlvbgpwcm9ncmVzcy53cml0ZV90ZXh0KHApCgpoYW5kb2ZmID0gUGF0aCgiQUdFTlRfSEFORE9GRi5tZCIpCmggPSBoYW5kb2ZmLnJlYWRfdGV4dCgpCmZvciBvbGQsIG5ldyBpbiBbCiAgICAoItmI2LbYuduM2Kog2YHYudmE24w6IGBTMDEtUFJFRkxJR0hUPVBBU1NFRGDYjCBgUzAyLUZPVU5EQVRJT049UEFTU0VEYCDZiCBgUzAzLURBVEFCQVNFPU5FWFRgLiIsCiAgICAgItmI2LbYuduM2Kog2YHYudmE24w6IGBTMDEtUFJFRkxJR0hUPVBBU1NFRGDYjCBgUzAyLUZPVU5EQVRJT049UEFTU0VEYNiMIGBTMDMtREFUQUJBU0U9UEFTU0VEYCDZiCBgUzA0LUFVVEg9TkVYVGAuIiksCiAgICAoIlMwMiDYr9ixIGB0ZXN0QW1pcjUtM2Ag2YXZiNmB2YIg2LTYry4gQmFja3VwINiz2KfZhNmFOiBgL3Zhci9iYWNrdXBzL3B2bmFpdmUvMjAyNjA4MjZUMjAxODU3WmAuIENhZGR5L1NTSC9GaXJld2FsbCDYqti624zbjNixINmG2qnYsdiv2YbYry4g2KjYsdin24wg2KzYstim24zYp9iqIGBvcHMvREVQTE9ZTUVOVF9QUk9HUkVTUy5tZGAg2YXYsdis2Lkg2KfYtdmE24wg2KfYs9iqLiIsCiAgICAgIlMwMyDYr9ixIGB0ZXN0QW1pcjUtM2Ag2K/YsSAyMDI2LTA4LTI3IDIxOjUzIFVUQyDZhdmI2YHZgiDYtNivINmIIHBvc3RmbGlnaHQg2YXYs9iq2YLZhCDZhtuM2LIgUEFTU0VEINi02K8uIFBvc3RncmVTUUwgMTgvbWFpbiDZgdmC2LcgbG9vcGJhY2sg2KfYs9iq2IwgYmFja3VwL3Jlc3RvcmUvaGVhbHRoINm+2KfYs+KAjNin2YbYryDZiCBDYWRkeS9TU0gvRmlyZXdhbGwg2KjYr9mI2YYg2KrYutuM24zYsSDZhdin2YbYr9mH4oCM2KfZhtivLiDYqNix2KfbjCDYrNiy2KbbjNin2KogYG9wcy9ERVBMT1lNRU5UX1BST0dSRVNTLm1kYCDZhdix2KzYuSDYp9i12YTbjCDYp9iz2KouIiksCiAgICAoIlNjaGVtYSDZiCDYp9io2LLYp9ix2YfYp9uMINin2YXZhiBTMDMgUG9zdGdyZVNRTCDYotmF2KfYr9mH4oCM2KfZhtiv2Iwg2KfZhdinINmH2YbZiNiyINix2YjbjCDYs9ix2YjYsSDYp9is2LHYpyDZhti02K/Zh+KAjNin2YbYry4gUnVudGltZdiMIGF1dGgg2YggYnVzaW5lc3MgbG9naWMg2b7bjNin2K/Zh+KAjNiz2KfYstuMINmG2LTYr9mH4oCM2KfZhtiv2JsgUHJvZHVjdGlvbi1yZWFkeSDZhtuM2LPYqi4iLAogICAgICJTMDMgUG9zdGdyZVNRTCDYsdmI24wg2LPYsdmI2LEg2KfYrNix2Kcg2Ygg2YXYs9iq2YLZhCBwb3N0ZmxpZ2h0INi02K/ZhyDYp9iz2KouIFJ1bnRpbWXYjCBhdXRoINmIIGJ1c2luZXNzIGxvZ2ljINmH2YbZiNiyINqp2KfZhdmEINmG24zYs9iq2YbYr9ibIFByb2R1Y3Rpb24tcmVhZHkg2YbbjNiz2KouIFN0YWdlINmB2LnYp9mEINin2qnZhtmI2YYgUzA0LUFVVEgg2KfYs9iqLiIpCl06CiAgICBpZiBvbGQgbm90IGluIGg6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdChmIm1pc3NpbmcgZXhwZWN0ZWQgaGFuZG9mZiB0ZXh0OiB7b2xkWzo4MF19IikKICAgIGggPSBoLnJlcGxhY2Uob2xkLCBuZXcsIDEpCgpzdW1tYXJ5ID0gIiIiCgojIyBTMDMg2YbZh9in24zbjCDigJQgMjAyNi0wOC0yNyAyMTo1M+KAkzIxOjU1IFVUQwoKLSBgUzAzLURBVEFCQVNFPVBBU1NFRGA7IGBTMDQtQVVUSD1ORVhUYC4KLSBwcm9kdWN0aW9uIHNvdXJjZSBjb21taXQ6IGAwMmIwMmUwYzJhMGMyZGJhZGEwNDQyMGI3YTg1M2FkYzA4YjAwMGFiYC4KLSBQb3N0Z3JlU1FMIGAxOC9tYWluYCwgcG9ydCA1NDMyLCBsb29wYmFjay1vbmx5IChgMTI3LjAuMC4xYCwgYDo6MWApLgotIHNjaGVtYSB2ZXJzaW9uIDE7IDI1IFJMUyB0YWJsZXM7IGFwcCBoZWFsdGgg2KjYpyBgcHZuYWl2ZV9hcHBgINm+2KfYsyDZiCBzaWduaW5nLWtleSBkaXJlY3QgU0VMRUNUIGRlbmllZC4KLSBlbmNyeXB0ZWQgYmFja3VwINmIIHByZWNoYW5nZSBiYWNrdXAgY2hlY2tzdW0g2b7Yp9iz2JsgcmVzdG9yZSBkcmlsbCBvd25lcnNoaXAvQUNML3NpZ25pbmcta2V5INm+2KfYsy4KLSByZWxlYXNlINmB2LnYp9mEOiBgL29wdC9wdm5haXZlL2RiL3JlbGVhc2VzLzAwMDEtN2Y2NmFkZWZkOGYwYC4KLSBoZWFsdGggdGltZXIgZW5hYmxlZCthY3RpdmXYmyDYotiu2LHbjNmGIHNlcnZpY2UgcmVzdWx0IHN1Y2Nlc3MvMC4KLSBDYWRkeSBTSEEg2KjYr9mI2YYg2KrYutuM24zYsdibIFNTSC9GaXJld2FsbCDYqti624zbjNixINmG2qnYsdiv2YbYry4KLSBwb3N0ZmxpZ2h0INmF2LPYqtmC2YQg2YbZh9in24zbjCBQQVNTRUTYmyDYrti32KfbjCDYp9mI2YTbjNmHIHBvc3RmbGlnaHQg2YHZgti3IHBhcnNlciDaqdin2YXYp9uMIEpTT04g2KjZiNivINmIINio2KcgSlNPTiBwYXJzZXIg2K/ZiNio2KfYsdmHIHZlcmlmeSDYtNivLgoKIyMjINmC2K/ZhSDYqNi52K/bjCDYr9mC24zZggoKUzA0LUFVVEgg2LHYpyDZvtuM2KfYr9mH4oCM2LPYp9iy24wg2Ygg2KrYs9iqINqp2YY6IG93bmVyIGJvb3RzdHJhcCDbjNqp4oCM2KjYp9ix2YXYtdix2YHYjCBwYXNzd29yZCBoYXNoaW5nINin2YXZhtiMIHNlc3Npb24gdG9rZW4gaGFzaC1vbmx5INiv2LEgRELYjCBDU1JGL3Nlc3Npb24gcm90YXRpb27YjCBSQkFDINmIIE1GQSByZWNvdmVyeS1zYWZlLiDYqtinIFMwNCDZvtin2LMg2YbYtNiv2YfYjCBTMDUg2Ygg2YXYsdin2K3ZhCDYqNi52K8gQkxPQ0tFRCDYqNmF2KfZhtmG2K8uCiIiIgppZiAiIyMgUzAzINmG2YfYp9uM24wg4oCUIDIwMjYtMDgtMjcgMjE6NTPigJMyMTo1NSBVVEMiIG5vdCBpbiBoOgogICAgaCArPSBzdW1tYXJ5CmhhbmRvZmYud3JpdGVfdGV4dChoKQo=' | base64 -d > /tmp/finalize.py
+          python3 /tmp/finalize.py
           git diff --check
           grep -F '| S03-DATABASE | PASSED |' ops/DEPLOYMENT_PROGRESS.md
           grep -F '| S04-AUTH | NEXT |' ops/DEPLOYMENT_PROGRESS.md
           grep -F 'S03-DATABASE=PASSED' AGENT_HANDOFF.md
-
       - name: Commit finalized state
         shell: bash
         run: |
