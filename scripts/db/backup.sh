@@ -39,7 +39,10 @@ trap 'exit 143' TERM
 temp_dir="$(mktemp -d "${backup_root}/.tmp.${stamp}.XXXXXX")"
 [[ ! -e "${final_dir}" ]] || pvnaive_die "backup destination already exists"
 
-pvnaive_db_tool pg_dump --format custom --compress 6 --no-owner --no-acl --dbname "${PVNAIVE_DB_NAME}" |
+# Preserve ownership and ACL information. Restore drills run as PostgreSQL
+# superuser so the archive can reconstruct pvnaive_owner ownership and the
+# pvnaive_app GRANT/REVOKE boundary exactly.
+pvnaive_db_tool pg_dump --format custom --compress=6 --dbname "${PVNAIVE_DB_NAME}" |
   age --recipient "${recipient}" --output "${temp_dir}/pvnaive.dump.age" ||
   pvnaive_die "encrypted pg_dump stream failed"
 age --decrypt --identity "${identity_file}" "${temp_dir}/pvnaive.dump.age" |
@@ -49,7 +52,7 @@ schema_version="$(pvnaive_psql_at --command 'SELECT COALESCE(MAX(version), 0) FR
 ((schema_version > 0)) || pvnaive_die "database has no applied PVNaive migration"
 server_version="$(pvnaive_psql_at --command 'SHOW server_version')"
 dump_size="$(stat -c '%s' "${temp_dir}/pvnaive.dump.age")"
-printf '{\n  "product": "PVNaive",\n  "created_at_utc": "%s",\n  "database": "%s",\n  "schema_version": %s,\n  "postgres_version": "%s",\n  "encrypted": true,\n  "size_bytes": %s\n}\n' \
+printf '{\n  "product": "PVNaive",\n  "created_at_utc": "%s",\n  "database": "%s",\n  "schema_version": %s,\n  "postgres_version": "%s",\n  "encrypted": true,\n  "ownership_and_acls": true,\n  "size_bytes": %s\n}\n' \
   "${stamp}" "${PVNAIVE_DB_NAME}" "${schema_version}" "${server_version}" "${dump_size}" > "${temp_dir}/metadata.json"
 (
   cd "${temp_dir}"
