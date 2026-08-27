@@ -42,6 +42,7 @@ CREATE TABLE pvnaive.actor_totp_factors (
     encryption_key_id text NOT NULL CHECK (length(encryption_key_id) BETWEEN 1 AND 160),
     last_used_step bigint,
     confirmed_at timestamptz,
+    disabled_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
@@ -88,7 +89,7 @@ AS $$
            a.mfa_required,
            a.status,
            a.locked_until,
-           (f.confirmed_at IS NOT NULL)
+           (f.confirmed_at IS NOT NULL AND f.disabled_at IS NULL)
       FROM pvnaive.actors AS a
       LEFT JOIN pvnaive.actor_totp_factors AS f ON f.actor_id = a.id
      WHERE lower(a.email) = lower(btrim(p_email))
@@ -344,7 +345,8 @@ AS $$
     SELECT f.secret_ciphertext, f.secret_nonce, f.encryption_key_id,
            f.last_used_step, f.confirmed_at
       FROM pvnaive.actor_totp_factors AS f
-     WHERE f.actor_id = p_actor_id;
+     WHERE f.actor_id = p_actor_id
+       AND f.disabled_at IS NULL;
 $$;
 
 CREATE FUNCTION pvnaive.auth_upsert_totp_factor(
@@ -386,9 +388,13 @@ BEGIN
            encryption_key_id = EXCLUDED.encryption_key_id,
            last_used_step = NULL,
            confirmed_at = NULL,
+           disabled_at = NULL,
            updated_at = clock_timestamp();
 
-    DELETE FROM pvnaive.actor_mfa_recovery_codes WHERE actor_id = p_actor_id;
+    UPDATE pvnaive.actor_mfa_recovery_codes
+       SET used_at = COALESCE(used_at, clock_timestamp())
+     WHERE actor_id = p_actor_id
+       AND used_at IS NULL;
     UPDATE pvnaive.actors SET mfa_required = false, updated_at = clock_timestamp()
      WHERE id = p_actor_id;
 END;
@@ -420,12 +426,16 @@ BEGIN
        SET confirmed_at = COALESCE(confirmed_at, clock_timestamp()),
            last_used_step = p_used_step,
            updated_at = clock_timestamp()
-     WHERE actor_id = p_actor_id;
+     WHERE actor_id = p_actor_id
+       AND disabled_at IS NULL;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'TOTP factor is not enrolled' USING ERRCODE = '22023';
     END IF;
 
-    DELETE FROM pvnaive.actor_mfa_recovery_codes WHERE actor_id = p_actor_id;
+    UPDATE pvnaive.actor_mfa_recovery_codes
+       SET used_at = COALESCE(used_at, clock_timestamp())
+     WHERE actor_id = p_actor_id
+       AND used_at IS NULL;
     FOREACH recovery_hash IN ARRAY p_recovery_code_hashes LOOP
         IF octet_length(recovery_hash) <> 32 THEN
             RAISE EXCEPTION 'invalid recovery-code hash' USING ERRCODE = '22023';
@@ -459,6 +469,7 @@ BEGIN
            updated_at = clock_timestamp()
      WHERE actor_id = p_actor_id
        AND confirmed_at IS NOT NULL
+       AND disabled_at IS NULL
        AND (last_used_step IS NULL OR p_step > last_used_step);
     GET DIAGNOSTICS changed = ROW_COUNT;
     RETURN changed = 1;
@@ -500,8 +511,15 @@ BEGIN
        OR pvnaive.current_actor_id() IS DISTINCT FROM p_actor_id THEN
         RAISE EXCEPTION 'authentication context required' USING ERRCODE = '42501';
     END IF;
-    DELETE FROM pvnaive.actor_mfa_recovery_codes WHERE actor_id = p_actor_id;
-    DELETE FROM pvnaive.actor_totp_factors WHERE actor_id = p_actor_id;
+    UPDATE pvnaive.actor_mfa_recovery_codes
+       SET used_at = COALESCE(used_at, clock_timestamp())
+     WHERE actor_id = p_actor_id
+       AND used_at IS NULL;
+    UPDATE pvnaive.actor_totp_factors
+       SET disabled_at = COALESCE(disabled_at, clock_timestamp()),
+           updated_at = clock_timestamp()
+     WHERE actor_id = p_actor_id
+       AND disabled_at IS NULL;
     UPDATE pvnaive.actors
        SET mfa_required = false,
            updated_at = clock_timestamp()
