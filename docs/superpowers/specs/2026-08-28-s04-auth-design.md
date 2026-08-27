@@ -45,8 +45,10 @@ Use opaque random browser session tokens, not JWTs.
 - cookie: `__Host-pvnaive_session`
 - attributes: `Secure; HttpOnly; SameSite=Strict; Path=/`
 - no `Domain` attribute
-- absolute session lifetime: 12 hours
-- refresh/rotation lifetime extension never exceeds the absolute family lifetime
+- idle session lifetime: 1 hour
+- absolute session/family lifetime: 12 hours
+- login sets `expires_at = min(now + 1 hour, absolute_expires_at)`
+- refresh sets a new `expires_at = min(now + 1 hour, absolute_expires_at)` and never extends the absolute family lifetime
 - successful login creates a fresh `refresh_family_id`
 - refresh revokes the current row and inserts a new token in the same family
 - reuse of an already-revoked refresh token marks reuse and revokes the whole active family
@@ -84,6 +86,8 @@ Recovery codes:
 - each code is one-time and atomically marked used
 
 Owner bootstrap does not force MFA immediately, to avoid initial lockout. The owner can enroll TOTP after first login. `mfa_required=true` is enforced only when a confirmed TOTP factor exists or an administrator explicitly requires it after enrollment.
+
+MFA removal is a sensitive operation: it requires the current password plus either a fresh TOTP code or an unused recovery code. Successful removal revokes all other active sessions for the actor and rotates the current session.
 
 ## Database migration 0002
 
@@ -204,6 +208,8 @@ Login request:
 Unknown email, wrong password, locked account and wrong MFA all return a generic authentication failure to the client. Internal audit reason codes remain specific.
 
 When MFA is configured and `totp_code` is absent, return `401` with stable code `mfa_required`; no temporary session is created. The client resubmits password + TOTP. This avoids an extra pre-auth challenge-token subsystem in S04.
+
+`DELETE /api/v1/me/mfa/totp` requires JSON containing `password` and either `totp_code` or `recovery_code`; a session cookie alone is insufficient.
 
 ## Owner bootstrap
 
