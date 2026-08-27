@@ -35,7 +35,7 @@
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
 | S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | کد و تست محلی آماده؛ اجرای سرور فقط پس از سبزشدن CI مجاز است |
+| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | کد آماده؛ انتقال bootstrap شکست خورد و retry با فایل upload لازم است |
 | S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
@@ -82,7 +82,7 @@
 
 ## مرحله بعد
 
-`S03-DATABASE` اکنون `NEXT` است. پس از سبزشدن CI، فقط بلوک کامل S03 اجرا و تمام خروجی آن در همین فایل ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.
+`S03-DATABASE` اکنون `NEXT` است. GitHub Actions پیش از تخصیص runner متوقف شده، اما testهای محلی در ادامه ثبت شده‌اند؛ اکنون bundle تأییدشده فقط با فایل upload و launcher کوتاه اجرا و تمام خروجی آن ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.
 
 ## آماده‌سازی کد S03 — 2026-08-27
 
