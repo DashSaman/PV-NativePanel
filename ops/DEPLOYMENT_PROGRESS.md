@@ -1,222 +1,243 @@
 # PVNaive Deployment Progress — testAmir5-3
 
-این فایل منبع اصلی وضعیت استقرار است و بعد از هر خروجی سرور باید به‌روزرسانی شود.
+آخرین به‌روزرسانی: 2026-08-27 23:50 UTC
 
-## قواعد ادامه کار
+این فایل ledger رسمی استقرار است. برای جزئیات کامل continuation، `AGENT_HANDOFF.md` را بخوان.
 
-1. هر مرحله یک ID یکتا دارد.
-2. قبل از مرحله بعد، خروجی مرحله فعلی ثبت می‌شود.
-3. خطا پاک یا پنهان نمی‌شود؛ علت و راه‌حل کنار آن نوشته می‌شود.
-4. هیچ تغییر Caddy، Firewall، SSH یا DB بدون Backup و Rollback انجام نمی‌شود.
-5. اگر چت قطع شد، ابتدا این فایل و `AGENT_HANDOFF.md` خوانده شود.
-6. فقط مرحله‌ای که وضعیت آن `NEXT` است اجرا شود.
+## قواعد
 
-## سرور هدف
+1. فقط Stage فعلی اجرا شود.
+2. هر failure با علت و rollback ثبت شود.
+3. هیچ Stage بدون اجرای واقعی + postflight مستقل `PASSED` نمی‌شود.
+4. Caddy/SSH/Firewall تا gate مشخص‌شده دست‌نخورده بمانند.
+5. هر artifact قبل از اجرا SHA-256 verify شود.
+6. هر Chat جدید ابتدا `AGENT_HANDOFF.md` و این فایل را بخواند.
+
+## Target
 
 | مورد | مقدار |
 |---|---|
 | Host | `testAmir5-3` |
 | IPv4 | `91.107.182.147` |
-| IPv6 | `2a01:4f8:c010:37ee::1` |
-| OS | Ubuntu 26.04 LTS |
-| Kernel | 7.0.0-30-generic |
-| RAM | 3.7 GiB |
-| Disk available | حدود 34 GiB |
 | Domain | `namir.softarg.ir` |
-| Runtime | Caddy v2.11.2 + forward_proxy |
-| Service | `caddy-naive.service` |
-| Caddyfile | `/etc/caddy/Caddyfile` |
-| Caddyfile SHA-256 | `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1` |
+| OS | Ubuntu 26.04 LTS |
+| PostgreSQL | `18/main`, loopback `5432` |
+| Caddy service | `caddy-naive.service` |
+| Caddy SHA-256 | `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1` |
 
 ## Stage ledger
 
-| ID | وضعیت | شرح | نتیجه |
-|---|---|---|---|
-| S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
-| S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
-| S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | PASSED | PostgreSQL schema/migration/backup/restore/health | production + independent postflight passed |
-| S04-AUTH | NEXT | owner bootstrap, session, MFA, RBAC | active next stage |
-| S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
-| S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
-| S07-SUBS | BLOCKED | Subscription page و renderer | منتظر S06 |
-| S08-NOTIFY | BLOCKED | اعلان حجم/انقضا و outbox | منتظر S07 |
-| S09-INSTALLER | BLOCKED | installer/upgrade/rollback نهایی | پس از gateهای قبلی |
-| S10-PILOT | BLOCKED | canary روی همین سرور | پس از تست کامل |
+| ID | Status | نتیجه/Blocker |
+|---|---|---|
+| S00-NAMING | PASSED | نام محصول `PVNaive` تثبیت شد؛ repo rename نشده |
+| S01-PREFLIGHT | PASSED | DNS/TLS/Caddy/listeners/capacity سالم |
+| S02-FOUNDATION | PASSED | user/directories/backup پایه ساخته شد |
+| S03-DATABASE | PASSED | PostgreSQL 18 + schema v1 + RLS + encrypted backup/restore + health + postflight |
+| S04-AUTH | IN PROGRESS | schema v2 روی سرور؛ blocker فعلی startup سرویس `pvnaive-api.service` |
+| S05-USERS | BLOCKED | منتظر S04 |
+| S06-RUNTIME | BLOCKED | منتظر S05 |
+| S07-SUBS | BLOCKED | منتظر S06 |
+| S08-NOTIFY | BLOCKED | منتظر S07 |
+| S09-INSTALLER | BLOCKED | منتظر S08 |
+| S10-PILOT | BLOCKED | منتظر gateهای قبلی |
 
-## گزارش S01-PREFLIGHT — 2026-08-26 20:12 UTC
+## S02 evidence
 
-### موفق
-
-- SSH نهایی روی port 22 برقرار شد.
-- `namir.softarg.ir → 91.107.182.147`.
-- Caddy روی 80 و 443 گوش می‌دهد.
-- moduleهای `http.handlers.forward_proxy` و `file_server` موجودند.
-- `caddy-naive.service` فعال است.
-- Caddyfile معتبر است.
-- TLS خودکار Let’s Encrypt موفق است.
-- UFW فقط 22/80/443 را باز گذاشته است.
-- warning/error اخیر Caddy وجود ندارد.
-- 34GiB disk و 3.3GiB memory available است.
-
-### خطاها و هشدارها
-
-- دو بار `Access denied` قبل از ورود موفق SSH: احتمال password اشتباه اولیه؛ blocker نیست.
-- `Caddyfile input is not formatted`: فقط formatting؛ config valid است. فعلاً تغییر داده نشود.
-- Swap صفر است: برای Pilot blocker نیست؛ قبل از PostgreSQL و load test دوباره ارزیابی شود.
-- 30 update موجود است که 23 مورد security است: قبل از Production باید maintenance window و reboot impact مشخص شود.
-
-## گزارش S02-FOUNDATION — 2026-08-26 20:18:57 UTC
-
-- نتیجه: `PASSED`
-- Backup: `/var/backups/pvnaive/20260826T201857Z`
-- checksum فایل‌های Caddyfile، service و public-site: همگی `OK`
-- user: `pvnaive` با UID 995 و GID 982
+- PASSED: `2026-08-26 20:18:57 UTC`
+- backup: `/var/backups/pvnaive/20260826T201857Z`
+- user: `pvnaive` UID 995 / GID 982
 - `/opt/pvnaive`: `750 root:pvnaive`
-- data/secrets: `700 pvnaive:pvnaive`
 - `/etc/pvnaive`: `750 root:pvnaive`
-- Caddy پس از مرحله همچنان `active`
-- portهای 22/80/443 بدون تغییر
-- Caddy restart/reload، Firewall/SSH change و package install انجام نشد.
-- هشدار formatting قبلی Caddyfile تکرار شد؛ config معتبر است و تغییری داده نشد.
+- Caddy/SSH/Firewall unchanged
 
-## مرحله بعد
+## S03 FINAL evidence
 
-`S03-DATABASE` اکنون `NEXT` است. GitHub Actions پیش از تخصیص runner متوقف شده، اما testهای محلی در ادامه ثبت شده‌اند؛ اکنون bundle تأییدشده فقط با فایل upload و launcher کوتاه اجرا و تمام خروجی آن ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.
+Production S03 و postflight مستقل هر دو PASS شدند.
 
-## آماده‌سازی کد S03 — 2026-08-27
+- marker: `/opt/pvnaive/S03_DATABASE.json`
+- PostgreSQL: `18/main`, loopback-only port `5432`
+- database: `pvnaive`
+- roles: `pvnaive_owner`, `pvnaive_app`
+- schema version: `1`
+- application DB health: PASSED
+- secret direct SELECT: DENIED
+- encrypted backup: PASSED
+- restore drill: PASSED
+- DB health timer: enabled/active
+- Caddy SHA unchanged
+- SSH/Firewall unchanged
 
-### اقدام و فایل‌ها
+Final output:
 
-- Schema واقعی PostgreSQL نسخه 0001 برای ۲۷ جدول، ۲ view، RLS، ledger، outbox، runtime، audit/log/backup ساخته شد.
-- `db/migrations/`، runner غیرمخرب، rollback gated، backup/restore age، health check و unit/timer سخت‌سازی‌شده اضافه شد.
-- `scripts/stages/S03-database.sh` با preflight، backup قبل تغییر، SCRAM، loopback-only، secret تصادفی، migration، backup، restore drill و rollback failure-path آماده شد.
-- context دیتابیس Go فقط `*sql.Tx` می‌پذیرد و tenant را از session hash معتبر bind می‌کند.
-- `tests/db/migration_test.sh` و `tests/db/backup_restore_test.sh` و Job دیتابیس CI اضافه شدند.
-- `web/package-lock.json` ثبت و CI frontend از `npm ci` استفاده می‌کند.
-- نام‌های اجرایی/UI/docs باقیمانده به PVNaive اصلاح و cmd قدیمی `pvnative-api` حذف شد؛ نام Repository تغییر نکرد.
+```text
+S03_POSTFLIGHT=PASSED
+S03_DATABASE=PASSED
+NEXT_STAGE=S04-AUTH
+```
 
-### خطاهای کشف‌شده و اصلاح
+## S04 code / CI baseline
 
-1. restore drill اولیه archive داخل directory با mode 0700 را به `pg_restore` تحت OS user دیگر می‌داد؛ علت permission traversal بود. archive اکنون از stdin بازشده توسط caller منتقل می‌شود.
-2. flagهای rollback پس از بعضی mutationها set می‌شدند؛ failure می‌توانست HBA، role، secret، unit یا release نیمه‌ساخته باقی بگذارد. flagها پیش از mutation و cleanup restore-test DB اضافه شدند.
-3. helper اولیه Go با interface از نظر type امکان دریافت `*sql.DB` داشت؛ API عمومی اکنون فقط `*sql.Tx` می‌پذیرد.
-4. `auth_sessions.actor_id` می‌توانست بدون تطابق tenant تغییر کند؛ trigger و join دفاعی جلوی privilege escalation reseller→owner را می‌گیرند.
-5. runner فایل Migration خارج manifest، gap نسخه و destructive SQL در میانه خط را کامل رد نمی‌کرد؛ preflight کامل قبل از اولین apply اضافه شد.
+Active branch: `s04-auth`
+PR: `#2`
 
-### تست محلی
+آخرین production bundle کاملاً verified قبل از live deploy:
 
-- `bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh`: PASSED
-- `sha256sum --check --strict db/migrations/SHA256SUMS`: PASSED
-- `git diff --check`: PASSED
-- `npm ci --ignore-scripts --no-audit`: PASSED، 96 package
-- `npm test`: PASSED، ۲ فایل و ۸ تست
-- `npm run build`: PASSED، Vite production build
-- Go و PostgreSQL integration در Runtime محلی موجود نبودند؛ نتیجه نهایی آن‌ها باید از GitHub Actions ثبت شود و تا آن زمان کد S03 روی سرور اجرا نمی‌شود.
+- source commit: `b4803e27af36bb35de33f7dcbe39750aeadc4146`
+- CI run: `33126898878`
+- Go: PASS
+- Web test/build: PASS
+- PostgreSQL 18: PASS
+- end-to-end auth rehearsal: PASS
+- bundle: PASS
 
-### وضعیت استقرار و Rollback
+Bundle:
 
-- هیچ دستور S03 روی `testAmir5-3` اجرا نشده است.
-- PostgreSQL نصب نشده و Caddy/NaiveProxy/SSH/Firewall تغییر نکرده‌اند.
-- Rollback پیش‌بینی‌شده در ابتدای Stage چاپ می‌شود؛ packageها در failure برای inspection باقی می‌مانند، اما DB/role/secret/unit/release جدید حذف و config قبلی PostgreSQL restore می‌شود.
-- Commit پیاده‌سازی: `45ba5c4c0c061a392a4e118ef99ae517d6eaead4` (`feat: implement guarded S03 PostgreSQL foundation`).
+- `PVNaive-S04-b4803e27af36.tar.gz`
+- SHA-256: `c279c91f42ca7d0b91096c48875fa61be8e8c80c8effa826aa477314a9732147`
+- extracted server path: `/root/pvnaive-s04-deploy-b4803e27af36/PVNaive-S04-b4803e27af36`
 
-### خطای CI و تست جایگزین — 2026-08-27 01:59 UTC
+## S04 live attempt log
 
-- GitHub Actions run: `33031844663`، run number 61، conclusion=`failure`.
-- هر سه Job با نام‌های `database`، `web` و `go` دارای `runner_id=0`، `runner_name=""` و `steps=[]` بودند؛ هیچ runner، step یا log کد ایجاد نشد. علت در سطح تخصیص runner/زیرساخت GitHub است و build/test failure محسوب نمی‌شود.
-- برای جایگزینی، Go `1.24.4` رسمی Ubuntu در محیط محلی نصب و suite واقعی اجرا شد.
-- اجرای اول Go دو failure واقعی نشان داد: فایل‌های قدیمی gofmt نبودند و `subscriptions.usage` در public-route allowlist تست نبود.
-- اصلاح: `gofmt` روی تمام Go sourceها و افزودن route مورد انتظار به allowlist.
-- اجرای دوم: `gofmt -l` خالی، `go vet ./...` PASSED و `go test ./...` برای `internal/database`، `internal/httpapi` و `internal/protocol` PASSED.
-- تلاش نصب PostgreSQL server محلی به‌دلیل محدودیت user namespace محیط در configure پکیج `ssl-cert` با خطای `Cannot open audit interface` و failure ساخت OS group متوقف شد. از دورزدن permission خودداری شد؛ بنابراین database integration باید در Stage واقعی اجرا و PASSED شود.
-- فایل‌های اصلاح‌شده: `cmd/pvnaive/main.go`، `internal/httpapi/routes.go`، `internal/httpapi/server_test.go`، `internal/protocol/adapter.go` و `internal/protocol/registry_test.go`.
-- Commit اصلاح Go/ثبت failure: `fbf21e8fdc38a8c50bbc5704e407e9df4414171f` (`fix: format Go and align public route test`).
-- GitHub Actions run دوم: `33032317065`، run number 62؛ هر سه Job دوباره `runner_id=0` و `steps=[]` و conclusion=`failure` داشتند. تکرار مستقل تأیید می‌کند blocker مربوط به تخصیص runner است، نه workflow step یا کد.
-- hardening نهایی: migration و rollback اکنون connection بدون حق assume کردن `pvnaive_owner` را پیش از DDL رد می‌کنند؛ app credential مسیر schema change ندارد.
-- وضعیت Stage بدون تغییر: `S03-DATABASE=NEXT`؛ S03 هنوز اجرا یا PASSED نشده است.
+### Attempt 1 — 23:44 UTC
 
-### تلاش اجرای S03 و شکست انتقال bundle — 2026-08-27 02:27 UTC
+Failure:
 
-- دستور اجراشده: bootstrap یک‌بلوک `bash -s <<'PVNAIVE_S03_BOOTSTRAP'` برای bundle مربوط به Commit `6d4e5ce1f4a3a7ded2d6d6ab982d30fae81f1483` و SHA-256 مورد انتظار `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd`.
-- خروجی مهم و خطای دقیق: `base64: error: invalid input`؛ به‌علت `set -Eeuo pipefail` shell همان‌جا متوقف شد و `scripts/stages/S03-database.sh` اجرا نشد.
-- علت: payload ثبت‌شده در terminal log با bundle اصلی یکسان نبود؛ داده دریافتی ۲۴۶۶۹ نویسه Base64 داشت، در حالی که مقدار معتبر ۲۴۴۸۸ نویسه است و چند substitution/insertion نیز مشاهده شد. انتقال بزرگ copy/paste خراب شده است؛ این failure از Migration یا PostgreSQL نیست.
-- اصلاح: انتقال بعدی با فایل binary قابل‌دانلود و upload به سرور انجام می‌شود؛ launcher کوتاه باید پیش از extract، SHA-256 ثابت bundle را بررسی کند.
-- فایل‌های تغییرکرده در این ثبت: `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`. کد Stage نسبت به Commit `6d4e5ce` تغییر نکرد.
-- Backup/Rollback: هیچ‌کدام لازم نشد؛ failure پیش از extract، نصب package، mutation دیتابیس یا اجرای Stage رخ داد. temporary directory با trap حذف شد. PostgreSQL نصب/پیکربندی نشد و Caddy/NaiveProxy/SSH/UFW دست‌نخورده ماندند.
-- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` تولید نشد.
-- قدم بعدی دقیق: bundle معتبر را روی سرور upload، launcher کوتاه SHA-gated را اجرا و خروجی کامل را ثبت کن. فقط خروجی واقعی `S03_RESULT=PASSED` اجازه تغییر Stage را می‌دهد.
-- بازبینی bundle: اجرای اول checksum محلی از cwd اشتباه پیام `no file was verified` داد، چون مسیرهای manifest نسبی‌اند؛ پس از اجرای همان check از داخل `db/migrations`، هر دو Migration `OK` شدند. `bash -n`، مقایسه کامل محتوای extract‌شده با source و SHA-256 کل archive نیز `PASSED` است. این خطای فرمان بازبینی هیچ تغییری در کد یا سرور ایجاد نکرد.
+```text
+file: command not found
+ERROR: pvnaive binary architecture mismatch
+S04_RESULT=FAILED
+ROLLBACK=COMPLETED
+```
 
-### تلاش دوم S03 و شکست preflight پورت — 2026-08-27 02:52:22 UTC
+Action: package `file` installed. ELF x86-64 validation then passed. No Caddy/SSH/Firewall change.
 
-- دستور اجراشده: launcher فایل upload‌شده `/root/pvnaive-s03-6d4e5ce.tar.gz` و سپس `scripts/stages/S03-database.sh` از bundle مربوط به Commit `6d4e5ce1f4a3a7ded2d6d6ab982d30fae81f1483`.
-- خروجی مهم: هر دو checksum Migration برابر `OK`، سپس `TRANSFER_CHECK=PASSED` و SHA-256 bundle برابر `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd` بود.
-- خطای دقیق: `awk: ... ^ syntax error` در predicate بررسی listener و سپس `ERROR: required TCP port 22 is not listening`.
-- علت: عبارت awk در `verify_caddy_invariants` syntax نامعتبر داشت؛ SSH واقعاً فعال بود و همان اجرای متصل آن را ثابت می‌کند. پیام port 22 نتیجه failure parser بود، نه بسته‌بودن پورت. همچنین `die()` با `exit 1`، `ERR` trap را دور زد و به همین دلیل `S03_RESULT=FAILED` و گزارش rollback چاپ نشد.
-- اصلاح لازم: predicate به تطبیق معتبر انتهای endpoint با `:<port>` تغییر کند و `die()` با non-zero return اجازه اجرای trap مرکزی را بدهد؛ یک regression test برای IPv4/IPv6 listener و ERR-trap اضافه شود.
-- فایل‌های درگیر: `scripts/stages/S03-database.sh`، تست regression جدید، `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`.
-- Backup/Rollback: failure در preflight و پیش از `apt-get update` رخ داد؛ package، cluster، DB، role، secret، systemd unit و marker ساخته نشد. Caddy فقط validate شد و reload/restart نشد؛ SSH و UFW تغییر نکردند. cleanup launcher directory موقت extract را حذف کرد؛ rollback دیتابیس لازم نبود.
-- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` وجود ندارد.
-- قدم بعدی دقیق: fix و regression test را Commit کن، bundle جدید با SHA تازه بساز، آن را upload کن و فقط S03 را دوباره اجرا کن.
+### Attempt 2 — 23:46 UTC
 
-### اصلاح preflight پورت و failure trap — 2026-08-27
+- pre-S04 schema-v1 encrypted backup created:
+  `/var/backups/pvnaive/database/20260827T234607Z/pvnaive.dump.age`
+- migration `0002_auth_foundation` applied successfully
+- schema reached `2`
+- second backup attempted in same second and collided with same destination
 
-- اصلاح انجام‌شده: predicate listener به helper تست‌پذیر `pvnaive_tcp_port_is_listening` با تطبیق معتبر `:<port>` در انتهای ستون local endpoint منتقل شد. `die()` اکنون به‌جای `exit 1`، status غیرصفر return می‌کند تا trap مرکزی rollback همیشه اجرا و `S03_RESULT=FAILED` چاپ شود.
-- تست regression جدید: listenerهای IPv4 و IPv6 برای 22/80/443 پذیرفته، پورت غایب 5432 و ورودی نامعتبر رد، و اجرای واقعی `ERR` trap پس از `die()` بررسی می‌شود. CI قبل از integration دیتابیس این test را اجرا می‌کند.
-- خطای تست اولیه: قراردادن shell شکست‌خورده داخل assignment شرطی `if` باعث suppression شدن `ERR` trap در Bash شد و test با exit 1 متوقف شد. همچنین اولین فرمان تجمیعی validation، `set -e` نداشت و فرمان بعدی exit code خطا را پوشاند. harness به `bash -c` مستقل و validationهای `set -Eeuo pipefail` اصلاح شد.
-- خروجی نهایی محلی: `S03_PREFLIGHT_TEST=PASSED`، `SHELL_SQL_SUITE=PASSED`، هر دو checksum Migration برابر `OK`، frontend شامل ۲ فایل/۸ test و Vite build برابر `PASSED`، و `git diff --check` برابر `PASSED`.
-- اجرای مجدد Go در Runtime فعلی با `gofmt: command not found` و `go: command not found` متوقف شد؛ هیچ فایل Go در این fix تغییر نکرد و آخرین اجرای کامل Go 1.24.4 همچنان formatting/vet/test را پاس کرده است. این محدودیت محیطی پنهان یا به‌عنوان PASSED جدید گزارش نمی‌شود.
-- فایل‌های تغییرکرده: `scripts/stages/S03-database.sh`، `scripts/stages/lib.sh`، `tests/stages/S03_preflight_test.sh`، `.github/workflows/ci.yml`، `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`.
-- وضعیت سرور و rollback بدون تغییر است: PostgreSQL هنوز نصب نشده، S03 marker وجود ندارد و Caddy/NaiveProxy/SSH/UFW دست‌نخورده‌اند.
-- وضعیت Stage: `S03-DATABASE=NEXT`؛ قدم بعدی ساخت bundle تازه، تأیید byte-for-byte، upload و retry همین Stage است.
+Failure:
 
-### hardening نهایی چندعاملی S03 — 2026-08-27 12:48 UTC
+```text
+ERROR: backup destination already exists
+S04_RESULT=FAILED
+FAILED_LINE=276
+ROLLBACK=INCOMPLETE
+ROLLBACK_FAILED_STEP=rollback-migration-0002-no-schema2-backup
+```
 
-- مبنا و دستورهای بررسی: HEAD خصوصی `main` برابر `133d36b79b68c57d8bd75361f287ec87ff5edd7c` دوباره خوانده شد؛ سپس `bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh`، `tests/stages/S03_preflight_test.sh`، `tests/db/lib_test.sh`، checksum manifest از داخل `db/migrations`، frontend Vitest/TypeScript/Vite و `git diff --check` اجرا شدند.
-- خروجی مهم: `S03_PREFLIGHT_TEST=PASSED`، `PVNAIVE_DB_LIB_TEST=PASSED`، هر دو Migration برابر `OK`، frontend برابر ۲ فایل/۸ test پاس و Vite build پاس، و diff-check پاس است. Go/gofmt در Runtime فعلی موجود نیست؛ هیچ فایل Go در این hardening تغییر نکرد و این مورد PASSED جدید اعلام نمی‌شود.
-- مشکل بحرانی اول: `set -E`، `ERR` trap را داخل command substitution ارث می‌داد و rollback می‌توانست یک بار در subshell و بار دوم در shell اصلی اجرا شود. اصلاح: نگهبان `BASHPID` اصلی و regression با counter/PID؛ نتیجه دقیقاً یک rollback در root Bash است.
-- مشکل بحرانی دوم: marker موفقیت پیش از final gateها نوشته می‌شد. اصلاح: تمام Caddy/PostgreSQL/listener/timer/health/backup/prechange-checksum gateها پیش از marker اجرا، marker در فایل موقت ساخته و با `mv -T` اتمیک منتشر می‌شود؛ marker قبلیِ معتبر در failure اجرای verify حذف نمی‌شود.
-- مشکل retry: packageها در rollback باقی می‌مانند ولی اجرای بعد cluster ایجادشده توسط APT را ناشناس می‌دانست. اصلاح: provenance marker اتمیک `/var/lib/pvnaive/S03_POSTGRES_CLUSTER_OWNER` پیش از APT ساخته و نگه‌داری می‌شود؛ cluster بدون marker همچنان fail-closed است و حالت package نصب‌شده بدون cluster با `pg_createcluster` بازیابی می‌شود.
-- rollback سخت‌تر شد: `HUP/INT/TERM` پوشش داده می‌شود، failureهای cleanup تجمیع و با `ROLLBACK=FAILED` و step دقیق گزارش می‌شوند، config PostgreSQL پیش از dropهای DB/role restore می‌شود، و health oneshot با `systemctl show Result=success` سنجیده می‌شود؛ خروجی informational `systemctl status` دیگر exit 3 را به failure تبدیل نمی‌کند.
-- backup/restore: `pg_dump | age` و `age --decrypt | pg_restore` کاملاً streaming شدند؛ هیچ dump plaintext روی دیسک نوشته نمی‌شود. archive رمز‌شده قبل از انتشار parse می‌شود، restore در interruption هدف نیمه‌ساخته را با `dropdb --force` پاک می‌کند، و مسیر storage absolute/canonical/non-broad و پورت DB در بازه 1..65535 اعتبارسنجی می‌شود.
-- preflight افزوده: Ubuntu 26.04 صریحاً gate شده، snapshot شکست‌خورده `ss` fail-fast است، listener غیر-loopback PostgreSQL رد می‌شود و cluster ناشناس قبل از هر adoption متوقف می‌شود. Caddyfile format/rewrite نشده است.
-- خطاهای خودِ بازبینی: (۱) یک harness اولیه command شکست‌خورده را در `if` گذاشت و Bash، ERR trap را suppress کرد؛ harness با child shell مستقل و fail-fast اصلاح شد. (۲) مقایسه broad کل `scripts/stages` در candidate bundle، نبود عمدی S02 را خطا گزارش کرد؛ مقایسه به inventory دقیق فایل‌های bundle محدود و پاس شد. (۳) بازاجرای npm ابتدا توسط wrapper به‌علت cleanup command رد و بار دوم به‌علت درخواست شبکه لغو شد؛ اجرای مستقیم binaryهای موجود `vitest`، `tsc` و `vite` بدون شبکه پاس شد. هیچ‌یک تغییری روی سرور نداشت.
-- candidate منسوخ: `/workspace/scratch/98694c47b96d/pvnaive-s03-133d36b.tar.gz` با SHA-256 `f9f0d57f2d8c64fb0ab4fd62cbc033bf9362ed093679d30a31dbc63c2a9d4ad7` پیش از hardening اخیر ساخته شد و نباید upload یا اجرا شود. bundle نهایی باید بعد از commit جدید با نام/SHA جدید ساخته شود.
-- فایل‌های تغییرکرده در hardening: `scripts/stages/S03-database.sh`، `scripts/stages/lib.sh`، `scripts/db/lib.sh`، `scripts/db/backup.sh`، `scripts/db/restore.sh`، `tests/stages/S03_preflight_test.sh`، `tests/db/lib_test.sh`، `tests/db/backup_restore_test.sh`، `.github/workflows/ci.yml`، `docs/DATABASE_FA.md`، این فایل و `AGENT_HANDOFF.md`.
-- Commit fix اول: `133d36b79b68c57d8bd75361f287ec87ff5edd7c` (`fix: harden S03 listener preflight and failure trap`). Commit اتمیک hardening نهایی: `ded5af275d8e0000de25ce97d1de268fe54f58f8` (`fix: make S03 rollback and database backups fail-closed`).
-- Backup/Rollback سرور: هیچ دستور جدیدی روی سرور اجرا نشد؛ PostgreSQL هنوز نصب نشده و marker مالکیت/Stage هنوز روی سرور ساخته نشده است. Caddy/NaiveProxy/SSH/UFW دست‌نخورده‌اند؛ rollback سرور لازم نشد.
-- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: commit اتمیک، بررسی CI، ساخت bundle قطعی byte-for-byte، upload و اجرای تنها S03؛ فقط `S03_RESULT=PASSED` واقعی وضعیت Stage را تغییر می‌دهد.
+Root cause: backup directory timestamp had second-only precision, so two backups in one second collided.
 
-### Commit، CI و bundle نهایی S03 — 2026-08-27 12:52 UTC
+DB migration intentionally remained v2 because no verified schema-v2 rollback backup existed yet. S04 artifacts were cleaned; infrastructure invariants unchanged.
 
-- Commit کد hardening: `ded5af275d8e0000de25ce97d1de268fe54f58f8`. Commit ثبت SHA در مستندات: `95a2689a0770e71db16dbd11bb436e9a3e6d92ab`.
-- CI بررسی‌شده: GitHub Actions run `33073904109`، run number 74، head=`95a2689a0770e71db16dbd11bb436e9a3e6d92ab` و conclusion=`failure`.
-- خروجی/خطای دقیق CI: هر سه Job `web`، `go` و `database` دارای `runner_id=0`، `runner_name=""` و `steps=[]` بودند؛ هیچ step، runner یا log کد اجرا نشد. علت همان failure زیرساخت تخصیص runner قبلی است و build/test failure جدید محسوب نمی‌شود. اصلاح کدی برای این رخداد انجام نشد؛ testهای محلی ثبت‌شده مرجع فعلی‌اند و integration واقعی DB باید در S03 پاس شود.
-- bundle نهایی: `pvnaive-s03-95a2689.tar.gz`، اندازه 20358 byte، SHA-256 برابر `9decbd705f548160343bdc41894b66ece86d53634e7fbf3719bac02f09be2b47` و شامل فقط ۱۳ فایل موردنیاز migration/DB scripts/S03+lib/systemd است.
-- اعتبارسنجی bundle: inventory صریح، مقایسه byte-for-byte با source commit‌شده، Bash syntax، modeهای 0755/0644 و هر دو checksum Migration پاس شدند؛ خروجی `BUNDLE_VERIFICATION=PASSED` است.
-- خطای validation: check اولیه mode از glob منبع `scripts/stages/*.sh` استفاده کرد و در extract به‌اشتباه `S02-foundation.sh` خارج از inventory را جست‌وجو کرد؛ دستور fail-fast متوقف شد. archive تغییر نکرد؛ check با آرایه صریح هشت executable و پنج regular file اصلاح و کامل پاس شد.
-- فایل‌های تغییرکرده در این ثبت: `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`. bundle artifact عمداً داخل Repository commit نشده است.
-- Backup/Rollback سرور: هیچ command جدیدی روی سرور اجرا نشده و rollback لازم نیست. bundle قدیمی `6d4e5ce` و candidate `f9f0d57f...` نباید استفاده شوند.
-- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: فایل نهایی را به `/root/pvnaive-s03-95a2689.tar.gz` upload، یک launcher SHA/inventory-gated اجرا و خروجی کامل را ثبت کن.
-- launcher نهایی نیز با `bash -n` پاس شد. negative test محلی عمداً به‌علت نبود `/opt/pvnaive/FOUNDATION.json` با exit 1 متوقف و دقیقاً یک‌بار `S03_LAUNCHER_RESULT=FAILED` چاپ کرد؛ این نشان می‌دهد trap ریشه‌ای launcher fail-closed است و این تست هیچ ارتباطی با وضعیت سرور هدف ندارد.
+### Recovery preflight — 23:49:59 UTC
 
+Verified:
 
-## S03 FINAL PRODUCTION RESULT -- 2026-08-27 21:53-21:55 UTC
+```text
+SCHEMA_VERSION=2
+STORED_0002=0002_auth_foundation.up.sql|84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886
+MANIFEST_0002=84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886
+SCHEMA_RECOVERY_STATE=PASSED
+S04_ARTIFACT_CLEANUP=PASSED
+INFRASTRUCTURE_INVARIANTS=PASSED
+RECOVERY_PREFLIGHT=PASSED
+```
 
-- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
-- Production source commit: `02b02e0c2a0c2dbada04420b7a853adc08b000ab`.
-- PostgreSQL `18/main`, port 5432, loopback-only on `127.0.0.1` and `::1`.
-- Schema version 1; migration SHA-256 `7f66adefd8f09853db40e3160d0d7793f1bd0bcaf422a94d63d9d95a3a43a059`.
-- 25 RLS tables; pg_hba_file_rules errors=0; pgcrypto present.
-- pvnaive_app has no superuser/createdb/createrole/inherit/replication/bypassrls capability.
-- Application health passed as pvnaive_app; server/client loopback; direct signing-key SELECT denied.
-- Encrypted backup `/var/backups/pvnaive/database/20260827T215317Z/pvnaive.dump.age`; checksum passed; no plaintext dump.
-- Prechange backup `/var/backups/pvnaive/20260827T215310Z-S03-pre`; checksums passed.
-- Restore drill passed schema/ownership/ACL/signing-key verification.
-- Active DB release `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
-- Health timer enabled+active; latest service result success with exit status 0.
-- Caddy SHA unchanged `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
-- SSH and firewall unchanged; Caddy was not restarted.
-- Independent postflight passed after correcting a read-only JSON parser bug in the first postflight command.
-- Swap remains disabled; reassess before load test/pilot.
+### Attempt 3 — recovery mode
+
+Stage recognized:
+
+```text
+RECOVERY_MODE=SCHEMA2_WITHOUT_MARKER
+```
+
+schema-v2 encrypted backup created successfully:
+
+`/var/backups/pvnaive/database/20260827T234959Z/pvnaive.dump.age`
+
+Then service startup failed:
+
+```text
+Created symlink '/etc/systemd/system/multi-user.target.wants/pvnaive-api.service' → '/etc/systemd/system/pvnaive-api.service'.
+ERROR: pvnaive-api.service is not active
+S04_RESULT=FAILED
+FAILED_LINE=298
+ROLLBACK=STARTED
+ROLLBACK=COMPLETED
+CADDY_ACTION=none
+SSH_ACTION=none
+FIREWALL_ACTION=none
+```
+
+This is the current live blocker.
+
+## Expected current server state after Attempt 3 rollback
+
+Must be re-verified before retry:
+
+- schema `2`
+- migration 0002 checksum matches bundle
+- no `/opt/pvnaive/S04_AUTH.json`
+- no `/etc/pvnaive/auth.key`
+- no `/opt/pvnaive/bin/pvnaive`
+- no `/opt/pvnaive/bin/pvnaive-password`
+- no `/etc/systemd/system/pvnaive-api.service`
+- `pvnaive-api.service` inactive
+- no listener on `8080`
+- Caddy SHA unchanged
+- SSH/Caddy/PostgreSQL baseline listeners healthy
+
+## NEXT exact action
+
+Do not retry S04 blindly. First capture service startup evidence from the previous failed boot:
+
+```bash
+systemctl status pvnaive-api.service --no-pager -l || true
+journalctl -u pvnaive-api.service -b --no-pager -n 200 || true
+systemctl show pvnaive-api.service -p Result -p ExecMainStatus -p ExecMainCode -p ActiveState -p SubState || true
+systemctl cat pvnaive-api.service || true
+namei -l /etc/pvnaive/db.env /etc/pvnaive/auth.key /opt/pvnaive/bin/pvnaive 2>/dev/null || true
+ss -lntp | grep -E ':(22|80|443|5432|8080)([[:space:]]|$)' || true
+```
+
+از journal root cause را مشخص کن. قبل از evidence هیچ permission/systemd/env fix حدسی نزن.
+
+## backup collision regression status
+
+بعد از live failure، regression test برای collision اضافه شد. Current branch head در زمان ثبت این ledger:
+
+`ab025aebe96af2920f7e2a405b63b1bd9c965ad9`
+
+CI run `33127608010`:
+
+- Go: PASS
+- Web: PASS
+- Database: FAIL
+- Rehearsal: SKIPPED
+- Bundle: SKIPPED
+
+پس fix branch هنوز final-green نیست. قبل از ساخت bundle جدید، failure تست collision باید debug و کل pipeline سبز شود.
+
+## Gate خروج از S04
+
+برای `S04=PASSED` همه موارد زیر لازم است:
+
+1. service active
+2. listener فقط `127.0.0.1:8080`
+3. `/api/v1/health/live` PASS
+4. `/api/v1/health/ready` PASS
+5. schema v2 + checksum صحیح
+6. S04 marker اتمیک ساخته شود
+7. encrypted schema-v2 backup checksum PASS
+8. Caddy SHA unchanged در localhost phase
+9. SSH/Firewall unchanged
+10. independent postflight PASS
+11. owner bootstrap بعد از localhost stage
+12. login/session/logout واقعی PASS
+13. سپس Caddy integration جداگانه با backup/validate/reload/rollback
+
+تا قبل از این موارد S05 باز نشود.
