@@ -1,4 +1,4 @@
-# سایت عمومی هم‌میزبان با PVNative
+# سایت عمومی هم‌میزبان با PVNaive
 
 ## هدف
 
@@ -31,7 +31,7 @@
 | `/support` | راه ارتباط عمومی |
 | `/s/{token}` | صفحه Subscription، noindex/no-store |
 | `/robots.txt` | crawl policy |
-| `/favicon.ico` | برند PVNative |
+| `/favicon.ico` | برند PVNaive |
 
 Admin panel باید روی hostname یا path غیرعمومی جدا با authentication باشد. نام و لینک پنل در سایت عمومی منتشر نمی‌شود.
 
@@ -56,3 +56,4 @@ Admin panel باید روی hostname یا path غیرعمومی جدا با auth
 ## Caddy routing
 
 درخواست معتبر Forward Proxy توسط ماژول Naive پردازش می‌شود؛ درخواست معمولی به file server می‌رود. config باید validate و atomic apply شود. سایت حتی در خطای Manager با last-known-good بالا می‌ماند.
+

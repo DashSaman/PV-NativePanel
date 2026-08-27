@@ -5,10 +5,10 @@
 ## تجربه هدف
 
 ```bash
-curl -fsSL https://RELEASE_HOST/install.sh -o /tmp/pvnative-install.sh
-curl -fsSL https://RELEASE_HOST/install.sh.sha256 -o /tmp/pvnative-install.sh.sha256
-sha256sum -c /tmp/pvnative-install.sh.sha256
-sudo bash /tmp/pvnative-install.sh install
+curl -fsSL https://RELEASE_HOST/install.sh -o /tmp/pvnaive-install.sh
+curl -fsSL https://RELEASE_HOST/install.sh.sha256 -o /tmp/pvnaive-install.sh.sha256
+sha256sum -c /tmp/pvnaive-install.sh.sha256
+sudo bash /tmp/pvnaive-install.sh install
 ```
 
 اجرای مستقیم `curl | bash` در مستند رسمی پیشنهاد نمی‌شود؛ ابتدا checksum/signature بررسی می‌شود.
@@ -44,9 +44,9 @@ Fail شدن preflight قبل از mutation پایان می‌یابد.
 
 ## اجزای نصب
 
-- `pvnative-api`
-- `pvnative-web`
-- `pvnative-runtime`
+- `pvnaive-api`
+- `pvnaive-web`
+- `pvnaive-runtime`
 - PostgreSQL یا اتصال خارجی
 - Caddy سفارشی version-pinned
 - static public site
@@ -57,16 +57,16 @@ Fail شدن preflight قبل از mutation پایان می‌یابد.
 ## مدیریت
 
 ```bash
-pvnative status
-pvnative doctor
-pvnative logs api
-pvnative logs runtime
-pvnative backup
-pvnative restore --verify-only FILE
-pvnative update --check
-pvnative update VERSION
-pvnative rollback
-pvnative uninstall
+pvnaive status
+pvnaive doctor
+pvnaive logs api
+pvnaive logs runtime
+pvnaive backup
+pvnaive restore --verify-only FILE
+pvnaive update --check
+pvnaive update VERSION
+pvnaive rollback
+pvnaive uninstall
 ```
 
 ## Atomic install/update
@@ -109,3 +109,4 @@ download → checksum/signature → unpack staging → migrate check → backup 
 ## Uninstall
 
 پیش‌فرض binary/service را متوقف می‌کند ولی DB، backup، certificate و public files را نگه می‌دارد. حذف داده فقط با flag صریح، نمایش مسیر دقیق و تأیید دومرحله‌ای.
+

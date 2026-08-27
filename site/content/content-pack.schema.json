@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pvnative.local/schemas/content-pack.json",
-  "title": "PVNative public site content pack",
+  "$id": "https://pvnaive.local/schemas/content-pack.json",
+  "title": "PVNaive public site content pack",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "version", "locale", "site"],
@@ -24,3 +24,4 @@
     }
   }
 }
+

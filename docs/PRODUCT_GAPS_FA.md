@@ -13,7 +13,7 @@
 9. backup/restore و installer فقط contract هستند
 10. notification و diagnostics collector پیاده نشده‌اند
 
-## پیشنهادهای متمایزکننده PVNative
+## پیشنهادهای متمایزکننده PVNaive
 
 ### Reliability score برای هر User
 
@@ -50,3 +50,4 @@ hostname، CSP، cookie scope، access log و release pipeline جدا؛ شکست
 ## پیشنهاد عدم ساخت در MVP
 
 Payment و ربات فروش، multi-node، routing پیچیده، protocol marketplace و Domain History بلندمدت. ابتدا هسته قابل اعتماد ساخته شود.
+

@@ -24,7 +24,7 @@
 
 ## Domain Activity
 
-Naive forward proxy می‌تواند مقصد CONNECT مانند hostname:port را ببیند؛ برای HTTPS مسیر صفحه، query و محتوای داخل TLS را نمی‌بیند و PVNative نباید TLS MITM انجام دهد.
+Naive forward proxy می‌تواند مقصد CONNECT مانند hostname:port را ببیند؛ برای HTTPS مسیر صفحه، query و محتوای داخل TLS را نمی‌بیند و PVNaive نباید TLS MITM انجام دهد.
 
 این قابلیت:
 
@@ -64,3 +64,4 @@ Naive forward proxy می‌تواند مقصد CONNECT مانند hostname:port 
 - Usage ledger: مطابق دوره مالی و backup
 
 Disk quota، compression و حذف oldest-first لازم است. پرشدن disk نباید دیتاپلین را متوقف کند؛ alert و reserve space الزامی است.
+

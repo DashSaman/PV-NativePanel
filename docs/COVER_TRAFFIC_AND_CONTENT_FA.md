@@ -6,7 +6,7 @@
 
 هر بسته می‌تواند title، locale، navigation، article، video، gallery، downloads، legal notice و branding override داشته باشد. Asset عمومی باید مجاز، دارای منبع/مجوز، SHA-256، نوع MIME مشخص و اسکن بدافزار باشد.
 
-موضوع سیاسی درخواستی فقط می‌تواند یک Content Pack اختیاری باشد؛ پیش‌فرض پروژه خنثی است. تولید ترافیک جعلی، آمار بازدید ساختگی، ادعای روزانه ۲ ترابایت یا محتوای فریبنده خودکار جزو PVNative نیست.
+موضوع سیاسی درخواستی فقط می‌تواند یک Content Pack اختیاری باشد؛ پیش‌فرض پروژه خنثی است. تولید ترافیک جعلی، آمار بازدید ساختگی، ادعای روزانه ۲ ترابایت یا محتوای فریبنده خودکار جزو PVNaive نیست.
 
 ## Random data
 
@@ -26,3 +26,4 @@ NaiveProxy در پیاده‌سازی مرجع برای CONNECT/HTTP2 padding م
 - `proxy.example`: Naive data plane، DNS only
 
 امکان هم‌دامنه‌شدن صرفاً بعد از PoC و بررسی تداخل Caddy/Naive مجاز است. public site نباید سلامت data plane را تعیین کند.
+

@@ -15,7 +15,9 @@ func NewRegistry() *Registry {
 }
 
 func (r *Registry) Register(adapter Adapter) error {
-	if adapter == nil { return fmt.Errorf("protocol: nil adapter") }
+	if adapter == nil {
+		return fmt.Errorf("protocol: nil adapter")
+	}
 	d := adapter.Descriptor()
 	if d.ID == "" || d.Version == "" || d.RuntimeFamily == "" {
 		return fmt.Errorf("protocol: incomplete descriptor")

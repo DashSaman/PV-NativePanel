@@ -14,7 +14,7 @@ GitHub Issues/README و مستندات رسمی قابل ردیابی بررسی
 - V2Board family: plan/order/payment/reseller؛ ولی سطح حریم خصوصی و نگهداری forkها باید جدا ارزیابی شود
 - 2s-ui: مشتق Sing-box با multi-node و protocolهای جدید؛ مرجع تحقیق، نه dependency بدون audit
 
-## درخواست‌های پرتکرار و تصمیم PVNative
+## درخواست‌های پرتکرار و تصمیم PVNaive
 
 | درخواست جامعه | شاهد نمونه | تصمیم |
 |---|---|---|
@@ -66,3 +66,4 @@ Protocol SDK، multi-runtime، speed/device capabilities، billing/reseller inte
 ### P3
 
 Marketplace/plugin sidecar، payment، Telegram sales automation و advanced routing.
+

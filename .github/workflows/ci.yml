@@ -11,19 +11,21 @@ permissions:
 jobs:
   go:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: false
-      - run: gofmt -w .
-      - run: git diff --exit-code
+      - name: Verify formatting
+        run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test ./...
 
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: web
@@ -33,8 +35,42 @@ jobs:
         with:
           node-version: "22"
           cache: false
-      # Exact direct dependency versions are pinned. Replace this with npm ci
-      # immediately after the first reviewed package-lock.json is committed.
-      - run: npm install --ignore-scripts --no-audit
+      - run: npm ci --ignore-scripts --no-audit
       - run: npm test
       - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        # ubuntu-latest ships the matching PostgreSQL 16 client used by the
+        # encrypted pg_dump/pg_restore drill below. S03 also repeats the drill
+        # against the server's pinned APT candidate before it can pass.
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_PASSWORD: pvnaive-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username postgres --dbname postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGPASSWORD: pvnaive-ci-only
+      PVNAIVE_DB_HOST: 127.0.0.1
+      PVNAIVE_DB_PORT: "5432"
+      PVNAIVE_DB_USER: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends age postgresql-client
+      - name: Verify shell syntax
+        run: bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh
+      - name: Test migration, RLS, safety gates and rollback
+        run: tests/db/migration_test.sh
+      - name: Test encrypted backup and restore drill
+        run: tests/db/backup_restore_test.sh

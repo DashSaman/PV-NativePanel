@@ -1,6 +1,6 @@
 # Security Policy
 
-PVNative هنوز در مرحلهٔ scaffold است و برای Production آماده نیست.
+PVNaive هنوز در مرحلهٔ scaffold است و برای Production آماده نیست.
 
 ## اصول امنیتی
 
@@ -39,3 +39,4 @@ Issue عمومی حاوی secret یا جزئیات exploit باز نکنید. ت
 ## ممنوعیت Production
 
 تا تکمیل threat model، تست authorization، تست restore، PoC accounting و release signing، استقرار عمومی ممنوع است.
+

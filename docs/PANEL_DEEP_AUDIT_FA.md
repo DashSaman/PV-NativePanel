@@ -1,4 +1,4 @@
-# ممیزی عمیق پنل‌ها برای PVNative
+# ممیزی عمیق پنل‌ها برای PVNaive
 
 تاریخ Snapshot: 2026-08-26
 
@@ -93,9 +93,9 @@ Statusهای active، disabled، limited، expired و on_hold. Reset strategy: n
 
 درس: collector اختیاری نباید bootstrap یا data plane را متوقف کند.
 
-## نتیجه برای PVNative
+## نتیجه برای PVNaive
 
-PVNative باید این چهار محور را جدا نگه دارد:
+PVNaive باید این چهار محور را جدا نگه دارد:
 
 1. **Account lifecycle:** وضعیت مجازبودن حساب
 2. **Presence:** Online/Idle/Offline/Unknown
@@ -103,3 +103,4 @@ PVNative باید این چهار محور را جدا نگه دارد:
 4. **Runtime health:** Healthy/Degraded/Down/Unknown
 
 ترکیب این محورها فقط برای badge/summary است؛ یکی جای دیگری را تغییر نمی‌دهد.
+

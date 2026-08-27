@@ -35,7 +35,7 @@
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
 | S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | قبل از اجرا باید کد، rollback و تست آماده شود |
+| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | کد و تست محلی آماده؛ اجرای سرور فقط پس از سبزشدن CI مجاز است |
 | S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
@@ -82,4 +82,41 @@
 
 ## مرحله بعد
 
-`S03-DATABASE` اکنون `NEXT` است، اما تا زمانی که schema، migration، rollback، secret handling و تست در Repository آماده و CI بررسی نشده، هیچ دستور نصب PostgreSQL روی سرور صادر نشود.
+`S03-DATABASE` اکنون `NEXT` است. پس از سبزشدن CI، فقط بلوک کامل S03 اجرا و تمام خروجی آن در همین فایل ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.
+
+## آماده‌سازی کد S03 — 2026-08-27
+
+### اقدام و فایل‌ها
+
+- Schema واقعی PostgreSQL نسخه 0001 برای ۲۷ جدول، ۲ view، RLS، ledger، outbox، runtime، audit/log/backup ساخته شد.
+- `db/migrations/`، runner غیرمخرب، rollback gated، backup/restore age، health check و unit/timer سخت‌سازی‌شده اضافه شد.
+- `scripts/stages/S03-database.sh` با preflight، backup قبل تغییر، SCRAM، loopback-only، secret تصادفی، migration، backup، restore drill و rollback failure-path آماده شد.
+- context دیتابیس Go فقط `*sql.Tx` می‌پذیرد و tenant را از session hash معتبر bind می‌کند.
+- `tests/db/migration_test.sh` و `tests/db/backup_restore_test.sh` و Job دیتابیس CI اضافه شدند.
+- `web/package-lock.json` ثبت و CI frontend از `npm ci` استفاده می‌کند.
+- نام‌های اجرایی/UI/docs باقیمانده به PVNaive اصلاح و cmd قدیمی `pvnative-api` حذف شد؛ نام Repository تغییر نکرد.
+
+### خطاهای کشف‌شده و اصلاح
+
+1. restore drill اولیه archive داخل directory با mode 0700 را به `pg_restore` تحت OS user دیگر می‌داد؛ علت permission traversal بود. archive اکنون از stdin بازشده توسط caller منتقل می‌شود.
+2. flagهای rollback پس از بعضی mutationها set می‌شدند؛ failure می‌توانست HBA، role، secret، unit یا release نیمه‌ساخته باقی بگذارد. flagها پیش از mutation و cleanup restore-test DB اضافه شدند.
+3. helper اولیه Go با interface از نظر type امکان دریافت `*sql.DB` داشت؛ API عمومی اکنون فقط `*sql.Tx` می‌پذیرد.
+4. `auth_sessions.actor_id` می‌توانست بدون تطابق tenant تغییر کند؛ trigger و join دفاعی جلوی privilege escalation reseller→owner را می‌گیرند.
+5. runner فایل Migration خارج manifest، gap نسخه و destructive SQL در میانه خط را کامل رد نمی‌کرد؛ preflight کامل قبل از اولین apply اضافه شد.
+
+### تست محلی
+
+- `bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh`: PASSED
+- `sha256sum --check --strict db/migrations/SHA256SUMS`: PASSED
+- `git diff --check`: PASSED
+- `npm ci --ignore-scripts --no-audit`: PASSED، 96 package
+- `npm test`: PASSED، ۲ فایل و ۸ تست
+- `npm run build`: PASSED، Vite production build
+- Go و PostgreSQL integration در Runtime محلی موجود نبودند؛ نتیجه نهایی آن‌ها باید از GitHub Actions ثبت شود و تا آن زمان کد S03 روی سرور اجرا نمی‌شود.
+
+### وضعیت استقرار و Rollback
+
+- هیچ دستور S03 روی `testAmir5-3` اجرا نشده است.
+- PostgreSQL نصب نشده و Caddy/NaiveProxy/SSH/Firewall تغییر نکرده‌اند.
+- Rollback پیش‌بینی‌شده در ابتدای Stage چاپ می‌شود؛ packageها در failure برای inspection باقی می‌مانند، اما DB/role/secret/unit/release جدید حذف و config قبلی PostgreSQL restore می‌شود.
+- Commit پیاده‌سازی: در اولین Commit S03 ثبت و پس از Push با SHA دقیق جایگزین می‌شود.

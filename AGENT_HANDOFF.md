@@ -12,10 +12,14 @@ S02 در `testAmir5-3` موفق شد. Backup سالم: `/var/backups/pvnaive/202
 
 ## وضعیت
 
-PVNaive دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر، Routeهای logs/diagnostics و boundary چندپروتکلی است. Runtime، DB، auth و business logic هنوز پیاده‌سازی نشده‌اند؛ Production-ready نیست.
+PVNaive دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر، Routeهای logs/diagnostics و boundary چندپروتکلی است. Schema و ابزارهای امن S03 PostgreSQL آماده‌اند، اما هنوز روی سرور اجرا نشده‌اند. Runtime، auth و business logic پیاده‌سازی نشده‌اند؛ Production-ready نیست.
 
 ## آخرین تغییرات
 
+- آماده‌سازی کامل S03: schema/migration/rollback/backup/restore/health/systemd/Stage script
+- RLS امضاشده با session hash و اجبار `sql.Tx` در Backend boundary
+- تست privilege escalation، tenant isolation، ledger، migration safety و backup/restore
+- اصلاح آخرین نام‌های executable/UI/docs از PVNative به PVNaive؛ Repository بدون تغییر
 - اصلاح نام محصول از PVNative به PVNaive
 - افزودن Routeهای نمایندگی، پلن، تمدید، اعلان و Subscription usage
 - افزودن preflight فقط‌خواندنی برای testAmir5-3
@@ -49,19 +53,19 @@ Standalone خارج، بدون ایران و بدون Controller در MVP. Contr
 
 ## وضعیت تست
 
-تست‌ها و CI تعریف شده‌اند، اما Passed فرض نشوند تا workflow سبز و lockfile بازبینی‌شده ثبت شود. تغییر adapter جدید باید با fake adapter و capability tests پوشش داده شود.
+تست محلی frontend (۸ تست + build)، Bash syntax، checksum و diff check سبز است. Go/PostgreSQL integration به‌علت نبود Runtime محلی فقط در GitHub Actions اجرا می‌شود و تا ثبت workflow سبز PASSED فرض نمی‌شود. lockfile ساخته و `npm ci` فعال شده است.
 
 ## کار بعدی دقیق
 
-1. بررسی نتیجه GitHub Actions و اصلاح CI/lockfile
-2. fake adapter و capability/UI visibility tests
-3. PoC accounting بین Caddy forwardproxy و sing-box Naive
-4. انتخاب Runtime Adapter
-5. PostgreSQL schema: users، credentials، sessions، usage ledger، reset events، audit و logs metadata
-6. Auth/session/MFA امن
+1. بررسی GitHub Actions مربوط به Commit S03 و اصلاح هر failure
+2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` و ثبت خروجی کامل
+3. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
+4. سپس Auth/session/MFA امن
+5. fake adapter و capability/UI visibility tests
+6. PoC accounting بین Caddy forwardproxy و sing-box Naive
 7. User CRUD و UI واقعی responsive
 8. content-pack loader + schema validation
-9. Installer امضاشده، restore drill و Pilot
+9. Installer امضاشده و Pilot
 
 ## الزامات غیرقابل حذف
 

@@ -1,10 +1,10 @@
-# هویت برند PVNative
+# هویت برند PVNaive
 
 ## نام‌ها
 
-- نام محصول: **PVNative**
+- نام محصول: **PVNaive**
 - برند مادر: **PVNETWORK**
-- نام فنی سرویس‌ها: `pvnative-api`، `pvnative-web` و `pvnative-runtime`
+- نام فنی سرویس‌ها: `pvnaive-api`، `pvnaive-web` و `pvnaive-runtime`
 - نام Repository فعلاً `PV-NativePanel` باقی می‌ماند تا در صورت تصمیم مالک جداگانه rename شود.
 
 هیچ نام، لوگو، favicon یا متن 3x-ui، Marzban، PasarGuard و Remnawave در محصول استفاده نمی‌شود.
@@ -33,3 +33,4 @@
 - خطاها شامل علت، اثر و اقدام پیشنهادی
 - عدم استفاده از ادعاهای «تضمینی»، «غیرقابل فیلتر» یا «امن مطلق»
 - نمایش زمان و حجم با timezone/unit مشخص
+

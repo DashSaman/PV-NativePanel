@@ -30,6 +30,7 @@ API health قابل اجرا و Route Registry ثبت شده است، اما Aut
 
 - [مشخصات محصول](docs/PRODUCT_SPEC_FA.md)
 - [معماری توسعه‌پذیر](docs/EXTENSIBILITY_FA.md)
+- [طراحی PostgreSQL و S03](docs/DATABASE_FA.md)
 - [ممیزی پنل‌ها](docs/PANEL_DEEP_AUDIT_FA.md)
 - [UI/UX](docs/UI_UX_SPEC_FA.md)
 - [امنیت](SECURITY.md)

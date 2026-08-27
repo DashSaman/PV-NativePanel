@@ -6,9 +6,9 @@
 
 منابع اصلی، مستندات، Issue و Discussion قابل ردیابی پروژه‌های 3x-ui، Marzban، PasarGuard، Remnawave، Hiddify Manager، X-UI forks و NaiveProxy هستند. ویدئوهای عمومی YouTube فقط برای کشف جریان کار و اصطلاحات استفاده می‌شوند؛ وقتی صفحهٔ Comment قابل بازیابی کامل نبوده، ادعای «بررسی همه کامنت‌ها» نمی‌شود.
 
-## خواسته‌های پرتکرار که باید در PVNative باشند
+## خواسته‌های پرتکرار که باید در PVNaive باشند
 
-| نیاز | تصمیم PVNative |
+| نیاز | تصمیم PVNaive |
 |---|---|
 | Bulk create/edit/disable/delete | Job آسنکرون، preview و audit؛ حذف بدون تأیید دو مرحله‌ای ممنوع |
 | User template | Plan/Template نسخه‌دار؛ تغییر Template کاربران قبلی را ناخواسته تغییر نمی‌دهد |
@@ -63,3 +63,4 @@ P2: adapter دوم، reseller، billing integration و fleet/controller اختی
 - Remnawave docs/repositories: تفکیک backend، frontend و subscription page
 
 این فایل snapshot پژوهش است، نه تضمین پیاده‌سازی. هر قابلیت باید در ROADMAP و تست پذیرش وارد شود.
+
