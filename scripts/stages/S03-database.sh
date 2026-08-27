@@ -8,6 +8,7 @@ expected_host="testAmir5-3"
 expected_domain="namir.softarg.ir"
 expected_ipv4="91.107.182.147"
 expected_caddy_sha256="101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1"
+expected_postgres_major="18"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "${script_dir}/../.." && pwd -P)"
@@ -182,7 +183,8 @@ echo "SSH_ACTION=none"
 echo "FIREWALL_ACTION=none"
 
 [[ "$(hostname)" == "${expected_host}" ]] || die "unexpected host"
-getent ahostsv4 "${expected_domain}" | awk '{print $1}' | grep -qx "${expected_ipv4}" || die "DNS mismatch"
+getent ahostsv4 "${expected_domain}" | \
+  awk -v expected="${expected_ipv4}" '$1 == expected {found=1} END {exit !found}' || die "DNS mismatch"
 [[ -f /opt/pvnaive/FOUNDATION.json ]] || die "S02 foundation marker is missing"
 [[ -x /usr/local/bin/caddy ]] || die "Caddy binary is missing"
 [[ -f /etc/caddy/Caddyfile ]] || die "Caddyfile is missing"
@@ -284,14 +286,16 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=l
 apt-get update
-packages=(postgresql postgresql-client postgresql-contrib age)
+packages=(postgresql postgresql-client age)
 install_specs=()
 for package_name in "${packages[@]}"; do
   candidate="$(apt-cache policy "${package_name}" | awk '/Candidate:/ {print $2}')"
   [[ -n "${candidate}" && "${candidate}" != "(none)" ]] || die "no signed APT candidate for ${package_name}"
   install_specs+=("${package_name}=${candidate}")
 done
+apt-get --simulate install --no-install-recommends "${install_specs[@]}" >/dev/null || die "APT dependency simulation failed"
 apt-get install --yes --no-install-recommends "${install_specs[@]}"
+[[ ! -f /var/run/reboot-required ]] || die "package install requires a reboot before S03 can continue"
 
 for required_command in psql pg_isready pg_dump pg_restore pg_lsclusters pg_ctlcluster pg_createcluster age age-keygen openssl systemd-analyze; do
   command -v "${required_command}" >/dev/null 2>&1 || die "installed command missing: ${required_command}"
@@ -301,13 +305,16 @@ clusters_output="$(pg_lsclusters --no-header)"
 if [[ -z "${clusters_output//[[:space:]]/}" ]]; then
   mapfile -t postgres_versions < <(find /usr/lib/postgresql -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V)
   ((${#postgres_versions[@]} == 1)) || die "cannot identify exactly one installed PostgreSQL major version"
+  [[ "${postgres_versions[0]}" == "${expected_postgres_major}" ]] || die "unexpected PostgreSQL major version ${postgres_versions[0]}"
   pg_createcluster --start "${postgres_versions[0]}" main
   clusters_output="$(pg_lsclusters --no-header)"
 fi
 mapfile -t clusters < <(awk '{print $1 "|" $2 "|" $3 "|" $4}' <<< "${clusters_output}")
 ((${#clusters[@]} == 1)) || die "expected exactly one PostgreSQL cluster, found ${#clusters[@]}"
 IFS='|' read -r cluster_version cluster_name cluster_port cluster_status <<< "${clusters[0]}"
+[[ "${cluster_version}" == "${expected_postgres_major}" ]] || die "unexpected PostgreSQL major version ${cluster_version}"
 [[ "${cluster_port}" == "5432" ]] || die "unexpected PostgreSQL port ${cluster_port}"
+[[ -f "/usr/share/postgresql/${cluster_version}/extension/pgcrypto.control" ]] || die "pgcrypto extension files are missing for PostgreSQL ${cluster_version}"
 if [[ "${cluster_status}" != "online" ]]; then
   pg_ctlcluster "${cluster_version}" "${cluster_name}" start
 fi
@@ -365,7 +372,8 @@ pg_ctlcluster "${cluster_version}" "${cluster_name}" restart
 postgres_psql --dbname postgres --command "SELECT pg_reload_conf()" >/dev/null
 hba_errors="$(postgres_psql --dbname postgres --tuples-only --no-align --command 'SELECT COUNT(*) FROM pg_hba_file_rules WHERE error IS NOT NULL')"
 [[ "${hba_errors}" == "0" ]] || die "pg_hba.conf validation reported ${hba_errors} errors"
-postgres_psql --dbname postgres --tuples-only --no-align --command 'SHOW listen_addresses' | grep -qx '127.0.0.1,::1' || die "listen_addresses is not loopback-only"
+listen_addresses="$(postgres_psql --dbname postgres --tuples-only --no-align --command 'SHOW listen_addresses')"
+[[ "${listen_addresses}" == "127.0.0.1,::1" ]] || die "listen_addresses is not loopback-only"
 postgres_listener_snapshot="$(pvnaive_tcp_listener_snapshot)"
 if printf '%s\n' "${postgres_listener_snapshot}" | pvnaive_tcp_has_non_loopback_postgres_listener; then
   die "PostgreSQL has a non-loopback listener"
