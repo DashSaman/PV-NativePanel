@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 Stage: S04-AUTH
-Status: design approved in chat; implementation pending
+Status: implementation in progress on `s04-auth`
 
 ## Goal
 
@@ -308,9 +308,9 @@ S04 is PASSED only if all are true:
 
 ## Dependencies
 
-- Go 1.24 module remains the project baseline.
-- `golang.org/x/crypto` is added for Argon2id; current module release checked during design was `v0.55.0`.
-- PostgreSQL access uses `github.com/jackc/pgx/v5/stdlib`; v5 is the stable major and current 2026 changelog includes v5.10.0 hardening. Pin the exact version in `go.mod/go.sum` during implementation and run `govulncheck`/CI before merge.
+- Go `1.25` is the S04+ project baseline. This upgrade is intentional: the selected current `golang.org/x/crypto` line requires Go 1.25 and avoids pinning PVNaive to an older security line only to preserve Go 1.24.
+- `golang.org/x/crypto v0.55.0` is pinned for Argon2id.
+- PostgreSQL access uses `github.com/jackc/pgx/v5/stdlib`; v5 is the stable major. Pin the exact release during implementation and verify it in CI before merge.
 - TOTP and AES-GCM use Go standard library to minimize dependency surface.
 
 ## Non-goals for S04
