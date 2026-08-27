@@ -52,8 +52,8 @@ backup_output="$(
   PVNAIVE_BACKUP_IDENTITY_FILE="${temp_root}/backup.agekey" \
     "${repo_root}/scripts/db/backup.sh"
 )"
-grep -q '^PVNAIVE_BACKUP_RESULT=PASSED$' <<< "${backup_output}"
-backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<< "${backup_output}")"
+grep -Fqx 'PVNAIVE_BACKUP_RESULT=PASSED' <<< "${backup_output}"
+backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {value=$2} END {print value}' <<< "${backup_output}")"
 [[ -f "${backup_file}" ]] || { echo "ERROR: backup archive was not created" >&2; exit 1; }
 backup_dir="$(dirname -- "${backup_file}")"
 (cd "${backup_dir}" && sha256sum --check --strict SHA256SUMS) >/dev/null
@@ -65,12 +65,13 @@ restore_output="$(
   PVNAIVE_BACKUP_IDENTITY_FILE="${temp_root}/backup.agekey" \
     "${repo_root}/scripts/db/restore.sh"
 )"
-grep -q '^PVNAIVE_RESTORE_RESULT=PASSED$' <<< "${restore_output}"
+grep -Fqx 'PVNAIVE_RESTORE_RESULT=PASSED' <<< "${restore_output}"
 restored_row="$(psql_admin --dbname "${restore_db}" --tuples-only --no-align --command "SELECT slug FROM pvnaive.tenants WHERE id = '44000000-0000-0000-0000-000000000004'")"
 [[ "${restored_row}" == "backup_test" ]] || { echo "ERROR: restored data verification failed" >&2; exit 1; }
-if find "${temp_root}" -type f -name '*.dump' -print -quit | grep -q .; then
-  echo "ERROR: plaintext dump file was materialized" >&2
+plaintext_dump="$(find "${temp_root}" -type f -name '*.dump' -print -quit)"
+[[ -z "${plaintext_dump}" ]] || {
+  echo "ERROR: plaintext dump file was materialized: ${plaintext_dump}" >&2
   exit 1
-fi
+}
 
 echo "PVNAIVE_DB_BACKUP_RESTORE_TEST=PASSED"
