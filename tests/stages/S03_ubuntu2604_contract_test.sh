@@ -6,8 +6,9 @@ repo_root="$(cd -- "${script_dir}/../.." && pwd -P)"
 stage="${repo_root}/scripts/stages/S03-database.sh"
 backup="${repo_root}/scripts/db/backup.sh"
 restore="${repo_root}/scripts/db/restore.sh"
+health="${repo_root}/scripts/db/health.sh"
 
-for file in "${stage}" "${backup}" "${restore}"; do
+for file in "${stage}" "${backup}" "${restore}" "${health}"; do
   [[ -f "${file}" ]] || { echo "ERROR: missing ${file}" >&2; exit 1; }
   bash -n "${file}"
 done
@@ -50,5 +51,21 @@ fi
 grep -Fq 'PVNAIVE_RESTORE_OWNERSHIP=PASSED' "${restore}"
 grep -Fq 'PVNAIVE_RESTORE_ACLS=PASSED' "${restore}"
 grep -Fq 'PVNAIVE_RESTORE_SIGNING_KEY=PASSED' "${restore}"
+
+# PostgreSQL inet values may render as 127.0.0.1/32 or ::1/128. The health
+# contract must normalize them with host() before comparing endpoint text.
+grep -Fq 'host(inet_server_addr())' "${health}"
+grep -Fq 'inet_server_port()' "${health}"
+grep -Fq 'health check requires an explicit loopback database host' "${health}"
+if grep -Fq 'inet_server_addr()::text' "${health}"; then
+  echo 'ERROR: health must not compare raw inet text containing CIDR suffixes' >&2
+  exit 1
+fi
+
+grep -Fq 'application role can directly SELECT the RLS signing key' "${health}"
+grep -Fq 'PVNAIVE_SECRET_DIRECT_SELECT=DENIED' "${health}"
+
+grep -Fq 'runuser -u pvnaive -- env' "${stage}"
+grep -Fq '"${release_link}/scripts/db/health.sh"' "${stage}"
 
 echo 'S03_UBUNTU2604_CONTRACT_TEST=PASSED'
