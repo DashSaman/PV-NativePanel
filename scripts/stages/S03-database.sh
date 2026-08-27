@@ -287,7 +287,7 @@ apt-get update
 packages=(postgresql postgresql-client postgresql-contrib age)
 install_specs=()
 for package_name in "${packages[@]}"; do
-  candidate="$(apt-cache policy "${package_name}" | awk '/Candidate:/ {print $2; exit}')"
+  candidate="$(apt-cache policy "${package_name}" | awk '/Candidate:/ {print $2}')"
   [[ -n "${candidate}" && "${candidate}" != "(none)" ]] || die "no signed APT candidate for ${package_name}"
   install_specs+=("${package_name}=${candidate}")
 done
