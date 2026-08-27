@@ -32,7 +32,9 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 
 export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh"
-"${repo_root}/scripts/db/migrate.sh" | grep -q 'MIGRATION 0001=ALREADY_APPLIED'
+reapply_output="$("${repo_root}/scripts/db/migrate.sh")"
+grep -Fqx 'MIGRATION 0001=ALREADY_APPLIED' <<< "${reapply_output}"
+grep -Fqx 'PVNAIVE_MIGRATION_RESULT=PASSED' <<< "${reapply_output}"
 
 psql_admin --dbname "${test_db}" <<'SQL' >/dev/null
 INSERT INTO pvnaive.tenants (id, tenant_type, slug, display_name) VALUES
@@ -67,7 +69,7 @@ SELECT COUNT(*) FROM pvnaive.users;
 ROLLBACK;
 SQL
 )"
-[[ "$(echo "${spoofed_count}" | sed -n '2p')" == "0" ]] || { echo "ERROR: unsigned tenant context bypassed RLS" >&2; exit 1; }
+[[ "$(sed -n '2p' <<< "${spoofed_count}")" == "0" ]] || { echo "ERROR: unsigned tenant context bypassed RLS" >&2; exit 1; }
 
 forged_owner_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
@@ -79,7 +81,7 @@ SELECT COUNT(*) FROM pvnaive.users;
 ROLLBACK;
 SQL
 )"
-[[ "$(echo "${forged_owner_count}" | tail -n 1)" == "0" ]] || { echo "ERROR: forged owner context bypassed RLS" >&2; exit 1; }
+[[ "$(tail -n 1 <<< "${forged_owner_count}")" == "0" ]] || { echo "ERROR: forged owner context bypassed RLS" >&2; exit 1; }
 
 scoped_counts="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
@@ -90,7 +92,7 @@ SELECT COUNT(*) FROM pvnaive.users WHERE id = '22200000-0000-0000-0000-000000000
 ROLLBACK;
 SQL
 )"
-mapfile -t numeric_rows < <(echo "${scoped_counts}" | grep -E '^[0-9]+$')
+mapfile -t numeric_rows < <(grep -E '^[0-9]+$' <<< "${scoped_counts}")
 [[ "${numeric_rows[*]}" == "1 0" ]] || { echo "ERROR: signed tenant isolation failed: ${numeric_rows[*]}" >&2; exit 1; }
 
 if psql_admin --dbname "${test_db}" <<'SQL' >/dev/null 2>&1
