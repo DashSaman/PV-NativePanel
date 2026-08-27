@@ -35,7 +35,7 @@
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
 | S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | کد آماده؛ انتقال bootstrap شکست خورد و retry با فایل upload لازم است |
+| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | انتقال bundle پاس شد؛ preflight به‌علت bug در predicate پورت متوقف شد |
 | S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
@@ -147,3 +147,15 @@
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` تولید نشد.
 - قدم بعدی دقیق: bundle معتبر را روی سرور upload، launcher کوتاه SHA-gated را اجرا و خروجی کامل را ثبت کن. فقط خروجی واقعی `S03_RESULT=PASSED` اجازه تغییر Stage را می‌دهد.
 - بازبینی bundle: اجرای اول checksum محلی از cwd اشتباه پیام `no file was verified` داد، چون مسیرهای manifest نسبی‌اند؛ پس از اجرای همان check از داخل `db/migrations`، هر دو Migration `OK` شدند. `bash -n`، مقایسه کامل محتوای extract‌شده با source و SHA-256 کل archive نیز `PASSED` است. این خطای فرمان بازبینی هیچ تغییری در کد یا سرور ایجاد نکرد.
+
+### تلاش دوم S03 و شکست preflight پورت — 2026-08-27 02:52:22 UTC
+
+- دستور اجراشده: launcher فایل upload‌شده `/root/pvnaive-s03-6d4e5ce.tar.gz` و سپس `scripts/stages/S03-database.sh` از bundle مربوط به Commit `6d4e5ce1f4a3a7ded2d6d6ab982d30fae81f1483`.
+- خروجی مهم: هر دو checksum Migration برابر `OK`، سپس `TRANSFER_CHECK=PASSED` و SHA-256 bundle برابر `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd` بود.
+- خطای دقیق: `awk: ... ^ syntax error` در predicate بررسی listener و سپس `ERROR: required TCP port 22 is not listening`.
+- علت: عبارت awk در `verify_caddy_invariants` syntax نامعتبر داشت؛ SSH واقعاً فعال بود و همان اجرای متصل آن را ثابت می‌کند. پیام port 22 نتیجه failure parser بود، نه بسته‌بودن پورت. همچنین `die()` با `exit 1`، `ERR` trap را دور زد و به همین دلیل `S03_RESULT=FAILED` و گزارش rollback چاپ نشد.
+- اصلاح لازم: predicate به تطبیق معتبر انتهای endpoint با `:<port>` تغییر کند و `die()` با non-zero return اجازه اجرای trap مرکزی را بدهد؛ یک regression test برای IPv4/IPv6 listener و ERR-trap اضافه شود.
+- فایل‌های درگیر: `scripts/stages/S03-database.sh`، تست regression جدید، `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`.
+- Backup/Rollback: failure در preflight و پیش از `apt-get update` رخ داد؛ package، cluster، DB، role، secret، systemd unit و marker ساخته نشد. Caddy فقط validate شد و reload/restart نشد؛ SSH و UFW تغییر نکردند. cleanup launcher directory موقت extract را حذف کرد؛ rollback دیتابیس لازم نبود.
+- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` وجود ندارد.
+- قدم بعدی دقیق: fix و regression test را Commit کن، bundle جدید با SHA تازه بساز، آن را upload کن و فقط S03 را دوباره اجرا کن.
