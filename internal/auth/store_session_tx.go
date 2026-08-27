@@ -26,11 +26,11 @@ func (s *Store) RevokeOtherActorSessions(ctx context.Context, tx *sql.Tx, actorI
 	if tx == nil || actorID == "" || currentSessionID == "" {
 		return 0, errors.New("auth: bound transaction, actor ID and current session ID are required")
 	}
-	result, err := tx.ExecContext(ctx, `UPDATE pvnaive.auth_sessions SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE actor_id=$1::uuid AND id<>$2::uuid AND revoked_at IS NULL`, actorID, currentSessionID)
-	if err != nil {
+	var count int64
+	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_revoke_other_actor_sessions($1::uuid,$2::uuid)`, actorID, currentSessionID).Scan(&count); err != nil {
 		return 0, fmt.Errorf("auth: revoke other actor sessions: %w", err)
 	}
-	return result.RowsAffected()
+	return count, nil
 }
 
 func (s *Store) RotateSessionTx(ctx context.Context, tx *sql.Tx, oldHash, newHash, newCSRFHash, newUserAgentHash []byte, newExpiresAt time.Time) (RotatedSession, error) {
