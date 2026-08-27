@@ -1,0 +1,10 @@
+diff --git a/scripts/stages/S03-database.sh b/scripts/stages/S03-database.sh
+--- a/scripts/stages/S03-database.sh
++++ b/scripts/stages/S03-database.sh
+@@
+ for package_name in "${packages[@]}"; do
+-  candidate="$(apt-cache policy "${package_name}" | awk '/Candidate:/ {print $2; exit}')"
++  candidate="$(apt-cache policy "${package_name}" | awk '/Candidate:/ {candidate=$2} END {if (candidate != "") print candidate}')"
+   [[ -n "${candidate}" && "${candidate}" != "(none)" ]] || die "no signed APT candidate for ${package_name}"
+   install_specs+=("${package_name}=${candidate}")
+ done
