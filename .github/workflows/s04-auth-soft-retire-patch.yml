@@ -76,7 +76,7 @@ jobs:
                     db/migrations/0002_auth_foundation.up.sql \
             | sed 's#db/migrations/##' > db/migrations/SHA256SUMS
 
-          sha256sum --check --strict --directory=db/migrations db/migrations/SHA256SUMS
+          (cd db/migrations && sha256sum --check --strict SHA256SUMS)
 
           rm -- .github/workflows/s04-auth-soft-retire-patch.yml
 
