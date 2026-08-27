@@ -59,6 +59,8 @@ Standalone خارج، بدون ایران و بدون Controller در MVP. Contr
 
 bootstrap مربوط به Commit `6d4e5ce` پیش از اجرای Stage با `base64: error: invalid input` متوقف شد. terminal log نشان داد payload بزرگ copy/paste با bundle دارای SHA-256 `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd` یکسان نیست. `set -Eeuo pipefail` مانع ادامه شد؛ PostgreSQL، Caddy/NaiveProxy، SSH و UFW تغییری نکردند و rollback لازم نبود. S03 همچنان `NEXT` است. دفعه بعد فایل bundle باید upload و با launcher کوتاه SHA-gated اجرا شود؛ از تکرار payload بزرگ در clipboard خودداری کن.
 
+bundle نهایی دوباره extract و با source مقایسه شد؛ syntax اسکریپت‌ها و هر دو checksum Migration پاس شدند. یک اجرای اولیه checksum از cwd اشتباه فقط `no file was verified` داد و با اجرای manifest از directory صحیح اصلاح شد؛ این مورد تغییری روی سرور نداشت.
+
 ## کار بعدی دقیق
 
 1. upload کردن bundle معتبر S03 و تأیید SHA-256 آن پیش از extract
