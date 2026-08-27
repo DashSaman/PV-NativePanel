@@ -81,12 +81,13 @@ jobs:
             bash -lc '
               set -Eeuo pipefail
               apt-get update >/dev/null
-              apt-get install --yes --no-install-recommends age >/dev/null
+              apt-get install --yes --no-install-recommends age file >/dev/null
 
-              bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh tests/auth/*.sh
+              bash -n scripts/db/*.sh scripts/auth/*.sh scripts/release/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh tests/auth/*.sh
               bash tests/stages/S03_preflight_test.sh
               bash tests/stages/S03_apt_candidate_pipefail_test.sh
               bash tests/stages/S03_ubuntu2604_contract_test.sh
+              bash tests/stages/S04_preflight_test.sh
               bash tests/db/lib_test.sh
               bash tests/db/migration_test.sh
               bash tests/db/health_test.sh
@@ -102,3 +103,97 @@ jobs:
       - name: Stop PostgreSQL 18
         if: always()
         run: docker rm --force pvnaive-postgres18 >/dev/null 2>&1 || true
+
+  rehearsal:
+    needs: [go, web, database]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build static rehearsal binaries
+        run: |
+          set -Eeuo pipefail
+          mkdir -p dist/rehearsal
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/rehearsal/pvnaive ./cmd/pvnaive
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/rehearsal/pvnaive-password ./cmd/pvnaive-password
+      - name: Start PostgreSQL 18
+        run: |
+          set -Eeuo pipefail
+          docker pull postgres:18-bookworm
+          docker run --detach \
+            --name pvnaive-s04-postgres18 \
+            --network host \
+            --env POSTGRES_PASSWORD=pvnaive-ci-only \
+            postgres:18-bookworm
+          for i in $(seq 1 60); do
+            if docker exec pvnaive-s04-postgres18 pg_isready --username postgres --dbname postgres >/dev/null 2>&1; then
+              echo "S04_POSTGRES18_READY=PASSED"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs pvnaive-s04-postgres18
+          exit 1
+      - name: Run end-to-end S04 authentication rehearsal
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --env GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
+            --env GITHUB_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT}" \
+            --volume "${GITHUB_WORKSPACE}:/repo" \
+            --workdir /repo \
+            postgres:18-bookworm \
+            bash -lc '
+              set -Eeuo pipefail
+              apt-get update >/dev/null
+              apt-get install --yes --no-install-recommends curl >/dev/null
+              bash tests/stages/S04_auth_rehearsal.sh
+            '
+      - name: PostgreSQL 18 logs on failure
+        if: failure()
+        run: docker logs pvnaive-s04-postgres18 || true
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-s04-postgres18 >/dev/null 2>&1 || true
+
+  bundle:
+    needs: [rehearsal]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build production S04 bundle
+        env:
+          PVNAIVE_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/release/build-s04-bundle.sh
+      - name: Verify production archive checksum
+        run: |
+          set -Eeuo pipefail
+          cd dist/artifacts
+          sha256sum --check --strict *.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PVNaive-S04-${{ github.event.pull_request.head.sha }}
+          path: |
+            dist/artifacts/*.tar.gz
+            dist/artifacts/*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
