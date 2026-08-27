@@ -69,7 +69,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends age postgresql-client
       - name: Verify shell syntax
-        run: bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh
+        run: bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh
+      - name: Test S03 preflight predicates and failure trap
+        run: tests/stages/S03_preflight_test.sh
       - name: Test migration, RLS, safety gates and rollback
         run: tests/db/migration_test.sh
       - name: Test encrypted backup and restore drill

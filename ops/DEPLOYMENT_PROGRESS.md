@@ -35,7 +35,7 @@
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
 | S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | انتقال bundle پاس شد؛ preflight به‌علت bug در predicate پورت متوقف شد |
+| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | bug پورت/ERR trap اصلاح و تست شد؛ retry سرور با bundle جدید لازم است |
 | S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
@@ -159,3 +159,14 @@
 - Backup/Rollback: failure در preflight و پیش از `apt-get update` رخ داد؛ package، cluster، DB، role، secret، systemd unit و marker ساخته نشد. Caddy فقط validate شد و reload/restart نشد؛ SSH و UFW تغییر نکردند. cleanup launcher directory موقت extract را حذف کرد؛ rollback دیتابیس لازم نبود.
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` وجود ندارد.
 - قدم بعدی دقیق: fix و regression test را Commit کن، bundle جدید با SHA تازه بساز، آن را upload کن و فقط S03 را دوباره اجرا کن.
+
+### اصلاح preflight پورت و failure trap — 2026-08-27
+
+- اصلاح انجام‌شده: predicate listener به helper تست‌پذیر `pvnaive_tcp_port_is_listening` با تطبیق معتبر `:<port>` در انتهای ستون local endpoint منتقل شد. `die()` اکنون به‌جای `exit 1`، status غیرصفر return می‌کند تا trap مرکزی rollback همیشه اجرا و `S03_RESULT=FAILED` چاپ شود.
+- تست regression جدید: listenerهای IPv4 و IPv6 برای 22/80/443 پذیرفته، پورت غایب 5432 و ورودی نامعتبر رد، و اجرای واقعی `ERR` trap پس از `die()` بررسی می‌شود. CI قبل از integration دیتابیس این test را اجرا می‌کند.
+- خطای تست اولیه: قراردادن shell شکست‌خورده داخل assignment شرطی `if` باعث suppression شدن `ERR` trap در Bash شد و test با exit 1 متوقف شد. همچنین اولین فرمان تجمیعی validation، `set -e` نداشت و فرمان بعدی exit code خطا را پوشاند. harness به `bash -c` مستقل و validationهای `set -Eeuo pipefail` اصلاح شد.
+- خروجی نهایی محلی: `S03_PREFLIGHT_TEST=PASSED`، `SHELL_SQL_SUITE=PASSED`، هر دو checksum Migration برابر `OK`، frontend شامل ۲ فایل/۸ test و Vite build برابر `PASSED`، و `git diff --check` برابر `PASSED`.
+- اجرای مجدد Go در Runtime فعلی با `gofmt: command not found` و `go: command not found` متوقف شد؛ هیچ فایل Go در این fix تغییر نکرد و آخرین اجرای کامل Go 1.24.4 همچنان formatting/vet/test را پاس کرده است. این محدودیت محیطی پنهان یا به‌عنوان PASSED جدید گزارش نمی‌شود.
+- فایل‌های تغییرکرده: `scripts/stages/S03-database.sh`، `scripts/stages/lib.sh`، `tests/stages/S03_preflight_test.sh`، `.github/workflows/ci.yml`، `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`.
+- وضعیت سرور و rollback بدون تغییر است: PostgreSQL هنوز نصب نشده، S03 marker وجود ندارد و Caddy/NaiveProxy/SSH/UFW دست‌نخورده‌اند.
+- وضعیت Stage: `S03-DATABASE=NEXT`؛ قدم بعدی ساخت bundle تازه، تأیید byte-for-byte، upload و retry همین Stage است.

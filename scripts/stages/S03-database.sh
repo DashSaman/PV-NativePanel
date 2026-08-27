@@ -10,6 +10,8 @@ expected_caddy_sha256="101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "${script_dir}/../.." && pwd -P)"
+# shellcheck source=scripts/stages/lib.sh
+source "${script_dir}/lib.sh"
 backup_root="/var/backups/pvnaive"
 rollback_backup_dir=""
 cluster_version=""
@@ -28,11 +30,6 @@ units_installed=0
 timer_enabled=0
 restore_test_db=""
 
-die() {
-  echo "ERROR: $*" >&2
-  exit 1
-}
-
 postgres_psql() {
   runuser -u postgres -- psql --no-psqlrc --set ON_ERROR_STOP=1 --host /var/run/postgresql --port "${cluster_port}" --username postgres "$@"
 }
@@ -44,7 +41,7 @@ verify_caddy_invariants() {
   systemctl is-active --quiet caddy-naive.service || die "caddy-naive.service is not active"
   /usr/local/bin/caddy validate --config /etc/caddy/Caddyfile >/dev/null
   for required_port in 22 80 443; do
-    ss -H -lnt | awk -v port=":${required_port}" '$4 ~ (port "$|"]" port "$" ) {found=1} END {exit !found}' || \
+    ss -H -lnt | pvnaive_tcp_port_is_listening "${required_port}" || \
       die "required TCP port ${required_port} is not listening"
   done
 }
@@ -133,6 +130,7 @@ for required_source in \
   db/migrations/SHA256SUMS \
   scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh \
   scripts/db/backup.sh scripts/db/restore.sh scripts/db/health.sh \
+  scripts/stages/lib.sh \
   ops/systemd/pvnaive-db-health.service ops/systemd/pvnaive-db-health.timer; do
   [[ -f "${repo_root}/${required_source}" ]] || die "bundle file missing: ${required_source}"
 done
@@ -140,7 +138,7 @@ done
   cd "${repo_root}/db/migrations"
   sha256sum --check --strict SHA256SUMS
 ) >/dev/null || die "bundled migration checksums failed"
-bash -n "${repo_root}"/scripts/db/*.sh "${repo_root}/scripts/stages/S03-database.sh"
+bash -n "${repo_root}"/scripts/db/*.sh "${repo_root}"/scripts/stages/*.sh
 
 if [[ -f /opt/pvnaive/S03_DATABASE.json ]]; then
   [[ -r /etc/pvnaive/db.env ]] || die "S03 marker exists but db.env is missing"

@@ -63,18 +63,19 @@ bundle نهایی دوباره extract و با source مقایسه شد؛ syntax
 
 تلاش دوم در `2026-08-27 02:52:22 UTC` انتقال bundle را با SHA صحیح و هر دو checksum Migration پاس کرد، اما preflight با syntax error عبارت awk بررسی پورت متوقف شد و پیام اشتباه port 22 داد؛ همان SSH session نشان می‌دهد پورت باز بوده است. اجرا پیش از APT و هر mutation دیتابیس متوقف شد و Caddy/NaiveProxy، SSH و UFW تغییر نکردند. `die()` نیز به‌علت استفاده از `exit 1`، `ERR` trap مرکزی را اجرا نکرد؛ هر دو نقص باید همراه regression test اصلاح شوند. S03 همچنان `NEXT` است.
 
+اصلاح انجام شد: predicate پورت به helper تست‌پذیر منتقل و `die()` به return غیرصفر تغییر کرد. regression test واقعی IPv4/IPv6، پورت غایب/نامعتبر و `ERR` trap پاس شد؛ shell/SQL checksum و frontend ۸ test/build نیز پاس شدند. test اولیه trap به‌علت semantics شرط `if` شکست خورد و harness با shell مستقل اصلاح شد؛ فرمان validation نیز fail-fast شد. Go در Runtime فعلی در PATH نبود، اما هیچ فایل Go تغییر نکرده و اجرای کامل قبلی Go 1.24.4 پاس است. bundle جدید هنوز باید ساخته و روی سرور اجرا شود؛ S03 همچنان `NEXT` است.
+
 ## کار بعدی دقیق
 
-1. اصلاح predicate پورت و مسیر `die()`/ERR trap و اجرای regression test
-2. ساخت و upload bundle جدید با SHA-256 تازه
-3. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
-4. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
-5. سپس Auth/session/MFA امن
-6. fake adapter و capability/UI visibility tests
-7. PoC accounting بین Caddy forwardproxy و sing-box Naive
-8. User CRUD و UI واقعی responsive
-9. content-pack loader + schema validation
-10. Installer امضاشده و Pilot
+1. ساخت و upload bundle جدید fixشده با SHA-256 تازه
+2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
+3. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
+4. سپس Auth/session/MFA امن
+5. fake adapter و capability/UI visibility tests
+6. PoC accounting بین Caddy forwardproxy و sing-box Naive
+7. User CRUD و UI واقعی responsive
+8. content-pack loader + schema validation
+9. Installer امضاشده و Pilot
 
 ## الزامات غیرقابل حذف
 
