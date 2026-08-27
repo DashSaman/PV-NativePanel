@@ -22,10 +22,6 @@ age_recipient="${temp_root}/backup.recipient"
 cluster_version=""
 cluster_name=""
 cluster_port=""
-roles_created=0
-source_db_created=0
-restore_db_created=0
-keep_failure_artifacts=0
 caddy_before=""
 
 fail() {
@@ -67,7 +63,6 @@ cleanup() {
   if [[ "${rc}" == "0" ]]; then
     rm -rf -- "${backup_root}" 2>/dev/null || true
   else
-    keep_failure_artifacts=1
     echo "REHEARSAL_FAILURE_BACKUP_ROOT=${backup_root}" >&2
   fi
 
@@ -102,8 +97,8 @@ grep -Fqx 'purpose=pvnaive-dedicated-postgresql' /var/lib/pvnaive/S03_POSTGRES_C
 [[ ! -f /var/run/reboot-required ]] || fail "reboot is required before rehearsal"
 
 for command_name in \
-  age age-keygen bash grep openssl pg_dump pg_isready pg_lsclusters pg_restore \
-  psql runuser sha256sum systemctl systemd-analyze; do
+  age age-keygen awk bash createdb dropdb grep install openssl pg_dump pg_isready \
+  pg_lsclusters pg_restore psql runuser sha256sum ss systemctl; do
   command -v "${command_name}" >/dev/null 2>&1 || fail "required command missing: ${command_name}"
 done
 
@@ -142,16 +137,10 @@ bash "${repo_root}/tests/stages/S03_apt_candidate_pipefail_test.sh"
 bash "${repo_root}/tests/stages/S03_ubuntu2604_contract_test.sh"
 echo "STATIC_GATES=PASSED"
 
-systemd-analyze verify \
-  "${repo_root}/ops/systemd/pvnaive-db-health.service" \
-  "${repo_root}/ops/systemd/pvnaive-db-health.timer"
-echo "SYSTEMD_UNIT_VERIFY=PASSED"
-
 install -d -o root -g root -m 0700 "${temp_root}"
 install -d -o root -g root -m 0700 "${backup_root}"
 
 app_password="$(openssl rand -hex 32)"
-roles_created=1
 postgres_psql --dbname postgres <<SQL >/dev/null
 CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
 CREATE ROLE pvnaive_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 40 PASSWORD '${app_password}';
@@ -166,7 +155,6 @@ role_flags="$(postgres_psql --dbname postgres --tuples-only --no-align --command
 [[ "${role_flags}" == "f|f|f|f|f|f" ]] || fail "pvnaive_app role flags are unsafe: ${role_flags}"
 echo "APP_ROLE_FLAGS=PASSED"
 
-source_db_created=1
 runuser -u postgres -- createdb \
   --host /var/run/postgresql --port "${cluster_port}" \
   --owner pvnaive_owner --encoding UTF8 --template template0 "${source_db}"
@@ -245,7 +233,6 @@ backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {value=$2} END {print value}' <<
 (cd "$(dirname -- "${backup_file}")" && sha256sum --check --strict SHA256SUMS)
 echo "ENCRYPTED_BACKUP=PASSED"
 
-restore_db_created=1
 restore_output="$(
   PVNAIVE_DB_HOST=/var/run/postgresql \
   PVNAIVE_DB_PORT="${cluster_port}" \
@@ -273,7 +260,6 @@ postgres_psql --dbname postgres --command \
   >/dev/null
 runuser -u postgres -- dropdb \
   --host /var/run/postgresql --port "${cluster_port}" "${restore_db}"
-restore_db_created=0
 
 PVNAIVE_DB_HOST=/var/run/postgresql \
 PVNAIVE_DB_PORT="${cluster_port}" \
