@@ -16,15 +16,21 @@ expected_db_user="${PVNAIVE_EXPECTED_DB_USER:-pvnaive_app}"
 [[ "${expected_db_user}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "invalid expected database user"
 [[ "${PVNAIVE_DB_USER}" == "${expected_db_user}" ]] || pvnaive_die "health check must connect as ${expected_db_user}, got ${PVNAIVE_DB_USER}"
 [[ -z "${PVNAIVE_RUN_AS_OS_USER:-}" ]] || pvnaive_die "health check refuses PVNAIVE_RUN_AS_OS_USER=${PVNAIVE_RUN_AS_OS_USER}"
+[[ "${PVNAIVE_DB_HOST}" == "127.0.0.1" || "${PVNAIVE_DB_HOST}" == "::1" ]] || \
+  pvnaive_die "health check requires an explicit loopback database host"
 
 pg_isready --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --dbname "${PVNAIVE_DB_NAME}" --username "${PVNAIVE_DB_USER}" --timeout "${PVNAIVE_DB_CONNECT_TIMEOUT}" >/dev/null
 
-identity_row="$(pvnaive_psql_at --command "SELECT current_user || '|' || session_user || '|' || current_setting('row_security') || '|' || COALESCE(inet_server_addr()::text, '')")"
-IFS='|' read -r database_user session_user row_security_setting server_address <<< "${identity_row}"
+# inet_server_addr()/inet_client_addr() return PostgreSQL inet values. Use host()
+# so the health contract compares canonical address text without /32 or /128.
+identity_row="$(pvnaive_psql_at --command "SELECT current_user || '|' || session_user || '|' || current_setting('row_security') || '|' || COALESCE(host(inet_server_addr()), '') || '|' || COALESCE(inet_server_port()::text, '') || '|' || COALESCE(host(inet_client_addr()), '')")"
+IFS='|' read -r database_user session_user row_security_setting server_address server_port client_address <<< "${identity_row}"
 [[ "${database_user}" == "${expected_db_user}" ]] || pvnaive_die "database user mismatch: current_user=${database_user}, expected=${expected_db_user}"
 [[ "${session_user}" == "${expected_db_user}" ]] || pvnaive_die "database session user mismatch: session_user=${session_user}, expected=${expected_db_user}"
 [[ "${row_security_setting}" == "on" ]] || pvnaive_die "row_security is not forced on"
-[[ "${server_address}" == "127.0.0.1" || "${server_address}" == "::1" ]] || pvnaive_die "database connection is not loopback: ${server_address:-unknown}"
+[[ "${server_address}" == "127.0.0.1" || "${server_address}" == "::1" ]] || pvnaive_die "database server endpoint is not loopback: ${server_address:-unknown}"
+[[ "${client_address}" == "127.0.0.1" || "${client_address}" == "::1" ]] || pvnaive_die "database client endpoint is not loopback: ${client_address:-unknown}"
+[[ "${server_port}" == "${PVNAIVE_DB_PORT}" ]] || pvnaive_die "database server port mismatch: ${server_port:-unknown}, expected ${PVNAIVE_DB_PORT}"
 
 key_table_exists="$(pvnaive_psql_at --command "SELECT to_regclass('pvnaive.security_context_keys') IS NOT NULL")"
 [[ "${key_table_exists}" == "t" ]] || pvnaive_die "RLS signing-key table is missing"
@@ -67,4 +73,6 @@ echo "PVNAIVE_DB_HEALTH=OK"
 echo "PVNAIVE_SCHEMA_VERSION=${schema_version}"
 echo "PVNAIVE_DB_USER=${database_user}"
 echo "PVNAIVE_DB_SERVER_ADDRESS=${server_address}"
+echo "PVNAIVE_DB_SERVER_PORT=${server_port}"
+echo "PVNAIVE_DB_CLIENT_ADDRESS=${client_address}"
 echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
