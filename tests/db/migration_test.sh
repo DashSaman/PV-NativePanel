@@ -61,39 +61,77 @@ INSERT INTO pvnaive.reseller_plan_terms (tenant_id, plan_id, allowed, price_mino
   ('10000000-0000-0000-0000-000000000001', '33000000-0000-0000-0000-000000000003', false, 900);
 SQL
 
-spoofed_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
+# Use labelled rows rather than positional sed/tail parsing. psql command-tag output
+# has varied across versions; the security assertion must inspect the query result.
+spoofed_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
 SELECT set_config('pvnaive.tenant_id', '10000000-0000-0000-0000-000000000001', true);
-SELECT COUNT(*) FROM pvnaive.users;
+SELECT 'UNSIGNED_VALID=' || pvnaive.has_valid_context();
+SELECT 'UNSIGNED_COUNT=' || COUNT(*) FROM pvnaive.users;
 ROLLBACK;
 SQL
 )"
-[[ "$(sed -n '2p' <<< "${spoofed_count}")" == "0" ]] || { echo "ERROR: unsigned tenant context bypassed RLS" >&2; exit 1; }
+unsigned_valid="$(sed -n 's/^UNSIGNED_VALID=//p' <<< "${spoofed_output}")"
+unsigned_count="$(sed -n 's/^UNSIGNED_COUNT=//p' <<< "${spoofed_output}")"
+[[ "${unsigned_valid}" == "false" || "${unsigned_valid}" == "f" ]] || {
+  echo "ERROR: unsigned tenant context unexpectedly validated: ${unsigned_valid:-missing}" >&2
+  printf '%s\n' "${spoofed_output}" >&2
+  exit 1
+}
+[[ "${unsigned_count}" == "0" ]] || {
+  echo "ERROR: unsigned tenant context bypassed RLS: count=${unsigned_count:-missing}" >&2
+  printf '%s\n' "${spoofed_output}" >&2
+  exit 1
+}
 
-forged_owner_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
+forged_owner_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
 SELECT set_config('pvnaive.actor_id', '99000000-0000-0000-0000-000000000009', true);
 SELECT set_config('pvnaive.actor_role', 'owner', true);
 SELECT set_config('pvnaive.context_signature', repeat('0', 64), true);
-SELECT COUNT(*) FROM pvnaive.users;
+SELECT 'FORGED_VALID=' || pvnaive.has_valid_context();
+SELECT 'FORGED_COUNT=' || COUNT(*) FROM pvnaive.users;
 ROLLBACK;
 SQL
 )"
-[[ "$(tail -n 1 <<< "${forged_owner_count}")" == "0" ]] || { echo "ERROR: forged owner context bypassed RLS" >&2; exit 1; }
+forged_valid="$(sed -n 's/^FORGED_VALID=//p' <<< "${forged_owner_output}")"
+forged_count="$(sed -n 's/^FORGED_COUNT=//p' <<< "${forged_owner_output}")"
+[[ "${forged_valid}" == "false" || "${forged_valid}" == "f" ]] || {
+  echo "ERROR: forged owner context unexpectedly validated: ${forged_valid:-missing}" >&2
+  printf '%s\n' "${forged_owner_output}" >&2
+  exit 1
+}
+[[ "${forged_count}" == "0" ]] || {
+  echo "ERROR: forged owner context bypassed RLS: count=${forged_count:-missing}" >&2
+  printf '%s\n' "${forged_owner_output}" >&2
+  exit 1
+}
 
-scoped_counts="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
+scoped_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
 SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
-SELECT COUNT(*) FROM pvnaive.users;
-SELECT COUNT(*) FROM pvnaive.users WHERE id = '22200000-0000-0000-0000-000000000002';
+SELECT 'SIGNED_VALID=' || pvnaive.has_valid_context();
+SELECT 'SIGNED_VISIBLE=' || COUNT(*) FROM pvnaive.users;
+SELECT 'SIGNED_CROSS=' || COUNT(*) FROM pvnaive.users WHERE id = '22200000-0000-0000-0000-000000000002';
 ROLLBACK;
 SQL
 )"
-mapfile -t numeric_rows < <(grep -E '^[0-9]+$' <<< "${scoped_counts}")
-[[ "${numeric_rows[*]}" == "1 0" ]] || { echo "ERROR: signed tenant isolation failed: ${numeric_rows[*]}" >&2; exit 1; }
+signed_valid="$(sed -n 's/^SIGNED_VALID=//p' <<< "${scoped_output}")"
+signed_visible="$(sed -n 's/^SIGNED_VISIBLE=//p' <<< "${scoped_output}")"
+signed_cross="$(sed -n 's/^SIGNED_CROSS=//p' <<< "${scoped_output}")"
+[[ "${signed_valid}" == "true" || "${signed_valid}" == "t" ]] || {
+  echo "ERROR: signed context did not validate: ${signed_valid:-missing}" >&2
+  printf '%s\n' "${scoped_output}" >&2
+  exit 1
+}
+[[ "${signed_visible}|${signed_cross}" == "1|0" ]] || {
+  echo "ERROR: signed tenant isolation failed: visible=${signed_visible:-missing} cross=${signed_cross:-missing}" >&2
+  printf '%s\n' "${scoped_output}" >&2
+  exit 1
+}
 
 if psql_admin --dbname "${test_db}" <<'SQL' >/dev/null 2>&1
 BEGIN;
