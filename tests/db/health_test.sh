@@ -39,6 +39,7 @@ cleanup() {
 }
 trap cleanup EXIT
 cleanup
+install -d -m 0700 "${temp_root}"
 
 psql_admin --dbname postgres <<SQL >/dev/null
 CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
