@@ -1,107 +1,373 @@
-# Agent Handoff
+# Agent Handoff — PVNaive
 
-آخرین به‌روزرسانی: 2026-08-27
+آخرین به‌روزرسانی: 2026-08-27 23:50 UTC
 
-## قانون ادامه استقرار
+این فایل مرجع اصلی ادامه کار برای هر Agent/Chat جدید است. قبل از هر اقدام روی سرور، این فایل و `ops/DEPLOYMENT_PROGRESS.md` را کامل بخوان. هیچ Stage را از روی حدس جلو نبر.
 
-قبل از هر اقدام روی سرور، `ops/DEPLOYMENT_PROGRESS.md` را بخوان. فقط Stage دارای وضعیت `NEXT` اجرا شود و خروجی/خطا پیش از حرکت ثبت گردد. وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=PASSED`, `S04-AUTH=NEXT`.
+## خلاصه فوری برای Chat جدید
 
-## آخرین استقرار سرور
+- Repository: `DashSaman/PV-NativePanel`
+- نام صحیح محصول: `PVNaive`
+- نام قدیمی/اشتباه: `PVNative`
+- نام Repository فعلاً قدیمی مانده و نباید بدون هماهنگی rename شود.
+- branch فعال توسعه: `s04-auth`
+- PR فعال: `#2` با عنوان `S04-AUTH: production authentication foundation`
+- base: `main`
+- S00 تا S03: PASSED
+- S04-AUTH: در حال استقرار زنده، هنوز PASSED نشده
+- S05 تا S10: BLOCKED تا S04 کامل و postflight شود
+- هدف فوری: علت واقعی `pvnaive-api.service is not active` را از systemd journal پیدا و رفع کن؛ سپس S04 recovery را دوباره اجرا کن.
+- روی Caddy/NaiveProxy، SSH و Firewall تا پایان localhost gate هیچ تغییری نده.
 
-S02 در `testAmir5-3` موفق شد. Backup سالم: `/var/backups/pvnaive/20260826T201857Z`. Caddy/SSH/Firewall تغییر نکردند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.
+## قانون کار با سرور
 
-## وضعیت
+کاربر دستورات را دستی به‌صورت root روی `testAmir5-3` اجرا می‌کند و خروجی کامل را paste می‌کند. Agent باید هر بار فقط یک مرحله/دستور واضح بدهد و بعد از دیدن خروجی تصمیم بگیرد. از heredoc/base64 بسیار بزرگ برای انتقال فایل استفاده نکن؛ artifact واقعی upload شود و SHA-256 آن verify شود.
 
-PVNaive دارای specification عمیق، اسکلت Go/React، سایت عمومی Static، مدل وضعیت کاربر، Routeهای logs/diagnostics و boundary چندپروتکلی است. Schema و ابزارهای امن S03 PostgreSQL آماده‌اند، اما هنوز روی سرور اجرا نشده‌اند. Runtime، auth و business logic پیاده‌سازی نشده‌اند؛ Production-ready نیست.
+هیچ Stage تا زمانی که خود Stage و یک postflight مستقل هر دو PASS نشده‌اند، `PASSED` اعلام نشود.
 
-## آخرین تغییرات
+## سرور هدف
 
-- آماده‌سازی کامل S03: schema/migration/rollback/backup/restore/health/systemd/Stage script
-- RLS امضاشده با session hash و اجبار `sql.Tx` در Backend boundary
-- تست privilege escalation، tenant isolation، ledger، migration safety و backup/restore
-- اصلاح آخرین نام‌های executable/UI/docs از PVNative به PVNaive؛ Repository بدون تغییر
-- اصلاح نام محصول از PVNative به PVNaive
-- افزودن Routeهای نمایندگی، پلن، تمدید، اعلان و Subscription usage
-- افزودن preflight فقط‌خواندنی برای testAmir5-3
-- ایجاد executable اولیه cmd/pvnaive؛ هنوز Production-ready نیست
+- Host: `testAmir5-3`
+- IPv4: `91.107.182.147`
+- IPv6: `2a01:4f8:c010:37ee::1`
+- OS: Ubuntu 26.04 LTS
+- Kernel: `7.0.0-30-generic`
+- RAM: حدود 3.7 GiB
+- Domain: `namir.softarg.ir`
+- Caddy: v2.11.2 + `forward_proxy`
+- Service: `caddy-naive.service`
+- Caddyfile: `/etc/caddy/Caddyfile`
+- Caddyfile SHA-256 ثابت و مورد انتظار:
+  `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`
+- پورت‌های baseline: `22`, `80`, `443`
+- PostgreSQL: `18/main`, port `5432`, فقط `127.0.0.1` و `::1`
 
-- تحقیق تکمیلی بازخوردهای قابل‌ردیابی 3x-ui، Marzban، Remnawave و NaiveProxy
-- ثبت محدودیت بازیابی YouTube Comments؛ ادعای خواندن کامل کامنت‌ها ممنوع
-- Protocol Adapter capability-based؛ مدل User مستقل از Naive/Xray
-- قابلیت‌های accounting/session/speed/device/atomic reload/padding به‌صورت صریح
-- Responsive shell با sidebar دسکتاپ، bottom navigation موبایل، touch target و reduced motion
-- Content Pack schema برای تعویض موضوع سایت عمومی بدون تغییر binary
-- سند Random Traffic: استفاده از padding رسمی Runtime، منع chaff جعلی پیش‌فرض
-- Account status، Presence، Quota state و Runtime health جدا
-- تک/چندکاربره با concurrency_limit
-- Dark/Light/System theme
-- Domain Activity owner-only، disabled-by-default و بدون path/query
-- سایت عمومی Static و policy دانلود امن
-- specification Easy Installer و restore/rollback requirement
+## Stage ledger فعلی
 
-## تصمیم سایت عمومی
+| Stage | Status | توضیح |
+|---|---|---|
+| S00-NAMING | PASSED | نام محصول به PVNaive اصلاح شده |
+| S01-PREFLIGHT | PASSED | DNS/TLS/Caddy/ports/capacity بررسی شد |
+| S02-FOUNDATION | PASSED | user/directory/backup پایه ساخته شد |
+| S03-DATABASE | PASSED | PostgreSQL 18 + schema v1 + RLS + backup/restore/health + postflight مستقل |
+| S04-AUTH | IN PROGRESS | کد/CI تقریباً کامل؛ استقرار localhost درگیر service startup blocker |
+| S05-USERS | BLOCKED | بعد از S04 |
+| S06-RUNTIME | BLOCKED | بعد از S05 |
+| S07-SUBS | BLOCKED | بعد از S06 |
+| S08-NOTIFY | BLOCKED | بعد از S07 |
+| S09-INSTALLER | BLOCKED | بعد از S08 |
+| S10-PILOT | BLOCKED | بعد از همه gateها |
 
-سایت عمومی باید واقعی، Static، جدا از پنل و data plane و قابل تعویض با Content Pack باشد. هیچ موضوع سیاسی/رسانه‌ای در کد و installer هاردکد نشود. محتوای سیاسی درخواستی فقط به شکل pack اختیاری و با Asset دارای مجوز قابل ساخت است. بازدید یا ترافیک ساختگی و ادعای 2TB ممنوع است.
+## S02 نهایی
 
-## تصمیم Random Data
+- PASSED: `2026-08-26 20:18:57 UTC`
+- Backup: `/var/backups/pvnaive/20260826T201857Z`
+- user `pvnaive`: UID 995 / GID 982
+- `/opt/pvnaive`: `750 root:pvnaive`
+- data/secrets: `700 pvnaive:pvnaive`
+- `/etc/pvnaive`: `750 root:pvnaive`
+- Caddy/SSH/Firewall تغییر نکرد.
+- marker: `/opt/pvnaive/FOUNDATION.json`
 
-NaiveProxy مرجع padding مذاکره‌شده و pseudo-random دارد. تزریق بایت یا درخواست رندوم مستقل پذیرفته نیست مگر PoC آزمایشگاهی، feature flag، budget، kill switch و benchmark نشان دهد سازگاری/accounting/fingerprint را خراب نمی‌کند. پیش‌فرض همیشه خاموش است.
+## S03 نهایی — PASSED
 
-## Scope
+S03 production و postflight مستقل هر دو موفق شدند.
 
-Standalone خارج، بدون ایران و بدون Controller در MVP. Controller/Node آینده اختیاری است. Naive اولین Adapter است؛ پروتکل‌های دیگر باید قرارداد docs/EXTENSIBILITY_FA.md را طی کنند.
+- S03 marker: `/opt/pvnaive/S03_DATABASE.json`
+- PostgreSQL: `18/main`, port `5432`, loopback-only
+- DB: `pvnaive`
+- roles: `pvnaive_owner`, `pvnaive_app`
+- schema version نهایی S03: `1`
+- health با `pvnaive_app`: PASSED
+- direct secret SELECT: DENIED
+- encrypted backup: PASSED
+- restore drill: PASSED
+- systemd DB health timer: enabled + active
+- Caddy checksum بعد از S03 بدون تغییر ماند.
+- SSH/Firewall تغییر نکرد.
 
-## وضعیت تست
+S03 postflight نهایی در خروجی واقعی داشت:
 
-تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions runهای `33031844663` و `33032317065` پیش از تخصیص runner شکست خوردند: هر سه Job در هر دو run، `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. Commitهای S03: `45ba5c4`، `fbf21e8` و preflight fix `133d36b`. lockfile ساخته و `npm ci` فعال شده است.
+```text
+S03_POSTFLIGHT=PASSED
+S03_DATABASE=PASSED
+NEXT_STAGE=S04-AUTH
+NO_CONFIGURATION_CHANGES_MADE=true
+```
 
-## آخرین تلاش S03 — 2026-08-27 02:27 UTC
+## معماری S04-AUTH که تصویب و پیاده‌سازی شده
 
-bootstrap مربوط به Commit `6d4e5ce` پیش از اجرای Stage با `base64: error: invalid input` متوقف شد. terminal log نشان داد payload بزرگ copy/paste با bundle دارای SHA-256 `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd` یکسان نیست. `set -Eeuo pipefail` مانع ادامه شد؛ PostgreSQL، Caddy/NaiveProxy، SSH و UFW تغییری نکردند و rollback لازم نبود. S03 همچنان `NEXT` است. دفعه بعد فایل bundle باید upload و با launcher کوتاه SHA-gated اجرا شود؛ از تکرار payload بزرگ در clipboard خودداری کن.
+- Password hashing: Argon2id
+- opaque session token؛ raw token در DB ذخیره نمی‌شود، فقط SHA-256
+- secure browser cookie
+- CSRF binding برای state-changing requests
+- RBAC برای Owner/Admin/Operator/Auditor/Reseller
+- TOTP MFA با AES-256-GCM برای secret
+- recovery code hash-only
+- MFA replay-step protection
+- login lockout
+- session rotation/revoke/reuse detection
+- `/api/v1/me`
+- owner bootstrap بدون default password
+- owner bootstrap باید local/root/TTY باشد
+- هیچ default password/token وجود ندارد
+- auth audit بدون secret/token/password
+- API ابتدا فقط روی `127.0.0.1:8080`
+- Caddy exposure فقط بعد از localhost auth gate
+- migration S04 = `0002_auth_foundation`
+- rollback S04 باید v2→v1 باشد و S03 را سالم نگه دارد
 
-bundle نهایی دوباره extract و با source مقایسه شد؛ syntax اسکریپت‌ها و هر دو checksum Migration پاس شدند. یک اجرای اولیه checksum از cwd اشتباه فقط `no file was verified` داد و با اجرای manifest از directory صحیح اصلاح شد؛ این مورد تغییری روی سرور نداشت.
+## CI / توسعه S04
 
-تلاش دوم در `2026-08-27 02:52:22 UTC` انتقال bundle را با SHA صحیح و هر دو checksum Migration پاس کرد، اما preflight با syntax error عبارت awk بررسی پورت متوقف شد و پیام اشتباه port 22 داد؛ همان SSH session نشان می‌دهد پورت باز بوده است. اجرا پیش از APT و هر mutation دیتابیس متوقف شد و Caddy/NaiveProxy، SSH و UFW تغییر نکردند. `die()` نیز به‌علت استفاده از `exit 1`، `ERR` trap مرکزی را اجرا نکرد؛ هر دو نقص باید همراه regression test اصلاح شوند. S03 همچنان `NEXT` است.
+branch: `s04-auth`
+PR: `#2`
 
-اصلاح انجام شد: predicate پورت به helper تست‌پذیر منتقل و `die()` به return غیرصفر تغییر کرد. regression test واقعی IPv4/IPv6، پورت غایب/نامعتبر و `ERR` trap پاس شد؛ shell/SQL checksum و frontend ۸ test/build نیز پاس شدند. test اولیه trap به‌علت semantics شرط `if` شکست خورد و harness با shell مستقل اصلاح شد؛ فرمان validation نیز fail-fast شد. Go در Runtime فعلی در PATH نبود، اما هیچ فایل Go تغییر نکرده و اجرای کامل قبلی Go 1.24.4 پاس است. bundle جدید هنوز باید ساخته و روی سرور اجرا شود؛ S03 همچنان `NEXT` است.
+یک build کاملاً سبز قبل از استقرار زنده روی commit زیر ثبت شد:
 
-hardening چندعاملی بعد از `133d36b` نیز کامل شد: rollback با نگهبان root `BASHPID` دقیقاً یک‌بار اجرا می‌شود؛ signal و rollback-step failure گزارش می‌شوند؛ marker موفقیت فقط پس از final gate و اتمیک نوشته می‌شود؛ marker قبلی در verify failure حذف نمی‌شود؛ health oneshot از `Result=success` سنجیده می‌شود؛ و provenance marker پایدار اجازه retry cluster متعلق به S03 را می‌دهد ولی cluster ناشناس را رد می‌کند. backup/restore کاملاً streaming و بدون dump plaintext است، storage root و DB port fail-closed هستند و تست‌های جدید پاس شدند. candidate با SHA `f9f0d57f...` منسوخ است و نباید استفاده شود. دو failure محیطی npm با اجرای مستقیم binaryهای موجود دور زده شد و ۸ test/build مجدداً پاس شد؛ Go در Runtime جاری موجود نیست و هیچ Go file تغییر نکرد. ممیزی نهایی agentها blocker کدی دیگری پیدا نکرد. Commit کامل hardening: `ded5af275d8e0000de25ce97d1de268fe54f58f8`. S03 هنوز `NEXT` است و هیچ اقدام جدیدی روی سرور نشده است.
+- source commit: `b4803e27af36bb35de33f7dcbe39750aeadc4146`
+- GitHub Actions run: `33126898878`
+- Go: PASSED
+- Web tests/build: PASSED
+- PostgreSQL 18: PASSED
+- end-to-end auth rehearsal: PASSED
+- bundle build: PASSED
 
-CI run `33073904109` روی head مستندات `95a2689a0770e71db16dbd11bb436e9a3e6d92ab` دوباره پیش از runner شکست خورد؛ `go/web/database` همگی `runner_id=0` و `steps=[]` داشتند، پس هیچ تست CI اجرا نشد. bundle قطعی `pvnaive-s03-95a2689.tar.gz` با SHA-256 `9decbd705f548160343bdc41894b66ece86d53634e7fbf3719bac02f09be2b47` و اندازه 20358 byte، inventory ۱۳فایلی، مقایسه byte-for-byte، syntax، mode و migration checksums را پاس کرده است. check اولیه mode به‌علت glob منبع، S02 خارج از bundle را اشتباه طلب کرد و fail-fast شد؛ check صریح اصلاح و `BUNDLE_VERIFICATION=PASSED` شد. فایل باید دقیقاً به `/root/pvnaive-s03-95a2689.tar.gz` upload شود و فقط launcher نهایی S03 اجرا گردد. Stage همچنان `NEXT` است.
+rehearsal واقعی CI شامل PostgreSQL 18، migration v2، binary واقعی، login owner، session cookie، `/me`، CSRF logout و revoke session بود.
 
-launcher نهایی `bash -n` را پاس کرد و negative test محلیِ فقدان Foundation با exit 1 و تنها یک `S03_LAUNCHER_RESULT=FAILED` متوقف شد؛ هیچ extract یا mutation انجام نشد. این تست فقط trap fail-closed launcher را تأیید می‌کند و وضعیت سرور هدف را تغییر نمی‌دهد.
+### Bundle دقیق استفاده‌شده روی سرور
 
-## کار بعدی دقیق
+Artifact GitHub:
+`PVNaive-S04-b4803e27af36bb35de33f7dcbe39750aeadc4146`
 
-1. ساخت و upload bundle جدید fixشده با SHA-256 تازه
-2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
-3. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
-4. سپس Auth/session/MFA امن
-5. fake adapter و capability/UI visibility tests
-6. PoC accounting بین Caddy forwardproxy و sing-box Naive
-7. User CRUD و UI واقعی responsive
-8. content-pack loader + schema validation
-9. Installer امضاشده و Pilot
+فایل داخلی:
+`PVNaive-S04-b4803e27af36.tar.gz`
 
-## الزامات غیرقابل حذف
+SHA-256:
+`c279c91f42ca7d0b91096c48875fa61be8e8c80c8effa826aa477314a9732147`
 
-- status حساب و online یکی نشوند
-- depleted/expired با متن و رنگ/آیکن جدا
-- UI قابلیت unsupported را نمایش ندهد
-- Domain Activity پیش‌فرض خاموش و بدون TLS MITM
-- optional collector نباید data plane را متوقف کند
-- سایت عمومی ترافیک مصنوعی نسازد
-- content topic در محصول hard-code نشود
-- هیچ default password/token
-- endpoint بدون Access ممنوع
-- log بدون secret/token/query
-- config apply باید validate/stage/atomic/rollback داشته باشد
+artifact روی سرور به‌صورت ZIP upload شد:
+`/root/PVNaive-S04-b4803e27af36-artifact.zip`
 
+extract امن انجام شد و tar داخلی byte/checksum verified شد.
 
-## S03 FINAL -- 2026-08-27 21:53-21:55 UTC
+bundle فعلی روی سرور:
+`/root/pvnaive-s04-deploy-b4803e27af36/PVNaive-S04-b4803e27af36`
 
-- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
-- PostgreSQL 18/main is installed and loopback-only.
-- Production migration, application health, encrypted backup, restore drill, RLS/role checks and independent postflight all passed.
-- Caddy/SSH/Firewall invariants were preserved.
-- Continue only with S04-AUTH; S05+ remain blocked until S04 passes.
+تمام `S04_SHA256SUMS` داخل bundle PASS شد.
+
+## تلاش‌های زنده S04 روی testAmir5-3
+
+### Attempt 1 — missing `file`
+
+زمان: حدود `2026-08-27 23:44 UTC`
+
+Stage قبل از mutation اصلی با این خطا fail شد:
+
+```text
+line 179: file: command not found
+ERROR: pvnaive binary architecture mismatch
+S04_RESULT=FAILED
+ROLLBACK=COMPLETED
+```
+
+علت: package کوچک `file` روی Ubuntu نصب نبود ولی Stage برای verify معماری ELF به آن نیاز داشت.
+
+بعداً `file 1:5.46-5build2` نصب شد و هر دو binary درست تشخیص داده شدند:
+
+```text
+ELF 64-bit LSB executable, x86-64, statically linked, stripped
+```
+
+پس این blocker بسته شد.
+
+### Attempt 2 — backup timestamp collision
+
+زمان: `2026-08-27 23:46 UTC`
+
+Stage:
+
+1. backup schema v1 موفق ساخت:
+   `/var/backups/pvnaive/database/20260827T234607Z/pvnaive.dump.age`
+2. migration `0002` را موفق apply کرد.
+3. schema به v2 رسید.
+4. backup دوم در همان ثانیه ساخته شد و به همان path برخورد کرد.
+
+خطا:
+
+```text
+ERROR: backup destination already exists
+S04_RESULT=FAILED
+FAILED_LINE=276
+ROLLBACK=INCOMPLETE
+ROLLBACK_FAILED_STEP=rollback-migration-0002-no-schema2-backup
+```
+
+ریشه‌ی قطعی: `scripts/db/backup.sh` از timestamp با دقت فقط ثانیه استفاده می‌کرد (`%Y%m%dT%H%M%SZ`) و S04 دو backup پشت سر هم در همان second می‌ساخت.
+
+نتیجه مهم: migration 0002 روی DB ماند چون Stage عمداً بدون schema-v2 backup rollback destructive انجام نداد. artifactهای S04 پاک شدند و Caddy/SSH/Firewall تغییری نکرد.
+
+### Recovery preflight بعد از Attempt 2
+
+زمان: `2026-08-27 23:49:59 UTC`
+
+وضعیت به‌طور read-only verify شد:
+
+```text
+SCHEMA_VERSION=2
+STORED_0002=0002_auth_foundation.up.sql|84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886
+MANIFEST_0002=84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886
+SCHEMA_RECOVERY_STATE=PASSED
+S04_ARTIFACT_CLEANUP=PASSED
+INFRASTRUCTURE_INVARIANTS=PASSED
+RECOVERY_PREFLIGHT=PASSED
+```
+
+Caddy checksum همان مقدار baseline بود. Portهای 22/80/443 و PostgreSQL loopback 5432 سالم بودند.
+
+### Attempt 3 — recovery mode + API service startup blocker
+
+Stage recovery خودش schema v2 را پذیرفت:
+
+```text
+RECOVERY_MODE=SCHEMA2_WITHOUT_MARKER
+```
+
+schema-v2 backup موفق ساخته شد:
+
+`/var/backups/pvnaive/database/20260827T234959Z/pvnaive.dump.age`
+
+سپس systemd unit نصب/enable شد ولی service active نشد:
+
+```text
+Created symlink '/etc/systemd/system/multi-user.target.wants/pvnaive-api.service' → '/etc/systemd/system/pvnaive-api.service'.
+ERROR: pvnaive-api.service is not active
+S04_RESULT=FAILED
+FAILED_LINE=298
+ROLLBACK=STARTED
+ROLLBACK=COMPLETED
+CADDY_ACTION=none
+SSH_ACTION=none
+FIREWALL_ACTION=none
+```
+
+این آخرین وضعیت زنده است.
+
+### برداشت از rollback Attempt 3
+
+در recovery mode، migration قبلاً وجود داشت و `migration_owned=0` بود؛ بنابراین rollback فقط artifactهای S04 را پاک کرد و DB schema v2 را نگه داشت. با توجه به code و `ROLLBACK=COMPLETED` انتظار می‌رود اکنون:
+
+- schema = 2
+- `/opt/pvnaive/S04_AUTH.json` وجود نداشته باشد
+- `/etc/pvnaive/auth.key` حذف شده باشد
+- `/opt/pvnaive/bin/pvnaive` حذف شده باشد
+- `/opt/pvnaive/bin/pvnaive-password` حذف شده باشد
+- `/etc/systemd/system/pvnaive-api.service` حذف شده باشد
+- `pvnaive-api.service` active نباشد
+- port 8080 listener نداشته باشد
+- Caddy/SSH/Firewall unchanged
+
+اما Chat جدید باید این‌ها را قبل از retry دوباره verify کند؛ فقط از روی انتظار code فرض نکند.
+
+## blocker فعلی و قدم بعدی دقیق
+
+Blocker فعلی فقط این است:
+
+`pvnaive-api.service is not active`
+
+هیچ fix حدسی نزن. اول evidence بگیر.
+
+### اولین دستور تشخیصی بعدی روی سرور
+
+یک command فقط‌خواندنی بده که حداقل این موارد را جمع کند:
+
+```bash
+systemctl status pvnaive-api.service --no-pager -l || true
+journalctl -u pvnaive-api.service -b --no-pager -n 200 || true
+systemctl cat pvnaive-api.service || true
+systemctl show pvnaive-api.service -p Result -p ExecMainStatus -p ExecMainCode -p ActiveState -p SubState || true
+namei -l /etc/pvnaive/db.env /etc/pvnaive/auth.key /opt/pvnaive/bin/pvnaive 2>/dev/null || true
+ss -lntp | grep -E ':(22|80|443|5432|8080)([[:space:]]|$)' || true
+```
+
+چون rollback unit/key/binary را حذف کرده، اگر journal از service سابق هنوز موجود باشد علت startup را نشان می‌دهد. اگر journal insufficient بود، Stage را مستقیم retry نکن؛ یک diagnostic install بدون enable/start یا manual `runuser -u pvnaive` probe از bundle بساز تا علت دقیق معلوم شود.
+
+موارد محتمل مثل permission روی `db.env`, `PGPASSFILE`, `auth.key`, systemd sandbox یا runtime config فقط hypothesis هستند و تا journal evidence نیامده نباید به‌عنوان علت اعلام شوند.
+
+## backup collision fix در branch
+
+بعد از failure زنده، regression test `tests/db/backup_collision_test.sh` اضافه شد و CI wiring انجام شد. branch head در زمان این handoff:
+
+`ab025aebe96af2920f7e2a405b63b1bd9c965ad9`
+
+اما CI run `33127608010` روی این head هنوز `database=failure` دارد؛ Go و Web PASS هستند، rehearsal/bundle به‌دلیل database gate skip شده‌اند. بنابراین backup collision fix هنوز VERIFIED نهایی نیست و نباید bundle جدید از این head production تلقی شود تا database test root cause اصلاح و کل CI دوباره سبز شود.
+
+آخرین production bundle قابل استناد همچنان bundle commit `b4803e27...` است؛ با این تفاوت که روی سرور به‌دلیل recovery mode فقط یک backup می‌گیرد و collision قبلی در همان مسیر تکرار نمی‌شود.
+
+## systemd unit S04
+
+unit intended:
+
+- User/Group: `pvnaive`
+- EnvironmentFile: `/etc/pvnaive/db.env`
+- `PVNAIVE_AUTH_KEY_FILE=/etc/pvnaive/auth.key`
+- `PVNAIVE_LISTEN=127.0.0.1:8080`
+- ExecStart: `/opt/pvnaive/bin/pvnaive`
+- hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, PrivateTmp, PrivateDevices, RestrictAddressFamilies `AF_UNIX AF_INET`, empty capability set
+
+Stage بعد از `systemctl enable --now` تا 20 بار readiness را probe می‌کند و سپس active/listener/live/ready/schema/Caddy invariants را می‌سنجد.
+
+## چیزهایی که هنوز نباید انجام شوند
+
+- S04 را PASSED اعلام نکن.
+- PR #2 را merge نکن تا live localhost stage + independent postflight PASS شود و CI head نهایی هم سبز باشد.
+- Caddyfile را هنوز برای panel/API تغییر نده.
+- Owner واقعی را هنوز bootstrap نکن تا API localhost سالم و marker S04 ساخته شود.
+- S05 را شروع نکن.
+- schema v2 را دستی drop/rollback نکن مگر rollback procedure و backup verified صریح لازم شود.
+- Naive/Caddy forward proxy configuration را تغییر نده.
+
+## بعد از رفع service startup blocker
+
+ترتیب صحیح:
+
+1. root cause service را از journal مشخص کن.
+2. regression test برای همان root cause در branch اضافه کن.
+3. CI کامل را سبز کن.
+4. اگر fix نیازمند bundle جدید است، artifact جدید بساز و SHA-gated deploy کن؛ اگر فقط محیطی و bundle فعلی صحیح است، recovery امن را تکرار کن.
+5. S04 stage باید خروجی زیر بدهد:
+
+```text
+S04_RESULT=PASSED
+S04_MODE=LOCALHOST_READY
+S04_SCHEMA_VERSION=2
+S04_API_LISTENER=127.0.0.1:8080
+CADDY_ACTION=none
+SSH_ACTION=none
+FIREWALL_ACTION=none
+```
+
+6. postflight مستقل S04: marker، schema v2، service active، 127.0.0.1:8080 only، `/live`, `/ready`, auth key permissions، binary/service checks، DB roles/RLS، encrypted backup checksum، Caddy SHA و ports 22/80/443/5432.
+7. فقط بعد از postflight، S04 = PASSED.
+8. سپس owner واقعی با bootstrap local/root/TTY ساخته شود؛ password هرگز در command line یا repo ثبت نشود.
+9. login واقعی روی localhost test شود.
+10. بعد از آن Caddy integration برای `/panel/` و `/api/` با backup/validate/reload/rollback انجام شود.
+11. browser login نهایی test شود.
+12. سپس S05-USERS = NEXT.
+
+## قواعد امنیتی ثابت پروژه
+
+- account status و online/presence یکی نیستند.
+- depleted/expired باید جدا نمایش داده شوند.
+- unsupported capability در UI پنهان بماند.
+- Domain Activity پیش‌فرض خاموش و بدون TLS MITM است.
+- log نباید secret/token/password/path/query حساس داشته باشد.
+- config apply باید validate → stage → atomic → rollback باشد.
+- هیچ default password/token.
+- endpoint بدون Access contract ممنوع.
+- سایت عمومی و data plane از پنل جدا هستند.
+- Controller در MVP وجود ندارد.
+- Naive اولین Adapter است؛ طراحی باید extensible بماند.
+
+## چیزی که Chat جدید باید به کاربر بگوید
+
+نیازی نیست کاربر تاریخچه را دوباره توضیح دهد. بگو handoff را از Repository خواندی و آخرین blocker `pvnaive-api.service is not active` بعد از recovery S04 است. سپس فقط diagnostic read-only برای journal/status بده و از همان خروجی ادامه بده.
