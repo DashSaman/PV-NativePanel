@@ -82,11 +82,17 @@ app_context_execute="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT
 [[ "${app_key_select}" == "f" ]] || pvnaive_die "restored pvnaive_app can read the RLS signing key"
 [[ "${app_context_execute}" == "t" ]] || pvnaive_die "restored pvnaive_app context function privilege is missing"
 
-restored_pgcrypto="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto')")"
-[[ "${restored_pgcrypto}" == "t" ]] || pvnaive_die "pgcrypto extension was not restored"
+restored_pgcrypto_schema="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT n.nspname FROM pg_extension AS e JOIN pg_namespace AS n ON n.oid = e.extnamespace WHERE e.extname = 'pgcrypto'")"
+[[ "${restored_pgcrypto_schema}" == "pvnaive_crypto" ]] || pvnaive_die "pgcrypto extension was not restored into pvnaive_crypto"
+app_crypto_usage="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT has_schema_privilege('pvnaive_app', 'pvnaive_crypto', 'USAGE')")"
+app_hmac_execute="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT has_function_privilege('pvnaive_app', 'pvnaive_crypto.hmac(bytea,bytea,text)', 'EXECUTE')")"
+owner_hmac_execute="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT has_function_privilege('pvnaive_owner', 'pvnaive_crypto.hmac(bytea,bytea,text)', 'EXECUTE')")"
+[[ "${app_crypto_usage}" == "f" ]] || pvnaive_die "restored pvnaive_app has direct usage on the private pgcrypto schema"
+[[ "${app_hmac_execute}" == "f" ]] || pvnaive_die "restored pvnaive_app can directly execute private HMAC"
+[[ "${owner_hmac_execute}" == "t" ]] || pvnaive_die "restored pvnaive_owner cannot execute private HMAC"
 
-source_key_hash="$(pvnaive_psql_at --dbname "${PVNAIVE_DB_NAME}" --command "SELECT encode(digest(signing_key, 'sha256'), 'hex') FROM pvnaive.security_context_keys WHERE singleton")"
-restored_key_hash="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT encode(digest(signing_key, 'sha256'), 'hex') FROM pvnaive.security_context_keys WHERE singleton")"
+source_key_hash="$(pvnaive_psql_at --dbname "${PVNAIVE_DB_NAME}" --command "SELECT encode(pvnaive_crypto.digest(signing_key, 'sha256'), 'hex') FROM pvnaive.security_context_keys WHERE singleton")"
+restored_key_hash="$(pvnaive_psql_at --dbname "${target_db}" --command "SELECT encode(pvnaive_crypto.digest(signing_key, 'sha256'), 'hex') FROM pvnaive.security_context_keys WHERE singleton")"
 [[ -n "${source_key_hash}" && "${source_key_hash}" == "${restored_key_hash}" ]] || pvnaive_die "restored RLS signing key does not match source backup"
 unset source_key_hash restored_key_hash
 
@@ -97,4 +103,5 @@ echo "PVNAIVE_RESTORE_TARGET=${target_db}"
 echo "PVNAIVE_RESTORE_SCHEMA_VERSION=${restored_version}"
 echo "PVNAIVE_RESTORE_OWNERSHIP=PASSED"
 echo "PVNAIVE_RESTORE_ACLS=PASSED"
+echo "PVNAIVE_RESTORE_PGCRYPTO_SCHEMA=PASSED"
 echo "PVNAIVE_RESTORE_SIGNING_KEY=PASSED"
