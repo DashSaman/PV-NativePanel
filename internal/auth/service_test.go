@@ -50,7 +50,9 @@ func (f *fakeLoginStore) GetTOTPFactorPreAuth(context.Context, string) (TOTPFact
 func (f *fakeLoginStore) ConsumeTOTPStepPreAuth(context.Context, string, int64) (bool, error) {
 	return f.consumeTOTPOK, nil
 }
-func (f *fakeLoginStore) AppendAudit(context.Context, *string, string, string, string) error { return nil }
+func (f *fakeLoginStore) AppendAudit(context.Context, *string, string, string, string) error {
+	return nil
+}
 
 func TestLoginCreatesOnlyHashedSessionMaterialInStore(t *testing.T) {
 	passwordHash, err := HashPassword("correct horse battery staple")

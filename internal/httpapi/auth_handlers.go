@@ -158,7 +158,9 @@ func (s *server) mfaConfirm(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "mfa_unavailable", "message": "MFA is unavailable."})
 		return
 	}
-	var payload struct { Code string `json:"code"` }
+	var payload struct {
+		Code string `json:"code"`
+	}
 	if err := decodeStrictJSON(r, &payload); err != nil || payload.Code == "" {
 		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_request", "message": "Invalid request."})
 		return
@@ -174,7 +176,9 @@ func (s *server) mfaConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	step, valid, err := auth.ValidateTOTP(string(secret), payload.Code, time.Now().UTC(), factor.LastUsedStep)
-	for i := range secret { secret[i] = 0 }
+	for i := range secret {
+		secret[i] = 0
+	}
 	if err != nil || !valid {
 		writeJSON(w, http.StatusUnauthorized, envelope{"code": "mfa_invalid", "message": "MFA code is invalid."})
 		return
@@ -226,7 +230,9 @@ func (s *server) mfaRemove(w http.ResponseWriter, r *http.Request) {
 			secret, decryptErr := auth.DecryptSecret(s.config.MFAKey, factor.Nonce, factor.Ciphertext)
 			if decryptErr == nil {
 				step, valid, validateErr := auth.ValidateTOTP(string(secret), payload.TOTPCode, time.Now().UTC(), factor.LastUsedStep)
-				for i := range secret { secret[i] = 0 }
+				for i := range secret {
+					secret[i] = 0
+				}
 				if validateErr == nil && valid {
 					verified, err = s.config.AuthStore.ConsumeTOTPStep(r.Context(), request.Bound.Tx, request.Bound.Principal.ActorID, step)
 				}
@@ -246,12 +252,20 @@ func (s *server) mfaRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newRaw, newHash, err := auth.NewOpaqueToken()
-	if err != nil { writeJSON(w, http.StatusInternalServerError, envelope{"code": "mfa_remove_failed", "message": "MFA removal failed."}); return }
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, envelope{"code": "mfa_remove_failed", "message": "MFA removal failed."})
+		return
+	}
 	csrfRaw, csrfHash, err := auth.NewOpaqueToken()
-	if err != nil { writeJSON(w, http.StatusInternalServerError, envelope{"code": "mfa_remove_failed", "message": "MFA removal failed."}); return }
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, envelope{"code": "mfa_remove_failed", "message": "MFA removal failed."})
+		return
+	}
 	oldHash := auth.HashOpaqueToken(request.RawSessionToken)
 	expires := time.Now().UTC().Add(time.Hour)
-	if expires.After(request.Bound.Session.AbsoluteExpiresAt) { expires = request.Bound.Session.AbsoluteExpiresAt }
+	if expires.After(request.Bound.Session.AbsoluteExpiresAt) {
+		expires = request.Bound.Session.AbsoluteExpiresAt
+	}
 	rotated, err := s.config.AuthStore.RotateSessionTx(r.Context(), request.Bound.Tx, oldHash[:], newHash[:], csrfHash[:], hashUserAgent(r.UserAgent()), expires)
 	if err != nil || rotated.ReuseDetected {
 		writeJSON(w, http.StatusInternalServerError, envelope{"code": "mfa_remove_failed", "message": "MFA removal failed."})
@@ -285,7 +299,9 @@ func clearAuthCookies(w http.ResponseWriter) {
 }
 
 func hashUserAgent(userAgent string) []byte {
-	if userAgent == "" { return nil }
+	if userAgent == "" {
+		return nil
+	}
 	sum := sha256.Sum256([]byte(userAgent))
 	return sum[:]
 }
