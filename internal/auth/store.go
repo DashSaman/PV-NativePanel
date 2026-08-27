@@ -26,11 +26,11 @@ type ActorRecord struct {
 }
 
 type Principal struct {
-	ActorID     string `json:"actor_id"`
+	ActorID     string  `json:"actor_id"`
 	TenantID    *string `json:"tenant_id,omitempty"`
-	Role        string `json:"role"`
-	Email       string `json:"email"`
-	DisplayName string `json:"display_name"`
+	Role        string  `json:"role"`
+	Email       string  `json:"email"`
+	DisplayName string  `json:"display_name"`
 }
 
 type SessionRecord struct {
@@ -266,8 +266,14 @@ func (s *Store) ListSessions(ctx context.Context, tx *sql.Tx, actorID string) ([
 		if err := rows.Scan(&item.ID, &item.CreatedAt, &lastSeen, &item.ExpiresAt, &item.AbsoluteExpiresAt, &revoked); err != nil {
 			return nil, fmt.Errorf("auth: scan session: %w", err)
 		}
-		if lastSeen.Valid { v := lastSeen.Time; item.LastSeenAt = &v }
-		if revoked.Valid { v := revoked.Time; item.RevokedAt = &v }
+		if lastSeen.Valid {
+			v := lastSeen.Time
+			item.LastSeenAt = &v
+		}
+		if revoked.Valid {
+			v := revoked.Time
+			item.RevokedAt = &v
+		}
 		out = append(out, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -295,11 +301,17 @@ func (s *Store) GetTOTPFactor(ctx context.Context, tx *sql.Tx, actorID string) (
 	var out TOTPFactorRecord
 	var step sql.NullInt64
 	var confirmed sql.NullTime
-	if err := tx.QueryRowContext(ctx, `SELECT secret_ciphertext,secret_nonce,encryption_key_id,last_used_step,confirmed_at FROM pvnaive.auth_get_totp_factor($1::uuid)`, actorID).Scan(&out.Ciphertext,&out.Nonce,&out.KeyID,&step,&confirmed); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT secret_ciphertext,secret_nonce,encryption_key_id,last_used_step,confirmed_at FROM pvnaive.auth_get_totp_factor($1::uuid)`, actorID).Scan(&out.Ciphertext, &out.Nonce, &out.KeyID, &step, &confirmed); err != nil {
 		return TOTPFactorRecord{}, fmt.Errorf("auth: get TOTP factor: %w", err)
 	}
-	if step.Valid { v := step.Int64; out.LastUsedStep = &v }
-	if confirmed.Valid { v := confirmed.Time; out.ConfirmedAt = &v }
+	if step.Valid {
+		v := step.Int64
+		out.LastUsedStep = &v
+	}
+	if confirmed.Valid {
+		v := confirmed.Time
+		out.ConfirmedAt = &v
+	}
 	return out, nil
 }
 
@@ -308,7 +320,9 @@ func (s *Store) UpsertTOTPFactor(ctx context.Context, tx *sql.Tx, actorID string
 		return errors.New("auth: invalid TOTP persistence material")
 	}
 	_, err := tx.ExecContext(ctx, `SELECT pvnaive.auth_upsert_totp_factor($1::uuid,$2,$3,$4)`, actorID, ciphertext, nonce, keyID)
-	if err != nil { return fmt.Errorf("auth: upsert TOTP factor: %w", err) }
+	if err != nil {
+		return fmt.Errorf("auth: upsert TOTP factor: %w", err)
+	}
 	return nil
 }
 
@@ -317,44 +331,78 @@ func (s *Store) ConfirmTOTPFactor(ctx context.Context, tx *sql.Tx, actorID strin
 		return errors.New("auth: invalid MFA confirmation material")
 	}
 	values := make([][]byte, len(recoveryHashes))
-	for i := range recoveryHashes { values[i] = recoveryHashes[i][:] }
+	for i := range recoveryHashes {
+		values[i] = recoveryHashes[i][:]
+	}
 	_, err := tx.ExecContext(ctx, `SELECT pvnaive.auth_confirm_totp_factor($1::uuid,$2,$3::bytea[])`, actorID, step, values)
-	if err != nil { return fmt.Errorf("auth: confirm TOTP factor: %w", err) }
+	if err != nil {
+		return fmt.Errorf("auth: confirm TOTP factor: %w", err)
+	}
 	return nil
 }
 
 func (s *Store) ConsumeTOTPStep(ctx context.Context, tx *sql.Tx, actorID string, step int64) (bool, error) {
-	if tx == nil || actorID == "" || step < 0 { return false, errors.New("auth: invalid TOTP consume request") }
+	if tx == nil || actorID == "" || step < 0 {
+		return false, errors.New("auth: invalid TOTP consume request")
+	}
 	var ok bool
-	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_consume_totp_step($1::uuid,$2)`, actorID, step).Scan(&ok); err != nil { return false, fmt.Errorf("auth: consume TOTP step: %w", err) }
+	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_consume_totp_step($1::uuid,$2)`, actorID, step).Scan(&ok); err != nil {
+		return false, fmt.Errorf("auth: consume TOTP step: %w", err)
+	}
 	return ok, nil
 }
 
 func (s *Store) ConsumeRecoveryCode(ctx context.Context, tx *sql.Tx, actorID string, hash [32]byte) (bool, error) {
-	if tx == nil || actorID == "" { return false, errors.New("auth: invalid recovery-code consume request") }
+	if tx == nil || actorID == "" {
+		return false, errors.New("auth: invalid recovery-code consume request")
+	}
 	var ok bool
-	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_consume_recovery_code($1::uuid,$2)`, actorID, hash[:]).Scan(&ok); err != nil { return false, fmt.Errorf("auth: consume recovery code: %w", err) }
+	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_consume_recovery_code($1::uuid,$2)`, actorID, hash[:]).Scan(&ok); err != nil {
+		return false, fmt.Errorf("auth: consume recovery code: %w", err)
+	}
 	return ok, nil
 }
 
 func (s *Store) RemoveMFA(ctx context.Context, tx *sql.Tx, actorID string) error {
-	if tx == nil || actorID == "" { return errors.New("auth: invalid MFA removal request") }
-	if _, err := tx.ExecContext(ctx, `SELECT pvnaive.auth_remove_mfa($1::uuid)`, actorID); err != nil { return fmt.Errorf("auth: remove MFA: %w", err) }
+	if tx == nil || actorID == "" {
+		return errors.New("auth: invalid MFA removal request")
+	}
+	if _, err := tx.ExecContext(ctx, `SELECT pvnaive.auth_remove_mfa($1::uuid)`, actorID); err != nil {
+		return fmt.Errorf("auth: remove MFA: %w", err)
+	}
 	return nil
 }
 
 func (s *Store) AppendAudit(ctx context.Context, actorID *string, action, outcome, reason string) error {
-	if action == "" || outcome == "" { return errors.New("auth: audit action and outcome are required") }
+	if action == "" || outcome == "" {
+		return errors.New("auth: audit action and outcome are required")
+	}
 	var id any
-	if actorID != nil { id = *actorID }
-	if _, err := s.db.ExecContext(ctx, `SELECT pvnaive.auth_append_audit($1::uuid,$2,$3,$4,NULL,NULL)`, id, action, outcome, nullableString(reason)); err != nil { return fmt.Errorf("auth: append audit: %w", err) }
+	if actorID != nil {
+		id = *actorID
+	}
+	if _, err := s.db.ExecContext(ctx, `SELECT pvnaive.auth_append_audit($1::uuid,$2,$3,$4,NULL,NULL)`, id, action, outcome, nullableString(reason)); err != nil {
+		return fmt.Errorf("auth: append audit: %w", err)
+	}
 	return nil
 }
 
 func requireSHA256(label string, value []byte) error {
-	if len(value) != 32 { return fmt.Errorf("auth: %s hash must be 32 bytes", label) }
+	if len(value) != 32 {
+		return fmt.Errorf("auth: %s hash must be 32 bytes", label)
+	}
 	return nil
 }
 
-func nullableBytes(value []byte) any { if len(value) == 0 { return nil }; return value }
-func nullableString(value string) any { if value == "" { return nil }; return value }
+func nullableBytes(value []byte) any {
+	if len(value) == 0 {
+		return nil
+	}
+	return value
+}
+func nullableString(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
+}
