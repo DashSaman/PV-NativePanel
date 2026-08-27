@@ -23,7 +23,7 @@ pvnaive_validate_storage_root "${backup_root}"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 install -d -m 0700 "${backup_root}"
 temp_dir=""
-final_dir="${backup_root}/${stamp}"
+final_dir=""
 cleanup() {
   local code="$1"
   trap - EXIT HUP INT TERM
@@ -37,6 +37,11 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 temp_dir="$(mktemp -d "${backup_root}/.tmp.${stamp}.XXXXXX")"
+# The timestamp is intentionally human-readable, but it is not unique enough
+# for multiple backups created in the same second. Reuse mktemp's unique suffix
+# plus this process id so every completed backup gets a distinct final path.
+temp_suffix="${temp_dir##*.}"
+final_dir="${backup_root}/${stamp}-${BASHPID}-${temp_suffix}"
 [[ ! -e "${final_dir}" ]] || pvnaive_die "backup destination already exists"
 
 # Preserve ownership and ACL information. Restore drills run as PostgreSQL
