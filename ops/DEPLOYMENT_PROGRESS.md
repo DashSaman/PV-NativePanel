@@ -135,3 +135,14 @@
 - GitHub Actions run دوم: `33032317065`، run number 62؛ هر سه Job دوباره `runner_id=0` و `steps=[]` و conclusion=`failure` داشتند. تکرار مستقل تأیید می‌کند blocker مربوط به تخصیص runner است، نه workflow step یا کد.
 - hardening نهایی: migration و rollback اکنون connection بدون حق assume کردن `pvnaive_owner` را پیش از DDL رد می‌کنند؛ app credential مسیر schema change ندارد.
 - وضعیت Stage بدون تغییر: `S03-DATABASE=NEXT`؛ S03 هنوز اجرا یا PASSED نشده است.
+
+### تلاش اجرای S03 و شکست انتقال bundle — 2026-08-27 02:27 UTC
+
+- دستور اجراشده: bootstrap یک‌بلوک `bash -s <<'PVNAIVE_S03_BOOTSTRAP'` برای bundle مربوط به Commit `6d4e5ce1f4a3a7ded2d6d6ab982d30fae81f1483` و SHA-256 مورد انتظار `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd`.
+- خروجی مهم و خطای دقیق: `base64: error: invalid input`؛ به‌علت `set -Eeuo pipefail` shell همان‌جا متوقف شد و `scripts/stages/S03-database.sh` اجرا نشد.
+- علت: payload ثبت‌شده در terminal log با bundle اصلی یکسان نبود؛ داده دریافتی ۲۴۶۶۹ نویسه Base64 داشت، در حالی که مقدار معتبر ۲۴۴۸۸ نویسه است و چند substitution/insertion نیز مشاهده شد. انتقال بزرگ copy/paste خراب شده است؛ این failure از Migration یا PostgreSQL نیست.
+- اصلاح: انتقال بعدی با فایل binary قابل‌دانلود و upload به سرور انجام می‌شود؛ launcher کوتاه باید پیش از extract، SHA-256 ثابت bundle را بررسی کند.
+- فایل‌های تغییرکرده در این ثبت: `ops/DEPLOYMENT_PROGRESS.md` و `AGENT_HANDOFF.md`. کد Stage نسبت به Commit `6d4e5ce` تغییر نکرد.
+- Backup/Rollback: هیچ‌کدام لازم نشد؛ failure پیش از extract، نصب package، mutation دیتابیس یا اجرای Stage رخ داد. temporary directory با trap حذف شد. PostgreSQL نصب/پیکربندی نشد و Caddy/NaiveProxy/SSH/UFW دست‌نخورده ماندند.
+- وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` تولید نشد.
+- قدم بعدی دقیق: bundle معتبر را روی سرور upload، launcher کوتاه SHA-gated را اجرا و خروجی کامل را ثبت کن. فقط خروجی واقعی `S03_RESULT=PASSED` اجازه تغییر Stage را می‌دهد.
