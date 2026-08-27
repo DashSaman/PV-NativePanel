@@ -84,13 +84,13 @@ jobs:
               apt-get install --yes --no-install-recommends age >/dev/null
 
               bash -n scripts/db/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh
-              tests/stages/S03_preflight_test.sh
-              tests/stages/S03_apt_candidate_pipefail_test.sh
-              tests/stages/S03_ubuntu2604_contract_test.sh
-              tests/db/lib_test.sh
-              tests/db/migration_test.sh
-              tests/db/health_test.sh
-              tests/db/backup_restore_test.sh
+              bash tests/stages/S03_preflight_test.sh
+              bash tests/stages/S03_apt_candidate_pipefail_test.sh
+              bash tests/stages/S03_ubuntu2604_contract_test.sh
+              bash tests/db/lib_test.sh
+              bash tests/db/migration_test.sh
+              bash tests/db/health_test.sh
+              bash tests/db/backup_restore_test.sh
             '
 
       - name: PostgreSQL 18 logs on failure
