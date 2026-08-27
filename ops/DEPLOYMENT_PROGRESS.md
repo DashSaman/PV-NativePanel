@@ -146,3 +146,4 @@
 - Backup/Rollback: هیچ‌کدام لازم نشد؛ failure پیش از extract، نصب package، mutation دیتابیس یا اجرای Stage رخ داد. temporary directory با trap حذف شد. PostgreSQL نصب/پیکربندی نشد و Caddy/NaiveProxy/SSH/UFW دست‌نخورده ماندند.
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED` باقی می‌مانند؛ هیچ `S03_RESULT=PASSED` تولید نشد.
 - قدم بعدی دقیق: bundle معتبر را روی سرور upload، launcher کوتاه SHA-gated را اجرا و خروجی کامل را ثبت کن. فقط خروجی واقعی `S03_RESULT=PASSED` اجازه تغییر Stage را می‌دهد.
+- بازبینی bundle: اجرای اول checksum محلی از cwd اشتباه پیام `no file was verified` داد، چون مسیرهای manifest نسبی‌اند؛ پس از اجرای همان check از داخل `db/migrations`، هر دو Migration `OK` شدند. `bash -n`، مقایسه کامل محتوای extract‌شده با source و SHA-256 کل archive نیز `PASSED` است. این خطای فرمان بازبینی هیچ تغییری در کد یا سرور ایجاد نکرد.
