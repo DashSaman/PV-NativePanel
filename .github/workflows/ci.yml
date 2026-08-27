@@ -92,6 +92,7 @@ jobs:
               bash tests/db/migration_test.sh
               bash tests/db/health_test.sh
               bash tests/db/backup_restore_test.sh
+              bash tests/db/backup_collision_test.sh
               bash tests/db/auth_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
             '
