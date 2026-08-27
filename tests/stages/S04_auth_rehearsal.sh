@@ -106,7 +106,7 @@ curl --fail --silent --show-error --cookie "${tmpdir}/cookies.txt" \
   "http://127.0.0.1:${api_port}/api/v1/me" >"${tmpdir}/me.json"
 grep -q '"role":"owner"' "${tmpdir}/me.json"
 
-audit_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --set=owner_email="${owner_email}" --command "SELECT COUNT(*) FROM pvnaive.audit_events WHERE actor_id=(SELECT id FROM pvnaive.actors WHERE lower(email)=lower(:'owner_email')) AND action='auth.login' AND outcome='success'")"
+audit_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --set=owner_email="${owner_email}" --command "SELECT COUNT(*) FROM pvnaive.audit_events WHERE actor_id=(SELECT id FROM pvnaive.actors WHERE lower(email)=lower('owner-s04@example.invalid')) AND action='auth.login' AND outcome='success'")"
 [[ "${audit_count}" == "1" ]] || { echo "ERROR: login success audit count=${audit_count}" >&2; exit 1; }
 
 csrf="$(awk '$6 == "__Host-pvnaive_csrf" {print $7}' "${tmpdir}/cookies.txt" | tail -n1)"

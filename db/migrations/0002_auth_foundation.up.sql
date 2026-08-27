@@ -613,15 +613,15 @@ BEGIN
         END IF;
     END IF;
 
+    audit_id := public.gen_random_uuid();
     INSERT INTO pvnaive.audit_events (
-        tenant_id, actor_id, action, object_type, request_id,
+        id, tenant_id, actor_id, action, object_type, request_id,
         source_ip, outcome, reason_code
     )
     VALUES (
-        actor_tenant_id, p_actor_id, p_action, 'auth', p_request_id,
+        audit_id, actor_tenant_id, p_actor_id, p_action, 'auth', p_request_id,
         p_source_ip, p_outcome, p_reason_code
-    )
-    RETURNING id INTO audit_id;
+    );
     RETURN audit_id;
 END;
 $$;
