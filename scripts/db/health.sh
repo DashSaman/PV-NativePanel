@@ -10,7 +10,7 @@ source "${script_dir}/lib.sh"
 pvnaive_require_command psql
 pvnaive_require_command pg_isready
 pvnaive_db_defaults
-expected_version="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-1}"
+expected_version="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-2}"
 expected_db_user="${PVNAIVE_EXPECTED_DB_USER:-pvnaive_app}"
 [[ "${expected_version}" =~ ^[0-9]+$ ]] || pvnaive_die "invalid expected schema version"
 [[ "${expected_db_user}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "invalid expected database user"
@@ -44,6 +44,13 @@ if pvnaive_psql_at --command 'SELECT signing_key FROM pvnaive.security_context_k
   pvnaive_die "application role can directly SELECT the RLS signing key"
 fi
 
+if ((expected_version >= 2)); then
+  mfa_tables="$(pvnaive_psql_at --command "SELECT (to_regclass('pvnaive.actor_totp_factors') IS NOT NULL)::text || '|' || (to_regclass('pvnaive.actor_mfa_recovery_codes') IS NOT NULL)::text")"
+  [[ "${mfa_tables}" == "true|true" || "${mfa_tables}" == "t|t" ]] || pvnaive_die "S04 MFA tables are missing"
+  mfa_direct="$(pvnaive_psql_at --command "SELECT has_table_privilege(current_user, 'pvnaive.actor_totp_factors', 'SELECT')::text || '|' || has_table_privilege(current_user, 'pvnaive.actor_mfa_recovery_codes', 'SELECT')::text")"
+  [[ "${mfa_direct}" == "false|false" || "${mfa_direct}" == "f|f" ]] || pvnaive_die "application role has direct SELECT on MFA secret tables"
+fi
+
 health_row="$(pvnaive_psql_at --command "
 WITH required(name) AS (
   VALUES ('actors'), ('backups'), ('credentials'), ('notification_deliveries'),
@@ -52,7 +59,8 @@ WITH required(name) AS (
          ('reseller_plan_terms'), ('resellers'), ('runtime_health'),
          ('runtime_revisions'), ('schema_migrations'), ('sessions'), ('subscriptions'),
          ('subscription_tokens'), ('tenants'), ('usage_ledger'), ('usage_reset_events'),
-         ('users'), ('audit_events'), ('auth_sessions'), ('log_metadata')
+         ('users'), ('audit_events'), ('auth_sessions'), ('log_metadata'),
+         ('actor_totp_factors'), ('actor_mfa_recovery_codes')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -65,7 +73,11 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-[[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
+if ((expected_version >= 2)); then
+  [[ "${required_tables}" == "28" ]] || pvnaive_die "required table check failed: ${required_tables}/28"
+else
+  [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
+fi
 [[ "${rls_tables}" == "25" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/25"
 [[ "${destructive_migrations}" == "0" ]] || pvnaive_die "destructive migration record detected"
 
@@ -76,3 +88,6 @@ echo "PVNAIVE_DB_SERVER_ADDRESS=${server_address}"
 echo "PVNAIVE_DB_SERVER_PORT=${server_port}"
 echo "PVNAIVE_DB_CLIENT_ADDRESS=${client_address}"
 echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
+if ((expected_version >= 2)); then
+  echo "PVNAIVE_MFA_DIRECT_SELECT=DENIED"
+fi
