@@ -1,6 +1,6 @@
 # Agent Handoff
 
-آخرین به‌روزرسانی: 2026-08-26
+آخرین به‌روزرسانی: 2026-08-27
 
 ## قانون ادامه استقرار
 
@@ -55,10 +55,14 @@ Standalone خارج، بدون ایران و بدون Controller در MVP. Contr
 
 تست محلی frontend (۸ تست + build)، Bash syntax، checksum، diff check، Go 1.24.4 formatting/vet/test سبز است. GitHub Actions runهای `33031844663` و `33032317065` پیش از تخصیص runner شکست خوردند: هر سه Job در هر دو run، `runner_id=0` و `steps=[]` داشتند و هیچ تستی اجرا نشد. PostgreSQL server محلی نیز به‌علت محدودیت OS-user محیط configure نشد؛ integration دیتابیس فقط وقتی PASSED است که Stage واقعی migration+RLS+rollback+backup+restore را کامل کند. Commitهای S03: `45ba5c4` و fix `fbf21e8`. lockfile ساخته و `npm ci` فعال شده است.
 
+## آخرین تلاش S03 — 2026-08-27 02:27 UTC
+
+bootstrap مربوط به Commit `6d4e5ce` پیش از اجرای Stage با `base64: error: invalid input` متوقف شد. terminal log نشان داد payload بزرگ copy/paste با bundle دارای SHA-256 `b9199c30eff3df4c71ade1c7deb642a9ac00780ce5f8437e08641a76a59495cd` یکسان نیست. `set -Eeuo pipefail` مانع ادامه شد؛ PostgreSQL، Caddy/NaiveProxy، SSH و UFW تغییری نکردند و rollback لازم نبود. S03 همچنان `NEXT` است. دفعه بعد فایل bundle باید upload و با launcher کوتاه SHA-gated اجرا شود؛ از تکرار payload بزرگ در clipboard خودداری کن.
+
 ## کار بعدی دقیق
 
-1. بررسی GitHub Actions مربوط به Commit S03 و اصلاح هر failure
-2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` و ثبت خروجی کامل
+1. upload کردن bundle معتبر S03 و تأیید SHA-256 آن پیش از extract
+2. اجرای فقط `scripts/stages/S03-database.sh` روی `testAmir5-3` با launcher کوتاه و ثبت خروجی کامل
 3. در صورت `S03_RESULT=PASSED` تغییر S03 به PASSED و S04-AUTH به NEXT؛ در غیر این صورت ثبت failure و حفظ S03=NEXT
 4. سپس Auth/session/MFA امن
 5. fake adapter و capability/UI visibility tests
