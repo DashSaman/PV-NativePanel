@@ -19,7 +19,7 @@
 | IPv4 | `91.107.182.147` |
 | IPv6 | `2a01:4f8:c010:37ee::1` |
 | OS | Ubuntu 26.04 LTS |
-| Kernel | 7.0.0-29-generic |
+| Kernel | 7.0.0-30-generic |
 | RAM | 3.7 GiB |
 | Disk available | حدود 34 GiB |
 | Domain | `namir.softarg.ir` |
@@ -35,8 +35,8 @@
 | S00-NAMING | PASSED | اصلاح PVNative به PVNaive در محصول | module، UI، API service و docs اصلاح شدند؛ نام Repository هنوز قدیمی است |
 | S01-PREFLIGHT | PASSED | بررسی فقط‌خواندنی سرور | DNS، TLS، Caddy، ports، firewall و capacity سالم |
 | S02-FOUNDATION | PASSED | Backup محلی و ساخت directory/user پایه | backup و checksum سالم؛ user/directoryها ساخته شدند |
-| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | hardening چندعاملی و تست محلی پاس شد؛ اجرای واقعی با bundle نهایی لازم است |
-| S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |
+| S03-DATABASE | PASSED | PostgreSQL schema/migration/backup/restore/health | production + independent postflight passed |
+| S04-AUTH | NEXT | owner bootstrap, session, MFA, RBAC | active next stage |
 | S05-USERS | BLOCKED | User/Plan/Reseller CRUD | منتظر S04 |
 | S06-RUNTIME | BLOCKED | Atomic Caddy adapter و accounting PoC | منتظر S05 |
 | S07-SUBS | BLOCKED | Subscription page و renderer | منتظر S06 |
@@ -200,3 +200,23 @@
 - Backup/Rollback سرور: هیچ command جدیدی روی سرور اجرا نشده و rollback لازم نیست. bundle قدیمی `6d4e5ce` و candidate `f9f0d57f...` نباید استفاده شوند.
 - وضعیت Stage: `S03-DATABASE=NEXT` و `S04-AUTH=BLOCKED`. قدم بعدی دقیق: فایل نهایی را به `/root/pvnaive-s03-95a2689.tar.gz` upload، یک launcher SHA/inventory-gated اجرا و خروجی کامل را ثبت کن.
 - launcher نهایی نیز با `bash -n` پاس شد. negative test محلی عمداً به‌علت نبود `/opt/pvnaive/FOUNDATION.json` با exit 1 متوقف و دقیقاً یک‌بار `S03_LAUNCHER_RESULT=FAILED` چاپ کرد؛ این نشان می‌دهد trap ریشه‌ای launcher fail-closed است و این تست هیچ ارتباطی با وضعیت سرور هدف ندارد.
+
+
+## S03 FINAL PRODUCTION RESULT -- 2026-08-27 21:53-21:55 UTC
+
+- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
+- Production source commit: `02b02e0c2a0c2dbada04420b7a853adc08b000ab`.
+- PostgreSQL `18/main`, port 5432, loopback-only on `127.0.0.1` and `::1`.
+- Schema version 1; migration SHA-256 `7f66adefd8f09853db40e3160d0d7793f1bd0bcaf422a94d63d9d95a3a43a059`.
+- 25 RLS tables; pg_hba_file_rules errors=0; pgcrypto present.
+- pvnaive_app has no superuser/createdb/createrole/inherit/replication/bypassrls capability.
+- Application health passed as pvnaive_app; server/client loopback; direct signing-key SELECT denied.
+- Encrypted backup `/var/backups/pvnaive/database/20260827T215317Z/pvnaive.dump.age`; checksum passed; no plaintext dump.
+- Prechange backup `/var/backups/pvnaive/20260827T215310Z-S03-pre`; checksums passed.
+- Restore drill passed schema/ownership/ACL/signing-key verification.
+- Active DB release `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
+- Health timer enabled+active; latest service result success with exit status 0.
+- Caddy SHA unchanged `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
+- SSH and firewall unchanged; Caddy was not restarted.
+- Independent postflight passed after correcting a read-only JSON parser bug in the first postflight command.
+- Swap remains disabled; reassess before load test/pilot.

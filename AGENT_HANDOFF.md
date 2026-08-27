@@ -4,7 +4,7 @@
 
 ## قانون ادامه استقرار
 
-قبل از هر اقدام روی سرور، `ops/DEPLOYMENT_PROGRESS.md` را بخوان. فقط Stage دارای وضعیت `NEXT` اجرا شود و خروجی/خطا پیش از حرکت ثبت گردد. وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=NEXT`.
+قبل از هر اقدام روی سرور، `ops/DEPLOYMENT_PROGRESS.md` را بخوان. فقط Stage دارای وضعیت `NEXT` اجرا شود و خروجی/خطا پیش از حرکت ثبت گردد. وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=PASSED`, `S04-AUTH=NEXT`.
 
 ## آخرین استقرار سرور
 
@@ -96,3 +96,12 @@ launcher نهایی `bash -n` را پاس کرد و negative test محلیِ ف�
 - endpoint بدون Access ممنوع
 - log بدون secret/token/query
 - config apply باید validate/stage/atomic/rollback داشته باشد
+
+
+## S03 FINAL -- 2026-08-27 21:53-21:55 UTC
+
+- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
+- PostgreSQL 18/main is installed and loopback-only.
+- Production migration, application health, encrypted backup, restore drill, RLS/role checks and independent postflight all passed.
+- Caddy/SSH/Firewall invariants were preserved.
+- Continue only with S04-AUTH; S05+ remain blocked until S04 passes.
