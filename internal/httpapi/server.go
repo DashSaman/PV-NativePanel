@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 )
@@ -40,6 +39,38 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.AuthService != nil {
 				handler = http.HandlerFunc(s.login)
 			}
+		case "auth.refresh":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.refresh)
+			}
+		case "auth.logout":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.logout)
+			}
+		case "me.show":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.me)
+			}
+		case "me.sessions.index":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.sessions)
+			}
+		case "me.sessions.delete":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.deleteSession)
+			}
+		case "me.mfa.enroll":
+			if cfg.AuthStore != nil && len(cfg.MFAKey) == 32 {
+				handler = http.HandlerFunc(s.mfaEnroll)
+			}
+		case "me.mfa.confirm":
+			if cfg.AuthStore != nil && len(cfg.MFAKey) == 32 {
+				handler = http.HandlerFunc(s.mfaConfirm)
+			}
+		case "me.mfa.delete":
+			if cfg.AuthStore != nil && len(cfg.MFAKey) == 32 {
+				handler = http.HandlerFunc(s.mfaRemove)
+			}
 		}
 		if route.Access != Public {
 			handler = s.requireAuthentication(route, handler)
@@ -54,7 +85,7 @@ func live(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *server) ready(w http.ResponseWriter, _ *http.Request) {
-	ready := s.config.AuthService != nil && s.config.AuthStore != nil
+	ready := s.config.AuthService != nil && s.config.AuthStore != nil && len(s.config.MFAKey) == 32
 	status := "scaffold"
 	if ready {
 		status = "ready"
@@ -93,12 +124,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, envelope{"code": "authentication_unavailable", "message": "Authentication is unavailable."})
 		return
 	}
-	sessionCookie := newSessionCookie(result.SessionToken)
-	sessionCookie.Expires = result.ExpiresAt
-	csrfCookie := newCSRFCookie(result.CSRFToken)
-	csrfCookie.Expires = result.ExpiresAt
-	http.SetCookie(w, sessionCookie)
-	http.SetCookie(w, csrfCookie)
+	setAuthCookies(w, result.SessionToken, result.CSRFToken, result.ExpiresAt)
 	writeJSON(w, http.StatusOK, envelope{
 		"status": "authenticated", "actor_id": result.ActorID, "role": result.Role,
 		"expires_at": result.ExpiresAt, "absolute_expires_at": result.AbsoluteExpiresAt,
@@ -162,5 +188,3 @@ func writeJSON(w http.ResponseWriter, status int, payload envelope) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
 }
-
-var _ = time.Second
