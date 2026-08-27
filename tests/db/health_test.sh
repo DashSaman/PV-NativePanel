@@ -95,19 +95,20 @@ health_output="$(
     PVNAIVE_DB_NAME="${test_db}" \
     PVNAIVE_DB_USER=pvnaive_app \
     PVNAIVE_DB_CONNECT_TIMEOUT=5 \
-    PVNAIVE_EXPECTED_SCHEMA_VERSION=1 \
+    PVNAIVE_EXPECTED_SCHEMA_VERSION=2 \
     PVNAIVE_EXPECTED_DB_USER=pvnaive_app \
     PGPASSFILE="${pgpass}" \
     "${repo_root}/scripts/db/health.sh"
 )"
 
 grep -Fqx 'PVNAIVE_DB_HEALTH=OK' <<< "${health_output}"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=1' <<< "${health_output}"
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=2' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_USER=pvnaive_app' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_SERVER_ADDRESS=127.0.0.1' <<< "${health_output}"
 grep -Fqx "PVNAIVE_DB_SERVER_PORT=${PVNAIVE_DB_PORT}" <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_CLIENT_ADDRESS=127.0.0.1' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_SECRET_DIRECT_SELECT=DENIED' <<< "${health_output}"
+grep -Fqx 'PVNAIVE_CRYPTO_DIRECT_EXECUTE=DENIED' <<< "${health_output}"
 
 if env -u PGPASSWORD \
   PVNAIVE_DB_HOST="${PVNAIVE_DB_HOST}" \
