@@ -9,12 +9,15 @@ SET LOCAL statement_timeout = '120s';
 SET LOCAL ROLE pvnaive_owner;
 
 DROP FUNCTION pvnaive.auth_append_audit(uuid, text, text, text, uuid, inet);
+DROP POLICY auth_audit_owner_insert ON pvnaive.audit_events;
 DROP FUNCTION pvnaive.auth_remove_mfa(uuid);
 DROP FUNCTION pvnaive.auth_consume_recovery_code(uuid, bytea);
 DROP FUNCTION pvnaive.auth_consume_totp_step(uuid, bigint);
 DROP FUNCTION pvnaive.auth_confirm_totp_factor(uuid, bigint, bytea[]);
 DROP FUNCTION pvnaive.auth_upsert_totp_factor(uuid, bytea, bytea, text);
 DROP FUNCTION pvnaive.auth_get_totp_factor(uuid);
+DROP FUNCTION pvnaive.auth_revoke_other_actor_sessions(uuid, uuid);
+DROP FUNCTION pvnaive.auth_revoke_session_by_id(uuid, uuid);
 DROP FUNCTION pvnaive.auth_revoke_actor_sessions(uuid);
 DROP FUNCTION pvnaive.auth_revoke_session(bytea);
 DROP FUNCTION pvnaive.auth_rotate_session(bytea, bytea, bytea, bytea, timestamptz);

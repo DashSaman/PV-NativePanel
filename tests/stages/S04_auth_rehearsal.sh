@@ -32,7 +32,6 @@ psql_admin() {
 }
 
 cleanup() {
-  set +e
   if [[ -n "${api_pid}" ]]; then
     kill "${api_pid}" >/dev/null 2>&1 || true
     wait "${api_pid}" >/dev/null 2>&1 || true
@@ -42,7 +41,7 @@ cleanup() {
   dropdb --if-exists --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command 'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
   if [[ -n "${tmpdir}" ]]; then
-    rm -rf -- "${tmpdir}"
+    rm -rf -- "${tmpdir}" || true
   fi
 }
 cleanup
@@ -106,6 +105,9 @@ grep -q '"role":"owner"' "${tmpdir}/login.json"
 curl --fail --silent --show-error --cookie "${tmpdir}/cookies.txt" \
   "http://127.0.0.1:${api_port}/api/v1/me" >"${tmpdir}/me.json"
 grep -q '"role":"owner"' "${tmpdir}/me.json"
+
+audit_count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --set=owner_email="${owner_email}" --command "SELECT COUNT(*) FROM pvnaive.audit_events WHERE actor_id=(SELECT id FROM pvnaive.actors WHERE lower(email)=lower(:'owner_email')) AND action='auth.login' AND outcome='success'")"
+[[ "${audit_count}" == "1" ]] || { echo "ERROR: login success audit count=${audit_count}" >&2; exit 1; }
 
 csrf="$(awk '$6 == "__Host-pvnaive_csrf" {print $7}' "${tmpdir}/cookies.txt" | tail -n1)"
 [[ -n "${csrf}" ]] || { echo 'ERROR: CSRF cookie missing' >&2; exit 1; }

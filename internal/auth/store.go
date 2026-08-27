@@ -286,12 +286,11 @@ func (s *Store) RevokeSessionByID(ctx context.Context, tx *sql.Tx, actorID, sess
 	if tx == nil || actorID == "" || sessionID == "" {
 		return false, errors.New("auth: bound transaction, actor ID and session ID are required")
 	}
-	result, err := tx.ExecContext(ctx, `UPDATE pvnaive.auth_sessions SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE id=$1::uuid AND actor_id=$2::uuid AND revoked_at IS NULL`, sessionID, actorID)
-	if err != nil {
+	var revoked bool
+	if err := tx.QueryRowContext(ctx, `SELECT pvnaive.auth_revoke_session_by_id($1::uuid,$2::uuid)`, actorID, sessionID).Scan(&revoked); err != nil {
 		return false, fmt.Errorf("auth: revoke session by ID: %w", err)
 	}
-	count, err := result.RowsAffected()
-	return count == 1, err
+	return revoked, nil
 }
 
 func (s *Store) GetTOTPFactor(ctx context.Context, tx *sql.Tx, actorID string) (TOTPFactorRecord, error) {

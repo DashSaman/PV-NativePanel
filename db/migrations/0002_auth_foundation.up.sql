@@ -329,6 +329,54 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION pvnaive.auth_revoke_session_by_id(p_actor_id uuid, p_session_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog, pvnaive
+AS $$
+DECLARE
+    changed integer;
+BEGIN
+    IF NOT pvnaive.has_valid_context()
+       OR pvnaive.current_actor_id() IS DISTINCT FROM p_actor_id THEN
+        RAISE EXCEPTION 'authentication context required' USING ERRCODE = '42501';
+    END IF;
+    UPDATE pvnaive.auth_sessions
+       SET revoked_at = COALESCE(revoked_at, clock_timestamp())
+     WHERE id = p_session_id
+       AND actor_id = p_actor_id
+       AND revoked_at IS NULL;
+    GET DIAGNOSTICS changed = ROW_COUNT;
+    RETURN changed = 1;
+END;
+$$;
+
+CREATE FUNCTION pvnaive.auth_revoke_other_actor_sessions(p_actor_id uuid, p_current_session_id uuid)
+RETURNS bigint
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog, pvnaive
+AS $$
+DECLARE
+    changed bigint;
+BEGIN
+    IF NOT pvnaive.has_valid_context()
+       OR pvnaive.current_actor_id() IS DISTINCT FROM p_actor_id THEN
+        RAISE EXCEPTION 'authentication context required' USING ERRCODE = '42501';
+    END IF;
+    UPDATE pvnaive.auth_sessions
+       SET revoked_at = COALESCE(revoked_at, clock_timestamp())
+     WHERE actor_id = p_actor_id
+       AND id <> p_current_session_id
+       AND revoked_at IS NULL;
+    GET DIAGNOSTICS changed = ROW_COUNT;
+    RETURN changed;
+END;
+$$;
+
 CREATE FUNCTION pvnaive.auth_get_totp_factor(p_actor_id uuid)
 RETURNS TABLE (
     secret_ciphertext bytea,
@@ -527,6 +575,11 @@ BEGIN
 END;
 $$;
 
+CREATE POLICY auth_audit_owner_insert ON pvnaive.audit_events
+FOR INSERT
+TO pvnaive_owner
+WITH CHECK (true);
+
 CREATE FUNCTION pvnaive.auth_append_audit(
     p_actor_id uuid,
     p_action text,
@@ -580,6 +633,8 @@ REVOKE ALL ON FUNCTION pvnaive.auth_create_session(uuid, bytea, bytea, uuid, byt
 REVOKE ALL ON FUNCTION pvnaive.auth_rotate_session(bytea, bytea, bytea, bytea, timestamptz) FROM PUBLIC;
 REVOKE ALL ON FUNCTION pvnaive.auth_revoke_session(bytea) FROM PUBLIC;
 REVOKE ALL ON FUNCTION pvnaive.auth_revoke_actor_sessions(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION pvnaive.auth_revoke_session_by_id(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION pvnaive.auth_revoke_other_actor_sessions(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION pvnaive.auth_get_totp_factor(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION pvnaive.auth_upsert_totp_factor(uuid, bytea, bytea, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION pvnaive.auth_confirm_totp_factor(uuid, bigint, bytea[]) FROM PUBLIC;
@@ -595,6 +650,8 @@ GRANT EXECUTE ON FUNCTION pvnaive.auth_create_session(uuid, bytea, bytea, uuid, 
 GRANT EXECUTE ON FUNCTION pvnaive.auth_rotate_session(bytea, bytea, bytea, bytea, timestamptz) TO pvnaive_app;
 GRANT EXECUTE ON FUNCTION pvnaive.auth_revoke_session(bytea) TO pvnaive_app;
 GRANT EXECUTE ON FUNCTION pvnaive.auth_revoke_actor_sessions(uuid) TO pvnaive_app;
+GRANT EXECUTE ON FUNCTION pvnaive.auth_revoke_session_by_id(uuid, uuid) TO pvnaive_app;
+GRANT EXECUTE ON FUNCTION pvnaive.auth_revoke_other_actor_sessions(uuid, uuid) TO pvnaive_app;
 GRANT EXECUTE ON FUNCTION pvnaive.auth_get_totp_factor(uuid) TO pvnaive_app;
 GRANT EXECUTE ON FUNCTION pvnaive.auth_upsert_totp_factor(uuid, bytea, bytea, text) TO pvnaive_app;
 GRANT EXECUTE ON FUNCTION pvnaive.auth_confirm_totp_factor(uuid, bigint, bytea[]) TO pvnaive_app;
