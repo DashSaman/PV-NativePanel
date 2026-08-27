@@ -10,6 +10,7 @@ SET LOCAL idle_in_transaction_session_timeout = '60s';
 SET LOCAL ROLE pvnaive_owner;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE SCHEMA pvnaive AUTHORIZATION pvnaive_owner;
 REVOKE ALL ON SCHEMA pvnaive FROM PUBLIC;
 
@@ -664,7 +665,7 @@ BEGIN
 
     SELECT signing_key INTO signing_key_value FROM pvnaive.security_context_keys WHERE singleton;
     expected_signature := encode(
-        hmac(pvnaive.context_payload(actor_id_value, tenant_id_value, actor_role_value), signing_key_value, 'sha256'),
+        public.hmac(pvnaive.context_payload(actor_id_value, tenant_id_value, actor_role_value), signing_key_value, 'sha256'),
         'hex'
     );
     RETURN expected_signature = provided_signature;
@@ -730,7 +731,7 @@ BEGIN
 
     SELECT signing_key INTO signing_key_value FROM pvnaive.security_context_keys WHERE singleton;
     signature_value := encode(
-        hmac(
+        public.hmac(
             pvnaive.context_payload(selected_actor.id, selected_actor.tenant_id, selected_actor.actor_role),
             signing_key_value,
             'sha256'

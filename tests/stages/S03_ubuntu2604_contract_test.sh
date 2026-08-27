@@ -7,6 +7,7 @@ stage="${repo_root}/scripts/stages/S03-database.sh"
 backup="${repo_root}/scripts/db/backup.sh"
 restore="${repo_root}/scripts/db/restore.sh"
 health="${repo_root}/scripts/db/health.sh"
+migration="${repo_root}/db/migrations/0001_initial.up.sql"
 
 for file in "${stage}" "${backup}" "${restore}" "${health}"; do
   [[ -f "${file}" ]] || { echo "ERROR: missing ${file}" >&2; exit 1; }
@@ -64,6 +65,13 @@ fi
 
 grep -Fq 'application role can directly SELECT the RLS signing key' "${health}"
 grep -Fq 'PVNAIVE_SECRET_DIRECT_SELECT=DENIED' "${health}"
+
+grep -Fq 'REVOKE CREATE ON SCHEMA public FROM PUBLIC;' "${migration}"
+[[ "$(grep -Fc 'public.hmac(' "${migration}")" == "2" ]]
+if grep -Fq 'SET search_path = pg_catalog, pvnaive, public' "${migration}"; then
+  echo 'ERROR: SECURITY DEFINER search_path must not trust public' >&2
+  exit 1
+fi
 
 grep -Fq 'runuser -u pvnaive -- env' "${stage}"
 grep -Fq '"${release_link}/scripts/db/health.sh"' "${stage}"

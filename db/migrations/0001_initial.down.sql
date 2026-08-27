@@ -10,4 +10,3 @@ SET LOCAL lock_timeout = '10s';
 SET LOCAL statement_timeout = '120s';
 SET LOCAL ROLE pvnaive_owner;
 DROP SCHEMA pvnaive CASCADE;
-DROP EXTENSION IF EXISTS pgcrypto;

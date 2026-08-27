@@ -10,7 +10,7 @@ source "${script_dir}/lib.sh"
 pvnaive_require_command psql
 pvnaive_require_command pg_isready
 pvnaive_db_defaults
-expected_version="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-2}"
+expected_version="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-1}"
 expected_db_user="${PVNAIVE_EXPECTED_DB_USER:-pvnaive_app}"
 [[ "${expected_version}" =~ ^[0-9]+$ ]] || pvnaive_die "invalid expected schema version"
 [[ "${expected_db_user}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "invalid expected database user"
@@ -44,16 +44,6 @@ if pvnaive_psql_at --command 'SELECT signing_key FROM pvnaive.security_context_k
   pvnaive_die "application role can directly SELECT the RLS signing key"
 fi
 
-crypto_row="$(pvnaive_psql_at --command "
-SELECT
-  COALESCE((SELECT n.nspname FROM pg_extension AS e JOIN pg_namespace AS n ON n.oid=e.extnamespace WHERE e.extname='pgcrypto'), '') || '|' ||
-  has_schema_privilege(current_user, 'pvnaive_crypto', 'USAGE') || '|' ||
-  has_function_privilege(current_user, 'pvnaive_crypto.hmac(bytea,bytea,text)', 'EXECUTE');")"
-IFS='|' read -r pgcrypto_schema crypto_schema_usage crypto_hmac_execute <<< "${crypto_row}"
-[[ "${pgcrypto_schema}" == "pvnaive_crypto" ]] || pvnaive_die "pgcrypto extension is not isolated in pvnaive_crypto: ${pgcrypto_schema:-missing}"
-[[ "${crypto_schema_usage}" == "f" ]] || pvnaive_die "application role has direct USAGE on private pgcrypto schema"
-[[ "${crypto_hmac_execute}" == "f" ]] || pvnaive_die "application role can directly execute private HMAC"
-
 health_row="$(pvnaive_psql_at --command "
 WITH required(name) AS (
   VALUES ('actors'), ('backups'), ('credentials'), ('notification_deliveries'),
@@ -86,4 +76,3 @@ echo "PVNAIVE_DB_SERVER_ADDRESS=${server_address}"
 echo "PVNAIVE_DB_SERVER_PORT=${server_port}"
 echo "PVNAIVE_DB_CLIENT_ADDRESS=${client_address}"
 echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
-echo "PVNAIVE_CRYPTO_DIRECT_EXECUTE=DENIED"

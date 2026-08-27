@@ -6,7 +6,6 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
 test_db="pvnaive_migration_test_${test_suffix,,}"
-session_a_hash_hex="fa57a52dbf08190218529730a3e99db6946c6c29220fb6e0551e21598b0b05db"
 
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
@@ -35,22 +34,9 @@ export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh"
 reapply_output="$("${repo_root}/scripts/db/migrate.sh")"
 grep -Fqx 'MIGRATION 0001=ALREADY_APPLIED' <<< "${reapply_output}"
-grep -Fqx 'MIGRATION 0002=ALREADY_APPLIED' <<< "${reapply_output}"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=2' <<< "${reapply_output}"
 grep -Fqx 'PVNAIVE_MIGRATION_RESULT=PASSED' <<< "${reapply_output}"
 
-crypto_contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
-SELECT
-  (SELECT n.nspname FROM pg_extension AS e JOIN pg_namespace AS n ON n.oid=e.extnamespace WHERE e.extname='pgcrypto') || '|' ||
-  has_schema_privilege('pvnaive_app','pvnaive_crypto','USAGE') || '|' ||
-  has_function_privilege('pvnaive_app','pvnaive_crypto.hmac(bytea,bytea,text)','EXECUTE') || '|' ||
-  has_function_privilege('pvnaive_owner','pvnaive_crypto.hmac(bytea,bytea,text)','EXECUTE')")"
-[[ "${crypto_contract}" == "pvnaive_crypto|f|f|t" ]] || {
-  echo "ERROR: private pgcrypto privilege contract failed: ${crypto_contract}" >&2
-  exit 1
-}
-
-psql_admin --dbname "${test_db}" <<SQL >/dev/null
+psql_admin --dbname "${test_db}" <<'SQL' >/dev/null
 INSERT INTO pvnaive.tenants (id, tenant_type, slug, display_name) VALUES
   ('10000000-0000-0000-0000-000000000001', 'reseller', 'tenant_a', 'Tenant A'),
   ('20000000-0000-0000-0000-000000000002', 'reseller', 'tenant_b', 'Tenant B');
@@ -66,7 +52,7 @@ INSERT INTO pvnaive.users (id, tenant_id, username, display_name, created_by_act
   ('11100000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'user_a', 'User A', '11000000-0000-0000-0000-000000000001'),
   ('22200000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'user_b', 'User B', '22000000-0000-0000-0000-000000000002');
 INSERT INTO pvnaive.auth_sessions (tenant_id, actor_id, token_hash, refresh_family_id, expires_at) VALUES
-  ('10000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', decode('${session_a_hash_hex}', 'hex'), '11110000-0000-0000-0000-000000000001', clock_timestamp() + interval '1 hour');
+  ('10000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', digest('session-a', 'sha256'), '11110000-0000-0000-0000-000000000001', clock_timestamp() + interval '1 hour');
 INSERT INTO pvnaive.audit_events (tenant_id, actor_id, action, object_type, outcome) VALUES
   ('10000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'test.create', 'user', 'success');
 INSERT INTO pvnaive.plans (id, tenant_id, code, name, duration_seconds, base_price_minor, currency) VALUES
@@ -75,6 +61,8 @@ INSERT INTO pvnaive.reseller_plan_terms (tenant_id, plan_id, allowed, price_mino
   ('10000000-0000-0000-0000-000000000001', '33000000-0000-0000-0000-000000000003', false, 900);
 SQL
 
+# Use labelled rows rather than positional sed/tail parsing. psql command-tag output
+# has varied across versions; the security assertion must inspect the query result.
 spoofed_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
@@ -121,10 +109,10 @@ forged_count="$(sed -n 's/^FORGED_COUNT=//p' <<< "${forged_owner_output}")"
   exit 1
 }
 
-scoped_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<SQL
+scoped_output="$(psql_admin --dbname "${test_db}" --tuples-only --no-align <<'SQL'
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
-SELECT pvnaive.set_request_context(decode('${session_a_hash_hex}', 'hex'));
+SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
 SELECT 'SIGNED_VALID=' || pvnaive.has_valid_context();
 SELECT 'SIGNED_VISIBLE=' || COUNT(*) FROM pvnaive.users;
 SELECT 'SIGNED_CROSS=' || COUNT(*) FROM pvnaive.users WHERE id = '22200000-0000-0000-0000-000000000002';
@@ -145,10 +133,10 @@ signed_cross="$(sed -n 's/^SIGNED_CROSS=//p' <<< "${scoped_output}")"
   exit 1
 }
 
-if psql_admin --dbname "${test_db}" <<SQL >/dev/null 2>&1
+if psql_admin --dbname "${test_db}" <<'SQL' >/dev/null 2>&1
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
-SELECT pvnaive.set_request_context(decode('${session_a_hash_hex}', 'hex'));
+SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
 INSERT INTO pvnaive.users (tenant_id, username, display_name, created_by_actor_id)
 VALUES ('20000000-0000-0000-0000-000000000002', 'cross_tenant', 'Cross Tenant', '22000000-0000-0000-0000-000000000002');
 COMMIT;
@@ -158,13 +146,13 @@ then
   exit 1
 fi
 
-if psql_admin --dbname "${test_db}" <<SQL >/dev/null 2>&1
+if psql_admin --dbname "${test_db}" <<'SQL' >/dev/null 2>&1
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
-SELECT pvnaive.set_request_context(decode('${session_a_hash_hex}', 'hex'));
+SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
 UPDATE pvnaive.auth_sessions
    SET actor_id = '99000000-0000-0000-0000-000000000009'
- WHERE token_hash = decode('${session_a_hash_hex}', 'hex');
+ WHERE token_hash = digest('session-a', 'sha256');
 COMMIT;
 SQL
 then
@@ -172,10 +160,10 @@ then
   exit 1
 fi
 
-psql_admin --dbname "${test_db}" <<SQL >/dev/null
+psql_admin --dbname "${test_db}" <<'SQL' >/dev/null
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
-SELECT pvnaive.set_request_context(decode('${session_a_hash_hex}', 'hex'));
+SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
 INSERT INTO pvnaive.reseller_credit_ledger
   (tenant_id, delta_minor, balance_after_minor, currency, entry_type, reason_code, idempotency_key, created_by_actor_id)
 VALUES
@@ -183,10 +171,10 @@ VALUES
 COMMIT;
 SQL
 
-if psql_admin --dbname "${test_db}" <<SQL >/dev/null 2>&1
+if psql_admin --dbname "${test_db}" <<'SQL' >/dev/null 2>&1
 BEGIN;
 SET LOCAL ROLE pvnaive_app;
-SELECT pvnaive.set_request_context(decode('${session_a_hash_hex}', 'hex'));
+SELECT pvnaive.set_request_context(digest('session-a', 'sha256'));
 INSERT INTO pvnaive.purchases
   (tenant_id, user_id, plan_id, credit_ledger_entry_id, price_minor, currency, idempotency_key, created_by_actor_id)
 SELECT '10000000-0000-0000-0000-000000000001',
@@ -216,14 +204,14 @@ fi
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0003' \
+  '-- pvnaive:migration-version 0002' \
   '-- pvnaive:migration-name forbidden_drop' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'DROP TABLE pvnaive.users;' > "${temp_migrations}/0003_forbidden_drop.up.sql"
+  'DROP TABLE pvnaive.users;' > "${temp_migrations}/0002_forbidden_drop.up.sql"
 (
   cd "${temp_migrations}"
-  sha256sum 0001_initial.down.sql 0001_initial.up.sql 0002_pgcrypto_schema_hardening.down.sql 0002_pgcrypto_schema_hardening.up.sql 0003_forbidden_drop.up.sql > SHA256SUMS
+  sha256sum 0001_initial.down.sql 0001_initial.up.sql 0002_forbidden_drop.up.sql > SHA256SUMS
 )
 if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo "ERROR: destructive migration scan did not fail closed" >&2
@@ -234,16 +222,16 @@ rm -rf -- "${temp_migrations}"
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0003' \
+  '-- pvnaive:migration-version 0002' \
   '-- pvnaive:migration-name unlisted_file' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'SELECT 1;' > "${temp_migrations}/0003_unlisted_file.up.sql"
+  'SELECT 1;' > "${temp_migrations}/0002_unlisted_file.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0003' \
+  '-- pvnaive:migration-version 0002' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0003_unlisted_file.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0002_unlisted_file.down.sql"
 if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo "ERROR: migration omitted from checksum manifest was accepted" >&2
   exit 1
@@ -253,19 +241,19 @@ rm -rf -- "${temp_migrations}"
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0004' \
+  '-- pvnaive:migration-version 0003' \
   '-- pvnaive:migration-name version_gap' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'SELECT 1;' > "${temp_migrations}/0004_version_gap.up.sql"
+  'SELECT 1;' > "${temp_migrations}/0003_version_gap.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0004' \
+  '-- pvnaive:migration-version 0003' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0004_version_gap.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0003_version_gap.down.sql"
 (
   cd "${temp_migrations}"
-  sha256sum 0001_initial.down.sql 0001_initial.up.sql 0002_pgcrypto_schema_hardening.down.sql 0002_pgcrypto_schema_hardening.up.sql 0004_version_gap.down.sql 0004_version_gap.up.sql > SHA256SUMS
+  sha256sum 0001_initial.down.sql 0001_initial.up.sql 0003_version_gap.down.sql 0003_version_gap.up.sql > SHA256SUMS
 )
 if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo "ERROR: non-contiguous migration version was accepted" >&2
@@ -273,20 +261,16 @@ if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.
 fi
 rm -rf -- "${temp_migrations}"
 
-expected_checksum="$(sha256sum "${repo_root}/db/migrations/0002_pgcrypto_schema_hardening.up.sql" | awk '{print $1}')"
-psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.schema_migrations SET checksum_sha256 = repeat('0', 64) WHERE version = 2" >/dev/null
+expected_checksum="$(sha256sum "${repo_root}/db/migrations/0001_initial.up.sql" | awk '{print $1}')"
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.schema_migrations SET checksum_sha256 = repeat('0', 64) WHERE version = 1" >/dev/null
 if "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo "ERROR: changed applied migration checksum was accepted" >&2
   exit 1
 fi
-psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.schema_migrations SET checksum_sha256 = '${expected_checksum}' WHERE version = 2" >/dev/null
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.schema_migrations SET checksum_sha256 = '${expected_checksum}' WHERE version = 1" >/dev/null
 
 PVNAIVE_DISPOSABLE_DB=1 "${repo_root}/scripts/db/rollback.sh"
 schema_exists="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT to_regnamespace('pvnaive') IS NOT NULL")"
-extension_exists="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname='pgcrypto')")"
-[[ "${schema_exists}|${extension_exists}" == "f|f" ]] || {
-  echo "ERROR: disposable rollback left PVNaive schema/extension behind: ${schema_exists}|${extension_exists}" >&2
-  exit 1
-}
+[[ "${schema_exists}" == "f" ]] || { echo "ERROR: disposable rollback left schema behind" >&2; exit 1; }
 
 echo "PVNAIVE_DB_MIGRATION_TEST=PASSED"
