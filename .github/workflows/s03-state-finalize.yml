@@ -1,0 +1,126 @@
+name: Finalize S03 deployment state
+
+on:
+  push:
+    paths:
+      - .github/workflows/s03-state-finalize.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch deployment progress and handoff
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          progress = Path('ops/DEPLOYMENT_PROGRESS.md')
+          p = progress.read_text()
+
+          replacements = {
+              '| Kernel | 7.0.0-29-generic |': '| Kernel | 7.0.0-30-generic |',
+              '| S03-DATABASE | NEXT | طراحی و اجرای PostgreSQL schema/migration | hardening چندعاملی و تست محلی پاس شد؛ اجرای واقعی با bundle نهایی لازم است |': '| S03-DATABASE | PASSED | PostgreSQL schema/migration/backup/restore/health | اجرای production و postflight مستقل کامل پاس شد |',
+              '| S04-AUTH | BLOCKED | bootstrap owner، session، MFA و RBAC | منتظر S03 |': '| S04-AUTH | NEXT | bootstrap owner، session، MFA و RBAC | مرحله بعدی فعال |',
+              '`S03-DATABASE` اکنون `NEXT` است. GitHub Actions پیش از تخصیص runner متوقف شده، اما testهای محلی در ادامه ثبت شده‌اند؛ اکنون bundle تأییدشده فقط با فایل upload و launcher کوتاه اجرا و تمام خروجی آن ثبت شود. تا قبل از خروجی `S03_RESULT=PASSED`، S04 همچنان `BLOCKED` است.': '`S03-DATABASE` در 2026-08-27 کامل `PASSED` شد. مرحله فعال اکنون `S04-AUTH` است. قبل از هر اقدام سروری برای S04، طراحی و تست auth/session/MFA/RBAC باید با schema موجود هماهنگ و fail-closed باشد.'
+          }
+          for old, new in replacements.items():
+              if old not in p:
+                  raise SystemExit(f'missing expected progress text: {old[:80]}')
+              p = p.replace(old, new, 1)
+
+          final_section = '''
+
+## گزارش نهایی S03-DATABASE — 2026-08-27 21:53–21:55 UTC
+
+- نتیجه اجرای production: `S03_RESULT=PASSED` و launcher با `S03_EXIT_CODE=0` تمام شد.
+- Source production: commit `02b02e0c2a0c2dbada04420b7a853adc08b000ab`؛ source/blob/migration manifest پیش از اجرا verify شد.
+- PostgreSQL: cluster `18/main` روی port `5432` و فقط روی `127.0.0.1` و `::1`.
+- schema version: `1`؛ migration SHA-256: `7f66adefd8f09853db40e3160d0d7793f1bd0bcaf422a94d63d9d95a3a43a059`.
+- RLS: 25 table؛ `pg_hba_file_rules` بدون error؛ `pgcrypto` حاضر.
+- app role `pvnaive_app`: superuser/createdb/createrole/inherit/replication/bypassrls همگی false.
+- application health: `PVNAIVE_DB_HEALTH=OK`، user=`pvnaive_app`، server/client loopback و direct SELECT روی signing key=`DENIED`.
+- encrypted backup: `/var/backups/pvnaive/database/20260827T215317Z/pvnaive.dump.age`؛ checksum پاس و plaintext dump وجود ندارد.
+- prechange backup: `/var/backups/pvnaive/20260827T215310Z-S03-pre`؛ checksum تمام فایل‌ها پاس.
+- restore drill: schema/ownership/ACL/signing-key همگی پاس.
+- DB release: `/opt/pvnaive/db/current -> /opt/pvnaive/db/releases/0001-7f66adefd8f0`.
+- health timer enabled+active و health service آخرین اجرا `Result=success`, `ExecMainStatus=0`.
+- Caddy active و SHA-256 بدون تغییر `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
+- SSH/Firewall تغییر نکردند؛ Caddy restart نشد.
+- rehearsal disposable قبل از production مسیر migration→health→encrypted backup→restore→rollback را کامل پاس کرد.
+- postflight مستقل نهایی: `S03_POSTFLIGHT=PASSED`, `S03_DATABASE=PASSED`, `NEXT_STAGE=S04-AUTH`.
+- هشدار غیرمسدودکننده: swap همچنان صفر است؛ برای load test/Pilot دوباره ارزیابی شود.
+
+### وضعیت رسمی پس از S03
+
+- `S03-DATABASE=PASSED`
+- `S04-AUTH=NEXT`
+- S05 به بعد تا عبور S04 همچنان `BLOCKED` هستند.
+'''
+          if '## گزارش نهایی S03-DATABASE — 2026-08-27 21:53–21:55 UTC' not in p:
+              p += final_section
+          progress.write_text(p)
+
+          handoff = Path('AGENT_HANDOFF.md')
+          h = handoff.read_text()
+          h = h.replace(
+              'وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED` و `S03-DATABASE=NEXT`.',
+              'وضعیت فعلی: `S01-PREFLIGHT=PASSED`، `S02-FOUNDATION=PASSED`، `S03-DATABASE=PASSED` و `S04-AUTH=NEXT`.',
+              1,
+          )
+          h = h.replace(
+              'S02 در `testAmir5-3` موفق شد. Backup سالم: `/var/backups/pvnaive/20260826T201857Z`. Caddy/SSH/Firewall تغییر نکردند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.',
+              'S03 در `testAmir5-3` در 2026-08-27 21:53 UTC موفق شد و postflight مستقل نیز PASSED شد. PostgreSQL 18/main فقط loopback است، backup/restore/health پاس‌اند و Caddy/SSH/Firewall بدون تغییر مانده‌اند. برای جزئیات `ops/DEPLOYMENT_PROGRESS.md` مرجع اصلی است.',
+              1,
+          )
+          h = h.replace(
+              'Schema و ابزارهای امن S03 PostgreSQL آماده‌اند، اما هنوز روی سرور اجرا نشده‌اند. Runtime، auth و business logic پیاده‌سازی نشده‌اند؛ Production-ready نیست.',
+              'S03 PostgreSQL روی سرور اجرا و مستقل postflight شده است. Runtime، auth و business logic هنوز کامل نیستند؛ Production-ready نیست. Stage فعال اکنون S04-AUTH است.',
+              1,
+          )
+
+          summary = '''
+
+## S03 نهایی — 2026-08-27 21:53–21:55 UTC
+
+- `S03-DATABASE=PASSED`; `S04-AUTH=NEXT`.
+- production source commit: `02b02e0c2a0c2dbada04420b7a853adc08b000ab`.
+- PostgreSQL `18/main`, port 5432, loopback-only (`127.0.0.1`, `::1`).
+- schema version 1; 25 RLS tables; app health با `pvnaive_app` پاس و signing-key direct SELECT denied.
+- encrypted backup و prechange backup checksum پاس؛ restore drill ownership/ACL/signing-key پاس.
+- release فعال: `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
+- health timer enabled+active؛ آخرین service result success/0.
+- Caddy SHA بدون تغییر؛ SSH/Firewall تغییر نکردند.
+- postflight مستقل نهایی PASSED؛ خطای اولیه postflight فقط parser کامای JSON بود و با JSON parser دوباره verify شد.
+
+### قدم بعدی دقیق
+
+S04-AUTH را پیاده‌سازی و تست کن: owner bootstrap یک‌بارمصرف، password hashing امن، session token hash-only در DB، CSRF/session rotation، RBAC و MFA recovery-safe. تا S04 پاس نشده، S05 و مراحل بعد BLOCKED بمانند.
+'''
+          if '## S03 نهایی — 2026-08-27 21:53–21:55 UTC' not in h:
+              h += summary
+          handoff.write_text(h)
+          PY
+
+          git diff --check
+          grep -F '| S03-DATABASE | PASSED |' ops/DEPLOYMENT_PROGRESS.md
+          grep -F '| S04-AUTH | NEXT |' ops/DEPLOYMENT_PROGRESS.md
+          grep -F 'S03-DATABASE=PASSED' AGENT_HANDOFF.md
+
+      - name: Commit finalized state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ops/DEPLOYMENT_PROGRESS.md AGENT_HANDOFF.md
+          git commit -m 'ops: mark S03 passed and S04 next'
+          git push
