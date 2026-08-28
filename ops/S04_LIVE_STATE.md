@@ -1,48 +1,44 @@
 # S04-AUTH Live State — testAmir5-3
 
-Last updated: 2026-08-28 00:20 UTC
+Last updated: 2026-08-28 after independent postflight + green DB-release fix CI
 
-> Fast continuation file for any new Chat/Agent. Read this first, then `CONTINUE_HERE.md`, `AGENT_HANDOFF.md`, `ops/DEPLOYMENT_PROGRESS.md`, and the newest S04 evidence file. Do not infer live state from earlier failed attempts.
+> This is the authoritative fast continuation file. Read `CONTINUE_HERE.md`, the newest file under `ops/evidence/`, `AGENT_HANDOFF.md`, and `ops/DEPLOYMENT_PROGRESS.md` for supporting history. Do not infer live state from old attempts.
 
-## Current one-line state
+## Current state
 
-`S00-S03=PASSED`; `S04-AUTH=IN PROGRESS`; the fixed S04 Stage itself is installed and running successfully on localhost, and the independent postflight core passed. **The only remaining blocker before Owner bootstrap is that the periodic DB health timer still selects the immutable S03-era DB tooling release.**
+- `S00-S03=PASSED`.
+- `S04-AUTH=IN PROGRESS`, **not PASSED yet**.
+- S04 API/auth/web Stage is installed on `testAmir5-3` and the Stage run itself returned `S04_RESULT=PASSED` / `S04_MODE=LOCALHOST_READY`.
+- Independent S04 postflight core passed, but final postflight is blocked only by the periodic DB health timer selecting the S03-era immutable DB tooling release.
+- Do not bootstrap Owner and do not expose the panel through Caddy until the DB tooling release is promoted and independent postflight returns `S04_POSTFLIGHT=PASSED`.
 
-Do NOT mark S04 PASSED yet.
-
-## Current live server state — independently verified 2026-08-28 00:20:41 UTC
-
-Host: `testAmir5-3`
+## Live server facts verified by independent postflight at 2026-08-28 00:20:41 UTC
 
 - PostgreSQL 18 schema: `2`.
 - Migration 0002:
   `0002_auth_foundation.up.sql|84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886`.
-- `/etc/pvnaive/db.env` expects schema 2.
-- S04 marker exists and passed its independent contract check:
-  `/opt/pvnaive/S04_AUTH.json`.
-- Auth release:
-  `/opt/pvnaive/auth/releases/20260828T001418Z`.
-- Web release:
-  `/opt/pvnaive/web/releases/20260828T001418Z`.
+- `/etc/pvnaive/db.env`: `PVNAIVE_EXPECTED_SCHEMA_VERSION=2`.
+- S04 marker: `/opt/pvnaive/S04_AUTH.json` — contract passed.
+- Auth release: `/opt/pvnaive/auth/releases/20260828T001418Z`.
+- Web release: `/opt/pvnaive/web/releases/20260828T001418Z`.
 - Encrypted schema-v2 rollback backup:
-  `/var/backups/pvnaive/database/20260828T001418Z-96157-k53f6h/pvnaive.dump.age`.
-- `/etc/pvnaive/auth.key`: `root:pvnaive`, mode `0640`, exactly 32 bytes.
-- `pvnaive-api.service`: enabled + active, running as `pvnaive:pvnaive`, zero restarts at postflight.
+  `/var/backups/pvnaive/database/20260828T001418Z-96157-k53f6h/pvnaive.dump.age` — checksum + decrypt/parse passed.
+- Auth key: `root:pvnaive`, `0640`, 32 bytes.
+- `pvnaive-api.service`: enabled + active, runs as `pvnaive:pvnaive`, zero restarts at postflight.
 - API listener: only `127.0.0.1:8080`.
-- API liveness: `{"service":"pvnaive-api","status":"ok"}`.
-- API readiness: `{"ready":true,"status":"ready"}`.
+- Liveness: `{"service":"pvnaive-api","status":"ok"}`.
+- Readiness: `{"ready":true,"status":"ready"}`.
 - PostgreSQL remains loopback-only.
-- Caddy remains active and Caddyfile SHA-256 is unchanged:
+- Caddy active; Caddyfile SHA-256 unchanged:
   `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
-- SSH remains active.
-- S04 has not changed Caddy config, SSH config, or firewall.
+- SSH active; Caddy/SSH/firewall unchanged by S04.
 
-## Independent postflight result
+## Independent postflight blocker
 
-Evidence file:
+Evidence:
 `ops/evidence/S04-20260828T002041Z-postflight-core-pass-health-release-blocked.md`
 
-Result:
+Observed:
 
 ```text
 S04_POSTFLIGHT_CORE=PASSED
@@ -51,70 +47,74 @@ DB_TIMER_S04_AWARE=false
 BLOCKER=periodic pvnaive-db-health.service still uses the S03-era health release and does not verify S04 MFA secret tables
 ```
 
-Everything else in the independent postflight passed: marker/artifact identity, DB schema/roles, direct S04-aware DB health including MFA-secret boundary, API systemd/listener, encrypted rollback backup, Caddy and SSH invariants.
+Direct S04-aware health from `/opt/pvnaive/auth/current/scripts/db/health.sh` already passed schema2, `pvnaive_app`, signing-key denial and MFA secret-table denial. The timer unit itself also exits 0, but its selected immutable script is older and does not test the S04 MFA boundary.
 
-## Why the periodic health check is the only blocker
+## Root cause
 
-The health unit is intentionally stable and executes:
+`pvnaive-db-health.service` intentionally executes:
 
 `/opt/pvnaive/db/current/scripts/db/health.sh`
 
-That symlink still points to the immutable S03 tooling release (`0001-7f66adefd8f0`). The S04-aware health script under `/opt/pvnaive/auth/current/scripts/db/health.sh` already passes schema-2 and MFA-table checks, but the periodic timer does not select it.
+`/opt/pvnaive/db/current` still points to the immutable S03 release:
 
-Correct design: keep the unit unchanged, preserve the old S03 immutable DB release, create a schema-2 immutable DB tooling release, then atomically promote `/opt/pvnaive/db/current`.
+`/opt/pvnaive/db/releases/0001-7f66adefd8f0`
 
-Expected new DB tooling release ID:
-`0002-84bb735877d5`.
+The correct repair is to keep the systemd unit unchanged, preserve the S03 release, create a schema2 immutable DB tooling release and atomically promote the `current` symlink.
 
-## Repository fix — TDD status
+Expected new release:
 
-Development branch: `s04-auth`
+`/opt/pvnaive/db/releases/0002-84bb735877d5`
+
+## Repository repair — TDD complete and final CI green
+
+Active branch: `s04-auth`
 PR: `#2`
+Clean branch head used for final verification:
+`20ed774d06969a3f4c301fd6072a4db83fcffcca`
 
 TDD sequence:
 
 1. Added `tests/stages/S04_db_release_promotion_test.sh`.
-2. RED run `33129595441`: `scripts/db/promote-release.sh` did not exist.
-3. Added `scripts/db/promote-release.sh` at `d8c4751b77e59e3c2cdcad2e55e34729c9e51403`.
-4. Helper itself passed atomic/idempotent immutable release promotion test.
-5. Strengthened regression test to require Stage wiring.
-6. RED run `33129769272`: `S04 stage does not require the DB release promotion helper`.
-7. Guarded Stage patch succeeded; production Stage patch commit:
-   `708a4e7fd71011e5b21f136ae7305612f295a258`.
-8. Temporary one-shot patch workflow removed in user-authored commit:
-   `20ed774d06969a3f4c301fd6072a4db83fcffcca`.
-9. Clean-head full CI run: `33130012929`; verify final result before any live mutation.
+2. RED run `33129595441`: `scripts/db/promote-release.sh` missing.
+3. Implemented `scripts/db/promote-release.sh` at `d8c4751b77e59e3c2cdcad2e55e34729c9e51403`; helper atomic/idempotent behavior passed.
+4. Strengthened test to require Stage wiring.
+5. RED run `33129769272`: `ERROR: S04 stage does not require the DB release promotion helper`.
+6. Guarded Stage wiring patch succeeded in commit `708a4e7fd71011e5b21f136ae7305612f295a258`.
+7. Temporary one-shot workflow removed in normal-user clean-head commit `20ed774d06969a3f4c301fd6072a4db83fcffcca`.
+8. Final clean-head CI run `33130012929`: **SUCCESS**.
+9. All five gates passed: Go, Web, PostgreSQL18 regression suite, end-to-end authentication rehearsal, production bundle.
+10. Compare deployed source `11c54dc1...` → repair head `20ed774d...` shows the only change under `scripts/db` is the addition of `promote-release.sh`; migration files and existing DB scripts are unchanged.
 
-The fixed S04 Stage now promotes DB tooling for both fresh/recovery installs and existing-marker verification. If a Stage-owned migration genuinely rolls back to schema 1, its rollback path also restores the prior DB tooling release symlink; if schema remains 2, the v2 tooling release remains selected.
+The fixed Stage now performs the DB tooling promotion on fresh/recovery paths and existing-marker verification. Its rollback restores the old DB tooling symlink only if a Stage-owned migration actually returns schema to 1; if schema remains 2, schema2 tooling remains selected.
 
 ## Previously deployed pinned S04 artifact
 
-The live API/auth/web installation remains from the verified artifact:
+Live API/auth/web are still the validated deployment from:
 
 - source commit: `11c54dc1faae99a1491c750b30db9faa44a0c3ae`
 - CI: `33128780602`
 - artifact ID: `9669443464`
 - archive: `PVNaive-S04-11c54dc1faae.tar.gz`
-- archive SHA-256:
-  `52acdde2bff6777abeb31c081c86e018d1e7f5f0cdb39f8eb4151efbba2820fc`
+- SHA-256: `52acdde2bff6777abeb31c081c86e018d1e7f5f0cdb39f8eb4151efbba2820fc`
 
-Never reuse the older `b4803e27...` bundle.
+Never reuse old `b4803e27...` bundle.
 
-## Earlier failures already fixed
+## Earlier live failures already diagnosed and fixed
 
-1. Missing `file` utility on Ubuntu — installed and architecture checks passed.
-2. Same-second encrypted-backup directory collision — backup release path now has a unique suffix; regression tested.
-3. API used empty pgx DSN and tried OS role `pvnaive` — fixed to explicit fail-closed `PVNAIVE_DB_*` DSN; production-style rehearsal passed.
-4. `PVNAIVE_EXPECTED_SCHEMA_VERSION` stayed at 1 after migration 0002 — fixed atomically to 2 with rollback alignment.
-5. CI rehearsal previously masked production DB environment behavior — fixed to use exact production-style `PVNAIVE_DB_*` and DB name `pvnaive`.
+1. Ubuntu lacked `file`; package installed and bundled binaries verified x86-64 static ELF.
+2. Two backups in one second collided; backup directories now have unique suffixes and collision regression test passes.
+3. API opened pgx with an empty DSN and attempted OS role `pvnaive`; fixed to explicit validated `PVNAIVE_DB_*` DSN for `pvnaive_app`/`pvnaive` and production-style rehearsal.
+4. DB environment stayed at expected schema1 after migration 0002; fixed atomic schema expectation transition to 2 with rollback consistency.
+5. CI rehearsal had masked the production DB-env contract; fixed to exact production DB name and `PVNAIVE_DB_*` variables.
+6. Independent postflight then found the remaining immutable DB health release drift; repository fix above is green.
 
 ## Exact next action
 
-1. Require final clean-head CI for the DB release promotion fix to pass Go, Web, PostgreSQL18 regression gates, end-to-end rehearsal, and bundle.
-2. Do one atomic live DB tooling release promotion from immutable S03 release to `0002-84bb735877d5`; do not change DB schema, API binary, Caddy, SSH or firewall.
-3. Require periodic `pvnaive-db-health.service` to return `Result=success`, `ExecMainStatus=0`, and its selected health script to contain the S04 MFA checks.
-4. Rerun independent S04 postflight and require `DB_TIMER_S04_AWARE=true` plus `S04_POSTFLIGHT=PASSED`.
-5. Only then bootstrap the real Owner interactively.
-6. Verify localhost Owner login/session/logout.
-7. Only after localhost auth is proven, expose `/panel/` and `/api/` through Caddy using backup + validate + controlled reload.
-8. Run external postflight; only then mark `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
+1. On the live server, preflight schema2, exact migration checksum, S04 marker/API, current S03 DB release, Caddy SHA and timer state.
+2. Build an exact schema2 DB tooling source from the already-installed pinned S04 DB files plus the immutable commit-pinned `promote-release.sh` from repair head `20ed774d...`.
+3. Verify the downloaded helper against its Git blob SHA `0f83469e8f7928d8dbc58d1984fb236552a97e29` before execution.
+4. Atomically create/select `/opt/pvnaive/db/releases/0002-84bb735877d5`; preserve `0001-7f66adefd8f0`.
+5. Start `pvnaive-db-health.service`; require `Result=success`, exit 0, schema2 and `PVNAIVE_MFA_DIRECT_SELECT=DENIED` from the selected release.
+6. If any post-switch invariant fails, rollback only the DB `current` symlink to the S03 release; do not alter schema/API/Caddy/SSH/firewall.
+7. Rerun independent S04 postflight; require `DB_TIMER_S04_AWARE=true` and `S04_POSTFLIGHT=PASSED`.
+8. Only then bootstrap the real Owner, verify localhost authentication, expose `/panel/` + `/api/` through Caddy with backup/validate/controlled reload, perform external postflight, then mark `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
