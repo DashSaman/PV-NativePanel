@@ -328,7 +328,7 @@ func lexCaddyfile(input []byte) ([]token, error) {
 				}
 				if b == '"' {
 					i++
-				tokens = append(tokens, token{kind: tokenQuoted, start: start, end: i, line: line, depth: depth, firstOnLine: first})
+					tokens = append(tokens, token{kind: tokenQuoted, start: start, end: i, line: line, depth: depth, firstOnLine: first})
 					haveTokenOnLine = true
 					goto next
 				}
