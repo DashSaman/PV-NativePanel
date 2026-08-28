@@ -43,9 +43,11 @@ type customerScriptConn struct {
 	args    [][]driver.NamedValue
 }
 
-func (c *customerScriptConn) Prepare(string) (driver.Stmt, error) { return nil, errors.New("prepare not supported") }
-func (c *customerScriptConn) Close() error                        { return nil }
-func (c *customerScriptConn) Begin() (driver.Tx, error)           { return customerScriptTx{}, nil }
+func (c *customerScriptConn) Prepare(string) (driver.Stmt, error) {
+	return nil, errors.New("prepare not supported")
+}
+func (c *customerScriptConn) Close() error              { return nil }
+func (c *customerScriptConn) Begin() (driver.Tx, error) { return customerScriptTx{}, nil }
 func (c *customerScriptConn) BeginTx(context.Context, driver.TxOptions) (driver.Tx, error) {
 	return customerScriptTx{}, nil
 }
@@ -79,6 +81,7 @@ func (c *customerScriptConn) ExecContext(_ context.Context, query string, args [
 }
 
 type customerScriptTx struct{}
+
 func (customerScriptTx) Commit() error   { return nil }
 func (customerScriptTx) Rollback() error { return nil }
 
@@ -87,6 +90,7 @@ type customerRows struct {
 	values  []driver.Value
 	done    bool
 }
+
 func (r *customerRows) Columns() []string { return r.columns }
 func (r *customerRows) Close() error      { return nil }
 func (r *customerRows) Next(dest []driver.Value) error {
