@@ -5,6 +5,7 @@ umask 077
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 up="${repo_root}/db/migrations/0002_auth_foundation.up.sql"
 down="${repo_root}/db/migrations/0002_auth_foundation.down.sql"
+auth_migrations="$(mktemp -d)"
 
 [[ -f "${up}" ]] || { echo "ERROR: missing 0002_auth_foundation.up.sql" >&2; exit 1; }
 [[ -f "${down}" ]] || { echo "ERROR: missing 0002_auth_foundation.down.sql" >&2; exit 1; }
@@ -15,6 +16,15 @@ grep -Fqx -- '-- pvnaive:destructive false' "${up}"
 grep -Fqx -- '-- pvnaive:migration-version 0002' "${down}"
 grep -Fqx -- '-- pvnaive:transactional true' "${down}"
 grep -Fqx -- '-- pvnaive:destructive true' "${down}"
+
+cp "${repo_root}/db/migrations/0001_initial.up.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0001_initial.down.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.up.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.down.sql" "${auth_migrations}/"
+(
+  cd "${auth_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
 
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
@@ -39,6 +49,7 @@ cleanup() {
     --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command \
     'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
+  rm -rf -- "${auth_migrations}"
 }
 trap cleanup EXIT
 cleanup
@@ -52,7 +63,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
   --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 export PVNAIVE_DB_NAME="${test_db}"
-"${repo_root}/scripts/db/migrate.sh" >/dev/null
+PVNAIVE_MIGRATIONS_DIR="${auth_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
   'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
@@ -110,6 +121,7 @@ for table in actor_totp_factors actor_mfa_recovery_codes; do
   }
 done
 
+PVNAIVE_MIGRATIONS_DIR="${auth_migrations}" \
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
   "${repo_root}/scripts/db/rollback.sh" >/dev/null
 
