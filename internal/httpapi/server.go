@@ -7,15 +7,18 @@ import (
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
 type envelope map[string]any
 
 type ServerConfig struct {
-	AuthService    *auth.Service
-	AuthStore      *auth.Store
-	MFAKey         []byte
-	RuntimeService *runtimecred.Service
+	AuthService           *auth.Service
+	AuthStore             *auth.Store
+	MFAKey                []byte
+	RuntimeService        *runtimecred.Service
+	SubscriptionService   *subscription.Service
+	SubscriptionProxyHost string
 }
 
 type server struct {
@@ -48,6 +51,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "auth.logout":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.logout)
+			}
+		case "subscriptions.show":
+			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
+				handler = http.HandlerFunc(s.publicSubscription)
 			}
 		case "me.show":
 			if cfg.AuthStore != nil {
