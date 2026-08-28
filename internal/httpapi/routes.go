@@ -67,6 +67,7 @@ var Routes = []Route{
 	{"GET", "/api/v1/runtime/status", "runtime.status", Operator, false},
 	{"GET", "/api/v1/runtime/naive", "runtime.naive.show", Owner, true},
 	{"GET", "/api/v1/runtime/naive/credentials", "runtime.naive.credentials.index", Owner, true},
+	{"POST", "/api/v1/runtime/naive/import", "runtime.naive.import", Owner, true},
 	{"POST", "/api/v1/runtime/naive/credentials", "runtime.naive.credentials.create", Owner, true},
 	{"PATCH", "/api/v1/runtime/naive/credentials/{id}", "runtime.naive.credentials.update", Owner, true},
 	{"POST", "/api/v1/runtime/naive/credentials/{id}/rotate-password", "runtime.naive.credentials.rotate", Owner, true},
