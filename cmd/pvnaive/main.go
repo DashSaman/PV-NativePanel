@@ -15,9 +15,11 @@ import (
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -90,11 +92,18 @@ func run() error {
 		defer zeroBytes(runtimeKey)
 	}
 
+	customerService, subscriptionService, err := buildCustomerServices(db, runtimeService, runtimeKey, os.Getenv)
+	if err != nil {
+		return err
+	}
+
 	handler := httpapi.NewServer(httpapi.ServerConfig{
-		AuthService:    service,
-		AuthStore:      store,
-		MFAKey:         mfaKey,
-		RuntimeService: runtimeService,
+		AuthService:         service,
+		AuthStore:           store,
+		MFAKey:              mfaKey,
+		RuntimeService:      runtimeService,
+		CustomerService:     customerService,
+		SubscriptionService: subscriptionService,
 	})
 	server := &http.Server{
 		Addr:              listen,
@@ -168,6 +177,34 @@ func buildRuntimeService(db *sql.DB, getenv func(string) string) (*runtimecred.S
 		return nil, nil, err
 	}
 	return service, key, nil
+}
+
+func buildCustomerServices(
+	db *sql.DB,
+	runtimeService *runtimecred.Service,
+	runtimeKey []byte,
+	getenv func(string) string,
+) (*customer.Service, *subscription.Service, error) {
+	if runtimeService == nil {
+		return nil, nil, nil
+	}
+	if db == nil || len(runtimeKey) != 32 {
+		return nil, nil, errors.New("customer services require PostgreSQL and the runtime encryption key")
+	}
+	keyID := getenv("PVNAIVE_RUNTIME_KEY_ID")
+	if keyID == "" {
+		keyID = defaultRuntimeKeyID
+	}
+	customerStore := customer.NewPostgresStore()
+	createRuntime := func(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input runtimecred.CreateInput) (customer.RuntimeMutation, error) {
+		return runtimeService.Create(ctx, tx, actorID, idempotencyKey, input)
+	}
+	customerService := customer.NewService(customerStore, createRuntime, time.Now)
+	subscriptionService, err := subscription.NewService(subscription.NewPostgresStore(db), runtimeKey, keyID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return customerService, subscriptionService, nil
 }
 
 func databaseDSN(getenv func(string) string) (string, error) {
