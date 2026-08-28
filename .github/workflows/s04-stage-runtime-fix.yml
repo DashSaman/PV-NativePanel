@@ -1,0 +1,72 @@
+name: S04 Stage Runtime Fix
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.ref == 's04-auth'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: s04-auth
+          fetch-depth: 0
+      - name: Patch S04 stage contracts
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/stages/S04-auth.sh')
+          s = p.read_text()
+
+          patches = [
+              (
+                  'marker_created=0\nrollback_failures=()',
+                  'marker_created=0\ndb_env_schema_updated=0\nrollback_failures=()',
+              ),
+              (
+                  'scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh \\\n',
+                  'scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/set-expected-schema-version.sh \\\n',
+              ),
+              (
+                  '    else\n      rollback_failures+=("rollback-migration-0002-no-schema2-backup")\n    fi\n  fi\n\n  verify_caddy_invariants',
+                  '    else\n      rollback_failures+=("rollback-migration-0002-no-schema2-backup")\n    fi\n  fi\n\n  if [[ "${db_env_schema_updated}" == "1" ]]; then\n    rollback_schema="$(current_schema_version 2>/dev/null || true)"\n    if [[ "${rollback_schema}" == "1" ]]; then\n      PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\\n        bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 1 >/dev/null 2>&1 || \\\n        rollback_failures+=("restore-db-env-schema1")\n    elif [[ "${rollback_schema}" == "2" ]]; then\n      :\n    else\n      rollback_failures+=("db-env-schema-consistency")\n    fi\n  fi\n\n  verify_caddy_invariants',
+              ),
+              (
+                  '  [[ "$(current_schema_version)" == "${expected_schema_after}" ]] || die "S04 marker exists but schema is not version 2"\n  systemctl is-active --quiet pvnaive-api.service || die "S04 marker exists but API service is not active"',
+                  '  [[ "$(current_schema_version)" == "${expected_schema_after}" ]] || die "S04 marker exists but schema is not version 2"\n  grep -Fqx \'PVNAIVE_EXPECTED_SCHEMA_VERSION=2\' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"\n  systemctl start pvnaive-db-health.service\n  [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service is not successful for schema 2"\n  systemctl is-active --quiet pvnaive-api.service || die "S04 marker exists but API service is not active"',
+              ),
+              (
+                  '[[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"\n\ninstall -o root -g pvnaive -m 0640 /dev/null "${auth_key}"',
+                  '[[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"\n\nPVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\\n  bash "${release_link}/scripts/db/set-expected-schema-version.sh" 2\ndb_env_schema_updated=1\nsystemctl start pvnaive-db-health.service\n[[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service failed after schema-v2 environment update"\n\ninstall -o root -g pvnaive -m 0640 /dev/null "${auth_key}"',
+              ),
+          ]
+
+          for old, new in patches:
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'ERROR: patch match count {count} for {old[:80]!r}')
+              s = s.replace(old, new, 1)
+
+          p.write_text(s)
+          print('S04_STAGE_RUNTIME_PATCH=PASSED')
+          PY
+
+          bash -n scripts/stages/S04-auth.sh
+          grep -Fq 'set-expected-schema-version.sh' scripts/stages/S04-auth.sh
+          grep -Fq 'db_env_schema_updated=1' scripts/stages/S04-auth.sh
+          rm -f .github/workflows/s04-stage-runtime-fix.yml
+
+      - name: Commit patch
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/stages/S04-auth.sh .github/workflows/s04-stage-runtime-fix.yml
+          git commit -m 'fix: align S04 runtime database environment'
+          git push origin HEAD:s04-auth
