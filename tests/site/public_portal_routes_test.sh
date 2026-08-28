@@ -58,4 +58,6 @@ if grep -RhoE '(href|src)="http://[^" ]+"' "${site_root}" --include='*.html' --i
   exit 1
 fi
 
+python3 "${repo_root}/tests/site/public_media_manifest_test.py"
+
 echo 'PUBLIC_PORTAL_ROUTES_CONTRACT=PASSED'
