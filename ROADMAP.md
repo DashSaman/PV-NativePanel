@@ -42,15 +42,15 @@ Priority: `P0` blocker/critical, `P1` production-important, `P2` important capab
 |---|---|---|---|---|---|
 | PVN-018 | P0 | DONE | S04R architecture + detailed TDD plan | 017 | approved spec + plan in `docs/superpowers` |
 | PVN-019 | P0 | DONE | Migration 0003 runtime credential state | 018 | owner-only FORCE RLS, runtime revision idempotency, rollback to v2, full DB CI green |
-| PVN-020 | P0 | IN_PROGRESS | Runtime secret envelope + credential policy | 019 | AES-GCM/tamper/wrong-key/nonce/password/username tests green; no secret-exposing DTO |
-| PVN-021 | P0 | TODO | Byte-preserving Caddy `forward_proxy` parser/renderer | 020 | zero/multiple/ambiguous fail closed; only credential span changes; injection tests green |
-| PVN-022 | P0 | TODO | Unix-socket Runtime Agent protocol | 021 | AF_UNIX only, strict typed JSON, no arbitrary path/service/command, tests green |
-| PVN-023 | P0 | TODO | Privileged validate/apply/rollback operator | 022 | expected-SHA, exact backup, validate-before-write, reload-only, postflight + exact rollback tests |
-| PVN-024 | P0 | TODO | Runtime credential store + revision saga/compensation | 020,023 | desired→apply→applied state machine and DB-commit-failure compensation tests |
-| PVN-025 | P0 | TODO | Owner-only `/api/v1/runtime/naive` API | 024 | RBAC/CSRF/idempotency/revision/secret-redaction tests |
-| PVN-026 | P1 | TODO | `/runtime/naive` UI | 025 | metadata/actions/one-time generated secret/destructive confirmation/mobile tests |
-| PVN-027 | P0 | TODO | Full S04R disposable rehearsal | 021-026 | real binaries + PG18 + Unix socket + fake/safe Caddy lifecycle; multiple `basic_auth` syntax proven |
-| PVN-028 | P0 | TODO | Read-only live Naive import preflight | 027 | exact live Caddy/custom binary syntax/import equivalence verified; no mutation |
+| PVN-020 | P0 | DONE | Runtime secret envelope + credential policy | 019 | AES-GCM/tamper/wrong-key/nonce/password/username tests green; no secret-exposing DTO |
+| PVN-021 | P0 | DONE | Byte-preserving Caddy `forward_proxy` parser/renderer | 020 | zero/multiple/ambiguous fail closed; only credential span changes; injection tests green |
+| PVN-022 | P0 | DONE | Unix-socket Runtime Agent protocol | 021 | AF_UNIX only, strict typed JSON, no arbitrary path/service/command, tests green |
+| PVN-023 | P0 | DONE | Privileged validate/apply/rollback operator | 022 | expected-SHA, exact backup, validate-before-write, reload-only, postflight + exact rollback tests |
+| PVN-024 | P0 | DONE | Runtime credential store + revision saga/compensation | 020,023 | desired→apply→applied state machine and DB-commit-failure compensation tests |
+| PVN-025 | P0 | DONE | Owner-only `/api/v1/runtime/naive` API | 024 | RBAC/CSRF/idempotency/revision/secret-redaction tests |
+| PVN-026 | P1 | DONE | `/runtime/naive` UI | 025 | metadata/actions/one-time generated secret/destructive confirmation/mobile client build; copy-ready Naive URI |
+| PVN-027 | P0 | DONE | Full S04R disposable rehearsal | 021-026 | real binaries + PG18 + Unix socket + fake/safe Caddy lifecycle; multiple `basic_auth` syntax proven against pinned Caddy |
+| PVN-028 | P0 | IN_PROGRESS | Read-only live Naive import preflight | 027 | exact live Caddy/custom binary syntax/import equivalence verified; no mutation |
 | PVN-029 | P0 | TODO | Guarded production import + browser mutations postflight | 028 | current credential preserved, apply/rollback gates, new/rotate/disable/revoke behavior verified safely |
 
 ## Phase D — Security hardening / formal S04 closure
@@ -129,16 +129,18 @@ Priority: `P0` blocker/critical, `P1` production-important, `P2` important capab
 ## Progress snapshot
 
 - Total: 72
-- DONE: 19
-- IN_PROGRESS: 2 (`PVN-020`, `PVN-068`)
+- DONE: 27
+- IN_PROGRESS: 2 (`PVN-028`, `PVN-068`)
 - BLOCKED: 0
-- TODO: 51
-- Completion: **26.4%** (`19 / 72`)
+- TODO: 43
+- Completion: **37.5%** (`27 / 72`)
 
 ## Dependency-critical execution order from current state
 
-`PVN-068 documentation baseline` can proceed independently while current TDD continues. Code path is:
+The S04R implementation and disposable rehearsal chain is complete through `PVN-027`. The next production-safe sequence is:
 
-`PVN-020 → 021 → 022 → 023 → 024 → 025 → 026 → 027 → 028 → 029 → 030/031/032/033/034/035 → 036 → 037...`
+`PVN-028 live read-only preflight → PVN-029 guarded pilot rollout/postflight → PVN-030/031/032/033/034/035 → PVN-036 formal S04 closure → PVN-037...`
+
+For the immediate Pilot, use `docs/PILOT_INSTALL_FA.md`. Customers receive only their Naive credential/link; they do not receive Owner panel credentials.
 
 `PVN-070` branch reconciliation must happen only at a controlled green point; never reset/force-push away production evidence or active feature work.
