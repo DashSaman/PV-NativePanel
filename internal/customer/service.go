@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
 type Store interface {
@@ -18,6 +19,7 @@ type Store interface {
 	CreateUserTx(context.Context, *sql.Tx, CreateUserRecord) (User, error)
 	CreateServiceTermTx(context.Context, *sql.Tx, CreateServiceTermRecord) (ServiceTerm, error)
 	BindRuntimeCredentialTx(context.Context, *sql.Tx, string, string, string, string) error
+	CreateSubscriptionTokenTx(context.Context, *sql.Tx, CreateSubscriptionTokenRecord) error
 }
 
 type RuntimeMutation interface {
@@ -49,6 +51,7 @@ type CreateCustomerResult struct {
 	ServiceTerm       ServiceTerm                `json:"service_term"`
 	RuntimeCredential runtimecred.CredentialView `json:"runtime_credential"`
 	GeneratedPassword string                     `json:"generated_password,omitempty"`
+	SubscriptionToken string                     `json:"subscription_token,omitempty"`
 	UsageCapability   UsageCapability            `json:"usage_capability"`
 }
 
@@ -121,20 +124,46 @@ func (s *Service) CreateCustomer(ctx context.Context, tx *sql.Tx, actorID, idemp
 		return CreateCustomerResult{}, errors.New("customer: runtime mutation returned empty credential id")
 	}
 	if err := s.store.BindRuntimeCredentialTx(ctx, tx, tenantID, user.ID, term.ID, credential.ID); err != nil {
-		abortErr := mutation.AbortAndRollback(ctx, tx)
-		if abortErr != nil {
-			return CreateCustomerResult{}, fmt.Errorf("customer: bind runtime credential: %v; abort: %w", err, abortErr)
-		}
-		return CreateCustomerResult{}, fmt.Errorf("customer: bind runtime credential: %w", err)
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "bind runtime credential", err)
 	}
+
+	rawSubscriptionToken, tokenHash, err := subscription.GenerateToken()
+	if err != nil {
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "generate subscription token", err)
+	}
+	tokenPrefix := rawSubscriptionToken
+	if len(tokenPrefix) > 10 {
+		tokenPrefix = tokenPrefix[:10]
+	}
+	if err := s.store.CreateSubscriptionTokenTx(ctx, tx, CreateSubscriptionTokenRecord{
+		TenantID:            tenantID,
+		UserID:              user.ID,
+		ServiceTermID:       term.ID,
+		RuntimeCredentialID: credential.ID,
+		TokenHash:           append([]byte(nil), tokenHash[:]...),
+		TokenPrefix:         tokenPrefix,
+		ExpiresAt:           term.ExpiresAt,
+	}); err != nil {
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "persist subscription token", err)
+	}
+
 	if err := mutation.CommitAndFinalize(ctx, tx); err != nil {
 		return CreateCustomerResult{}, fmt.Errorf("customer: finalize runtime mutation: %w", err)
 	}
 
 	return CreateCustomerResult{
 		User: user, ServiceTerm: term, RuntimeCredential: credential,
-		GeneratedPassword: mutation.TakeGeneratedPassword(), UsageCapability: DefaultUsageCapability(),
+		GeneratedPassword: mutation.TakeGeneratedPassword(), SubscriptionToken: rawSubscriptionToken,
+		UsageCapability: DefaultUsageCapability(),
 	}, nil
+}
+
+func abortRuntimeMutation(ctx context.Context, tx *sql.Tx, mutation RuntimeMutation, operation string, cause error) error {
+	abortErr := mutation.AbortAndRollback(ctx, tx)
+	if abortErr != nil {
+		return fmt.Errorf("customer: %s: %v; abort: %w", operation, cause, abortErr)
+	}
+	return fmt.Errorf("customer: %s: %w", operation, cause)
 }
 
 func validityModeToStartPolicy(mode ValidityMode) (StartPolicy, error) {
