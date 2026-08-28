@@ -37,9 +37,13 @@ type subscriptionScriptConn struct {
 	args          []driver.NamedValue
 }
 
-func (c *subscriptionScriptConn) Prepare(string) (driver.Stmt, error) { return nil, errors.New("prepare not supported") }
-func (c *subscriptionScriptConn) Close() error                        { return nil }
-func (c *subscriptionScriptConn) Begin() (driver.Tx, error)           { return nil, errors.New("transaction not supported") }
+func (c *subscriptionScriptConn) Prepare(string) (driver.Stmt, error) {
+	return nil, errors.New("prepare not supported")
+}
+func (c *subscriptionScriptConn) Close() error { return nil }
+func (c *subscriptionScriptConn) Begin() (driver.Tx, error) {
+	return nil, errors.New("transaction not supported")
+}
 func (c *subscriptionScriptConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	if !strings.Contains(query, c.queryContains) {
 		return nil, errors.New("query did not contain resolver contract")
