@@ -137,6 +137,9 @@ func RenderCredentials(input []byte, credentials []runtimecred.DesiredCredential
 	if len(active) == 0 {
 		return nil, errors.New("naiveruntime: at least one active credential is required")
 	}
+	if equivalentActiveCredentials(active, inspection.credentials) {
+		return append([]byte(nil), input...), nil
+	}
 
 	var replacement strings.Builder
 	for _, credential := range active {
@@ -157,6 +160,23 @@ func RenderCredentials(input []byte, credentials []runtimecred.DesiredCredential
 	output = append(output, replacement.String()...)
 	output = append(output, input[inspection.credentialEnd:]...)
 	return output, nil
+}
+
+func equivalentActiveCredentials(active []runtimecred.DesiredCredential, live []parsedCredential) bool {
+	if len(active) != len(live) {
+		return false
+	}
+	passwords := make(map[string]string, len(active))
+	for _, credential := range active {
+		passwords[credential.Username] = credential.Password()
+	}
+	for _, credential := range live {
+		password, ok := passwords[credential.username]
+		if !ok || password != credential.password {
+			return false
+		}
+	}
+	return true
 }
 
 func findForwardProxyBlock(tokens []token) (int, int, error) {
@@ -308,7 +328,7 @@ func lexCaddyfile(input []byte) ([]token, error) {
 				}
 				if b == '"' {
 					i++
-					tokens = append(tokens, token{kind: tokenQuoted, start: start, end: i, line: line, depth: depth, firstOnLine: first})
+				tokens = append(tokens, token{kind: tokenQuoted, start: start, end: i, line: line, depth: depth, firstOnLine: first})
 					haveTokenOnLine = true
 					goto next
 				}
