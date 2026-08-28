@@ -57,6 +57,7 @@ fi
 
 python3 "${repo_root}/tests/site/public_media_manifest_test.py"
 python3 "${repo_root}/tests/site/public_media_density_test.py"
+python3 "${repo_root}/tests/site/public_media_retry_test.py"
 bash "${repo_root}/tests/site/public_media_pages_test.sh"
 bash "${repo_root}/tests/site/media_sync_test.sh"
 
