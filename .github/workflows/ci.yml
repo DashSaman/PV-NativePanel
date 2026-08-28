@@ -85,7 +85,7 @@ jobs:
               apt-get update >/dev/null
               apt-get install --yes --no-install-recommends age file >/dev/null
 
-              bash -n scripts/db/*.sh scripts/auth/*.sh scripts/release/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh tests/auth/*.sh
+              bash -n scripts/db/*.sh scripts/auth/*.sh scripts/release/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh tests/auth/*.sh tests/release/*.sh
               bash tests/stages/S03_preflight_test.sh
               bash tests/stages/S03_apt_candidate_pipefail_test.sh
               bash tests/stages/S03_ubuntu2604_contract_test.sh
@@ -225,6 +225,8 @@ jobs:
         env:
           PVNAIVE_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
         run: bash scripts/release/build-s04-bundle.sh
+      - name: Verify S04R production bundle contract
+        run: bash tests/release/S04R_bundle_contract_test.sh dist/artifacts
       - name: Verify production archive checksum
         run: |
           set -Eeuo pipefail
