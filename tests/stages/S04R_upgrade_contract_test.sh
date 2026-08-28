@@ -37,4 +37,6 @@ migrate_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/migrate.sh"' "${targ
   exit 1
 }
 
+bash tests/stages/S04R_module_pipefail_regression_test.sh
+
 echo 'S04R_UPGRADE_CONTRACT=PASSED'
