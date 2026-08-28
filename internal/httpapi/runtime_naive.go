@@ -41,6 +41,41 @@ func (s *server) runtimeNaiveCredentials(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, envelope{"credentials": credentials})
 }
 
+func (s *server) runtimeNaiveImport(w http.ResponseWriter, r *http.Request) {
+	idempotencyKey, err := runtimeIdempotencyKey(r)
+	if err != nil {
+		writeRuntimeInvalidRequest(w)
+		return
+	}
+	var payload struct{}
+	if err := decodeRuntimeJSON(r, &payload); err != nil {
+		writeRuntimeInvalidRequest(w)
+		return
+	}
+	authenticated, ok := authenticatedFromRequest(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, envelope{"code": "authentication_required", "message": "Authentication is required."})
+		return
+	}
+	credentials, err := s.config.RuntimeService.ImportCurrent(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, idempotencyKey)
+	if err != nil {
+		finishRuntimeTransaction(r)
+		writeRuntimeServiceError(w, err)
+		return
+	}
+	if err := authenticated.Bound.Tx.Commit(); err != nil {
+		authenticated.TransactionFinalized = true
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "runtime_import_commit_failed", "message": "Live runtime was not changed and import was not committed."})
+		return
+	}
+	authenticated.TransactionFinalized = true
+	writeJSON(w, http.StatusOK, envelope{
+		"status":      "imported",
+		"credentials": credentials,
+		"notice":      "Current live credentials were encrypted into management state without changing Caddy.",
+	})
+}
+
 func (s *server) runtimeNaiveCreateCredential(w http.ResponseWriter, r *http.Request) {
 	idempotencyKey, err := runtimeIdempotencyKey(r)
 	if err != nil {
@@ -285,6 +320,10 @@ func writeRuntimeServiceError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusConflict, envelope{"code": "username_conflict", "message": "That username already exists."})
 	case errors.Is(err, runtimecred.ErrLastActiveCredential):
 		writeJSON(w, http.StatusConflict, envelope{"code": "last_active_credential", "message": "At least one active credential must remain."})
+	case errors.Is(err, runtimecred.ErrRuntimeAlreadyOwned):
+		writeJSON(w, http.StatusConflict, envelope{"code": "runtime_already_owned", "message": "Live runtime credentials are already imported."})
+	case errors.Is(err, runtimecred.ErrImportEquivalence):
+		writeJSON(w, http.StatusConflict, envelope{"code": "runtime_import_equivalence_failed", "message": "Import was stopped because reconstructed Caddy state was not byte-equivalent to live state."})
 	case errors.Is(err, runtimecred.ErrIdempotentReplay):
 		writeJSON(w, http.StatusConflict, envelope{"code": "idempotency_replay", "message": "This mutation key has already been used. Refresh runtime state."})
 	case errors.Is(err, runtimecred.ErrConsistency):
