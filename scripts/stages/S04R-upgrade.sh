@@ -267,7 +267,8 @@ PVNAIVE_DB_RELEASE_OWNER_GROUP=pvnaive \
 install -o root -g root -m 0644 "${bundle_root}/systemd/pvnaive-runtime-agent.service" /etc/systemd/system/pvnaive-runtime-agent.service
 install -o root -g root -m 0644 "${bundle_root}/systemd/pvnaive-api.service" /etc/systemd/system/pvnaive-api.service
 systemctl daemon-reload
-systemctl enable --now pvnaive-runtime-agent.service
+systemctl enable pvnaive-runtime-agent.service
+systemctl restart pvnaive-runtime-agent.service
 systemctl restart pvnaive-api.service
 
 for _ in $(seq 1 30); do
