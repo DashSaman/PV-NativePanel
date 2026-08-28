@@ -86,6 +86,8 @@ jobs:
               apt-get install --yes --no-install-recommends age file python3 >/dev/null
 
               bash -n scripts/db/*.sh scripts/auth/*.sh scripts/release/*.sh scripts/stages/*.sh tests/db/*.sh tests/stages/*.sh tests/auth/*.sh tests/release/*.sh tests/site/*.sh
+              python3 scripts/site/build_public_portal.py --check
+              python3 scripts/site/build_public_portal.py
               bash tests/site/public_homepage_test.sh
               bash tests/site/public_portal_routes_test.sh
               bash tests/stages/S03_preflight_test.sh
