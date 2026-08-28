@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  buildKaringSingBoxProfile,
   buildNaiveURI,
   createRuntimeCredential,
   getRuntimeStatus,
@@ -63,6 +64,9 @@ export function RuntimeNaive() {
   const activeCount = useMemo(() => credentials.filter((item) => item.status === "active").length, [credentials]);
   const owned = credentials.length > 0;
   const customerURI = secret ? buildNaiveURI(secret.username, secret.password, window.location.hostname) : "";
+  const karingProfile = secret
+    ? buildKaringSingBoxProfile(secret.username, secret.password, window.location.hostname)
+    : "";
 
   const reload = useCallback(async () => {
     const [nextStatus, nextCredentials] = await Promise.all([getRuntimeStatus(), listRuntimeCredentials()]);
@@ -256,11 +260,12 @@ export function RuntimeNaive() {
           <h2 id="secret-title">رمز اکانت {secret.username}</h2>
           <p className="runtime-muted">همین الان ذخیره‌اش کن. بعد از بستن این پنجره از پنل قابل مشاهده نیست.</p>
           <code>{secret.password}</code>
-          <p className="runtime-muted">لینک آماده برای Karing/کلاینت‌های سازگار با Naive:</p>
+          <p className="runtime-muted">برای Karing از «کپی کانفیگ Karing» استفاده کن. لینک زیر برای کلاینت‌هایی است که Naive URI را مستقیم پشتیبانی می‌کنند:</p>
           <code className="secret-uri">{customerURI}</code>
           <div className="secret-actions">
             <button onClick={() => navigator.clipboard.writeText(secret.password)}>کپی رمز</button>
-            <button onClick={() => navigator.clipboard.writeText(customerURI)}>کپی لینک Karing/Naive</button>
+            <button onClick={() => navigator.clipboard.writeText(karingProfile)}>کپی کانفیگ Karing</button>
+            <button onClick={() => navigator.clipboard.writeText(customerURI)}>کپی لینک استاندارد Naive</button>
             <button className="button-secondary" onClick={() => setSecret(null)}>ذخیره کردم؛ بستن</button>
           </div>
         </section>
