@@ -57,7 +57,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
   'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == "5" ]] || { echo "ERROR: schema version=${schema_version}, want=5" >&2; exit 1; }
+[[ "${schema_version}" == "6" ]] || { echo "ERROR: schema version=${schema_version}, want=6" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT
@@ -146,7 +146,7 @@ INSERT INTO pvnaive.user_runtime_credentials (
 SELECT
   u.tenant_id, u.id, '14000000-0000-0000-0000-000000000001',
   'f4000000-0000-0000-0000-000000000001', 'primary'
-FROM pvnaive.users AS u WHERE u.id='d4000000-0000-0000-0000-000000000001';
+FROM pvnaive.users AS u WHERE u.id='d4000000-0000-0000-000000000001';
 
 COMMIT;
 SQL
@@ -206,7 +206,9 @@ missing_term_rc=$?
 set -e
 [[ "${missing_term_rc}" -ne 0 ]] || { echo "ERROR: binding to a missing service term was accepted" >&2; exit 1; }
 
-# Drop v5 first, then exercise the v4 lifecycle rollback itself.
+# Drop v6, then v5, then exercise the v4 lifecycle rollback itself.
+PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+  "${repo_root}/scripts/db/rollback.sh" >/dev/null
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
   "${repo_root}/scripts/db/rollback.sh" >/dev/null
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
