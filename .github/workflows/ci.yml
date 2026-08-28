@@ -120,6 +120,21 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Prove pinned Naive Caddy supports multiple basic_auth directives
+        run: |
+          set -Eeuo pipefail
+          archive=/tmp/caddy-forwardproxy-naive.tar.xz
+          extract_dir=/tmp/caddy-forwardproxy-naive
+          curl --fail --location --silent --show-error \
+            --output "${archive}" \
+            https://github.com/klzgrad/forwardproxy/releases/download/v2.11.2-naive/caddy-forwardproxy-naive.tar.xz
+          echo '19eccb7321dd877a5fb4a3dba6ef1b745185188b616c96cc6201f1a1fc0380a8  /tmp/caddy-forwardproxy-naive.tar.xz' | sha256sum --check --strict
+          mkdir -p "${extract_dir}"
+          tar -xJf "${archive}" -C "${extract_dir}"
+          caddy_bin="$(find "${extract_dir}" -type f -name caddy -print -quit)"
+          [[ -n "${caddy_bin}" ]] || { echo 'ERROR: pinned archive does not contain caddy' >&2; exit 1; }
+          chmod +x "${caddy_bin}"
+          CADDY_BIN="${caddy_bin}" bash tests/stages/S04R_caddy_multi_auth_proof.sh
       - name: Build static rehearsal binaries
         run: |
           set -Eeuo pipefail
