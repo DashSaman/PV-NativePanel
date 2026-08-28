@@ -54,7 +54,7 @@ done
 current_caddy_sha="$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')"
 [[ "${current_caddy_sha}" == "${expected_caddy_sha}" ]] || fail "Caddyfile SHA changed since preflight: ${current_caddy_sha}"
 /usr/local/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || fail 'Caddy validation failed'
-"${caddy_bin}" list-modules | grep -Fxq 'http.handlers.forward_proxy' || fail 'Caddy forward_proxy module is missing'
+"${caddy_bin}" list-modules | grep -Fx 'http.handlers.forward_proxy' >/dev/null || fail 'Caddy forward_proxy module is missing'
 caddy_version="$(${caddy_bin} version 2>&1 | head -n1)"
 [[ "${caddy_version}" == v2.11.2* ]] || fail "unexpected Caddy version: ${caddy_version}"
 systemctl is-active --quiet caddy-naive.service || fail 'caddy-naive.service is not active'
