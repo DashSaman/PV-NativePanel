@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 Stage placement: `S04R-NAIVE-CREDENTIALS` — owner-prioritized pre-S05 extension
-Status: design approved in chat; written spec pending final review
+Status: design approved in chat; self-reviewed written spec pending final user review
 
 ## Goal
 
@@ -182,7 +182,9 @@ Migration `0003` should introduce a temporary-but-first-class global runtime tab
 - `revoked_at timestamptz`;
 - monotonically increasing record revision or equivalent optimistic-concurrency field.
 
-At least one active runtime credential must exist after initial ownership. Mutations that would disable/revoke/delete the last active credential are rejected before runtime apply.
+At least one active runtime credential must exist after initial ownership. Mutations that would disable/revoke the last active credential are rejected before runtime apply.
+
+`DELETE /api/v1/runtime/naive/credentials/{id}` is a **soft revoke**, not a physical row deletion. The row and secret remain encrypted for the configured rollback/audit retention window. Physical purge is a later maintenance/security-retention feature and is not part of this extension.
 
 Later S05/S06 work will explicitly migrate/associate appropriate runtime credentials with `pvnaive.credentials`; that later mapping is not faked in this extension.
 
@@ -243,7 +245,7 @@ Server-generated password option:
 
 - 24 random bytes from CSPRNG;
 - base64url without padding;
-- displayed exactly once after successful apply.
+- displayed exactly once only after both runtime apply **and** final database applied-state commit succeed.
 
 Existing imported credential is not silently changed to satisfy new password-generation policy; import must preserve the live working value exactly.
 
@@ -262,7 +264,7 @@ Mutations:
 - `POST /api/v1/runtime/naive/credentials`
 - `PATCH /api/v1/runtime/naive/credentials/{id}` for rename/status changes
 - `POST /api/v1/runtime/naive/credentials/{id}/rotate-password`
-- `DELETE /api/v1/runtime/naive/credentials/{id}`
+- `DELETE /api/v1/runtime/naive/credentials/{id}` (soft revoke)
 - `POST /api/v1/runtime/naive/revisions/{id}/rollback`
 
 Authorization:
@@ -287,7 +289,7 @@ Password response behavior:
 - listing never returns plaintext or ciphertext;
 - rename/status responses never return secrets;
 - user-supplied password is never echoed;
-- a generated password may be returned once in the successful mutation response and must be marked one-time-display/no-store.
+- a generated password may be returned once in the successful mutation response only after the applied database state is durably committed, and the response must be marked no-store.
 
 ## Audit contract
 
@@ -298,10 +300,11 @@ Record at least:
 - username rename;
 - password rotation;
 - credential enable/disable;
-- credential revoke/delete;
+- credential revoke;
 - desired-state validation failure;
 - runtime apply success/failure;
-- runtime rollback success/failure.
+- runtime rollback success/failure;
+- reconciliation/compensation failure if database finalization and runtime state diverge.
 
 Never audit:
 
@@ -352,7 +355,7 @@ Owner actions:
 - Change password;
 - Generate new password;
 - Enable/Disable;
-- Revoke/Delete with explicit confirmation;
+- Revoke/Delete with explicit confirmation (backend soft-revokes);
 - Roll back to a prior known-good runtime revision.
 
 UI safety:
@@ -360,7 +363,7 @@ UI safety:
 - never show existing password;
 - one-time generated secret display has copy button and clear warning;
 - destructive operations use confirmation;
-- disabling/deleting last active credential is blocked with an explanatory error;
+- disabling/revoking last active credential is blocked with an explanatory error;
 - show apply/validation/rollback state;
 - error messages show request ID, not stack traces;
 - responsive desktop/mobile;
@@ -373,33 +376,49 @@ The Web UI/API are management-plane components. Existing Naive data-plane sessio
 
 A failed API/UI deploy must leave the current Caddy/Naive configuration untouched. A failed runtime apply must restore the exact last-known-good Caddyfile through the agent.
 
+## Runtime/DB consistency and compensation
+
+A runtime mutation crosses PostgreSQL and an external side effect (Caddy reload), so it cannot pretend to be one ACID transaction.
+
+Use an explicit state machine such as `desired -> validating -> applying -> applied` with failure/rollback states. The API must never report success merely because Caddy reload succeeded.
+
+Critical compensation rule:
+
+- if Caddy apply and smoke checks succeed but the final PostgreSQL transition to `applied` cannot be durably committed, immediately invoke the agent to restore the exact pre-apply Caddy backup and reload it;
+- then persist/emit a reconciliation failure as soon as the database is reachable;
+- if that compensating rollback also fails, fail closed, surface `runtime_reconciliation_required`, keep all evidence/backup references, and do not return a generated secret as successful output.
+
+This rule prevents silent DB/runtime split-brain.
+
 ## Production apply gates
 
 Every credential mutation follows:
 
 1. validate HTTP/RBAC/CSRF/idempotency/revision;
-2. write desired DB mutation in a state that is not yet claimed applied;
-3. render complete active credential set;
-4. ask agent to validate against expected current Caddy SHA;
-5. exact Caddy backup + checksum;
-6. install candidate;
-7. `systemctl reload caddy-naive.service` only;
-8. require Caddy active;
-9. require MainPID unchanged;
-10. require NRestarts unchanged;
-11. require ports 22/80/443 still listening;
-12. require API listener still exactly `127.0.0.1:8080`;
-13. require `https://namir.softarg.ir/panel/` healthy;
-14. require `/api/v1/health/ready` healthy;
-15. require camouflage root response unchanged;
-16. where safely testable, verify one valid Naive credential succeeds and disabled/revoked credential fails;
-17. only then mark revision applied and DB credential mutation active.
+2. persist desired mutation/revision in a non-applied state;
+3. durably commit that desired state before privileged runtime side effects;
+4. render complete active credential set;
+5. ask agent to validate against expected current Caddy SHA;
+6. exact Caddy backup + checksum;
+7. install candidate;
+8. `systemctl reload caddy-naive.service` only;
+9. require Caddy active;
+10. require MainPID unchanged;
+11. require NRestarts unchanged;
+12. require ports 22/80/443 still listening;
+13. require API listener still exactly `127.0.0.1:8080`;
+14. require `https://namir.softarg.ir/panel/` healthy;
+15. require `/api/v1/health/ready` healthy;
+16. require camouflage root response unchanged;
+17. where safely testable, verify one valid Naive credential succeeds and disabled/revoked credential fails;
+18. finalize the runtime revision and credential mutation to `applied` in PostgreSQL and durably commit;
+19. only after step 18 may the API return success or a one-time generated password.
 
-On any post-switch failure, restore exact backup, validate it, reload, verify invariants, and mark the attempted revision failed/rolled back.
+On any failure before step 18 after Caddy switched, restore exact backup, validate it, reload, verify invariants, and mark the attempted revision failed/rolled back. On failure of step 18 itself, apply the explicit compensation rule above.
 
 ## Tests / acceptance criteria
 
-No implementation is accepted without RED→GREEN tests for:
+No implementation is accepted without RED->GREEN tests for:
 
 1. migration 0003 apply/reapply/down/checksum on disposable PostgreSQL 18;
 2. runtime secret AES-GCM roundtrip and wrong-key/tamper failure;
@@ -412,19 +431,22 @@ No implementation is accepted without RED→GREEN tests for:
 9. agent rejects arbitrary paths/services/commands;
 10. expected-Caddy-SHA concurrency conflict fails before mutation;
 11. last-active-credential guard;
-12. API RBAC matrix;
-13. API CSRF/idempotency/revision behavior;
-14. secret never returned from GET/list endpoints;
-15. generated password is one-time response only;
-16. apply success leaves Caddy PID/restart count unchanged;
-17. injected validation/reload/smoke failure restores exact previous Caddyfile;
-18. panel/API route and camouflage root remain intact;
-19. initial live import preserves the existing working credential;
-20. new credential works after apply;
-21. rotated credential behavior is correct;
-22. disabled/revoked credential no longer authenticates after successful apply;
-23. rollback restores prior working credential set;
-24. web `/runtime/naive` renders status and credential metadata without secret leakage.
+12. DELETE is soft revoke and retains audit/rollback history;
+13. API RBAC matrix;
+14. API CSRF/idempotency/revision behavior;
+15. secret never returned from GET/list endpoints;
+16. generated password is one-time response only after durable applied-state commit;
+17. apply success leaves Caddy PID/restart count unchanged;
+18. injected validation/reload/smoke failure restores exact previous Caddyfile;
+19. injected final DB-commit failure after successful Caddy apply triggers compensating Caddy rollback;
+20. compensation failure produces reconciliation-required state and never reports success;
+21. panel/API route and camouflage root remain intact;
+22. initial live import preserves the existing working credential;
+23. new credential works after apply;
+24. rotated credential behavior is correct;
+25. disabled/revoked credential no longer authenticates after successful apply;
+26. rollback restores prior working credential set;
+27. web `/runtime/naive` renders status and credential metadata without secret leakage.
 
 ## Non-goals / honesty rules
 
