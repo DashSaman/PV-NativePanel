@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-28
 
-The current Chat environment does **not** expose an independent sub-agent execution tool. Therefore the roles below are durable workstreams/ownership labels, not a claim that Claude/Gemini/Qwen/DeepSeek are currently running. If a future environment provides real isolated agents, dispatch only independent tasks and keep these ownership boundaries.
+The current Chat environment does **not** expose an independent sub-agent execution tool. The roles below are durable workstreams/ownership labels, not a claim that Claude/Gemini/Qwen/DeepSeek are currently running.
 
 ## Mandatory report format
 
@@ -30,83 +30,72 @@ BLOCKERS: <none or evidence>
 
 No workstream may mark a task `DONE`; final verification/ledger update belongs to Agent-REVIEW / Lead Engineer.
 
+## Current state
+
+`PVN-020` through `PVN-027` are complete in development/rehearsal. The active code-to-production edge is now `PVN-028`.
+
+Full S04R checkpoint:
+
+- commit `a41fd84c2f17076a3b190eafad3539c47b430503`;
+- CI `33190295766` — Go/Web/PG18/pinned-Caddy proof/full S04R rehearsal/bundle all PASS;
+- customer-handoff UI then added a TDD-tested `naive+https://...` builder and one-click Karing/Naive copy action.
+
 ## Active assignments
 
 | Workstream | Task | Status | Scope | Handoff condition |
 |---|---|---|---|---|
-| Agent-PM / Lead | PVN-068 | IN_PROGRESS | canonical audit/docs/task ledger | all PM files + AGENTS committed, cross-links verified |
-| Agent-BACKEND/SEC | PVN-020 | IN_PROGRESS | `internal/runtimecred/*` only for current slice | targeted tests green + full Go/CI green |
-| Agent-QA | PVN-020 | WAITING_ON_IMPL | validate existing RED then GREEN; secret leakage/policy cases | CI evidence |
-| Agent-ARCH | PVN-021 | READY_AFTER_020 | Caddy parser/renderer contract | failing tests first; byte preservation/injection proof |
-| Agent-DEVOPS | PVN-022/023 | WAITING | Unix socket agent and privileged operator | fixed capability boundary + reload-only rehearsal |
-| Agent-DB | PVN-024 | WAITING | runtime store/revision saga | compensation and idempotency tests |
-| Agent-BACKEND | PVN-025 | WAITING | typed Owner-only API | RBAC/CSRF/idempotency/revision tests |
-| Agent-FRONTEND | PVN-026 | WAITING | `/runtime/naive` UI | no secret leak; one-time generated secret UX |
-| Agent-QA/DEVOPS | PVN-027 | WAITING | disposable full S04R rehearsal | all runtime agent/Caddy order/failure gates |
-| Agent-REVIEW | PVN-028/029 | WAITING | live read-only preflight then guarded import | one server step at a time; evidence before mutation |
-| Agent-SEC | PVN-030/031/034 | READY_AFTER_S04R_CODE | critical auth fixes | RED→GREEN regressions + full auth rehearsal |
-| Agent-DOCS | PVN-069 | READY | reconcile stale product/security/API docs | actual vs planned clearly labeled |
-| Agent-ARCH/REVIEW | PVN-070 | WAIT_GREEN_CHECKPOINT | branch divergence integration | no force/reset; clean reviewed diff + CI |
+| Agent-REVIEW/DEVOPS | PVN-028 | ACTIVE | live read-only preflight on existing `testAmir5-3` | `PREFLIGHT_RESULT=PASS`; exact Caddy SHA captured; zero mutation |
+| Agent-REVIEW/DEVOPS | PVN-029 | WAITING_ON_028 | guarded S04R upgrade, secure live import, one customer credential + Karing smoke | current credential preserved; Caddy invariants; new credential works; evidence committed |
+| Agent-PM / Lead | PVN-068 | IN_PROGRESS | sync canonical PM/handoff files to S04R Pilot truth | PM files internally consistent + final HEAD CI checked |
+| Agent-SEC | PVN-030 | READY_AFTER_PILOT | refresh-token reuse-family regression/fix | RED→GREEN + auth rehearsal |
+| Agent-SEC | PVN-031 | READY_AFTER_PILOT | commit-before-success HTTP integrity | injected commit failure cannot emit success |
+| Agent-BACKEND/OPS | PVN-032 | READY_AFTER_PILOT | DB-backed readiness | bounded DB/schema probe + failure tests |
+| Agent-PM/SEC | PVN-033 | READY_AFTER_PILOT | recovery-code login product decision | explicit decision + tests/docs |
+| Agent-SEC | PVN-034 | READY_AFTER_PILOT | IP/identity auth abuse controls | trusted proxy boundary + tested limits/delay |
+| Agent-SEC/REVIEW | PVN-035/036 | WAITING | public security review + formal S04 closure | independent evidence after auth hardening |
+| Agent-DOCS | PVN-069 | READY | reconcile legacy README/SECURITY/API/product docs | actual vs planned clearly labeled |
+| Agent-ARCH/REVIEW | PVN-070 | WAIT_GREEN_CHECKPOINT | branch divergence integration | no force/reset; reviewed non-destructive integration + CI |
 | Agent-QA/SEC | PVN-071 | FUTURE | authorization/E2E/fuzz gates | CI enforced |
-| Agent-PM/OWNER | PVN-072 | NEEDS_OWNER_BUSINESS_DECISION | license policy | explicit license choice + NOTICE strategy |
+| Agent-PM/OWNER | PVN-072 | NEEDS_OWNER_BUSINESS_DECISION | license policy | explicit license + NOTICE strategy |
+
+## Completed S04R workstreams
+
+| Task | Verified outcome |
+|---|---|
+| PVN-020 | runtime secret envelope + input policy |
+| PVN-021 | byte-preserving Caddy parser/renderer |
+| PVN-022 | fixed Unix-socket Runtime Agent protocol |
+| PVN-023 | expected-SHA validate/backup/reload-only/rollback operator |
+| PVN-024 | runtime DB store + revision saga + compensation/reconciliation error |
+| PVN-025 | Owner-only runtime API + CSRF/idempotency/revision/secret boundaries |
+| PVN-026 | runtime UI + one-time generated secret + copy-ready customer Naive URI |
+| PVN-027 | full disposable S04R rehearsal + exact pinned Caddy multiple-basic-auth proof |
 
 ## File conflict rules
 
-- `internal/runtimecred/*`: PVN-020, then PVN-024; do not parallel-edit those tasks.
-- `internal/runtimeagent/*`: PVN-022 then PVN-023; can design tests separately but integrate sequentially.
-- `internal/httpapi/*`: PVN-025 and auth-hardening tasks must be coordinated; do not parallel-write `server.go`/auth handlers.
-- `web/src/App.tsx`/routing: only one frontend task at a time until routing is decomposed.
-- `db/migrations/*`: migrations are append-only after release; checksum changes must be reviewed.
-- canonical PM files may be updated after any verified task, but sequential writes to the same file are required.
+- `internal/runtimecred/*`: next changes only for later runtime/accounting work; do not reopen completed S04R behavior casually.
+- `internal/runtimeagent/*`: production safety boundary; any change requires failure-path tests and full rehearsal.
+- `internal/httpapi/*`: auth-hardening tasks `PVN-030/031/034` must be coordinated; do not parallel-write the same middleware/handler files.
+- `web/src/runtime*` / `RuntimeNaive.tsx`: Pilot behavior is frozen until live smoke unless a live-blocking defect is proven.
+- `db/migrations/*`: append-only after release; checksum changes require review.
+- canonical PM files may be updated after verified transitions, but sequential writes to the same file are required.
 
-## Workstream responsibilities
+## Production interaction rule
 
-### Agent-ARCH
+On `testAmir5-3`, use **one server step at a time** and preserve full output. Read-only preflight comes first. Never ask for or paste auth/runtime/age keys or raw secret-bearing Caddy content.
 
-Architecture, capability boundaries, ADR/spec consistency, avoiding feature bloat. Current next architecture task: `PVN-021` after PVN-020 green.
+Runbook: `docs/PILOT_INSTALL_FA.md`.
 
-### Agent-BACKEND
+The live sequence is:
 
-Go domain/service/API code. Must use strict DTOs, fail closed, no secret logging, and transaction integrity.
+`artifact checksum → PVN-028 read-only preflight → exact Caddy SHA lock → PVN-029 guarded S04R upgrade → Owner secure import → one generated customer credential → Karing smoke → evidence commit`
 
-### Agent-FRONTEND
+Do not hand the customer Owner panel credentials. The Pilot handoff is the generated Naive link only.
 
-React/TypeScript UI. Only display verified capabilities; placeholders must be explicit; accessibility/responsive checks required.
+## After the Pilot
 
-### Agent-DB
+Immediately return to the critical security/closure chain:
 
-PostgreSQL migrations/RLS/ledger/saga persistence. PostgreSQL 18 disposable tests and one-step rollback evidence required before live use.
+`PVN-030 + PVN-031 + PVN-032 + PVN-033 + PVN-034 → PVN-035 → PVN-036`
 
-### Agent-SEC
-
-Auth/authorization/secret boundaries, threat-model regression tests, supply-chain gates. Security findings are not waived for schedule pressure.
-
-### Agent-QA
-
-RED→GREEN evidence, regression/failure injection, authorization matrix, parser/fuzz/property cases, full CI verification.
-
-### Agent-DEVOPS
-
-systemd, installer, Caddy lifecycle, backup/restore, update/rollback. Production actions are one step at a time and never infer success from code alone.
-
-### Agent-RESEARCH
-
-Competitor/reference research and licensing notes. Prefer source/commit-pinned evidence; distinguish public implementation from claims/production-derived behavior.
-
-### Agent-DOCS
-
-Actual-vs-target documentation and handoff; never turn a plan or route registry into a feature claim.
-
-### Agent-REVIEW / Lead Engineer
-
-Reviews diff, tests, regression, security, integration and docs before changing `ROADMAP.md` status to DONE. Uses `verification-before-completion`; evidence before assertion.
-
-## Current execution queue
-
-1. Finish `PVN-068` canonical PM layer.
-2. Continue `PVN-020` from observed RED; implement minimal secret/policy/types code.
-3. Fresh full CI. If green, update PM docs and mark PVN-020 DONE.
-4. Immediately start `PVN-021` by writing failing parser/renderer tests.
-5. Continue dependency chain without requesting routine technical approval.
-
-Production is untouched until `PVN-027` is fully green and `PVN-028` read-only preflight is explicitly ready.
+Then continue user/business/accounting/subscription work without pretending the Pilot already supplies quota, expiry, customer portal or billing.
