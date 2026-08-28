@@ -21,16 +21,18 @@ const (
 // deliberately unexported so accidental json.Marshal on this type cannot
 // expose ciphertext, nonce or hash to browser-facing DTOs.
 type Credential struct {
-	ID              string
-	Username        string
-	EncryptionKeyID string
-	Status          CredentialStatus
-	Origin          CredentialOrigin
-	Revision        int64
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	RotatedAt       *time.Time
-	RevokedAt       *time.Time
+	ID               string
+	Username         string
+	EncryptionKeyID  string
+	Status           CredentialStatus
+	Origin           CredentialOrigin
+	CreatedByActorID string
+	UpdatedByActorID string
+	Revision         int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	RotatedAt        *time.Time
+	RevokedAt        *time.Time
 
 	secretHash       [32]byte
 	secretCiphertext []byte

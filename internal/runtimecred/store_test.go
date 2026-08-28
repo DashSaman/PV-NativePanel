@@ -34,13 +34,13 @@ func TestStoreRequiresBoundTransaction(t *testing.T) {
 	}
 }
 
-func TestStoreCreateRequiresAuditActor(t *testing.T) {
+func TestStoreCreateRejectsInvalidCredentialBeforeSQL(t *testing.T) {
 	store, err := NewStore(&sql.DB{})
 	if err != nil {
 		t.Fatalf("NewStore() error = %v", err)
 	}
-	credential := Credential{Username: "safe.user", Status: CredentialActive, Origin: CredentialPanel, Revision: 1}
+	credential := Credential{Username: "", Status: CredentialActive, Origin: CredentialPanel, Revision: 1}
 	if _, err := store.CreateTx(t.Context(), newDriverTx(t, nil), credential); err == nil {
-		t.Fatal("CreateTx accepted credential without created/updated actor metadata")
+		t.Fatal("CreateTx accepted an invalid credential")
 	}
 }
