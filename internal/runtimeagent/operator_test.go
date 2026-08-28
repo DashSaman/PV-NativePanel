@@ -86,7 +86,7 @@ func TestOperatorApplyValidatesBacksUpReloadsAndPreservesServiceProcess(t *testi
 
 	response, err := op.Apply(context.Background(), ApplyRequest{
 		ExpectedCaddySHA256: oldSHA,
-		Desired: desiredInput(t, "rev-2", "new.user", "new safe password 123"),
+		Desired:             desiredInput(t, "rev-2", "new.user", "new safe password 123"),
 	})
 	if err != nil {
 		t.Fatalf("Apply() error = %v", err)
@@ -132,7 +132,7 @@ func TestOperatorApplyRejectsExpectedSHAMismatchBeforeAnyCommandOrBackup(t *test
 
 	_, err := op.Apply(context.Background(), ApplyRequest{
 		ExpectedCaddySHA256: strings.Repeat("0", 64),
-		Desired: desiredInput(t, "rev-2", "new.user", "new safe password 123"),
+		Desired:             desiredInput(t, "rev-2", "new.user", "new safe password 123"),
 	})
 	if err == nil {
 		t.Fatal("Apply() unexpectedly accepted stale expected SHA")
@@ -160,7 +160,7 @@ func TestOperatorApplyValidationFailureNeverInstallsOrReloads(t *testing.T) {
 
 	_, err := op.Apply(context.Background(), ApplyRequest{
 		ExpectedCaddySHA256: shaHex(oldBytes),
-		Desired: desiredInput(t, "rev-2", "new.user", "new safe password 123"),
+		Desired:             desiredInput(t, "rev-2", "new.user", "new safe password 123"),
 	})
 	if err == nil {
 		t.Fatal("Apply() unexpectedly succeeded after caddy validate failure")
@@ -190,7 +190,7 @@ func TestOperatorApplyPostflightPIDChangeRestoresExactOldBytes(t *testing.T) {
 
 	_, err := op.Apply(context.Background(), ApplyRequest{
 		ExpectedCaddySHA256: shaHex(oldBytes),
-		Desired: desiredInput(t, "rev-2", "new.user", "new safe password 123"),
+		Desired:             desiredInput(t, "rev-2", "new.user", "new safe password 123"),
 	})
 	if err == nil {
 		t.Fatal("Apply() unexpectedly accepted MainPID change")
