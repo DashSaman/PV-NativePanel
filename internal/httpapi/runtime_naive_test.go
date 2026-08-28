@@ -11,6 +11,7 @@ func TestNaiveRuntimeRoutesAreOwnerOnlyAndReady(t *testing.T) {
 	expected := map[string]string{
 		"GET /api/v1/runtime/naive":                                   "runtime.naive.show",
 		"GET /api/v1/runtime/naive/credentials":                       "runtime.naive.credentials.index",
+		"POST /api/v1/runtime/naive/import":                           "runtime.naive.import",
 		"POST /api/v1/runtime/naive/credentials":                      "runtime.naive.credentials.create",
 		"PATCH /api/v1/runtime/naive/credentials/{id}":                "runtime.naive.credentials.update",
 		"POST /api/v1/runtime/naive/credentials/{id}/rotate-password": "runtime.naive.credentials.rotate",
