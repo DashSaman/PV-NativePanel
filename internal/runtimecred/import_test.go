@@ -8,6 +8,7 @@ import (
 
 type guardedImportAgent struct {
 	inspection    AgentInspection
+	credentials   []AgentCredential
 	candidateSHA  string
 	validateCalls int
 	applyCalls    int
@@ -15,6 +16,11 @@ type guardedImportAgent struct {
 
 func (a *guardedImportAgent) Inspect(context.Context) (AgentInspection, error) {
 	return a.inspection, nil
+}
+
+func (a *guardedImportAgent) InspectCurrent(context.Context) (AgentInspection, []AgentCredential, error) {
+	credentials := append([]AgentCredential(nil), a.credentials...)
+	return a.inspection, credentials, nil
 }
 
 func (a *guardedImportAgent) Validate(_ context.Context, request AgentApplyRequest) (string, error) {
@@ -37,10 +43,8 @@ func TestImportCurrentEncryptsLiveCredentialWithoutRuntimeMutation(t *testing.T)
 	sha := strings.Repeat("a", 64)
 	repo := &fakeRuntimeRepository{}
 	agent := &guardedImportAgent{
-		inspection: AgentInspection{
-			CaddySHA256: sha,
-			Credentials: []AgentCredential{{Username: "live.user", Password: "legacy-pass", Status: CredentialActive}},
-		},
+		inspection:   AgentInspection{CaddySHA256: sha},
+		credentials:  []AgentCredential{{Username: "live.user", Password: "legacy-pass", Status: CredentialActive}},
 		candidateSHA: sha,
 	}
 	service, err := NewService(repo, agent, key, "runtime-v1")
@@ -75,10 +79,8 @@ func TestImportCurrentFailsClosedWhenCandidateDiffersFromLiveCaddy(t *testing.T)
 	key := bytesOf(0x66, 32)
 	repo := &fakeRuntimeRepository{}
 	agent := &guardedImportAgent{
-		inspection: AgentInspection{
-			CaddySHA256: strings.Repeat("a", 64),
-			Credentials: []AgentCredential{{Username: "live.user", Password: "legacy-pass", Status: CredentialActive}},
-		},
+		inspection:   AgentInspection{CaddySHA256: strings.Repeat("a", 64)},
+		credentials:  []AgentCredential{{Username: "live.user", Password: "legacy-pass", Status: CredentialActive}},
 		candidateSHA: strings.Repeat("b", 64),
 	}
 	service, _ := NewService(repo, agent, key, "runtime-v1")
