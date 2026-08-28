@@ -3,7 +3,9 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-source_dir="${1:-${PVNAIVE_PUBLIC_SITE_SOURCE:-${repo_root}/site}}"
+default_source="${repo_root}/public-site"
+[[ -d "${default_source}" ]] || default_source="${repo_root}/site"
+source_dir="${1:-${PVNAIVE_PUBLIC_SITE_SOURCE:-${default_source}}}"
 public_host="${PVNAIVE_PUBLIC_HOST:-namir.softarg.ir}"
 expected_host="${PVNAIVE_EXPECTED_HOST:-testAmir5-3}"
 live_root="/var/www/naive"
@@ -17,6 +19,7 @@ previous_root="/var/www/.naive.previous.${stamp}"
 failed_root="/var/www/.naive.failed.${stamp}"
 root_body=""
 published=0
+media_preserved=0
 
 fail() {
   echo "PUBLIC_SITE_RESULT=FAILED" >&2
@@ -54,13 +57,37 @@ trap cleanup_unpublished EXIT
 [[ ${EUID} -eq 0 ]] || fail 'run as root'
 [[ "$(hostname)" == "${expected_host}" ]] || fail "unexpected host: $(hostname)"
 
-for command_name in sha256sum systemctl tar curl grep find cp mv install stat rm; do
+for command_name in sha256sum systemctl tar curl grep find cp mv install stat rm python3; do
   command -v "${command_name}" >/dev/null 2>&1 || fail "missing command: ${command_name}"
 done
 [[ -x /usr/local/bin/caddy ]] || fail 'Caddy binary is missing'
 
 [[ -d "${source_dir}" ]] || fail "public source directory is missing: ${source_dir}"
-for required in index.html assets/site.css assets/site.js assets/news-mark.svg assets/news-fallback.svg data/articles.json; do
+
+# When publishing directly from a checked-out repository, generate the static
+# detail routes first. Bundled public-site/ trees are already generated.
+generator="${repo_root}/scripts/site/build_public_portal.py"
+if [[ -f "${generator}" && "$(realpath -m "${source_dir}")" == "$(realpath -m "${repo_root}/site")" ]]; then
+  python3 "${generator}" --check
+  python3 "${generator}" --output-root "${source_dir}"
+fi
+
+for required in \
+  index.html \
+  assets/site.css \
+  assets/site.js \
+  assets/news-mark.svg \
+  assets/news-fallback.svg \
+  data/articles.json \
+  data/portal.json \
+  data/media.json \
+  news/index.html \
+  videos/index.html \
+  audio/index.html \
+  gallery/index.html \
+  downloads/index.html \
+  sources/index.html \
+  about/index.html; do
   [[ -f "${source_dir}/${required}" ]] || fail "public source missing ${required}"
 done
 
@@ -68,11 +95,14 @@ done
 # executing third-party content. The protected management path stays undisclosed.
 grep -Eq '<html[^>]+lang="fa"[^>]+dir="rtl"|<html[^>]+dir="rtl"[^>]+lang="fa"' "${source_dir}/index.html" || \
   fail 'public index is not Persian RTL'
-if grep -Fq 'href="/panel' "${source_dir}/index.html" || grep -Fq "href='/panel" "${source_dir}/index.html"; then
-  fail 'public index advertises the protected panel'
+if grep -RIq --include='*.html' --include='*.json' 'href="/panel\|href='"'"'/panel\|/panel/' "${source_dir}"; then
+  fail 'public tree advertises the protected panel'
 fi
 for marker in breaking-news hero-story latest-news leader-messages politics economy international; do
   grep -Fq "data-section=\"${marker}\"" "${source_dir}/index.html" || fail "missing public section ${marker}"
+done
+for local_entry in /news/ /videos/ /audio/ /gallery/ /downloads/; do
+  grep -Fq "href=\"${local_entry}\"" "${source_dir}/index.html" || fail "homepage missing internal route ${local_entry}"
 done
 
 [[ -f "${caddy_file}" ]] || fail 'Caddyfile is missing'
@@ -108,6 +138,15 @@ chmod -R go-rwx "${backup_dir}"
 rm -rf -- "${stage_root}" "${previous_root}" "${failed_root}"
 install -d -o root -g caddy -m 0750 "${stage_root}"
 cp -a "${source_dir}/." "${stage_root}/"
+
+# Media binaries are synced separately and may be much larger than the static
+# portal. Preserve the verified live media store across every content publish.
+if [[ -d "${live_root}/media" ]]; then
+  rm -rf -- "${stage_root}/media"
+  cp -a "${live_root}/media" "${stage_root}/media"
+  media_preserved=1
+fi
+
 find "${stage_root}" -type d -exec chmod 0750 {} +
 find "${stage_root}" -type f -exec chmod 0640 {} +
 chown -R root:caddy "${stage_root}"
@@ -127,6 +166,12 @@ root_code="$(curl --silent --show-error --max-time 8 \
 grep -Fq 'درگاه ایران' "${root_body}" || fail 'public root did not return the promoted page'
 rm -f -- "${root_body}"
 root_body=""
+
+portal_code="$(curl --silent --show-error --max-time 8 \
+  --resolve "${public_host}:443:127.0.0.1" \
+  --output /dev/null --write-out '%{http_code}' \
+  "https://${public_host}/videos/" || true)"
+[[ "${portal_code}" == "200" ]] || fail "public media portal returned HTTP ${portal_code:-unavailable}"
 
 panel_code_after="$(curl --silent --show-error --max-time 8 \
   --resolve "${public_host}:443:127.0.0.1" \
@@ -154,7 +199,9 @@ printf '%s\n' \
   "PUBLIC_SITE_ROOT=${live_root}" \
   "PUBLIC_SITE_BACKUP=${backup_dir}/public-site-before.tar.gz" \
   "PUBLIC_SITE_ROOT_HTTP=${root_code}" \
+  "PUBLIC_SITE_PORTAL_HTTP=${portal_code}" \
   "PUBLIC_SITE_PANEL_HTTP=${panel_code_after}" \
+  "PUBLIC_SITE_MEDIA_PRESERVED=${media_preserved}" \
   "CADDYFILE_SHA256=${caddy_sha_after}" \
   "CADDY_MAINPID=${caddy_pid_after}" \
   "CADDY_NRESTARTS=${caddy_restarts_after}"
