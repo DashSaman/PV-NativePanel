@@ -19,6 +19,19 @@ grep -Fq "actor_role = 'owner'" "${script}"
 grep -Fq 'owner already exists' "${script}"
 grep -Fq 'pvnaive-password' "${script}"
 
+# The temporary SQL file is created by root but psql is deliberately executed
+# as the postgres OS user. Require an explicit ownership handoff while keeping
+# the file mode root/private-style (0600) so psql can read it without making
+# the password hash world/group readable.
+grep -Fq 'chown postgres:postgres "${sql_file}"' "${script}" || {
+  echo "ERROR: bootstrap temp SQL is not handed to postgres before psql --file" >&2
+  exit 1
+}
+grep -Fq 'chmod 0600 "${sql_file}"' "${script}" || {
+  echo "ERROR: bootstrap temp SQL is not locked to mode 0600" >&2
+  exit 1
+}
+
 if grep -Eiq '(default[_ -]?password|password[[:space:]]*=[[:space:]]*["'"'][^"'"']+["'"'])' "${script}"; then
   echo "ERROR: bootstrap appears to contain a default password" >&2
   exit 1
