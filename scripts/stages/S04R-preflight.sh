@@ -42,7 +42,7 @@ if [[ -x "${caddy_bin}" && -f "${caddy_file}" ]]; then
   else
     record_failure CADDY_VALIDATE
   fi
-  if "${caddy_bin}" list-modules 2>/dev/null | grep -Fxq 'http.handlers.forward_proxy'; then
+  if "${caddy_bin}" list-modules 2>/dev/null | grep -Fx 'http.handlers.forward_proxy' >/dev/null; then
     record_pass FORWARD_PROXY_MODULE
   else
     record_failure FORWARD_PROXY_MODULE
