@@ -88,6 +88,13 @@ grep -Fq '/data/articles.json' "${root}/public-site/assets/site.js" || {
   echo 'ERROR: bundled public newsroom lost its local-cache contract' >&2
   exit 1
 }
+for local_entry in '/news/' '/videos/' '/audio/' '/downloads/' '/gallery/'; do
+  grep -Fq "href=\"${local_entry}\"" "${root}/public-site/index.html" || {
+    echo "ERROR: homepage does not link inward to ${local_entry}" >&2
+    exit 1
+  }
+done
+
 grep -Fq '<video controls preload="metadata"' "${root}/public-site/videos/khamenei-1999-speech-clip.html" || {
   echo 'ERROR: bundled portal lost native video playback' >&2
   exit 1
@@ -97,13 +104,11 @@ grep -Fq '2.87 MB' "${root}/public-site/downloads/index.html" || {
   exit 1
 }
 
-# Large mirrored binaries live on the server media store, not in Git/release artifacts.
 if find "${root}/public-site" -path '*/media/*' -type f -size +1M -print -quit | grep -q .; then
   echo 'ERROR: production bundle unexpectedly contains large mirrored media binaries' >&2
   exit 1
 fi
 
-# Future static-site publishes must preserve already-synced local media.
 publisher="${root}/scripts/release/publish-public-site.sh"
 for token in 'live_root}/media' 'stage_root}/media' 'PUBLIC_SITE_MEDIA_PRESERVED'; do
   grep -Fq -- "${token}" "${publisher}" || {
