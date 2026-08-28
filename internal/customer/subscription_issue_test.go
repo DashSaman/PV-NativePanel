@@ -25,7 +25,7 @@ func TestCreateCustomerIssuesOpaqueSubscriptionTokenAndPersistsOnlyHash(t *testi
 	now := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
 	store := &subscriptionCustomerStore{}
 	mutation := &fakeCustomerRuntimeMutation{
-		view: runtimecred.CredentialView{ID: "runtime-sub-1", Username: "sub.customer", Status: runtimecred.CredentialActive},
+		view:     runtimecred.CredentialView{ID: "runtime-sub-1", Username: "sub.customer", Status: runtimecred.CredentialActive},
 		password: "generated-secret",
 	}
 	service := NewService(store, func(context.Context, *sql.Tx, string, string, runtimecred.CreateInput) (RuntimeMutation, error) {
