@@ -30,8 +30,8 @@ if grep -Eq '(cat|xxd|base64|od)[[:space:]].*/etc/pvnaive/runtime\.key' "${targe
   exit 1
 fi
 
-backup_line="$(grep -n -F 'scripts/db/backup.sh' "${target}" | head -n1 | cut -d: -f1)"
-migrate_line="$(grep -n -F 'scripts/db/migrate.sh' "${target}" | head -n1 | cut -d: -f1)"
+backup_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/backup.sh"' "${target}" | head -n1 | cut -d: -f1)"
+migrate_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/migrate.sh"' "${target}" | head -n1 | cut -d: -f1)"
 [[ -n "${backup_line}" && -n "${migrate_line}" && "${backup_line}" -lt "${migrate_line}" ]] || {
   echo 'ERROR: database backup must precede migration' >&2
   exit 1
