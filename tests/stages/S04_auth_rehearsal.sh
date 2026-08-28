@@ -72,10 +72,11 @@ unset phc
 dd if=/dev/urandom of="${tmpdir}/auth.key" bs=32 count=1 status=none
 chmod 0600 "${tmpdir}/auth.key"
 
-PGHOST="${PVNAIVE_DB_HOST}" \
-PGPORT="${PVNAIVE_DB_PORT}" \
-PGDATABASE="${test_db}" \
-PGUSER=pvnaive_app \
+PVNAIVE_DB_HOST="${PVNAIVE_DB_HOST}" \
+PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" \
+PVNAIVE_DB_NAME="${test_db}" \
+PVNAIVE_DB_USER=pvnaive_app \
+PVNAIVE_DB_CONNECT_TIMEOUT=5 \
 PGPASSWORD=pvnaive-s04-ci-only \
 PGSSLMODE=disable \
 PVNAIVE_AUTH_KEY_FILE="${tmpdir}/auth.key" \
