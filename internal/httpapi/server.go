@@ -81,6 +81,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.RuntimeService != nil {
 				handler = http.HandlerFunc(s.runtimeNaiveCredentials)
 			}
+		case "runtime.naive.import":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveImport)
+			}
 		case "runtime.naive.credentials.create":
 			if cfg.RuntimeService != nil {
 				handler = http.HandlerFunc(s.runtimeNaiveCreateCredential)
