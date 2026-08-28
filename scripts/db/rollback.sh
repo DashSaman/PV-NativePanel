@@ -58,7 +58,13 @@ else
   grep -qx '  "product": "PVNaive",' "${backup_dir}/metadata.json" || pvnaive_die "backup metadata product mismatch"
   grep -qx '  "encrypted": true,' "${backup_dir}/metadata.json" || pvnaive_die "backup metadata encryption marker is missing"
   metadata_schema_version="$(sed -n 's/^  "schema_version": \([0-9][0-9]*\),$/\1/p' "${backup_dir}/metadata.json")"
-  [[ "${metadata_schema_version}" == "${current_version}" ]] || pvnaive_die "backup schema version does not match rollback version"
+  if ((current_version == 1)); then
+    expected_backup_schema_version=1
+  else
+    expected_backup_schema_version=$((current_version - 1))
+  fi
+  [[ "${metadata_schema_version}" == "${expected_backup_schema_version}" ]] || \
+    pvnaive_die "backup schema version ${metadata_schema_version:-unknown} does not match required pre-rollback schema ${expected_backup_schema_version}"
   pvnaive_require_command age
   pvnaive_require_command pg_restore
   age --decrypt --identity "${identity_file}" "${backup_file}" | pg_restore --list >/dev/null || \
