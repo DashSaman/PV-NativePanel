@@ -39,6 +39,9 @@ unit_installed=0
 service_enabled=0
 marker_created=0
 db_env_schema_updated=0
+db_release_promoted=0
+db_release_old=""
+db_release_new=""
 rollback_failures=()
 
 postgres_psql() {
@@ -62,6 +65,28 @@ verify_caddy_invariants() {
 current_schema_version() {
   postgres_psql --dbname pvnaive --tuples-only --no-align \
     --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations'
+}
+
+promote_db_tooling_release() {
+  local promotion_output
+  promotion_output="$(
+    PVNAIVE_DB_RELEASE_SOURCE_ROOT="${repo_root}" \
+    PVNAIVE_DB_RELEASE_ROOT=/opt/pvnaive/db/releases \
+    PVNAIVE_DB_CURRENT_LINK=/opt/pvnaive/db/current \
+    PVNAIVE_DB_RELEASE_SCHEMA_VERSION=2 \
+    PVNAIVE_DB_RELEASE_MIGRATION_FILE=0002_auth_foundation.up.sql \
+    PVNAIVE_DB_RELEASE_OWNER_USER=root \
+    PVNAIVE_DB_RELEASE_OWNER_GROUP=pvnaive \
+      bash "${repo_root}/scripts/db/promote-release.sh"
+  )"
+  echo "${promotion_output}"
+  db_release_old="$(awk -F= '/^PVNAIVE_DB_RELEASE_OLD=/ {print $2}' <<<"${promotion_output}")"
+  db_release_new="$(awk -F= '/^PVNAIVE_DB_RELEASE_NEW=/ {print $2}' <<<"${promotion_output}")"
+  [[ "${db_release_new}" =~ ^/opt/pvnaive/db/releases/0002-[0-9a-f]{12}$ ]] || die "invalid promoted DB release path"
+  [[ -d "${db_release_new}" ]] || die "promoted DB release directory is missing"
+  [[ "$(readlink -f /opt/pvnaive/db/current)" == "${db_release_new}" ]] || die "DB current link did not select promoted release"
+  grep -Fq 'actor_totp_factors' /opt/pvnaive/db/current/scripts/db/health.sh || die "promoted DB health release is not S04-aware"
+  db_release_promoted=1
 }
 
 rollback_on_error() {
@@ -132,6 +157,27 @@ rollback_on_error() {
     fi
   fi
 
+  if [[ "${db_release_promoted}" == "1" ]]; then
+  rollback_schema="$(current_schema_version 2>/dev/null || true)"
+  if [[ "${rollback_schema}" == "1" ]]; then
+    if [[ -n "${db_release_old}" && "${db_release_old}" != "none" && -d "${db_release_old}" ]]; then
+      rm -f -- /opt/pvnaive/db/current.rollback."${BASHPID}" 2>/dev/null || true
+      if ln -s "${db_release_old}" /opt/pvnaive/db/current.rollback."${BASHPID}" && \
+         mv -Tf -- /opt/pvnaive/db/current.rollback."${BASHPID}" /opt/pvnaive/db/current; then
+        :
+      else
+        rollback_failures+=("restore-db-release-schema1")
+      fi
+    else
+      rollback_failures+=("restore-db-release-schema1-no-old-release")
+    fi
+  elif [[ "${rollback_schema}" == "2" ]]; then
+    :
+  else
+    rollback_failures+=("db-release-schema-consistency")
+  fi
+fi
+
   verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")
   if ((${#rollback_failures[@]} == 0)); then
     echo "ROLLBACK=COMPLETED"
@@ -173,7 +219,7 @@ for required_source in \
   db/migrations/0001_initial.up.sql db/migrations/0001_initial.down.sql \
   db/migrations/0002_auth_foundation.up.sql db/migrations/0002_auth_foundation.down.sql \
   db/migrations/SHA256SUMS \
-  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/set-expected-schema-version.sh \
+  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/health.sh scripts/db/promote-release.sh scripts/db/set-expected-schema-version.sh \
   scripts/auth/bootstrap-owner.sh ops/systemd/pvnaive-api.service \
   dist/s04/linux-amd64/pvnaive dist/s04/linux-amd64/pvnaive-password; do
   [[ -f "${repo_root}/${required_source}" ]] || die "bundle file missing: ${required_source}"
@@ -206,8 +252,10 @@ if [[ -f "${marker}" ]]; then
   grep -Fqx '  "host": "testAmir5-3",' "${marker}" || die "S04 marker host mismatch"
   [[ "$(current_schema_version)" == "${expected_schema_after}" ]] || die "S04 marker exists but schema is not version 2"
   grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
+  promote_db_tooling_release
   systemctl start pvnaive-db-health.service
   [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service is not successful for schema 2"
+  grep -Fq 'actor_totp_factors' /opt/pvnaive/db/current/scripts/db/health.sh || die "periodic DB health release is not S04-aware"
   systemctl is-active --quiet pvnaive-api.service || die "S04 marker exists but API service is not active"
   ss -H -lnt | awk '$4 == "127.0.0.1:8080" {found=1} END {exit !found}' || die "API is not loopback-only on 127.0.0.1:8080"
   curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health/live >/dev/null
@@ -295,11 +343,14 @@ echo "${backup_output}"
 rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
 [[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"
 
+promote_db_tooling_release
+
 PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \
   bash "${release_link}/scripts/db/set-expected-schema-version.sh" 2
 db_env_schema_updated=1
 systemctl start pvnaive-db-health.service
 [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service failed after schema-v2 environment update"
+grep -Fq 'actor_totp_factors' /opt/pvnaive/db/current/scripts/db/health.sh || die "periodic DB health release is not S04-aware"
 
 install -o root -g pvnaive -m 0640 /dev/null "${auth_key}"
 dd if=/dev/urandom of="${auth_key}" bs=32 count=1 status=none
