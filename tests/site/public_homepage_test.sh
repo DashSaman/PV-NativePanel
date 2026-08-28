@@ -23,9 +23,13 @@ grep -Eq '<html[^>]+lang="fa"[^>]+dir="rtl"|<html[^>]+dir="rtl"[^>]+lang="fa"' "
 
 for marker in \
   'data-section="breaking-news"' \
+  'data-section="featured-grid"' \
   'data-section="hero-story"' \
   'data-section="latest-news"' \
   'data-section="leader-messages"' \
+  'data-section="multimedia"' \
+  'data-section="photo-gallery"' \
+  'data-section="source-desk"' \
   'data-section="politics"' \
   'data-section="economy"' \
   'data-section="international"'; do
@@ -35,12 +39,41 @@ for marker in \
   }
 done
 
-for source_domain in khamenei.ir president.ir irna.ir isna.ir tasnimnews.com farsnews.ir mehrnews.com; do
+for source_domain in khamenei.ir leader.ir president.ir media.president.ir irna.ir isna.ir tasnimnews.com farsnews.ir mehrnews.com; do
   grep -Fq "${source_domain}" "${articles}" || {
     echo "ERROR: curated source registry missing ${source_domain}" >&2
     exit 1
   }
 done
+
+# The richer homepage must carry real media semantics in its local cache and a
+# usable static fallback. Video is opt-in (no autoplay), source-linked and
+# remains non-critical to rendering the page if the remote media host is down.
+grep -Fq '"media_type":"video"' "${articles}" || {
+  echo 'ERROR: local article cache needs at least one sourced video item' >&2
+  exit 1
+}
+grep -Fq '"media_type":"photo"' "${articles}" || {
+  echo 'ERROR: local article cache needs sourced photo-gallery items' >&2
+  exit 1
+}
+grep -Fq '"media_url":"https://media.president.ir/' "${articles}" || {
+  echo 'ERROR: video item must reference the official presidency media host' >&2
+  exit 1
+}
+grep -Eq '<video[^>]+controls[^>]+preload="metadata"|<video[^>]+preload="metadata"[^>]+controls' "${index}" || {
+  echo 'ERROR: static homepage needs an accessible opt-in video player' >&2
+  exit 1
+}
+if grep -Eiq '<video[^>]+autoplay' "${index}"; then
+  echo 'ERROR: public political/news video must never autoplay' >&2
+  exit 1
+fi
+static_story_count="$(grep -Eoc '<article class="(news-card|feed-item|side-story|gallery-card|media-card)' "${index}" || true)"
+(( static_story_count >= 10 )) || {
+  echo "ERROR: static fallback is too sparse for a professional newsroom (${static_story_count} stories)" >&2
+  exit 1
+}
 
 # Everything under site/ is potentially file-server reachable. Both file names
 # and textual source must remain neutral; internal product/data-plane vocabulary
