@@ -18,6 +18,7 @@ web_current_before=""
 db_release_before=""
 db_backup_path=""
 schema_before=""
+expected_schema_before=""
 migration_applied=0
 runtime_key_created=0
 runtime_unit_existed=0
@@ -78,6 +79,8 @@ source "${db_env}"
 set +a
 [[ "${PVNAIVE_DB_NAME:-}" == "pvnaive" ]] || fail 'unexpected database name'
 [[ "${PVNAIVE_DB_PORT:-}" =~ ^[0-9]+$ ]] || fail 'invalid database port'
+expected_schema_before="${PVNAIVE_EXPECTED_SCHEMA_VERSION:-}"
+[[ "${expected_schema_before}" == "2" || "${expected_schema_before}" == "3" ]] || fail "unsupported expected schema before S04R: ${expected_schema_before:-unset}"
 schema_before="$(runuser -u postgres -- psql --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 \
   --host /var/run/postgresql --port "${PVNAIVE_DB_PORT}" --username postgres --dbname pvnaive \
   --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
@@ -152,16 +155,35 @@ rollback_on_error() {
   [[ -z "${web_release_dir}" ]] || rm -rf -- "${web_release_dir}"
 
   if [[ "${migration_applied}" == "1" && -n "${db_backup_path}" ]]; then
-    PVNAIVE_DB_HOST=/var/run/postgresql \
-    PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" \
-    PVNAIVE_DB_NAME=pvnaive \
-    PVNAIVE_DB_USER=postgres \
-    PVNAIVE_RUN_AS_OS_USER=postgres \
-    PVNAIVE_MIGRATIONS_DIR="${bundle_root}/db/migrations" \
-    PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
-    PVNAIVE_CONFIRMED_BACKUP="${db_backup_path}" \
-      bash "${bundle_root}/scripts/db/rollback.sh" >/dev/null 2>&1 || true
-    PVNAIVE_DB_ENV_FILE="${db_env}" bash "${bundle_root}/scripts/db/set-expected-schema-version.sh" 2 >/dev/null 2>&1 || true
+    if PVNAIVE_DB_HOST=/var/run/postgresql \
+      PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" \
+      PVNAIVE_DB_NAME=pvnaive \
+      PVNAIVE_DB_USER=postgres \
+      PVNAIVE_RUN_AS_OS_USER=postgres \
+      PVNAIVE_MIGRATIONS_DIR="${bundle_root}/db/migrations" \
+      PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+      PVNAIVE_CONFIRMED_BACKUP="${db_backup_path}" \
+        bash "${bundle_root}/scripts/db/rollback.sh" >/dev/null 2>&1; then
+      echo 'ROLLBACK_DATABASE=PASS'
+      if PVNAIVE_DB_ENV_FILE="${db_env}" \
+        bash "${bundle_root}/scripts/db/set-expected-schema-version.sh" "${schema_before}" >/dev/null 2>&1; then
+        echo 'ROLLBACK_DATABASE_EXPECTATION=PASS'
+      else
+        echo 'ROLLBACK_DATABASE_EXPECTATION=FAIL'
+      fi
+    else
+      echo 'ROLLBACK_DATABASE=FAIL'
+    fi
+  else
+    echo 'ROLLBACK_DATABASE=NOT_REQUIRED'
+    if [[ -n "${expected_schema_before}" ]]; then
+      if PVNAIVE_DB_ENV_FILE="${db_env}" \
+        bash "${bundle_root}/scripts/db/set-expected-schema-version.sh" "${expected_schema_before}" >/dev/null 2>&1; then
+        echo 'ROLLBACK_DATABASE_EXPECTATION=PASS'
+      else
+        echo 'ROLLBACK_DATABASE_EXPECTATION=FAIL'
+      fi
+    fi
   fi
   if [[ -n "${db_release_before}" && -d "${db_release_before}" ]]; then
     ln -sfn -- "${db_release_before}" /opt/pvnaive/db/current
