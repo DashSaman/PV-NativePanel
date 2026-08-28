@@ -6,9 +6,9 @@ version="${1:-}"
 env_file="${PVNAIVE_DB_ENV_FILE:-/etc/pvnaive/db.env}"
 
 case "${version}" in
-  1|2) ;;
+  1|2|3) ;;
   *)
-    echo "ERROR: expected schema version must be 1 or 2" >&2
+    echo "ERROR: expected schema version must be 1, 2, or 3" >&2
     exit 1
     ;;
 esac
