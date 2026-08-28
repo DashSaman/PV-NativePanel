@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "khamenei-1999-speech-clip",
+      "slug": "khamenei-1999-speech-clip",
+      "kind": "video",
+      "title": "گزیده‌ای از سخنرانی ۲۱ تیر ۱۳۷۸",
+      "summary": "نسخه کوتاه ویدئویی از آرشیو KHAMENEI.IR با مجوز CC BY 4.0؛ منبع و مجوز در صفحه جزئیات درج شده است.",
+      "published_label": "۲۱ تیر ۱۳۷۸",
+      "source_name": "KHAMENEI.IR",
+      "source_domain": "farsi.khamenei.ir",
+      "source_url": "https://farsi.khamenei.ir/video-content?id=20373",
+      "poster": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Portrait_of_Mojtaba_Khamenei.jpg",
+      "duration_seconds": 40.382,
+      "mirror_allowed": true,
+      "rights_note": "CC BY 4.0؛ مجوز توسط Wikimedia Commons برای فایل منبع بررسی شده است.",
+      "attribution": "Khamenei.ir — Creative Commons Attribution 4.0 International",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": 3009132,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Khamenei_speech_of_12_July_1999_%28first_40_seconds%29.webm",
+          "local_path": "video/khamenei-1999-speech-clip.webm",
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-1994-friday-prayer",
+      "slug": "khamenei-1994-friday-prayer",
+      "kind": "video",
+      "title": "گزیده خطبه دوم نماز جمعه تهران، ۲۹ بهمن ۱۳۷۲",
+      "summary": "نسخه آرشیوی منبع‌دار برای پخش آنلاین؛ فایل اصلی در Wikimedia Commons با انتساب به Khamenei.ir نگهداری می‌شود.",
+      "published_label": "۲۹ بهمن ۱۳۷۲",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Second_Khutbah_of_Tehran_Friday_Prayer,_18_February_1994_(4744-4905).webm",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 82,
+      "mirror_allowed": false,
+      "rights_note": "CC BY 4.0 در صفحه فایل Commons درج شده است؛ این ورودی در نسخه اول remote-only است.",
+      "attribution": "Khamenei.ir",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": null,
+          "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Second%20Khutbah%20of%20Tehran%20Friday%20Prayer%2C%2018%20February%201994%20%284744-4905%29.webm",
+          "local_path": null,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-1997-inauguration",
+      "slug": "khamenei-1997-inauguration",
+      "kind": "video",
+      "title": "گزیده سخنرانی در مراسم تنفیذ ریاست جمهوری، مرداد ۱۳۷۶",
+      "summary": "کلیپ کوتاه آرشیوی با لینک مستقیم به نسخه منتشرشده در Wikimedia Commons و منبع اولیه KHAMENEI.IR.",
+      "published_label": "۱۲ مرداد ۱۳۷۶",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Inauguration_of_Mohammad_Khatami_-_August_3,_1997_(Video_speech_of_Khamenei,1000_-_1018).webm",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 20,
+      "mirror_allowed": false,
+      "rights_note": "CC BY 4.0 در صفحه فایل Commons درج شده است؛ این ورودی در نسخه اول remote-only است.",
+      "attribution": "Khamenei.ir",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": null,
+          "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Inauguration%20of%20Mohammad%20Khatami%20-%20August%203%2C%201997%20%28Video%20speech%20of%20Khamenei%2C1000%20-%201018%29.webm",
+          "local_path": null,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-1999-speech-audio",
+      "slug": "khamenei-1999-speech-audio",
+      "kind": "audio",
+      "title": "نسخه صوتی گزیده سخنرانی ۲۱ تیر ۱۳۷۸",
+      "summary": "نسخه MP3 تبدیل‌شده از همان فایل آرشیوی برای پخش آنلاین در مرورگر.",
+      "published_label": "۲۱ تیر ۱۳۷۸",
+      "source_name": "KHAMENEI.IR / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Khamenei_speech_of_12_July_1999_(first_40_seconds).webm",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 40.382,
+      "mirror_allowed": false,
+      "rights_note": "ترنسکد MP3 از فایل CC BY 4.0 در Wikimedia Commons؛ در نسخه اول remote-only است.",
+      "attribution": "Khamenei.ir — CC BY 4.0",
+      "qualities": [
+        {
+          "label": "MP3 128kbps",
+          "mime": "audio/mpeg",
+          "bytes": null,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Khamenei_speech_of_12_July_1999_%28first_40_seconds%29.webm/Khamenei_speech_of_12_July_1999_%28first_40_seconds%29.webm.stereo.audio.mp3",
+          "local_path": null,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "nam-summit-2012-audio",
+      "slug": "nam-summit-2012-audio",
+      "kind": "audio",
+      "title": "فایل صوتی بیانات در اجلاس جنبش عدم تعهد، شهریور ۱۳۹۱",
+      "summary": "لینک صوتی ۱۲۸ کیلوبیت منتشرشده روی دامنه رسمی Farsi.Khamenei.ir.",
+      "published_label": "۹ شهریور ۱۳۹۱",
+      "source_name": "Farsi.Khamenei.ir",
+      "source_domain": "farsi.khamenei.ir",
+      "source_url": "https://farsi.khamenei.ir/",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": null,
+      "mirror_allowed": false,
+      "rights_note": "لینک فایل از میزبان رسمی است؛ اندازه دقیق هنوز در manifest تثبیت نشده، بنابراین remote-only است.",
+      "attribution": "Khamenei.ir",
+      "qualities": [
+        {
+          "label": "MP3 128kbps",
+          "mime": "audio/mpeg",
+          "bytes": null,
+          "url": "https://farsi.khamenei.ir/ndata/news/20866/13910609_4730_128k.mp3",
+          "local_path": null,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "nam-summit-2012-audio-low",
+      "slug": "nam-summit-2012-audio-low",
+      "kind": "audio",
+      "title": "نسخه کم‌حجم بیانات اجلاس عدم تعهد، شهریور ۱۳۹۱",
+      "summary": "نسخه کم‌حجم ۱۶ کیلوبیت از همان فایل برای کاربران با اتصال کند.",
+      "published_label": "۹ شهریور ۱۳۹۱",
+      "source_name": "Farsi.Khamenei.ir",
+      "source_domain": "farsi.khamenei.ir",
+      "source_url": "https://farsi.khamenei.ir/",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": null,
+      "mirror_allowed": false,
+      "rights_note": "لینک فایل از میزبان رسمی است؛ اندازه دقیق هنوز در manifest تثبیت نشده، بنابراین remote-only است.",
+      "attribution": "Khamenei.ir",
+      "qualities": [
+        {
+          "label": "MP3 16kbps",
+          "mime": "audio/mpeg",
+          "bytes": null,
+          "url": "https://farsi.khamenei.ir/ndata/news/20866/13910609_4730_16k.mp3",
+          "local_path": null,
+          "sha256": null
+        }
+      ]
+    }
+  ]
+}
