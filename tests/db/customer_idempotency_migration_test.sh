@@ -88,7 +88,9 @@ then
   exit 1
 fi
 
-PVNAIVE_DISPOSABLE_DB=1 "${repo_root}/scripts/db/rollback.sh" >/dev/null
+PVNAIVE_DISPOSABLE_DB=1 \
+PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+  "${repo_root}/scripts/db/rollback.sh" >/dev/null
 version_after_rollback="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
 [[ "${version_after_rollback}" == "4" ]] || { echo 'ERROR: v5 rollback did not return to v4' >&2; exit 1; }
 remaining="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT to_regclass('pvnaive.customer_mutation_keys') IS NOT NULL")"
