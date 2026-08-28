@@ -33,6 +33,32 @@ export function buildNaiveURI(username: string, password: string, host: string):
   return `naive+https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:443`;
 }
 
+export function buildKaringSingBoxProfile(username: string, password: string, host: string): string {
+  return JSON.stringify(
+    {
+      outbounds: [
+        {
+          type: "naive",
+          tag: `PVNaive-${username}`,
+          server: host,
+          server_port: 443,
+          username,
+          password,
+          insecure_concurrency: 0,
+          udp_over_tcp: false,
+          quic: false,
+          tls: {
+            enabled: true,
+            server_name: host,
+          },
+        },
+      ],
+    },
+    null,
+    2,
+  );
+}
+
 async function parseJSON(response: Response): Promise<Record<string, unknown>> {
   const contentType = response.headers.get("Content-Type") || "";
   if (!contentType.includes("application/json")) return {};
