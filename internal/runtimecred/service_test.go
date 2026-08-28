@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -127,6 +126,7 @@ type fakeRuntimeAgent struct {
 func (f *fakeRuntimeAgent) Inspect(context.Context) (AgentInspection, error) {
 	return AgentInspection{CaddySHA256: strings.Repeat("a", 64)}, nil
 }
+
 func (f *fakeRuntimeAgent) Apply(_ context.Context, request AgentApplyRequest) (AgentApplyResult, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -137,6 +137,7 @@ func (f *fakeRuntimeAgent) Apply(_ context.Context, request AgentApplyRequest) (
 	}
 	return AgentApplyResult{PreviousSHA256: strings.Repeat("a", 64), AppliedSHA256: strings.Repeat("b", 64), BackupID: "backup-safe-1", MainPID: 1234}, nil
 }
+
 func (f *fakeRuntimeAgent) Rollback(_ context.Context, backupID string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -190,7 +191,10 @@ func TestServiceRejectsDisablingLastActiveCredentialBeforeAgentApply(t *testing.
 	tx := newDriverTx(t, nil)
 
 	_, err = service.Update(context.Background(), tx, "actor-id", "idem-update-0001", UpdateInput{
-		ID: "only-id", ExpectedRevision: 1, Username: "only.user", Status: CredentialDisabled,
+		ID:               "only-id",
+		ExpectedRevision: 1,
+		Username:         "only.user",
+		Status:           CredentialDisabled,
 	})
 	if !errors.Is(err, ErrLastActiveCredential) {
 		t.Fatalf("Update() error = %v, want ErrLastActiveCredential", err)
@@ -269,16 +273,27 @@ func bytesOf(value byte, count int) []byte {
 type txConnector struct{ commitErr error }
 type txConn struct{ commitErr error }
 type txDriverTx struct{ commitErr error }
-
-func (c txConnector) Connect(context.Context) (driver.Conn, error) { return txConn{commitErr: c.commitErr}, nil }
-func (c txConnector) Driver() driver.Driver                           { return txDriver{} }
 type txDriver struct{}
-func (txDriver) Open(string) (driver.Conn, error)                     { return txConn{}, nil }
-func (c txConn) Prepare(string) (driver.Stmt, error)                  { return nil, errors.New("not implemented") }
-func (c txConn) Close() error                                        { return nil }
-func (c txConn) Begin() (driver.Tx, error)                            { return txDriverTx{commitErr: c.commitErr}, nil }
-func (t txDriverTx) Commit() error                                   { return t.commitErr }
-func (t txDriverTx) Rollback() error                                 { return nil }
+
+func (c txConnector) Connect(context.Context) (driver.Conn, error) {
+	return txConn{commitErr: c.commitErr}, nil
+}
+
+func (c txConnector) Driver() driver.Driver { return txDriver{} }
+
+func (txDriver) Open(string) (driver.Conn, error) { return txConn{}, nil }
+
+func (c txConn) Prepare(string) (driver.Stmt, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c txConn) Close() error { return nil }
+
+func (c txConn) Begin() (driver.Tx, error) { return txDriverTx{commitErr: c.commitErr}, nil }
+
+func (t txDriverTx) Commit() error { return t.commitErr }
+
+func (t txDriverTx) Rollback() error { return nil }
 
 func newDriverTx(t *testing.T, commitErr error) *sql.Tx {
 	t.Helper()
@@ -290,5 +305,3 @@ func newDriverTx(t *testing.T, commitErr error) *sql.Tx {
 	}
 	return tx
 }
-
-var _ io.Closer = txConn{}
