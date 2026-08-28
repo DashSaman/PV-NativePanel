@@ -165,6 +165,24 @@ jobs:
               apt-get install --yes --no-install-recommends curl >/dev/null
               bash tests/stages/S04_auth_rehearsal.sh
             '
+      - name: Run full S04R runtime rehearsal
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --volume "${GITHUB_WORKSPACE}:/repo" \
+            --workdir /repo \
+            postgres:18-bookworm \
+            bash -lc '
+              set -Eeuo pipefail
+              apt-get update >/dev/null
+              apt-get install --yes --no-install-recommends curl jq >/dev/null
+              bash tests/stages/S04R_full_rehearsal.sh
+            '
       - name: PostgreSQL 18 logs on failure
         if: failure()
         run: docker logs pvnaive-s04-postgres18 || true
