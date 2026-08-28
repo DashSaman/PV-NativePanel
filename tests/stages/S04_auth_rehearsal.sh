@@ -23,6 +23,7 @@ test_db="pvnaive"
 api_port="18080"
 api_pid=""
 tmpdir=""
+s04_migrations=""
 password='S04-Rehearsal-Password-Only'
 owner_email='owner-s04@example.invalid'
 
@@ -44,10 +45,25 @@ cleanup() {
   if [[ -n "${tmpdir}" ]]; then
     rm -rf -- "${tmpdir}" || true
   fi
+  if [[ -n "${s04_migrations}" ]]; then
+    rm -rf -- "${s04_migrations}" || true
+  fi
 }
 cleanup
 tmpdir="$(mktemp -d)"
+s04_migrations="$(mktemp -d)"
 trap cleanup EXIT HUP INT TERM
+
+# S04 is a frozen authentication-stage rehearsal. Newer migrations (S04R+)
+# must not silently change this stage's schema contract or artifact semantics.
+cp "${repo_root}/db/migrations/0001_initial.up.sql" "${s04_migrations}/"
+cp "${repo_root}/db/migrations/0001_initial.down.sql" "${s04_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.up.sql" "${s04_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.down.sql" "${s04_migrations}/"
+(
+  cd "${s04_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
 
 psql_admin --dbname postgres <<'SQL' >/dev/null
 CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
@@ -57,7 +73,8 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" \
   --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
-PVNAIVE_DB_NAME="${test_db}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
+PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${s04_migrations}" \
+  "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
 [[ "${schema_version}" == "2" ]] || { echo "ERROR: rehearsal schema version=${schema_version}" >&2; exit 1; }
 
