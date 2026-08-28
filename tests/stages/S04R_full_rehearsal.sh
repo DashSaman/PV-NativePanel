@@ -184,8 +184,23 @@ legacy_id="$(jq -r '.credentials[] | select(.username == "legacy.user") | .id' "
 legacy_revision="$(jq -r '.credentials[] | select(.username == "legacy.user") | .revision' "${tmpdir}/list.json")"
 [[ -n "${customer_id}" && -n "${legacy_id}" ]] || { echo 'ERROR: imported/created IDs missing' >&2; exit 1; }
 
+api_mutate PATCH "/api/v1/runtime/naive/credentials/${customer_id}" runtime-rename-0001 \
+  '{"username":"customer.renamed","status":"active"}' "${customer_revision}" >"${tmpdir}/rename.json"
+renamed_revision="$(jq -r '.credential.revision' "${tmpdir}/rename.json")"
+jq -e '.credential.username == "customer.renamed" and .credential.status == "active"' "${tmpdir}/rename.json" >/dev/null
+jq -e '[.credentials[] | select(.username == "customer.renamed")] | length == 1' \
+  < <(curl --fail --silent --unix-socket "${socket}" http://unix/v1/inspect) >/dev/null
+
+stale_status="$(curl --silent --output "${tmpdir}/stale.json" --write-out '%{http_code}' \
+  --cookie "${tmpdir}/cookies.txt" --request PATCH \
+  --header 'Content-Type: application/json' --header "X-CSRF-Token: ${csrf}" --header 'Idempotency-Key: runtime-stale-revision-0001' \
+  --header "If-Match: ${customer_revision}" --data '{"username":"customer.stale","status":"active"}' \
+  "http://127.0.0.1:${api_port}/api/v1/runtime/naive/credentials/${customer_id}")"
+[[ "${stale_status}" == "409" ]] || { echo "ERROR: stale revision returned ${stale_status}" >&2; exit 1; }
+jq -e '.code == "revision_conflict"' "${tmpdir}/stale.json" >/dev/null
+
 api_mutate PATCH "/api/v1/runtime/naive/credentials/${customer_id}" runtime-disable-0001 \
-  '{"username":"customer.one","status":"disabled"}' "${customer_revision}" >"${tmpdir}/disable.json"
+  '{"username":"customer.renamed","status":"disabled"}' "${renamed_revision}" >"${tmpdir}/disable.json"
 disabled_revision="$(jq -r '.credential.revision' "${tmpdir}/disable.json")"
 [[ "$(curl --fail --silent --unix-socket "${socket}" http://unix/v1/inspect | jq '.credentials | length')" == "1" ]] || { echo 'ERROR: disabled credential remained active in runtime' >&2; exit 1; }
 
@@ -198,7 +213,7 @@ last_active_status="$(curl --silent --output "${tmpdir}/last-active.json" --writ
 jq -e '.code == "last_active_credential"' "${tmpdir}/last-active.json" >/dev/null
 
 api_mutate PATCH "/api/v1/runtime/naive/credentials/${customer_id}" runtime-enable-0001 \
-  '{"username":"customer.one","status":"active"}' "${disabled_revision}" >"${tmpdir}/enable.json"
+  '{"username":"customer.renamed","status":"active"}' "${disabled_revision}" >"${tmpdir}/enable.json"
 enabled_revision="$(jq -r '.credential.revision' "${tmpdir}/enable.json")"
 
 api_mutate POST "/api/v1/runtime/naive/credentials/${customer_id}/rotate-password" runtime-rotate-0001 \
@@ -212,7 +227,7 @@ jq -e '.credential.status == "revoked"' "${tmpdir}/revoke.json" >/dev/null
 [[ "$(curl --fail --silent --unix-socket "${socket}" http://unix/v1/inspect | jq '.credentials | length')" == "1" ]] || { echo 'ERROR: revoked credential remained active in runtime' >&2; exit 1; }
 
 api_get /api/v1/runtime/naive/credentials >"${tmpdir}/final-list.json"
-jq -e '(.credentials | length == 2) and ([.credentials[] | select(.username == "legacy.user" and .status == "active")] | length == 1) and ([.credentials[] | select(.username == "customer.one" and .status == "revoked")] | length == 1)' "${tmpdir}/final-list.json" >/dev/null
+jq -e '(.credentials | length == 2) and ([.credentials[] | select(.username == "legacy.user" and .status == "active")] | length == 1) and ([.credentials[] | select(.username == "customer.renamed" and .status == "revoked")] | length == 1)' "${tmpdir}/final-list.json" >/dev/null
 if grep -Eq "${created_password}|${rotated_password}|legacy-pass|secret_(hash|ciphertext|nonce)|generated_password" "${tmpdir}/final-list.json"; then
   echo 'ERROR: final list exposed secret material' >&2
   exit 1
@@ -220,7 +235,27 @@ fi
 
 state_contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT COUNT(*) || '|' || COUNT(*) FILTER (WHERE origin='imported') || '|' || COUNT(*) FILTER (WHERE origin='panel') || '|' || COUNT(*) FILTER (WHERE status='revoked') FROM pvnaive.naive_runtime_credentials")"
 [[ "${state_contract}" == "2|1|1|1" ]] || { echo "ERROR: runtime credential DB contract=${state_contract}" >&2; exit 1; }
+
+envelope_contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT COUNT(*) FILTER (WHERE octet_length(secret_hash)=32 AND octet_length(secret_nonce)=12 AND octet_length(secret_ciphertext)>16 AND encryption_key_id='runtime-rehearsal-v1') FROM pvnaive.naive_runtime_credentials")"
+[[ "${envelope_contract}" == "2" ]] || { echo "ERROR: encrypted credential envelope contract=${envelope_contract}" >&2; exit 1; }
+
+plaintext_contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align \
+  --set=legacy_password='legacy-pass' --set=created_password="${created_password}" --set=rotated_password="${rotated_password}" <<'SQL'
+SELECT CASE WHEN
+  bool_and(position(convert_to(:'legacy_password','UTF8') in secret_ciphertext)=0
+    AND position(convert_to(:'created_password','UTF8') in secret_ciphertext)=0
+    AND position(convert_to(:'rotated_password','UTF8') in secret_ciphertext)=0)
+  AND (SELECT bool_and(position(convert_to(:'legacy_password','UTF8') in config_ciphertext)=0
+    AND position(convert_to(:'created_password','UTF8') in config_ciphertext)=0
+    AND position(convert_to(:'rotated_password','UTF8') in config_ciphertext)=0)
+    FROM pvnaive.runtime_revisions WHERE protocol_id='naive' AND tenant_id IS NULL)
+THEN 'clean' ELSE 'plaintext-found' END
+FROM pvnaive.naive_runtime_credentials;
+SQL
+)"
+[[ "${plaintext_contract}" == "clean" ]] || { echo 'ERROR: plaintext credential material found in DB encrypted columns' >&2; exit 1; }
+
 revision_contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT COUNT(*) || '|' || COUNT(*) FILTER (WHERE state='applied') FROM pvnaive.runtime_revisions WHERE protocol_id='naive' AND tenant_id IS NULL")"
-[[ "${revision_contract}" == "5|5" ]] || { echo "ERROR: runtime revision contract=${revision_contract}" >&2; exit 1; }
+[[ "${revision_contract}" == "6|6" ]] || { echo "ERROR: runtime revision contract=${revision_contract}" >&2; exit 1; }
 
 echo 'S04R_FULL_REHEARSAL=PASSED'
