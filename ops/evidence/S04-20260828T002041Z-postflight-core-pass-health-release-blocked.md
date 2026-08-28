@@ -51,7 +51,7 @@ The postflight independently verified all of the following:
 
 `/opt/pvnaive/db/current/scripts/db/health.sh`
 
-`/opt/pvnaive/db/current` still selects the immutable S03 database tooling release (`0001-...`). S04 installed its schema-2-aware health script under the auth release, so a direct S04 health check succeeds, but the periodic timer still runs the older immutable DB release.
+`/opt/pvnaive/db/current` still selects the immutable S03 database tooling release (`0001-7f66adefd8f0`). S04 installed its schema-2-aware health script under the auth release, so a direct S04 health check succeeds, but the periodic timer still runs the older immutable DB release.
 
 The correct fix is NOT to weaken the health check and NOT to alter the timer unit. Promote `/opt/pvnaive/db/current` atomically to a new immutable schema-2 database tooling release while preserving the S03 release for rollback.
 
@@ -59,7 +59,7 @@ Expected new release ID from migration 0002 checksum:
 
 `0002-84bb735877d5`
 
-## Repository fix in progress
+## Repository fix — TDD complete and CI green
 
 Active branch: `s04-auth`
 PR: `#2`
@@ -72,9 +72,11 @@ TDD evidence:
 4. Test strengthened to require S04 Stage wiring.
 5. RED CI run `33129769272`: `ERROR: S04 stage does not require the DB release promotion helper`.
 6. Guarded one-shot Stage patch succeeded and produced commit `708a4e7fd71011e5b21f136ae7305612f295a258`.
-7. Temporary one-shot workflow was removed in normal-user commit `20ed774d06969a3f4c301fd6072a4db83fcffcca` so final CI runs on a clean branch head.
-8. Final CI run for the clean head: `33130012929` (verification pending at the moment this evidence note was written).
+7. Temporary one-shot workflow removed in normal-user clean-head commit `20ed774d06969a3f4c301fd6072a4db83fcffcca`.
+8. Final clean-head CI run `33130012929`: **SUCCESS**.
+9. In that final run all five gates passed: Go, Web, PostgreSQL 18 (including DB release promotion regression), end-to-end auth rehearsal, and production bundle.
+10. Compare `11c54dc1...` → `20ed774d...` confirms the only change under `scripts/db` is the new `promote-release.sh`; migrations and the pre-existing DB scripts are unchanged. This permits the live repair to use the already-installed pinned S04 DB files plus the exact commit-pinned promotion helper without redeploying API/auth/web.
 
 ## Exact continuation rule
 
-Do not touch the live server until final CI on the clean `s04-auth` head is green. Then perform one atomic live DB tooling release promotion, require `pvnaive-db-health.service` success using the new release, preserve API/Caddy/SSH/firewall invariants, and rerun the independent S04 postflight. Only a postflight with `DB_TIMER_S04_AWARE=true` may advance to Owner bootstrap.
+The repository fix is green. Next perform one atomic live DB tooling release promotion, require `pvnaive-db-health.service` success using release `0002-84bb735877d5`, preserve API/Caddy/SSH/firewall invariants, and rerun the independent S04 postflight. Only a postflight with `DB_TIMER_S04_AWARE=true` and `S04_POSTFLIGHT=PASSED` may advance to Owner bootstrap.
