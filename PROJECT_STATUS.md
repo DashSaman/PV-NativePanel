@@ -6,7 +6,7 @@ Last updated: 2026-08-28
 
 ## Project
 
-PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy, designed to grow into user lifecycle, accounting, subscriptions, operations and later optional fleet management without coupling the data plane to the UI.
+PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The immediate Pilot target is intentionally narrow: the Owner manages real Naive credentials from the panel and hands a `naive+https://...` link to customers. Customer portal, quota/accounting, expiry, reseller and subscription lifecycle remain later phases.
 
 ## Repository state
 
@@ -14,109 +14,158 @@ PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy
 - Default branch: `main`
 - Active implementation branch: `s04-auth`
 - Draft PR: `#2` — `S04-AUTH: production authentication foundation`
-- `main` head audited: `b98ffbfbe8b30ddcc1bca06531650739a3647d22`
-- `s04-auth` head at audit start: `cf0fbf3fea5052e7fbbcc9971a394c2c06d28713`
-- Merge base: `d0398cd1b8c1098a21560d4ddd1ff9cfff48b69b`
-- Branch relationship at audit: **diverged; s04-auth 123 ahead / 37 behind main**
-- PR state at audit: open, draft, mergeable; no submitted reviews/comments.
-- GitHub issues at audit: none.
-- TODO/FIXME/HACK code search at audit: no indexed matches returned.
+- `main` production-documentation head last audited: `b98ffbfbe8b30ddcc1bca06531650739a3647d22`
+- Branches remain deliberately diverged; `PVN-070` owns non-force reconciliation.
+- Never reset/force-push away production evidence or active S04R work.
 
-## Production state
+## Current production state before S04R Pilot
 
 Evidence on `main` proves:
 
 - S00-S03 passed.
-- PostgreSQL 18 is loopback-only and S04 production schema is v2.
+- PostgreSQL 18 is loopback-only and production schema is currently v2.
 - API is healthy on `127.0.0.1:8080` only.
 - one real Owner exists and real login/session/CSRF logout/revocation passed.
 - public panel/API exposure passed at `https://namir.softarg.ir/panel/`.
-- Caddy was changed by reload only; existing Naive forward proxy and camouflage root were preserved.
-- current recorded post-exposure Caddyfile SHA-256: `21db739ca3911fb9974eaabe9db07f22e62d84ddc1309ef6bcea3ec247c9ab23`.
-- S04 is still formally `IN PROGRESS`; do not promote it solely because the panel is visible.
+- existing Caddy/Naive and camouflage were preserved during panel exposure.
+- S04 is still formally `IN PROGRESS`; formal closure is `PVN-036`.
 
-## Active development state
+No S04R migration/runtime mutation has yet been recorded as completed on production in this branch's canonical status.
 
-Owner-approved pre-S05 extension: `S04R-NAIVE-CREDENTIALS`.
+## S04R implementation state
 
-Completed in development:
+Development is complete through disposable rehearsal (`PVN-020`…`PVN-027`). Implemented and covered by tests/rehearsal:
 
-- design spec and detailed TDD implementation plan;
-- migration `0003_naive_runtime_credentials` plus PostgreSQL 18 regression coverage;
-- compatibility fixes so legacy S04 tests remain pinned to schema v2.
+- AES-GCM runtime secret envelope, SHA-256 fingerprinting and conservative username/password policy;
+- byte-preserving `forward_proxy` parser/renderer with fail-closed ambiguity/injection handling;
+- root Runtime Agent on a fixed Unix socket, with no arbitrary shell/path/service/URL API;
+- expected-SHA Caddy operator with exact backup, validate-before-write, reload-only postflight and rollback;
+- runtime credential PostgreSQL store + desired/apply/applied revision saga and compensation;
+- dedicated reconciliation-required error when DB finalization and Runtime rollback cannot be reconciled;
+- Owner-only Runtime API with CSRF, idempotency, optimistic revisions and secret redaction;
+- `/panel/#/runtime/naive` UI for import/create/rename/rotate/enable/disable/revoke;
+- generated password is returned only after successful commit and only once to the browser;
+- one-click copy-ready `naive+https://...` URI for Karing/compatible clients;
+- last-active credential protection;
+- full PG18 + API + Unix-socket + safe Runtime rehearsal;
+- pinned Naive Caddy `v2.11.2-naive` proof that multiple `basic_auth` directives validate/adapt;
+- guarded S04R bundle with migration 0003, three binaries, web build, systemd units, preflight and upgrade scripts.
 
-Current TDD task:
+## Verification checkpoints
 
-- `PVN-020` runtime secret envelope + conservative credential input policy.
-- tests exist in `internal/runtimecred/secret_test.go` and `internal/runtimecred/policy_test.go`.
-- current CI is intentionally RED because production implementation has not yet been written.
-- observed failure: `undefined: ValidateUsername` in the Go job.
+### Full S04R implementation/bundle checkpoint
 
-## Last verified green development point
+Commit: `a41fd84c2f17076a3b190eafad3539c47b430503`
 
-- Commit: `6178ab97e3ac328189e4baddbf578ebe79469c3b`
-- CI run: `33133931739`
+CI run `33190295766`:
+
 - Go: PASS
 - Web: PASS
-- PostgreSQL 18/database gates: PASS
+- PostgreSQL 18 / database safety contracts: PASS
+- exact pinned Caddy proof: PASS
 - S04 auth rehearsal: PASS
-- S04 bundle: PASS
+- full S04R runtime rehearsal: PASS
+- production S04R bundle contract: PASS
+- archive checksum: PASS
+- uploaded artifact: `PVNaive-S04-a41fd84c2f17076a3b190eafad3539c47b430503`
 
-The later test-only head `cf0fbf...` is intentionally RED and must not be called release-ready.
+The downloaded artifact was independently unpacked and both the outer archive checksum and every file in internal `SHA256SUMS` verified successfully.
+
+### Customer-handoff UI increment
+
+The subsequent UI slice adds the tested URI builder and one-click Karing/Naive link. It followed RED→GREEN TDD: run `33190665847` failed only because `buildNaiveURI` did not exist; after implementation the web job on run `33190796760` passed all tests and the production web build.
+
+A fresh full CI on the final documentation HEAD is still required before a completion/release-ready claim.
+
+## Immediate live task
+
+`PVN-028` — **read-only live preflight**.
+
+Use `docs/PILOT_INSTALL_FA.md` and perform the live process one step at a time:
+
+1. verify artifact checksums;
+2. run `S04R-preflight.sh` read-only;
+3. continue only if `PREFLIGHT_RESULT=PASS`;
+4. pass the exact `CADDYFILE_SHA256` into `S04R-upgrade.sh`;
+5. require encrypted DB backup + schema v3 + unchanged Caddy SHA/PID/NRestarts;
+6. Owner securely imports the existing credential;
+7. create one new generated credential;
+8. test the generated Naive link in Karing before handing it to a customer;
+9. record live evidence under `ops/evidence/` and only then close `PVN-028/029`.
+
+## Pilot capability boundary
+
+### Ready in code/rehearsal
+
+- Owner authentication and protected panel
+- real Naive credential import and management
+- multiple credentials
+- one-time generated password
+- copy-ready Naive/Karing link
+- safe Caddy lifecycle and rollback
+
+### Not part of this Pilot yet
+
+- customer self-service login/portal
+- traffic quota or exact billable usage
+- automatic commercial expiry/reset
+- device/HWID/session/speed enforcement
+- reseller/credit
+- subscription page/token lifecycle
+- notifications
+- generic fresh-server installer
+
+Customers receive only their Naive link/credential, never Owner panel credentials.
 
 ## Numerical progress
 
-Progress is **not an estimate**. It is an equal-weight count over the 72 concrete tasks in `ROADMAP.md`.
+Progress is an equal-weight count over the 72 concrete tasks in `ROADMAP.md`; in-progress work receives no partial credit.
 
 | Metric | Count |
 |---|---:|
 | Total tracked tasks | 72 |
-| DONE | 19 |
-| IN PROGRESS | 2 |
+| DONE | 27 |
+| IN PROGRESS | 2 (`PVN-028`, `PVN-068`) |
 | BLOCKED | 0 |
-| NOT STARTED | 51 |
-| Overall completed | **26.4%** |
-
-Formula: `DONE / TOTAL = 19 / 72 = 26.4%`. In-progress tasks receive no partial credit.
+| TODO | 43 |
+| Overall completed | **37.5%** |
 
 ### Phase progress by task count
 
 | Phase | Done / Total | Progress |
 |---|---:|---:|
 | A — Foundation / Database | 6 / 6 | 100% |
-| B — Authentication / Public preview | 11 / 11 | 100% of implemented milestones; formal stage closure is separately tracked in Phase D |
-| C — S04R Naive credential management | 2 / 12 | 16.7% |
+| B — Authentication / Public preview | 11 / 11 | 100% of implemented milestones; formal closure remains Phase D |
+| C — S04R Naive credential management | 10 / 12 | 83.3%; live preflight/rollout remain |
 | D — Security hardening / S04 closure | 0 / 7 | 0% |
 | E — User / Plan / Reseller lifecycle | 0 / 8 | 0% |
 | F — Accounting / full Naive runtime | 0 / 7 | 0% |
 | G — Subscription / Notification | 0 / 6 | 0% |
-| H — Installer / Operations / Release | 0 / 10 | 0% |
-| I — Canonical PM / quality documentation | 0 / 5 | 0% (`PVN-068` currently in progress) |
+| H — Installer / Operations / Release | 0 / 10 | 0%; S04R has a stage-specific Pilot upgrade path, not the general installer |
+| I — Governance / quality | 0 / 5 | PVN-068 still syncing canonical PM docs |
 
-## Current blockers and risks
+## Known release/security boundaries
 
-1. **P0 branch truth split:** active branch is 37 commits behind production-documentation main. Do not reset or force-push; integrate deliberately after the current feature slice is green.
-2. **P0 security:** refresh-token reuse detection is present in SQL but the HTTP refresh path first calls `BeginAuthenticated`, which rejects an already-revoked token before `auth_rotate_session` can mark family reuse. Track as `BUG-001`.
-3. **P1 transaction integrity:** authenticated middleware writes the HTTP response before checking transaction commit; commit errors are ignored. Track as `BUG-002`.
-4. **P1 readiness:** `/health/ready` checks injected dependencies but does not prove an ongoing DB ping. Track as `BUG-003`.
-5. **P1 MFA recovery:** recovery codes are generated/consumed for MFA removal, but the login contract only accepts a TOTP code. Track as `BUG-004` unless product decision explicitly excludes recovery-code login.
-6. **P1 auth abuse controls:** DB lockout exists, but the documented HTTP/IP rate-limit/progressive-delay layer is not implemented yet.
-7. **Documentation drift:** README, SECURITY, PRODUCT_GAPS, API/feature docs contain scaffold/target statements that no longer match actual code or production.
-8. **Release security gap:** CI has tests/build/rehearsal but no SBOM, dependency audit, secret scan, SAST or signed release gate yet.
+The Pilot is not equivalent to final Production R1. Highest-priority open items remain:
 
-## Scope discipline
+1. `PVN-030` refresh-token reuse-family detection;
+2. `PVN-031` transaction commit-before-success integrity;
+3. `PVN-034` HTTP/IP-aware auth abuse controls;
+4. `PVN-035/036` formal public security review and independent S04 closure;
+5. `PVN-045+` exact accounting before quota/billing claims;
+6. `PVN-058+` generic fresh installer/release lifecycle.
 
-Production R1 remains standalone-first. Multi-node/controller features are valuable but are P3/future until the single-node data model, runtime safety, accounting, subscription, installer, restore and pilot gates are proven.
+For Pilot use, keep panel access Owner-only, use strong Owner credentials/MFA where configured, and never give management login details to customers.
 
 ## Read first
 
 1. `HANDOFF.md`
 2. `ROADMAP.md`
-3. `KNOWN_ISSUES.md`
-4. `AGENT_TASKS.md`
-5. `WORKLOG.md`
-6. `docs/superpowers/specs/2026-08-28-naive-runtime-credentials-design.md`
-7. `docs/superpowers/plans/2026-08-28-naive-runtime-credentials.md`
-8. `main:CONTINUE_HERE.md`
-9. `main:ops/S04_LIVE_STATE.md`
-10. newest `main:ops/evidence/*` before production changes
+3. `docs/PILOT_INSTALL_FA.md`
+4. `KNOWN_ISSUES.md`
+5. `AGENT_TASKS.md`
+6. `WORKLOG.md`
+7. `FEATURE_MATRIX.md`
+8. `docs/superpowers/specs/2026-08-28-naive-runtime-credentials-design.md`
+9. `docs/superpowers/plans/2026-08-28-naive-runtime-credentials.md`
+10. before any live change: `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`
