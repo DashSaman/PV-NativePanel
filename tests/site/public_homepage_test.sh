@@ -64,7 +64,7 @@ if grep -Eiq 'fetch\([^)]*https?://' "${script}"; then
 fi
 
 # Keep the protected application intentionally undiscoverable from public UI.
-if grep -Eiq 'href=["'"'][^"'"']*/panel/?' "${index}"; then
+if grep -Fq 'href="/panel' "${index}" || grep -Fq "href='/panel" "${index}"; then
   echo 'ERROR: public homepage must not advertise the management panel' >&2
   exit 1
 fi
