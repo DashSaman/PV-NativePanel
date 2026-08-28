@@ -9,6 +9,12 @@ describe("route manifest", () => {
   it("keeps sensitive pages restricted", () => {
     expect(appRoutes.find((r) => r.path === "/settings/security")?.permission).toBe("owner");
     expect(appRoutes.find((r) => r.path === "/diagnostics/domain-activity")?.permission).toBe("owner");
+    expect(appRoutes.find((r) => r.path === "/runtime/naive")?.permission).toBe("owner");
+  });
+  it("exposes the usable Naive runtime manager in authenticated navigation", () => {
+    const route = appRoutes.find((r) => r.path === "/runtime/naive");
+    expect(route?.navigation).toBe(true);
+    expect(route?.label).toBe("Naive Runtime");
   });
   it("keeps subscription page public but outside navigation", () => {
     const route = appRoutes.find((r) => r.path === "/s/:token");
