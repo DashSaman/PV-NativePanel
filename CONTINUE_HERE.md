@@ -4,81 +4,48 @@ If a Chat/Agent session was interrupted, start here.
 
 ## Read in this order
 
-1. `ops/evidence/S04-20260828T004121Z-postflight-role-format-harness-false-negative.md` — newest postflight evidence; the latest stop was a read-only test-format bug, not a server privilege failure.
-2. `ops/evidence/S04-20260828T003759Z-db-health-release-promotion-pass.md` — live DB health release promotion passed.
-3. `ops/S04_LIVE_STATE.md` — authoritative current live state and safety invariants.
-4. `ops/evidence/S04-20260828T002041Z-postflight-core-pass-health-release-blocked.md` — earlier postflight that found the periodic health release blocker.
-5. `AGENT_HANDOFF.md` — broader project history and non-negotiable constraints.
-6. `ops/DEPLOYMENT_PROGRESS.md` — official stage ledger.
-7. Active implementation branch: `s04-auth`; open draft PR: `#2`.
+1. `ops/evidence/S04-20260828T004344Z-final-independent-postflight-pass.md` — newest live evidence; corrected final independent localhost postflight PASSED.
+2. `ops/S04_LIVE_STATE.md` — authoritative current live state and safety invariants.
+3. `ops/evidence/S04-20260828T003759Z-db-health-release-promotion-pass.md` — live DB health release promotion evidence.
+4. `AGENT_HANDOFF.md` — broader project history and non-negotiable constraints.
+5. `ops/DEPLOYMENT_PROGRESS.md` — official stage ledger.
+6. Active implementation branch: `s04-auth`; open draft PR: `#2`.
 
 ## Current one-line state
 
-`S00-S03=PASSED`; `S04-AUTH=IN PROGRESS`. The S04 API/auth/web Stage is installed and healthy on `testAmir5-3`. The periodic DB health blocker is repaired: `/opt/pvnaive/db/current` selects schema2 immutable release `0002-84bb735877d5` and `DB_TIMER_S04_AWARE=true` was verified live. API/Caddy/SSH/firewall remained unchanged and schema stayed 2.
+`S00-S03=PASSED`; `S04-AUTH=IN PROGRESS`. The S04 API/auth/web localhost deployment is installed and independently verified healthy on `testAmir5-3`. The final corrected read-only postflight at `2026-08-28T00:43:44Z` returned `S04_POSTFLIGHT=PASSED`, `DB_TIMER_S04_AWARE=true`, and `NEXT=BOOTSTRAP_REAL_OWNER`.
 
-A fresh independent postflight at `2026-08-28T00:41:21Z` reached the DB role check after passing marker, installed artifact integrity, schema2 and exact migration identity. It then stopped only because the harness expected PostgreSQL booleans as `t/f`; the server returned `true/false`. The observed role rows are the intended restricted privilege values. The command was read-only and reported `NO_CONFIGURATION_CHANGES_MADE=true`.
+The next permitted action is the one-time real Owner bootstrap. Do **not** expose the panel through Caddy yet and do **not** advance the official ledger to S04 PASSED yet.
 
-**S04 is still NOT PASSED until the corrected independent postflight itself returns `S04_POSTFLIGHT=PASSED`. Do not bootstrap Owner yet.**
+## Final localhost postflight facts
 
-## Live role values from the latest postflight
-
-```text
-pvnaive_app|true|false|false|false|false|false|false
-pvnaive_owner|false|false|false|false|false|false|false
-```
-
-These mean `pvnaive_app` has LOGIN only and no listed elevated privilege; `pvnaive_owner` has no LOGIN and no listed elevated privilege.
-
-## Live repair evidence already passed
-
-At `2026-08-28T00:37:59Z`:
-
-```text
-S04_DB_HEALTH_RELEASE_PROMOTION=PASSED
-DB_RELEASE_OLD=/opt/pvnaive/db/releases/0001-7f66adefd8f0
-DB_RELEASE_NEW=/opt/pvnaive/db/releases/0002-84bb735877d5
-DB_CURRENT=/opt/pvnaive/db/releases/0002-84bb735877d5
-DB_TIMER_S04_AWARE=true
-SCHEMA_CHANGED=false
-API_CHANGED=false
-CADDY_CHANGED=false
-SSH_CHANGED=false
-FIREWALL_CHANGED=false
-```
-
-Periodic health returned schema2, `pvnaive_app`, signing-secret denial and MFA-secret denial. API remained only on `127.0.0.1:8080`; liveness/readiness passed; Caddy SHA remained `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`; SSH remained active.
-
-## Repository repair is green
-
-- branch repair head: `20ed774d06969a3f4c301fd6072a4db83fcffcca`
-- final CI run: `33130012929` — SUCCESS
-- Go: SUCCESS
-- Web: SUCCESS
-- PostgreSQL18 regression suite: SUCCESS
-- end-to-end S04 rehearsal: SUCCESS
-- production bundle: SUCCESS
-
-## Live S04 artifact installed
-
-- source commit: `11c54dc1faae99a1491c750b30db9faa44a0c3ae`
-- CI run: `33128780602`
-- artifact ID: `9669443464`
-- archive: `PVNaive-S04-11c54dc1faae.tar.gz`
-- SHA-256: `52acdde2bff6777abeb31c081c86e018d1e7f5f0cdb39f8eb4151efbba2820fc`
-
-Never reuse the older `b4803e27...` bundle.
+- PostgreSQL schema `2`.
+- Migration 0002 exact checksum `84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886`.
+- Restricted DB roles passed with deterministic 0/1 encoding.
+- `/opt/pvnaive/db/current` = `/opt/pvnaive/db/releases/0002-84bb735877d5`.
+- Real periodic DB health verifies schema2, `pvnaive_app`, signing secret denial and MFA secret-table denial.
+- `pvnaive-api.service` active as `pvnaive:pvnaive`, `NRestarts=0`.
+- API listener only `127.0.0.1:8080`.
+- API live/ready healthy.
+- Encrypted rollback backup checksum + decrypt/archive parse passed.
+- PostgreSQL loopback-only.
+- Caddy active and validated; Caddyfile SHA unchanged at `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
+- SSH active.
+- Postflight was read-only and reported `NO_CONFIGURATION_CHANGES_MADE=true`.
 
 ## Exact next action
 
-Rerun the independent S04 postflight with its role assertions corrected to `true/false`. It must then continue through selected schema2 DB release, MFA-aware periodic health, API loopback-only + live/ready, encrypted rollback backup, Caddy SHA/validation, SSH and required network invariants.
+Run the installed one-time Owner bootstrap interactively from a root TTY:
 
-Only after that corrected command returns all of:
+`/opt/pvnaive/auth/current/scripts/auth/bootstrap-owner.sh`
 
-```text
-S04_POSTFLIGHT_CORE=PASSED
-DB_TIMER_S04_AWARE=true
-S04_POSTFLIGHT=PASSED
-NEXT=BOOTSTRAP_REAL_OWNER
-```
+The script must require schema version 2, refuse if any Owner already exists, prompt for Owner email/display name/password/confirmation via `/dev/tty`, hash the password with `/opt/pvnaive/bin/pvnaive-password`, and finally print `PVNAIVE_OWNER_BOOTSTRAP=PASSED` plus the normalized Owner email.
 
-may the real Owner bootstrap begin. After Owner localhost login/session/logout passes, the later Caddy exposure gate can proceed; only after external postflight should the official ledger advance to `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
+After successful Owner creation:
+
+1. Independently verify exactly one active Owner exists and password hash is present; do not print the password hash.
+2. Exercise real localhost login/session `/me`/CSRF logout/revocation with that Owner.
+3. Only after localhost auth passes, prepare Caddy exposure for `/panel/` + `/api/` with exact backup, `caddy validate`, controlled reload (never restart), rollback, and external smoke.
+4. Only after external postflight should the official ledger advance to `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
+
+Never reuse the old `b4803e27...` bundle.
