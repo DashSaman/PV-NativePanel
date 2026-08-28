@@ -19,18 +19,18 @@ EOF
 chmod 0640 "${env_file}"
 
 PVNAIVE_DB_ENV_FILE="${env_file}" \
-  "${repo_root}/scripts/db/set-expected-schema-version.sh" 2 >/dev/null
+  bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 2 >/dev/null
 
 grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
 PVNAIVE_DB_ENV_FILE="${env_file}" \
-  "${repo_root}/scripts/db/set-expected-schema-version.sh" 2 >/dev/null
+  bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 2 >/dev/null
 
 grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' "${env_file}"
 
 if PVNAIVE_DB_ENV_FILE="${env_file}" \
-  "${repo_root}/scripts/db/set-expected-schema-version.sh" 3 >/dev/null 2>&1; then
+  bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 3 >/dev/null 2>&1; then
   echo 'ERROR: invalid schema version was accepted' >&2
   exit 1
 fi
