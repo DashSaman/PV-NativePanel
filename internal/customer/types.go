@@ -25,9 +25,9 @@ const (
 type StartPolicy string
 
 const (
-	StartOnCreation               StartPolicy = "on_creation"
+	StartOnCreation                  StartPolicy = "on_creation"
 	StartOnFirstSuccessfulConnection StartPolicy = "on_first_successful_connection"
-	StartAtFixedTimestamp         StartPolicy = "fixed_timestamp"
+	StartAtFixedTimestamp            StartPolicy = "fixed_timestamp"
 )
 
 type AccessState string
