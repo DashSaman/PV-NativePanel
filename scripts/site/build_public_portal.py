@@ -155,8 +155,7 @@ def link(href: str, label: str, css: str = "") -> str:
 
 
 def nav_html(portal) -> str:
-    items = [link(route["path"], route["label"]) for route in portal["routes"]]
-    return "".join(items)
+    return "".join(link(route["path"], route["label"]) for route in portal["routes"])
 
 
 def shell(portal, title: str, body: str, breadcrumb: str = "") -> str:
@@ -200,24 +199,23 @@ def card(title: str, summary: str, href: str, meta: str = "") -> str:
 
 
 def build_news(portal, articles, out_root: Path):
-    items = articles.get("articles", [])
     cards = []
-    for article in items:
+    for article in articles.get("articles", []):
         slug = article["id"]
         local = f"/news/{slug}.html"
         cards.append(card(article["title"], article["summary"], local, article.get("published_label", "")))
         body = f'''<article class="portal-detail"><div class="story-meta"><span>{esc(article.get('category'))}</span><span>{esc(article.get('published_label'))}</span></div><h1>{esc(article['title'])}</h1><p class="portal-lead">{esc(article['summary'])}</p><div class="portal-source-box"><strong>منبع اصلی</strong>{link(article['source_url'], 'مشاهده مطلب در منبع اصلی')}</div><div class="portal-related"><h2>ادامه مرور</h2>{link('/news/', 'بازگشت به آرشیو خبرها')} · {link('/sources/', 'فهرست منابع')}</div></article>'''
         write_page(out_root, f"news/{slug}.html", shell(portal, article["title"], body, ' / <a href="/news/">خبرها</a>'))
-    index_body = f'<section class="portal-heading"><span>آرشیو</span><h1>خبرها و ارجاعات</h1><p>مرور خلاصه‌های منبع‌دار؛ برای متن کامل به منبع اصلی بروید.</p></section><div class="portal-grid">{"".join(cards)}</div>'
-    write_page(out_root, "news/index.html", shell(portal, "خبرها", index_body, ' / خبرها'))
+    body = f'<section class="portal-heading"><span>آرشیو</span><h1>خبرها و ارجاعات</h1><p>مرور خلاصه‌های منبع‌دار؛ برای متن کامل به منبع اصلی بروید.</p></section><div class="portal-grid">{"".join(cards)}</div>'
+    write_page(out_root, "news/index.html", shell(portal, "خبرها", body, ' / خبرها'))
 
 
 def player_sources(item):
     sources = []
     for quality in item["qualities"]:
         if item.get("mirror_allowed") and quality.get("local_path"):
-            sources.append((f"/media/{quality['local_path']}", quality["mime"], True))
-        sources.append((quality["url"], quality["mime"], False))
+            sources.append((f"/media/{quality['local_path']}", quality["mime"]))
+        sources.append((quality["url"], quality["mime"]))
     return sources
 
 
@@ -233,15 +231,16 @@ def build_media_kind(portal, media, out_root: Path, kind: str):
         attrs = ' controls preload="metadata"'
         if kind == "video" and item.get("poster"):
             attrs += f' poster="{esc(safe_url(item["poster"]))}"'
-        src_html = "".join(f'<source src="{esc(safe_url(src))}" type="{esc(mime)}">' for src, mime, _ in player_sources(item))
+        src_html = "".join(f'<source src="{esc(safe_url(src))}" type="{esc(mime)}">' for src, mime in player_sources(item))
         rows = []
-        for q in item["qualities"]:
-            size = human_bytes(q.get("bytes")) or "اندازه در منبع تثبیت نشده"
-            if item.get("mirror_allowed") and q.get("local_path"):
-                dl = f'<a href="/media/{esc(q["local_path"])}" download>دانلود از این سایت</a> · {link(q["url"], "منبع مستقیم")}'
+        for quality in item["qualities"]:
+            size = human_bytes(quality.get("bytes")) or "اندازه در منبع تثبیت نشده"
+            if item.get("mirror_allowed") and quality.get("local_path"):
+                local_dl = f'/media/{quality["local_path"]}'
+                receive = f'<a href="{esc(local_dl)}" download>دانلود از این سایت</a> · {link(quality["url"], "منبع مستقیم")}'
             else:
-                dl = link(q["url"], "پخش/دانلود از منبع")
-            rows.append(f'<tr><td>{esc(q["label"])}</td><td>{esc(q["mime"])}</td><td>{esc(size)}</td><td>{dl}</td></tr>')
+                receive = link(quality["url"], "پخش/دانلود از منبع")
+            rows.append(f'<tr><td>{esc(quality["label"])}</td><td>{esc(quality["mime"])}</td><td>{esc(size)}</td><td>{receive}</td></tr>')
         body = f'''<article class="portal-detail media-detail"><div class="story-meta"><span>{esc(label)}</span><span>{esc(item.get('published_label'))}</span></div><h1>{esc(item['title'])}</h1><p class="portal-lead">{esc(item['summary'])}</p><div class="media-player"><{tag}{attrs}>{src_html}مرورگر شما پخش این فایل را پشتیبانی نمی‌کند.</{tag}></div><div class="portal-source-box"><strong>انتساب و مجوز</strong><p>{esc(item.get('attribution'))}</p><p>{esc(item.get('rights_note'))}</p>{link(item['source_url'], 'صفحه منبع')}</div><div class="download-table"><table><thead><tr><th>کیفیت</th><th>فرمت</th><th>حجم</th><th>دریافت</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div><div class="portal-related">{link(f'/{dirname}/', f'بازگشت به آرشیو {label}')} · {link('/downloads/', 'همه دانلودها')} · {link('/sources/', 'منابع')}</div></article>'''
         write_page(out_root, f"{dirname}/{item['slug']}.html", shell(portal, item["title"], body, f' / <a href="/{dirname}/">{label}</a>'))
     body = f'<section class="portal-heading"><span>چندرسانه‌ای</span><h1>آرشیو {esc(label)}</h1><p>پخش آنلاین و دسترسی به فایل‌های منبع‌دار.</p></section><div class="portal-grid">{"".join(cards)}</div>'
@@ -253,7 +252,7 @@ def build_galleries(portal, galleries, out_root: Path):
     for gallery in galleries.get("galleries", []):
         local = f"/gallery/{gallery['slug']}.html"
         cards.append(card(gallery["title"], gallery["summary"], local, gallery.get("published_label", "")))
-        images = "".join(f'<figure><img src="{esc(safe_url(img["src"]))}" loading="lazy" alt="{esc(img["alt"])}"><figcaption>{esc(img.get("caption"))}</figcaption></figure>' for img in gallery.get("images", []))
+        images = "".join(f'<figure><img src="{esc(safe_url(image["src"]))}" loading="lazy" alt="{esc(image["alt"])}"><figcaption>{esc(image.get("caption"))}</figcaption></figure>' for image in gallery.get("images", []))
         body = f'<article class="portal-detail"><h1>{esc(gallery["title"])}</h1><p class="portal-lead">{esc(gallery["summary"])}</p><div class="portal-gallery">{images}</div><div class="portal-source-box">{link(gallery["source_url"], "مشاهده منبع")}</div><div class="portal-related">{link("/gallery/", "بازگشت به گالری‌ها")}</div></article>'
         write_page(out_root, f"gallery/{gallery['slug']}.html", shell(portal, gallery["title"], body, ' / <a href="/gallery/">گالری</a>'))
     body = f'<section class="portal-heading"><span>تصویر</span><h1>گالری‌ها</h1></section><div class="portal-grid">{"".join(cards)}</div>'
@@ -264,13 +263,16 @@ def build_downloads(portal, media, out_root: Path):
     rows = []
     for item in media["items"]:
         detail_dir = "videos" if item["kind"] == "video" else "audio"
-        for q in item["qualities"]:
-            size = human_bytes(q.get("bytes")) or "—"
-            if item.get("mirror_allowed") and q.get("local_path"):
-                receive = f'<a href="/media/{esc(q["local_path"])}" download>دانلود محلی</a> · {link(q["url"], "نسخه منبع")}'
+        detail_href = f"/{detail_dir}/{item['slug']}.html"
+        for quality in item["qualities"]:
+            size = human_bytes(quality.get("bytes")) or "—"
+            if item.get("mirror_allowed") and quality.get("local_path"):
+                local_dl = f'/media/{quality["local_path"]}'
+                receive = f'<a href="{esc(local_dl)}" download>دانلود محلی</a> · {link(quality["url"], "نسخه منبع")}'
             else:
-                receive = link(q["url"], "دانلود از منبع")
-            rows.append(f'<tr><td>{link(f"/{detail_dir}/{item["slug"]}.html", item["title"])}</td><td>{esc(q["mime"])}</td><td>{esc(size)}</td><td>{esc(item["source_name"])}</td><td>{receive}</td></tr>')
+                receive = link(quality["url"], "دانلود از منبع")
+            title_link = link(detail_href, item["title"])
+            rows.append(f'<tr><td>{title_link}</td><td>{esc(quality["mime"])}</td><td>{esc(size)}</td><td>{esc(item["source_name"])}</td><td>{receive}</td></tr>')
     body = f'<section class="portal-heading"><span>کتابخانه فایل</span><h1>دانلودها</h1><p>حجم فقط زمانی نمایش داده می‌شود که مقدار آن در manifest تأیید شده باشد.</p></section><div class="download-table"><table><thead><tr><th>عنوان</th><th>فرمت</th><th>حجم</th><th>منبع</th><th>دریافت</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
     write_page(out_root, "downloads/index.html", shell(portal, "دانلودها", body, ' / دانلودها'))
 
@@ -318,11 +320,11 @@ def main():
     parser.add_argument("--output-root", type=Path, default=SITE_ROOT)
     args = parser.parse_args()
     validate_all()
-    if not args.check:
-        build_all(args.output_root)
-        print(f"PUBLIC_PORTAL_BUILD=PASSED output={args.output_root}")
-    else:
+    if args.check:
         print("PUBLIC_PORTAL_MANIFEST_CHECK=PASSED")
+        return
+    build_all(args.output_root)
+    print(f"PUBLIC_PORTAL_BUILD=PASSED output={args.output_root}")
 
 
 if __name__ == "__main__":
