@@ -1,5 +1,8 @@
 package customer
 
-// StartFixedTimestamp is the service-layer name for the existing persisted
-// fixed_timestamp start-policy value. Keep the database value unchanged.
-const StartFixedTimestamp StartPolicy = StartAtFixedTimestamp
+// Service-layer aliases keep request terminology concise while preserving the
+// database's existing canonical start_policy values.
+const (
+	StartOnFirstConnection StartPolicy = StartOnFirstSuccessfulConnection
+	StartFixedTimestamp    StartPolicy = StartAtFixedTimestamp
+)
