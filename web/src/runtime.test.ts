@@ -48,7 +48,7 @@ describe("runtime API client", () => {
     const fetcher = vi.fn(async () => jsonResponse({ credentials: [credential] }));
     await importCurrentRuntime(fetcher as typeof fetch);
 
-    const [path, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    const [path, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(path).toBe("/api/v1/runtime/naive/import");
     expect(init.credentials).toBe("same-origin");
     expect(init.headers).toMatchObject({
@@ -62,7 +62,7 @@ describe("runtime API client", () => {
     const fetcher = vi.fn(async () => jsonResponse({ credential, generated_password: "one-time-secret" }, 201));
     const result = await createRuntimeCredential("customer.one", "", true, fetcher as typeof fetch);
 
-    const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({
       username: "customer.one",
       password: "",
@@ -81,7 +81,7 @@ describe("runtime API client", () => {
 
     expect(fetcher).toHaveBeenCalledTimes(3);
     for (const call of fetcher.mock.calls) {
-      const init = call[1] as RequestInit;
+      const [, init] = call as unknown as [string, RequestInit];
       expect((init.headers as Record<string, string>)["If-Match"]).toBe("7");
       expect((init.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-runtime-test");
       expect((init.headers as Record<string, string>)["Idempotency-Key"]).toMatch(/^runtime-/);
