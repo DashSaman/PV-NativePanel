@@ -97,3 +97,53 @@ INSERT INTO pvnaive.user_runtime_credentials (
 	}
 	return nil
 }
+
+func (s *PostgresStore) CreateSubscriptionTokenTx(ctx context.Context, tx *sql.Tx, record CreateSubscriptionTokenRecord) error {
+	if tx == nil {
+		return errors.New("customer: transaction is required")
+	}
+	if len(record.TokenHash) != 32 {
+		return errors.New("customer: subscription token hash must be 32 bytes")
+	}
+	if len(record.TokenPrefix) < 6 || len(record.TokenPrefix) > 16 {
+		return errors.New("customer: subscription token prefix must be 6-16 bytes")
+	}
+	result, err := tx.ExecContext(ctx, `
+INSERT INTO pvnaive.direct_subscription_tokens (
+    tenant_id, user_id, service_term_id, runtime_credential_id,
+    token_hash, token_prefix, status, user_state, service_state,
+    runtime_username, secret_ciphertext, secret_nonce, encryption_key_id, expires_at
+)
+SELECT
+    u.tenant_id, u.id, st.id, rc.id,
+    $5, $6, 'active', u.status, st.state,
+    rc.username, rc.secret_ciphertext, rc.secret_nonce, rc.encryption_key_id, $7
+FROM pvnaive.users AS u
+JOIN pvnaive.service_terms AS st
+  ON st.id = $3::uuid
+ AND st.tenant_id = u.tenant_id
+ AND st.user_id = u.id
+JOIN pvnaive.user_runtime_credentials AS urc
+  ON urc.service_term_id = st.id
+ AND urc.runtime_credential_id = $4::uuid
+ AND urc.unbound_at IS NULL
+JOIN pvnaive.naive_runtime_credentials AS rc
+  ON rc.id = urc.runtime_credential_id
+WHERE u.id = $2::uuid
+  AND u.tenant_id = $1::uuid
+  AND rc.status = 'active'`,
+		record.TenantID, record.UserID, record.ServiceTermID, record.RuntimeCredentialID,
+		record.TokenHash, record.TokenPrefix, record.ExpiresAt,
+	)
+	if err != nil {
+		return fmt.Errorf("customer: insert subscription token: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("customer: inspect subscription token insert: %w", err)
+	}
+	if rows != 1 {
+		return errors.New("customer: subscription token projection scope not found")
+	}
+	return nil
+}
