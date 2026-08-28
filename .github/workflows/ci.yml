@@ -22,6 +22,8 @@ jobs:
         run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test ./...
+      - name: Runtime agent safety rehearsal
+        run: bash tests/stages/S04R_runtime_agent_rehearsal.sh
 
   web:
     runs-on: ubuntu-latest
@@ -124,6 +126,7 @@ jobs:
           mkdir -p dist/rehearsal
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/rehearsal/pvnaive ./cmd/pvnaive
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/rehearsal/pvnaive-password ./cmd/pvnaive-password
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/rehearsal/pvnaive-runtime-agent ./cmd/pvnaive-runtime-agent
       - name: Start PostgreSQL 18
         run: |
           set -Eeuo pipefail
