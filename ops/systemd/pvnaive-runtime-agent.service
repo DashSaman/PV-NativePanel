@@ -33,9 +33,8 @@ SystemCallArchitectures=native
 RestrictAddressFamilies=AF_UNIX
 IPAddressDeny=any
 ReadWritePaths=/run/pvnaive
-
-# PVN-023 deliberately extends the writable paths only for the fixed Caddyfile
-# and agent-owned backup root when the validated operator is implemented.
+ReadWritePaths=/etc/caddy
+ReadWritePaths=-/var/backups/pvnaive/caddy
 
 [Install]
 WantedBy=multi-user.target
