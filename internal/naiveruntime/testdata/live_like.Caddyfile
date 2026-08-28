@@ -1,0 +1,26 @@
+{
+    order forward_proxy before file_server
+}
+
+namir.softarg.ir {
+    encode gzip
+
+    handle_path /panel/* {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    handle /api/v1/* {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    forward_proxy {
+        basic_auth legacy-user "legacy: short password!"
+        basic_auth second.user "second-safe-password-123"
+        hide_ip
+        hide_via
+        probe_resistance "probe-{secret}-value"
+    }
+
+    root * /var/www/pvnaive-camouflage
+    file_server
+}
