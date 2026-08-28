@@ -52,6 +52,10 @@ func run() error {
 		return errors.New("compiled runtime socket path escaped fixed runtime directory")
 	}
 
+	operator, err := runtimeagent.NewOperator()
+	if err != nil {
+		return fmt.Errorf("initialize fixed runtime operator: %w", err)
+	}
 	listener, err := runtimeagent.ListenUnix(runtimeagent.DefaultSocketPath)
 	if err != nil {
 		return fmt.Errorf("listen runtime socket: %w", err)
@@ -65,7 +69,7 @@ func run() error {
 	}
 
 	server := &http.Server{
-		Handler:           runtimeagent.NewHandler(unavailableOperator{}),
+		Handler:           runtimeagent.NewHandler(operator),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -97,25 +101,4 @@ func run() error {
 		}
 		return <-serveErr
 	}
-}
-
-// unavailableOperator is deliberately fail-closed until PVN-023 wires the
-// fixed Caddy validate/apply/rollback implementation. It keeps this protocol
-// slice buildable without granting a placeholder privileged capability.
-type unavailableOperator struct{}
-
-func (unavailableOperator) Health(context.Context) (runtimeagent.HealthResponse, error) {
-	return runtimeagent.HealthResponse{}, errors.New("runtime operator unavailable")
-}
-func (unavailableOperator) Inspect(context.Context) (runtimeagent.InspectResponse, error) {
-	return runtimeagent.InspectResponse{}, errors.New("runtime operator unavailable")
-}
-func (unavailableOperator) Validate(context.Context, runtimeagent.ValidateRequest) (runtimeagent.ValidateResponse, error) {
-	return runtimeagent.ValidateResponse{}, errors.New("runtime operator unavailable")
-}
-func (unavailableOperator) Apply(context.Context, runtimeagent.ApplyRequest) (runtimeagent.ApplyResponse, error) {
-	return runtimeagent.ApplyResponse{}, errors.New("runtime operator unavailable")
-}
-func (unavailableOperator) Rollback(context.Context, runtimeagent.RollbackRequest) (runtimeagent.RollbackResponse, error) {
-	return runtimeagent.RollbackResponse{}, errors.New("runtime operator unavailable")
 }
