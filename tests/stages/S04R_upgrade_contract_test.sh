@@ -44,6 +44,21 @@ if grep -Eq '(cat|xxd|base64|od)[[:space:]].*/etc/pvnaive/runtime\.key' "${targe
   exit 1
 fi
 
+# Replacing /opt/pvnaive/bin/pvnaive-runtime-agent while the service is already
+# active is not enough: enable --now leaves the old process running. Every
+# successful S04R upgrade must explicitly restart only the runtime agent so the
+# newly installed binary is the process serving the Unix socket.
+grep -Fq 'systemctl restart pvnaive-runtime-agent.service' "${target}" || {
+  echo 'ERROR: upgrade must restart pvnaive-runtime-agent.service after installing its binary' >&2
+  exit 1
+}
+runtime_binary_line="$(grep -n -F '"${bundle_root}/bin/pvnaive-runtime-agent" /opt/pvnaive/bin/pvnaive-runtime-agent' "${target}" | head -n1 | cut -d: -f1)"
+runtime_restart_line="$(grep -n -F 'systemctl restart pvnaive-runtime-agent.service' "${target}" | head -n1 | cut -d: -f1)"
+[[ -n "${runtime_binary_line}" && -n "${runtime_restart_line}" && "${runtime_binary_line}" -lt "${runtime_restart_line}" ]] || {
+  echo 'ERROR: runtime agent binary installation must precede runtime agent restart' >&2
+  exit 1
+}
+
 backup_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/backup.sh"' "${target}" | head -n1 | cut -d: -f1)"
 migrate_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/migrate.sh"' "${target}" | head -n1 | cut -d: -f1)"
 [[ -n "${backup_line}" && -n "${migrate_line}" && "${backup_line}" -lt "${migrate_line}" ]] || {
