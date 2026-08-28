@@ -17,6 +17,8 @@ for required in \
   'pvnaive-runtime-agent.service' \
   'pvnaive-api.service' \
   'runtime-agent.sock' \
+  'ROLLBACK_DATABASE=PASS' \
+  'ROLLBACK_DATABASE=FAIL' \
   'S04R_RESULT=PASSED'; do
   grep -Fq -- "${required}" "${target}" || { echo "ERROR: upgrade missing contract token: ${required}" >&2; exit 1; }
 done
