@@ -13,11 +13,11 @@ type Inspection struct {
 	Usernames       []string `json:"usernames"`
 	CredentialCount int      `json:"credential_count"`
 
-	credentials      []parsedCredential
-	credentialStart  int
-	credentialEnd    int
-	indent           string
-	newline          string
+	credentials     []parsedCredential
+	credentialStart int
+	credentialEnd   int
+	indent          string
+	newline         string
 }
 
 type parsedCredential struct {
