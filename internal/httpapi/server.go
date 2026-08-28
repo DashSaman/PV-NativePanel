@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
@@ -19,6 +20,7 @@ type ServerConfig struct {
 	RuntimeService        *runtimecred.Service
 	SubscriptionService   *subscription.Service
 	SubscriptionProxyHost string
+	CustomerService       *customer.Service
 }
 
 type server struct {
@@ -55,6 +57,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "subscriptions.show":
 			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
 				handler = http.HandlerFunc(s.publicSubscription)
+			}
+		case "customers.create":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.createCustomer)
 			}
 		case "me.show":
 			if cfg.AuthStore != nil {
