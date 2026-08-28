@@ -88,6 +88,7 @@ jobs:
               bash tests/stages/S03_apt_candidate_pipefail_test.sh
               bash tests/stages/S03_ubuntu2604_contract_test.sh
               bash tests/stages/S04_preflight_test.sh
+              bash tests/stages/S04_db_env_version_test.sh
               bash tests/db/lib_test.sh
               bash tests/db/migration_test.sh
               bash tests/db/health_test.sh
