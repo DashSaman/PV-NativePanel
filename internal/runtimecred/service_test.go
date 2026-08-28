@@ -165,15 +165,18 @@ func TestServiceCreateGeneratedPasswordAppliesDesiredStateAndReturnsSecretOnce(t
 	if len(agent.lastApply.Credentials) != 2 {
 		t.Fatalf("agent desired credentials = %d, want 2", len(agent.lastApply.Credentials))
 	}
+	if beforeCommit := mutation.TakeGeneratedPassword(); beforeCommit != "" {
+		t.Fatalf("generated password leaked before commit: %q", beforeCommit)
+	}
+	if err := mutation.CommitAndFinalize(context.Background(), tx); err != nil {
+		t.Fatalf("CommitAndFinalize() error = %v", err)
+	}
 	password := mutation.TakeGeneratedPassword()
 	if len(password) != 32 {
 		t.Fatalf("generated password length = %d, want 32", len(password))
 	}
 	if again := mutation.TakeGeneratedPassword(); again != "" {
 		t.Fatalf("generated password was returned twice: %q", again)
-	}
-	if err := mutation.CommitAndFinalize(context.Background(), tx); err != nil {
-		t.Fatalf("CommitAndFinalize() error = %v", err)
 	}
 	if len(agent.rollbackIDs) != 0 {
 		t.Fatalf("unexpected rollback after successful commit: %#v", agent.rollbackIDs)
