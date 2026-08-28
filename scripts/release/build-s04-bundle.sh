@@ -16,7 +16,7 @@ cleanup() { rm -rf -- "${work_root}"; }
 trap cleanup EXIT HUP INT TERM
 bundle_name="PVNaive-S04R-${short_commit}"
 bundle_root="${work_root}/${bundle_name}"
-mkdir -p "${bundle_root}"/{bin,web,db/migrations,scripts/db,scripts/auth,scripts/stages,systemd}
+mkdir -p "${bundle_root}"/{bin,web,public-site,db/migrations,scripts/db,scripts/auth,scripts/stages,systemd}
 
 cd "${repo_root}"
 go mod verify
@@ -31,6 +31,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflag
   npm run build
 )
 cp -a web/dist/. "${bundle_root}/web/"
+cp -a site/. "${bundle_root}/public-site/"
 
 cp -a db/migrations/*.sql db/migrations/SHA256SUMS "${bundle_root}/db/migrations/"
 cp -a scripts/db/*.sh "${bundle_root}/scripts/db/"
@@ -52,6 +53,8 @@ cat >"${bundle_root}/RELEASE.json" <<JSON
   "runtime_socket": "/run/pvnaive/runtime-agent.sock",
   "runtime_key": "/etc/pvnaive/runtime.key",
   "schema_version": 3,
+  "panel_base": "/panel/",
+  "public_site_path": "public-site/",
   "caddy_installer_mutation": false,
   "caddy_runtime_action": "validate-then-reload-only",
   "ssh_mutation": false,
@@ -61,7 +64,7 @@ JSON
 
 (
   cd "${bundle_root}"
-  find RELEASE.json bin web db scripts systemd -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+  find RELEASE.json bin web public-site db scripts systemd -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
   sha256sum --check --strict SHA256SUMS >/dev/null
 )
 
