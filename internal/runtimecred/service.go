@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	ErrRevisionConflict     = errors.New("runtimecred: revision conflict")
-	ErrLastActiveCredential = errors.New("runtimecred: at least one active credential must remain")
-	ErrConsistency          = errors.New("runtimecred: runtime/database consistency failure")
-	ErrIdempotentReplay     = errors.New("runtimecred: idempotency key already used")
+	ErrRevisionConflict       = errors.New("runtimecred: revision conflict")
+	ErrLastActiveCredential   = errors.New("runtimecred: at least one active credential must remain")
+	ErrConsistency            = errors.New("runtimecred: runtime/database consistency failure")
+	ErrReconciliationRequired = errors.New("runtimecred: runtime reconciliation required")
+	ErrIdempotentReplay       = errors.New("runtimecred: idempotency key already used")
 )
 
 type CredentialView struct {
@@ -341,7 +342,7 @@ func (s *Service) applyStaged(ctx context.Context, tx *sql.Tx, actorID, idempote
 		rollbackErr := s.agent.Rollback(ctx, applied.BackupID)
 		_ = tx.Rollback()
 		if rollbackErr != nil {
-			return nil, fmt.Errorf("%w: mark revision applied failed and runtime rollback failed", ErrConsistency)
+			return nil, fmt.Errorf("%w: mark revision applied failed and runtime rollback failed", ErrReconciliationRequired)
 		}
 		return nil, fmt.Errorf("%w: mark revision applied failed", ErrConsistency)
 	}
@@ -420,7 +421,7 @@ func (m *Mutation) CommitAndFinalize(ctx context.Context, tx *sql.Tx) error {
 		_ = tx.Rollback()
 		m.generatedPassword = ""
 		if rollbackErr != nil {
-			return fmt.Errorf("%w: database commit failed and runtime rollback failed", ErrConsistency)
+			return fmt.Errorf("%w: database commit failed and runtime rollback failed", ErrReconciliationRequired)
 		}
 		return fmt.Errorf("%w: database commit failed; runtime rolled back", ErrConsistency)
 	}
