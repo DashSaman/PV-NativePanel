@@ -23,6 +23,18 @@ for required in \
   grep -Fq -- "${required}" "${target}" || { echo "ERROR: upgrade missing contract token: ${required}" >&2; exit 1; }
 done
 
+# After the ERR trap is installed, fail() must return a non-zero status instead
+# of calling exit directly. A direct exit bypasses ERR and leaves a partial
+# production upgrade without executing rollback_on_error.
+if grep -Eq '^fail\(\)[[:space:]]*\{.*exit[[:space:]]+1' "${target}"; then
+  echo 'ERROR: upgrade fail() must not bypass ERR rollback with exit 1' >&2
+  exit 1
+fi
+grep -Eq '^fail\(\)[[:space:]]*\{.*return[[:space:]]+1' "${target}" || {
+  echo 'ERROR: upgrade fail() must return 1 so ERR trap can execute rollback' >&2
+  exit 1
+}
+
 if grep -Eq 'systemctl[[:space:]]+(restart|reload)[[:space:]]+caddy-naive\.service' "${target}"; then
   echo 'ERROR: upgrade must never restart or reload Caddy' >&2
   exit 1
