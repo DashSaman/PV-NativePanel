@@ -24,27 +24,31 @@ jobs:
           p = Path('scripts/stages/S04-auth.sh')
           s = p.read_text()
 
-          replacements = []
+          if 'promote_db_tooling_release()' in s:
+              print('S04_DB_RELEASE_STAGE_PATCH=ALREADY_APPLIED')
+              raise SystemExit(0)
 
-          old = '''db_env_schema_updated=0
-          rollback_failures=()
-          '''
-          new = '''db_env_schema_updated=0
-          db_release_promoted=0
-          db_release_old=""
-          db_release_new=""
-          rollback_failures=()
-          '''
-          replacements.append((old, new, 'state variables'))
+          def replace_once(old, new, label):
+              global s
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'PATCH_ASSERTION_FAILED:{label}:count={count}')
+              s = s.replace(old, new, 1)
 
-          old = '''current_schema_version() {
+          replace_once(
+              'db_env_schema_updated=0\nrollback_failures=()\n',
+              'db_env_schema_updated=0\ndb_release_promoted=0\ndb_release_old=""\ndb_release_new=""\nrollback_failures=()\n',
+              'state variables',
+          )
+
+          old = """current_schema_version() {
             postgres_psql --dbname pvnaive --tuples-only --no-align \\
               --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations'
           }
 
           rollback_on_error() {
-          '''
-          new = '''current_schema_version() {
+          """
+          new = """current_schema_version() {
             postgres_psql --dbname pvnaive --tuples-only --no-align \\
               --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations'
           }
@@ -72,38 +76,11 @@ jobs:
           }
 
           rollback_on_error() {
-          '''
-          replacements.append((old, new, 'promotion function'))
+          """
+          replace_once(old, new, 'promotion function')
 
-          old = '''  if [[ "${db_env_schema_updated}" == "1" ]]; then
-            rollback_schema="$(current_schema_version 2>/dev/null || true)"
-            if [[ "${rollback_schema}" == "1" ]]; then
-              PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\
-                bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 1 >/dev/null 2>&1 || \\
-                rollback_failures+=("restore-db-env-schema1")
-            elif [[ "${rollback_schema}" == "2" ]]; then
-              :
-            else
-              rollback_failures+=("db-env-schema-consistency")
-            fi
-          fi
-
-          verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")
-          '''
-          new = '''  if [[ "${db_env_schema_updated}" == "1" ]]; then
-            rollback_schema="$(current_schema_version 2>/dev/null || true)"
-            if [[ "${rollback_schema}" == "1" ]]; then
-              PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\
-                bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 1 >/dev/null 2>&1 || \\
-                rollback_failures+=("restore-db-env-schema1")
-            elif [[ "${rollback_schema}" == "2" ]]; then
-              :
-            else
-              rollback_failures+=("db-env-schema-consistency")
-            fi
-          fi
-
-          if [[ "${db_release_promoted}" == "1" ]]; then
+          rollback_anchor = '  verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")\n  if ((${#rollback_failures[@]} == 0)); then\n'
+          rollback_insert = """  if [[ "${db_release_promoted}" == "1" ]]; then
             rollback_schema="$(current_schema_version 2>/dev/null || true)"
             if [[ "${rollback_schema}" == "1" ]]; then
               if [[ -n "${db_release_old}" && "${db_release_old}" != "none" && -d "${db_release_old}" ]]; then
@@ -124,60 +101,55 @@ jobs:
             fi
           fi
 
-          verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")
-          '''
-          replacements.append((old, new, 'rollback alignment'))
+            verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")
+            if ((${#rollback_failures[@]} == 0)); then
+          """
+          replace_once(rollback_anchor, rollback_insert, 'rollback alignment')
 
-          old = '''  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/set-expected-schema-version.sh \\
-          '''
-          new = '''  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/health.sh scripts/db/promote-release.sh scripts/db/set-expected-schema-version.sh \\
-          '''
-          replacements.append((old, new, 'required sources'))
+          replace_once(
+              '  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/set-expected-schema-version.sh \\\n',
+              '  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/health.sh scripts/db/promote-release.sh scripts/db/set-expected-schema-version.sh \\\n',
+              'required sources',
+          )
 
-          old = '''  grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
+          marker_old = """  grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
             systemctl start pvnaive-db-health.service
             [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service is not successful for schema 2"
-          '''
-          new = '''  grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
+          """
+          marker_new = """  grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
             promote_db_tooling_release
             systemctl start pvnaive-db-health.service
             [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service is not successful for schema 2"
             grep -Fq 'actor_totp_factors' /opt/pvnaive/db/current/scripts/db/health.sh || die "periodic DB health release is not S04-aware"
-          '''
-          replacements.append((old, new, 'existing marker promotion'))
+          """
+          replace_once(marker_old, marker_new, 'existing marker promotion')
 
-          old = '''rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
+          backup_old = """rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
           [[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"
 
           PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\
-          '''
-          new = '''rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
+          """
+          backup_new = """rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
           [[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"
 
           promote_db_tooling_release
 
           PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \\
-          '''
-          replacements.append((old, new, 'fresh recovery promotion'))
+          """
+          replace_once(backup_old, backup_new, 'fresh recovery promotion')
 
-          old = '''systemctl start pvnaive-db-health.service
+          health_old = """systemctl start pvnaive-db-health.service
           [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service failed after schema-v2 environment update"
 
           install -o root -g pvnaive -m 0640 /dev/null "${auth_key}"
-          '''
-          new = '''systemctl start pvnaive-db-health.service
+          """
+          health_new = """systemctl start pvnaive-db-health.service
           [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service failed after schema-v2 environment update"
           grep -Fq 'actor_totp_factors' /opt/pvnaive/db/current/scripts/db/health.sh || die "periodic DB health release is not S04-aware"
 
           install -o root -g pvnaive -m 0640 /dev/null "${auth_key}"
-          '''
-          replacements.append((old, new, 'post promotion health gate'))
-
-          for old, new, label in replacements:
-              count = s.count(old)
-              if count != 1:
-                  raise SystemExit(f'PATCH_ASSERTION_FAILED:{label}:count={count}')
-              s = s.replace(old, new, 1)
+          """
+          replace_once(health_old, health_new, 'post promotion health gate')
 
           p.write_text(s)
           print('S04_DB_RELEASE_STAGE_PATCH=PASSED')
