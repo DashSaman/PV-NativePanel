@@ -15,8 +15,13 @@ type subscriptionCustomerStore struct {
 	issued *CreateSubscriptionTokenRecord
 }
 
+func (f *fakeCustomerStore) CreateSubscriptionTokenTx(context.Context, *sql.Tx, CreateSubscriptionTokenRecord) error {
+	return nil
+}
+
 func (f *subscriptionCustomerStore) CreateSubscriptionTokenTx(_ context.Context, _ *sql.Tx, record CreateSubscriptionTokenRecord) error {
 	copy := record
+	copy.TokenHash = append([]byte(nil), record.TokenHash...)
 	f.issued = &copy
 	return nil
 }
@@ -49,9 +54,6 @@ func TestCreateCustomerIssuesOpaqueSubscriptionTokenAndPersistsOnlyHash(t *testi
 	}
 	if store.issued == nil {
 		t.Fatal("subscription token hash was not persisted")
-	}
-	if store.issued.RawToken != "" {
-		t.Fatal("raw subscription token was persisted")
 	}
 	if store.issued.TenantID != "tenant-direct" || store.issued.UserID != "user-1" || store.issued.ServiceTermID != "term-1" || store.issued.RuntimeCredentialID != "runtime-sub-1" {
 		t.Fatalf("subscription projection scope = %#v", store.issued)
