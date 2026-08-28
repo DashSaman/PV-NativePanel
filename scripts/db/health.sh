@@ -60,7 +60,7 @@ WITH required(name) AS (
          ('runtime_revisions'), ('schema_migrations'), ('sessions'), ('subscriptions'),
          ('subscription_tokens'), ('tenants'), ('usage_ledger'), ('usage_reset_events'),
          ('users'), ('audit_events'), ('auth_sessions'), ('log_metadata'),
-         ('actor_totp_factors'), ('actor_mfa_recovery_codes')
+         ('actor_totp_factors'), ('actor_mfa_recovery_codes'), ('naive_runtime_credentials')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -73,12 +73,18 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 2)); then
+if ((expected_version >= 3)); then
+  [[ "${required_tables}" == "29" ]] || pvnaive_die "required table check failed: ${required_tables}/29"
+elif ((expected_version >= 2)); then
   [[ "${required_tables}" == "28" ]] || pvnaive_die "required table check failed: ${required_tables}/28"
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-[[ "${rls_tables}" == "25" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/25"
+if ((expected_version >= 3)); then
+  [[ "${rls_tables}" == "26" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/26"
+else
+  [[ "${rls_tables}" == "25" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/25"
+fi
 [[ "${destructive_migrations}" == "0" ]] || pvnaive_die "destructive migration record detected"
 
 echo "PVNAIVE_DB_HEALTH=OK"
