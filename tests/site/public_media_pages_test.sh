@@ -45,8 +45,8 @@ for css_marker in '.portal-masthead' '.portal-main' '.portal-grid' '.media-playe
   }
 done
 
-# Remote-only downloads must not pretend to be hosted locally.
-remote_page="${site_root}/videos/khamenei-1994-friday-prayer.html"
+# At least one remote-only item stays explicit about source-hosted delivery.
+remote_page="${site_root}/videos/khamenei-1997-inauguration.html"
 grep -Fq 'پخش/دانلود از منبع' "${remote_page}" || {
   echo 'ERROR: remote-only media must identify source-hosted delivery' >&2
   exit 1
