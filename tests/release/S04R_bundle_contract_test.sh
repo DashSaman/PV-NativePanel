@@ -28,6 +28,21 @@ required=(
   public-site/assets/news-mark.svg
   public-site/assets/news-fallback.svg
   public-site/data/articles.json
+  public-site/data/portal.json
+  public-site/data/media.json
+  public-site/data/galleries.json
+  public-site/news/index.html
+  public-site/videos/index.html
+  public-site/audio/index.html
+  public-site/gallery/index.html
+  public-site/downloads/index.html
+  public-site/sources/index.html
+  public-site/about/index.html
+  public-site/videos/khamenei-1999-speech-clip.html
+  public-site/audio/khamenei-1999-speech-audio.html
+  scripts/site/build_public_portal.py
+  scripts/site/sync_public_media.py
+  scripts/release/publish-public-site.sh
   db/migrations/0003_naive_runtime_credentials.up.sql
   db/migrations/0003_naive_runtime_credentials.down.sql
   db/migrations/0004_customer_lifecycle_foundation.up.sql
@@ -45,6 +60,9 @@ done
 [[ -x "${root}/bin/pvnaive" ]] || { echo 'ERROR: pvnaive is not executable' >&2; exit 1; }
 [[ -x "${root}/bin/pvnaive-password" ]] || { echo 'ERROR: pvnaive-password is not executable' >&2; exit 1; }
 [[ -x "${root}/bin/pvnaive-runtime-agent" ]] || { echo 'ERROR: pvnaive-runtime-agent is not executable' >&2; exit 1; }
+[[ -x "${root}/scripts/site/build_public_portal.py" ]] || { echo 'ERROR: portal builder is not executable' >&2; exit 1; }
+[[ -x "${root}/scripts/site/sync_public_media.py" ]] || { echo 'ERROR: media sync tool is not executable' >&2; exit 1; }
+[[ -x "${root}/scripts/release/publish-public-site.sh" ]] || { echo 'ERROR: public publisher is not executable' >&2; exit 1; }
 
 (
   cd "${root}"
@@ -70,5 +88,28 @@ grep -Fq '/data/articles.json' "${root}/public-site/assets/site.js" || {
   echo 'ERROR: bundled public newsroom lost its local-cache contract' >&2
   exit 1
 }
+grep -Fq '<video controls preload="metadata"' "${root}/public-site/videos/khamenei-1999-speech-clip.html" || {
+  echo 'ERROR: bundled portal lost native video playback' >&2
+  exit 1
+}
+grep -Fq '2.87 MB' "${root}/public-site/downloads/index.html" || {
+  echo 'ERROR: bundled downloads library lost verified media size' >&2
+  exit 1
+}
+
+# Large mirrored binaries live on the server media store, not in Git/release artifacts.
+if find "${root}/public-site" -path '*/media/*' -type f -size +1M -print -quit | grep -q .; then
+  echo 'ERROR: production bundle unexpectedly contains large mirrored media binaries' >&2
+  exit 1
+fi
+
+# Future static-site publishes must preserve already-synced local media.
+publisher="${root}/scripts/release/publish-public-site.sh"
+for token in 'live_root}/media' 'stage_root}/media' 'PUBLIC_SITE_MEDIA_PRESERVED'; do
+  grep -Fq -- "${token}" "${publisher}" || {
+    echo "ERROR: bundled publisher does not preserve media contract token: ${token}" >&2
+    exit 1
+  }
+done
 
 echo 'S04R_BUNDLE_CONTRACT=PASSED'
