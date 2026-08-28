@@ -1,100 +1,75 @@
 # S04-AUTH Live State — testAmir5-3
 
-Last updated: 2026-08-28 after real Owner localhost authentication/session lifecycle PASSED
+Last updated: 2026-08-28 after real Owner auth PASS and exact live Caddy inspection PASS
 
-> Authoritative fast continuation file. Read `CONTINUE_HERE.md`, newest S04 evidence, `AGENT_HANDOFF.md`, and `ops/DEPLOYMENT_PROGRESS.md` before acting on the live host.
+> Authoritative fast continuation file. Read `CONTINUE_HERE.md` and newest S04 evidence before acting on production.
 
 ## Current state
 
 - `S00-S03=PASSED`.
-- `S04-AUTH=IN PROGRESS`, not official PASSED yet because public Caddy exposure and independent external postflight have not completed.
-- S04 API/auth/web localhost deployment is installed and healthy on `testAmir5-3`.
-- Final corrected independent read-only localhost postflight PASSED at `2026-08-28T00:43:44Z`.
-- Real one-time Owner bootstrap PASSED at `2026-08-28T00:50:33Z`.
-- Real Owner localhost login/session/me/CSRF logout/revocation test PASSED at `2026-08-28T00:55:44Z`.
-- Exactly one active Owner exists with a password hash; real Owner email/password are intentionally omitted from this public repository.
-- Next permitted action: **read-only inspection of the live Caddy configuration/service contract**.
-- Do not mutate Caddy until the exact current NaiveProxy/forward-proxy route structure has been captured and reviewed.
+- `S04-AUTH=IN PROGRESS`; public Caddy exposure/external postflight are the remaining gates.
+- S04 API/auth/web localhost deployment is healthy.
+- final independent localhost postflight PASSED.
+- exactly one real active Owner exists.
+- real Owner login/session/me/CSRF logout/revocation PASSED.
+- live Caddy read-only inspection PASSED.
+- next requested action: expose the S04 web preview so it can be viewed in a browser before continuing later stages.
 
-## Newest live evidence
+## Important product limitation at this exact stage
 
-`ops/evidence/S04-20260828T005544Z-real-owner-localhost-auth-pass.md`
+The current web UI is the S04 authentication/dashboard preview. It shows secure login and a protected dashboard, but user/runtime management controls are intentionally disabled. It does **not yet** expose editing of the existing NaiveProxy `forward_proxy basic_auth` username/password. That functionality must be implemented in later runtime/management stages; do not claim it exists now.
 
-Real auth output included:
+## Caddy baseline captured live at 2026-08-28T00:59:12Z
 
-```text
-LOGIN_HTTP=200
-LOGIN_AUTHENTICATED=PASSED
-ME_HTTP=200
-OWNER_ME=PASSED
-SUCCESS_LOGIN_AUDIT_AFTER=1
-SESSION_ACTIVE_CONTRACT=32|0
-LOGIN_AUDIT=PASSED
-SESSION_PERSISTENCE=PASSED
-LOGOUT_HTTP=200
-CSRF_LOGOUT=PASSED
-OLD_SESSION_ME_HTTP=401
-SESSION_REVOKED_CONTRACT=32|1
-SESSION_REVOCATION=PASSED
-REAL_OWNER_LOCALHOST_AUTH=PASSED
-NEXT=PREPARE_CADDY_PANEL_EXPOSURE
-```
+- `/etc/caddy/Caddyfile` SHA-256: `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
+- file metadata: `root:caddy 0640`, size 379 bytes.
+- service: `caddy-naive.service`, active/enabled, PID was 1045 during inspection.
+- service user/group: `caddy:caddy`.
+- `ExecStart`: `/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile --adapter caddyfile`.
+- `ExecReload`: `/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile --force`.
+- restart policy: `on-failure`; future controlled changes must call reload, never restart.
+- existing Caddy site: `:443, namir.softarg.ir`.
+- site behavior: `encode zstd gzip` -> `forward_proxy` with existing secret-bearing auth/probe-resistance block -> root `/var/www/naive` -> `file_server`.
+- adapted live order: `vars(root)`, `encode`, `forward_proxy`, `file_server`.
+- `caddy validate` PASSED; only existing formatting warning remains.
+- modules required for finalizer are present: forward proxy, reverse proxy, file server, headers, rewrite, subroute.
+- ports: SSH 22, Caddy 80/443, PVNaive API only `127.0.0.1:8080`.
+- Caddy storage account path: `/var/lib/caddy`; account is `caddy`.
 
-## Auth security properties independently observed
+## Web publication constraint
 
-- Before the live test, the Owner had zero successful login audits and zero auth sessions.
-- Real login returned HTTP `200`.
-- Session cookie and CSRF cookie were both issued.
-- `/api/v1/me` returned HTTP `200` and Owner role.
-- Successful `auth.login` audit count increased by exactly one.
-- A single new auth session was persisted with a 32-byte token hash and was initially not revoked (`32|0`).
-- Logout with `X-CSRF-Token` returned HTTP `200`.
-- Reusing the old session against `/api/v1/me` returned HTTP `401`.
-- The same session row then had non-null `revoked_at` while retaining the 32-byte hash (`32|1`).
-- No raw session token or password was printed into repository evidence.
+`/opt/pvnaive/web/current` resolves to `/opt/pvnaive/web/releases/20260828T001418Z`, metadata `root:pvnaive 0750`. The active Caddy process runs as `caddy:caddy`, so the immutable release should not be re-owned or opened broadly merely to serve it.
 
-## Live facts currently verified
+Current build files:
 
-- PostgreSQL 18 schema: `2`.
-- Migration 0002 SHA-256: `84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886`.
-- DB role contract passed.
-- `/etc/pvnaive/db.env` expects schema `2`.
-- S04 marker: `/opt/pvnaive/S04_AUTH.json`.
-- Auth release: `/opt/pvnaive/auth/releases/20260828T001418Z`.
-- Web release: `/opt/pvnaive/web/releases/20260828T001418Z`.
-- DB current release: `/opt/pvnaive/db/releases/0002-84bb735877d5`.
-- Old S03 immutable DB release preserved: `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
-- Periodic DB health returns schema2, `pvnaive_app`, signing-secret denial and MFA-secret-table denial.
-- `pvnaive-api.service` enabled/active as `pvnaive:pvnaive`, listener only `127.0.0.1:8080`.
-- API liveness after real auth: `{"service":"pvnaive-api","status":"ok"}`.
-- API readiness after real auth: `{"ready":true,"status":"ready"}`.
-- Encrypted rollback backup `/var/backups/pvnaive/database/20260828T001418Z-96157-k53f6h/pvnaive.dump.age` previously validated.
-- PostgreSQL listeners loopback-only.
-- Caddy active; Caddyfile SHA still exactly `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`.
-- SSH active as `ssh.service`.
-- Real Owner auth test reported `CADDY_CHANGED=false`, `SSH_CHANGED=false`, `FIREWALL_CHANGED=false`.
+- `index.html`
+- `pvnaive-mark.svg`
+- `assets/index-CVNNekwm.js`
+- `assets/index-DT5seDoF.css`
 
-## Repository/bootstrap fix provenance
+The S04 source uses absolute `/api/v1/...` fetches and absolute `/pvnaive-mark.svg`; Vite output also uses root `/assets/...`. For immediate `/panel/` preview, publish a dedicated Caddy-readable copy and explicitly route the exact root-level build assets. A later web build can be normalized for subpath hosting.
 
-- Owner bootstrap permission fix commit: `1da5a2e3c779a3773755c3aafbc337ad0393ce79`.
-- Fixed bootstrap Git blob SHA: `bcfeee6b04e41fb8f8c98340847ebff261375b39`.
-- Intended RED CI: `33130812610`.
-- Follow-up fix CI: `33130860909` — Go, Web, PostgreSQL18/database, end-to-end auth rehearsal and production bundle all SUCCESS.
-- Installed API/auth/web artifact remains from source commit `11c54dc1faae99a1491c750b30db9faa44a0c3ae`.
-- Never reuse old `b4803e27...` bundle.
+## Exposure design / safety gates
 
-## Exact next action
+1. Snapshot existing root camouflage response before change.
+2. Publish static copy under `/var/www/pvnaive-preview` as `root:caddy`, leaving immutable `/opt/pvnaive/web/releases/...` unchanged.
+3. Generate candidate by inserting one new PVNaive route into the exact original Caddyfile; existing `forward_proxy` block must remain byte-for-byte intact.
+4. `/api/*` -> `127.0.0.1:8080` with URI preserved.
+5. `/panel` redirects to `/panel/`; `/panel/*` serves SPA; exact JS/CSS/logo root paths serve from the preview publication.
+6. Candidate must pass `caddy validate` and adapted-order verification requiring the new subroute before `forward_proxy`.
+7. Back up exact old Caddyfile/SHA.
+8. Install candidate and run `systemctl reload caddy-naive.service`; never restart.
+9. Smoke panel, assets and API via HTTPS/domain and require pre-change root camouflage response unchanged.
+10. Automatic exact Caddyfile restore + reload on any post-switch failure.
 
-Perform **one read-only Caddy inspection** before any public exposure change. Capture:
+After visual panel login succeeds, run independent external postflight. Only then advance `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
 
-1. `/etc/caddy/Caddyfile` verbatim with line numbers, SHA-256, owner/group/mode;
-2. `systemctl cat caddy-naive.service` and `systemctl show` fields `ExecStart`, `ExecReload`, `User`, `Group`, `FragmentPath`, `DropInPaths`;
-3. `caddy validate --config /etc/caddy/Caddyfile` output and adapted JSON structure;
-4. listeners/process identity for ports 22, 80, 443 and 8080;
-5. current TLS/storage paths visible from the config/unit;
-6. `/opt/pvnaive/web/current` symlink target and top-level static files;
-7. API loopback-only + live/ready still healthy.
+## Evidence
 
-Do not infer the Caddy route insertion point before reading the exact live config. Once reviewed, implement the S04 Caddy finalizer with exact pre-change backup/SHA, candidate generation, validation before install, controlled `systemctl reload caddy-naive.service` only, and exact rollback+reload on any failure. NaiveProxy must remain functional.
+Newest: `ops/evidence/S04-20260828T005912Z-caddy-inspection-pass.md`.
+Earlier:
+- `ops/evidence/S04-20260828T005544Z-real-owner-localhost-auth-pass.md`
+- `ops/evidence/S04-20260828T005033Z-owner-bootstrap-pass.md`
+- `ops/evidence/S04-20260828T004344Z-final-independent-postflight-pass.md`
 
-Only after controlled exposure plus independent external postflight may `S04-AUTH` be marked PASSED and `S05-USERS` become NEXT.
+Real Owner credentials are intentionally omitted from the repository.
