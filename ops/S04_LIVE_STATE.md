@@ -1,6 +1,6 @@
 # S04-AUTH Live State — testAmir5-3
 
-Last updated: 2026-08-28 00:43 UTC after final corrected independent localhost postflight PASSED
+Last updated: 2026-08-28 after final localhost postflight PASS and Owner bootstrap permission fix
 
 > Authoritative fast continuation file. Read `CONTINUE_HERE.md`, newest S04 evidence, `AGENT_HANDOFF.md`, and `ops/DEPLOYMENT_PROGRESS.md` before acting on the live host.
 
@@ -9,27 +9,20 @@ Last updated: 2026-08-28 00:43 UTC after final corrected independent localhost p
 - `S00-S03=PASSED`.
 - `S04-AUTH=IN PROGRESS`, not official PASSED yet because public Caddy exposure/external postflight have not run.
 - S04 API/auth/web localhost deployment is installed and healthy on `testAmir5-3`.
-- Periodic DB health release drift was repaired live; `/opt/pvnaive/db/current` selects schema2 immutable release `0002-84bb735877d5`.
-- Final corrected independent read-only postflight at `2026-08-28T00:43:44Z` returned:
-  - `S04_POSTFLIGHT_CORE=PASSED`
-  - `DATABASE_ROLE_CONTRACT=PASSED`
-  - `DB_TIMER_S04_AWARE=true`
-  - `API_POSTFLIGHT=PASSED`
-  - `ROLLBACK_BACKUP=PASSED`
-  - `INFRASTRUCTURE_POSTFLIGHT=PASSED`
-  - `S04_POSTFLIGHT=PASSED`
-  - `NO_CONFIGURATION_CHANGES_MADE=true`
-  - `NEXT=BOOTSTRAP_REAL_OWNER`
-- The next permitted action is the one-time real Owner bootstrap.
-- Do not expose `/panel/` or `/api/` through Caddy until Owner creation and localhost real-auth verification pass.
+- Final corrected independent read-only postflight at `2026-08-28T00:43:44Z` returned complete PASS and `NEXT=BOOTSTRAP_REAL_OWNER`.
+- First real Owner bootstrap attempt failed before INSERT with `psql: error: /run/pvnaive-owner-bootstrap.<random>.sql: Permission denied`.
+- Root cause: temp SQL was root-owned mode `0600`, while `psql --file` deliberately runs as OS user `postgres`.
+- No Owner was created by the failed attempt.
+- Repo fix is in `s04-auth` commit `1da5a2e3c779a3773755c3aafbc337ad0393ce79`: after fully writing the SQL payload, bootstrap changes ownership to `postgres:postgres` and retains mode `0600` before invoking psql.
+- Regression test commit `11bf2add44200dda48c63865263ffa05624b15f9` produced intended RED CI run `33130812610` with `ERROR: bootstrap temp SQL is not handed to postgres before psql --file`.
+- On fix commit, PostgreSQL18/database, Go, Web and end-to-end rehearsal gates are GREEN; bundle build may still be downstream/nonessential to the one-time script repair.
+- Next permitted action: execute the fixed bootstrap script from a commit-pinned, Git-blob-verified temporary copy. Do not edit the installed immutable auth release in place.
 
-## Final independently verified live facts
+## Final independently verified live facts before bootstrap retry
 
 - PostgreSQL 18 schema: `2`.
 - Migration 0002 SHA-256: `84bb735877d531c08ff4e7819c421c3746c00f1473ce185fd82ae4659815b886`.
-- DB role contract:
-  - `pvnaive_app|1|0|0|0|0|0|0`
-  - `pvnaive_owner|0|0|0|0|0|0|0`
+- DB role contract passed.
 - `/etc/pvnaive/db.env` expects schema `2`.
 - S04 marker: `/opt/pvnaive/S04_AUTH.json`.
 - Auth release: `/opt/pvnaive/auth/releases/20260828T001418Z`.
@@ -38,36 +31,30 @@ Last updated: 2026-08-28 00:43 UTC after final corrected independent localhost p
 - Old S03 immutable DB release preserved: `/opt/pvnaive/db/releases/0001-7f66adefd8f0`.
 - Periodic DB health returns schema2, `pvnaive_app`, signing secret denial and MFA secret-table denial.
 - `pvnaive-api.service` enabled/active as `pvnaive:pvnaive`, `NRestarts=0`.
-- API listener only `127.0.0.1:8080`.
-- API live: `{"service":"pvnaive-api","status":"ok"}`.
-- API ready: `{"ready":true,"status":"ready"}`.
-- Encrypted rollback backup: `/var/backups/pvnaive/database/20260828T001418Z-96157-k53f6h/pvnaive.dump.age`; checksum and decrypt/archive parse passed; no plaintext dump/sql sibling detected.
-- PostgreSQL listeners only `127.0.0.1:5432` and `[::1]:5432`.
-- Caddy active; Caddyfile SHA unchanged: `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`; `caddy validate` passed. Existing formatting warning is non-blocking.
-- SSH active as `ssh.service`.
+- API listener only `127.0.0.1:8080`; live/ready passed.
+- Encrypted rollback backup `/var/backups/pvnaive/database/20260828T001418Z-96157-k53f6h/pvnaive.dump.age` validated.
+- PostgreSQL listeners only loopback.
+- Caddy active; Caddyfile SHA unchanged: `101884de2dd11cb9d276df8e72cd068bed50e4ec6eb4ebb477184dda7a86e8b1`; validation passed.
+- SSH active.
 
-Newest evidence: `ops/evidence/S04-20260828T004344Z-final-independent-postflight-pass.md`.
+## Owner bootstrap fix provenance
 
-## Installed artifact / repo repair provenance
+Newest evidence: `ops/evidence/S04-20260828T0046-owner-bootstrap-temp-sql-permission-fix.md`.
 
-- Installed API/auth/web artifact source: `11c54dc1faae99a1491c750b30db9faa44a0c3ae`.
-- Installed artifact CI: `33128780602`.
-- Archive SHA-256: `52acdde2bff6777abeb31c081c86e018d1e7f5f0cdb39f8eb4151efbba2820fc`.
-- DB release repair branch head verified by final CI: `20ed774d06969a3f4c301fd6072a4db83fcffcca`.
-- Repair CI `33130012929`: Go/Web/PostgreSQL18/rehearsal/bundle all SUCCESS.
-- Never reuse old `b4803e27...` bundle.
+- test-only RED commit: `11bf2add44200dda48c63865263ffa05624b15f9`
+- RED CI: `33130812610`
+- production fix commit: `1da5a2e3c779a3773755c3aafbc337ad0393ce79`
+- fixed script Git blob SHA: `bcfeee6b04e41fb8f8c98340847ebff261375b39`
 
-## Owner bootstrap contract
+The temp SQL file contains the Argon2id PHC hash and bootstrap metadata, not the raw password. Cleanup removes the temp file on failure. The fixed script still keeps the file at mode `0600`; only the intended `postgres` OS account owns/reads it when psql executes.
 
-Use installed script:
+## Exact next action
 
-`/opt/pvnaive/auth/current/scripts/auth/bootstrap-owner.sh`
-
-It is root-only, exact-host, schema-v2, TTY-only, and refuses when any Owner already exists. It prompts for email, display name, password and confirmation on `/dev/tty`; password is hidden, never placed in argv/env/log, and is hashed using `/opt/pvnaive/bin/pvnaive-password`. Expected success output:
-
-```text
-PVNAIVE_OWNER_BOOTSTRAP=PASSED
-OWNER_EMAIL=<normalized-email>
-```
-
-After Owner creation, independently verify one active Owner (without exposing hash), then run localhost real login/session/me/CSRF logout/revocation. Only after this passes may Caddy exposure be attempted. Only after controlled Caddy reload plus external postflight may `S04-AUTH` be marked PASSED and `S05-USERS` become NEXT.
+1. Fetch `scripts/auth/bootstrap-owner.sh` pinned to commit `1da5a2e3c779a3773755c3aafbc337ad0393ce79` into a root-only temporary path.
+2. Verify Git blob SHA exactly `bcfeee6b04e41fb8f8c98340847ebff261375b39`.
+3. Before execution verify Owner count is zero.
+4. Execute the fixed copy interactively from root TTY; enter real email/display/password/confirmation. Do not send the password in chat.
+5. Require `PVNAIVE_OWNER_BOOTSTRAP=PASSED`.
+6. Independently verify exactly one active Owner and password-hash presence without printing the hash.
+7. Test real localhost login/session/me/CSRF logout/revocation.
+8. Only then attempt Caddy exposure; only after external postflight may the official ledger advance to `S04-AUTH=PASSED` and `S05-USERS=NEXT`.
