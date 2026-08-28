@@ -98,6 +98,141 @@ INSERT INTO pvnaive.user_runtime_credentials (
 	return nil
 }
 
+func (s *PostgresStore) ListCustomersTx(ctx context.Context, tx *sql.Tx) ([]CustomerView, error) {
+	if tx == nil {
+		return nil, errors.New("customer: transaction is required")
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT
+    u.id::text,
+    u.username,
+    u.status,
+    st.id::text,
+    st.state,
+    st.quota_bytes,
+    st.duration_seconds,
+    st.start_policy,
+    st.starts_at,
+    st.first_connected_at,
+    st.expires_at,
+    urc.runtime_credential_id::text,
+    EXISTS (
+        SELECT 1
+        FROM pvnaive.direct_subscription_tokens dst
+        WHERE dst.user_id = u.id
+          AND dst.service_term_id = st.id
+          AND dst.runtime_credential_id = urc.runtime_credential_id
+          AND dst.status = 'active'
+    ) AS subscription_available
+FROM pvnaive.users u
+JOIN LATERAL (
+    SELECT candidate.*
+    FROM pvnaive.service_terms candidate
+    WHERE candidate.user_id = u.id
+      AND candidate.tenant_id = u.tenant_id
+    ORDER BY candidate.purchased_at DESC, candidate.created_at DESC
+    LIMIT 1
+) st ON TRUE
+JOIN pvnaive.user_runtime_credentials urc
+  ON urc.user_id = u.id
+ AND urc.service_term_id = st.id
+ AND urc.unbound_at IS NULL
+WHERE u.tenant_id = st.tenant_id
+ORDER BY u.created_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("customer: list customers: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]CustomerView, 0)
+	for rows.Next() {
+		var view CustomerView
+		var userState, termState, startPolicy string
+		if err := rows.Scan(
+			&view.UserID,
+			&view.Username,
+			&userState,
+			&view.ServiceTermID,
+			&termState,
+			&view.QuotaBytes,
+			&view.DurationSeconds,
+			&startPolicy,
+			&view.StartsAt,
+			&view.FirstConnectedAt,
+			&view.ExpiresAt,
+			&view.RuntimeCredentialID,
+			&view.SubscriptionAvailable,
+		); err != nil {
+			return nil, fmt.Errorf("customer: scan customer: %w", err)
+		}
+		view.Status = UserAdminState(userState)
+		view.ServiceState = TermState(termState)
+		view.StartPolicy = StartPolicy(startPolicy)
+		view.UsageCapability = DefaultUsageCapability()
+		out = append(out, view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("customer: list customers rows: %w", err)
+	}
+	return out, nil
+}
+
+func (s *PostgresStore) SubscriptionTargetTx(ctx context.Context, tx *sql.Tx, userID string) (SubscriptionTarget, error) {
+	if tx == nil {
+		return SubscriptionTarget{}, errors.New("customer: transaction is required")
+	}
+	var target SubscriptionTarget
+	var expiresAt sql.NullTime
+	err := tx.QueryRowContext(ctx, `
+SELECT u.tenant_id::text, u.id::text, st.id::text, urc.runtime_credential_id::text, st.expires_at
+FROM pvnaive.users u
+JOIN LATERAL (
+    SELECT candidate.*
+    FROM pvnaive.service_terms candidate
+    WHERE candidate.user_id = u.id
+      AND candidate.tenant_id = u.tenant_id
+    ORDER BY candidate.purchased_at DESC, candidate.created_at DESC
+    LIMIT 1
+) st ON TRUE
+JOIN pvnaive.user_runtime_credentials urc
+  ON urc.user_id = u.id
+ AND urc.service_term_id = st.id
+ AND urc.unbound_at IS NULL
+JOIN pvnaive.naive_runtime_credentials rc
+  ON rc.id = urc.runtime_credential_id
+ AND rc.status = 'active'
+WHERE u.id = $1::uuid
+  AND u.status = 'active'
+  AND st.state IN ('pending','active')`, userID).Scan(
+		&target.TenantID, &target.UserID, &target.ServiceTermID,
+		&target.RuntimeCredentialID, &expiresAt,
+	)
+	if err != nil {
+		return SubscriptionTarget{}, fmt.Errorf("customer: resolve subscription target: %w", err)
+	}
+	if expiresAt.Valid {
+		expires := expiresAt.Time
+		target.ExpiresAt = &expires
+	}
+	return target, nil
+}
+
+func (s *PostgresStore) RevokeSubscriptionTokensTx(ctx context.Context, tx *sql.Tx, target SubscriptionTarget) error {
+	if tx == nil {
+		return errors.New("customer: transaction is required")
+	}
+	_, err := tx.ExecContext(ctx, `
+UPDATE pvnaive.direct_subscription_tokens
+SET status='revoked', revoked_at=clock_timestamp()
+WHERE user_id=$1::uuid
+  AND service_term_id=$2::uuid
+  AND status='active'`, target.UserID, target.ServiceTermID)
+	if err != nil {
+		return fmt.Errorf("customer: revoke subscription tokens: %w", err)
+	}
+	return nil
+}
+
 func (s *PostgresStore) CreateSubscriptionTokenTx(ctx context.Context, tx *sql.Tx, record CreateSubscriptionTokenRecord) error {
 	if tx == nil {
 		return errors.New("customer: transaction is required")
