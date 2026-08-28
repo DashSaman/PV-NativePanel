@@ -67,7 +67,8 @@ def load_and_validate_media(path: Path = DATA_ROOT / "media.json"):
                 raise ValueError(f"media item missing {key}")
         if item["id"] in ids or item["slug"] in slugs:
             raise ValueError("duplicate media id/slug")
-        ids.add(item["id"]); slugs.add(item["slug"])
+        ids.add(item["id"])
+        slugs.add(item["slug"])
         validate_external_url(item["source_url"])
         if item.get("poster"):
             safe_url(item["poster"])
@@ -252,12 +253,39 @@ def build_about(portal, out_root: Path):
     write_page(out_root, "about/index.html", shell(portal, "درباره", body, " / درباره"))
 
 
+def enhance_homepage(portal, out_root: Path):
+    index = out_root / "index.html"
+    if not index.is_file():
+        return
+    marker = 'data-portal-entry-nav="true"'
+    text = index.read_text(encoding="utf-8")
+    if marker in text:
+        return
+    navigation = (
+        '<nav class="source-bar portal-entry-nav" data-portal-entry-nav="true" aria-label="صفحات داخلی درگاه">'
+        '<span class="source-bar__title">بخش‌های درگاه</span>'
+        f'{nav_html(portal)}'
+        '</nav>'
+    )
+    needle = "</header>"
+    if needle not in text:
+        raise ValueError("homepage is missing closing header for portal navigation")
+    text = text.replace(needle, f"{needle}\n<div class=\"shell\">{navigation}</div>", 1)
+    index.write_text(text, encoding="utf-8", newline="\n")
+
+
 def validate_all():
-    load_portal(); load_articles(); load_and_validate_media(); load_galleries()
+    load_portal()
+    load_articles()
+    load_and_validate_media()
+    load_galleries()
 
 
 def build_all(out_root: Path):
-    portal, articles, media, galleries = load_portal(), load_articles(), load_and_validate_media(), load_galleries()
+    portal = load_portal()
+    articles = load_articles()
+    media = load_and_validate_media()
+    galleries = load_galleries()
     build_news(portal, articles, out_root)
     build_media_kind(portal, media, out_root, "video")
     build_media_kind(portal, media, out_root, "audio")
@@ -265,6 +293,7 @@ def build_all(out_root: Path):
     build_downloads(portal, media, out_root)
     build_sources(portal, articles, media, out_root)
     build_about(portal, out_root)
+    enhance_homepage(portal, out_root)
 
 
 def main():
