@@ -6,14 +6,16 @@ import (
 	"net/http"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 )
 
 type envelope map[string]any
 
 type ServerConfig struct {
-	AuthService *auth.Service
-	AuthStore   *auth.Store
-	MFAKey      []byte
+	AuthService    *auth.Service
+	AuthStore      *auth.Store
+	MFAKey         []byte
+	RuntimeService *runtimecred.Service
 }
 
 type server struct {
@@ -70,6 +72,30 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "me.mfa.delete":
 			if cfg.AuthStore != nil && len(cfg.MFAKey) == 32 {
 				handler = http.HandlerFunc(s.mfaRemove)
+			}
+		case "runtime.naive.show":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveStatus)
+			}
+		case "runtime.naive.credentials.index":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveCredentials)
+			}
+		case "runtime.naive.credentials.create":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveCreateCredential)
+			}
+		case "runtime.naive.credentials.update":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveUpdateCredential)
+			}
+		case "runtime.naive.credentials.rotate":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveRotateCredential)
+			}
+		case "runtime.naive.credentials.revoke":
+			if cfg.RuntimeService != nil {
+				handler = http.HandlerFunc(s.runtimeNaiveRevokeCredential)
 			}
 		}
 		if route.Access != Public {
@@ -159,6 +185,9 @@ func (s *server) requireAuthentication(route Route, next http.Handler) http.Hand
 		}
 		r = withAuthenticatedRequest(r, bound, cookie.Value)
 		next.ServeHTTP(w, r)
+		if authenticated, ok := authenticatedFromRequest(r); ok && authenticated.TransactionFinalized {
+			return
+		}
 		_ = bound.Tx.Commit()
 	})
 }

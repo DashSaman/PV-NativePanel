@@ -10,8 +10,9 @@ import (
 type authContextKey struct{}
 
 type authenticatedRequest struct {
-	Bound           *auth.AuthenticatedTx
-	RawSessionToken string
+	Bound                *auth.AuthenticatedTx
+	RawSessionToken      string
+	TransactionFinalized bool
 }
 
 func withAuthenticatedRequest(r *http.Request, bound *auth.AuthenticatedTx, rawSessionToken string) *http.Request {
