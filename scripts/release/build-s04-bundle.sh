@@ -3,7 +3,7 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-for command_name in go npm tar sha256sum git; do
+for command_name in go npm python3 tar sha256sum git; do
   command -v "${command_name}" >/dev/null 2>&1 || { echo "ERROR: missing ${command_name}" >&2; exit 1; }
 done
 
@@ -16,7 +16,9 @@ cleanup() { rm -rf -- "${work_root}"; }
 trap cleanup EXIT HUP INT TERM
 bundle_name="PVNaive-S04R-${short_commit}"
 bundle_root="${work_root}/${bundle_name}"
-mkdir -p "${bundle_root}"/{bin,web,public-site,db/migrations,scripts/db,scripts/auth,scripts/stages,systemd}
+generated_site="${work_root}/generated-public-site"
+mkdir -p "${bundle_root}"/{bin,web,public-site,db/migrations,scripts/db,scripts/auth,scripts/stages,scripts/site,scripts/release,systemd}
+mkdir -p "${generated_site}"
 
 cd "${repo_root}"
 go mod verify
@@ -31,30 +33,41 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflag
   npm run build
 )
 cp -a web/dist/. "${bundle_root}/web/"
-cp -a site/. "${bundle_root}/public-site/"
+
+# Build the public portal into an isolated staging tree so the archive always
+# contains deterministic generated routes without mutating the checked-out site/.
+cp -a site/. "${generated_site}/"
+python3 scripts/site/build_public_portal.py --check
+python3 scripts/site/build_public_portal.py --output-root "${generated_site}"
+cp -a "${generated_site}/." "${bundle_root}/public-site/"
 
 cp -a db/migrations/*.sql db/migrations/SHA256SUMS "${bundle_root}/db/migrations/"
 cp -a scripts/db/*.sh "${bundle_root}/scripts/db/"
 cp -a scripts/auth/bootstrap-owner.sh "${bundle_root}/scripts/auth/"
 cp -a scripts/stages/lib.sh scripts/stages/S04R-preflight.sh scripts/stages/S04R-upgrade.sh "${bundle_root}/scripts/stages/"
+cp -a scripts/site/build_public_portal.py scripts/site/sync_public_media.py "${bundle_root}/scripts/site/"
+cp -a scripts/release/publish-public-site.sh "${bundle_root}/scripts/release/"
 cp -a ops/systemd/pvnaive-api.service ops/systemd/pvnaive-runtime-agent.service "${bundle_root}/systemd/"
 chmod 0750 "${bundle_root}"/bin/*
 chmod 0750 "${bundle_root}"/scripts/db/*.sh "${bundle_root}"/scripts/auth/*.sh "${bundle_root}"/scripts/stages/*.sh
+chmod 0750 "${bundle_root}"/scripts/site/*.py "${bundle_root}"/scripts/release/*.sh
 chmod 0644 "${bundle_root}"/systemd/*.service
 
 cat >"${bundle_root}/RELEASE.json" <<JSON
 {
   "product": "PVNaive",
-  "stage": "S04R-RUNTIME-CREDENTIALS",
+  "stage": "S05-PUBLIC-MEDIA-PORTAL",
   "mode": "guarded-single-server",
   "source_commit": "${source_commit}",
   "target_host": "testAmir5-3",
   "api_listener": "127.0.0.1:8080",
   "runtime_socket": "/run/pvnaive/runtime-agent.sock",
   "runtime_key": "/etc/pvnaive/runtime.key",
-  "schema_version": 3,
+  "schema_version": 5,
   "panel_base": "/panel/",
   "public_site_path": "public-site/",
+  "public_media_path": "/var/www/naive/media/",
+  "public_media_mirrors_in_archive": false,
   "caddy_installer_mutation": false,
   "caddy_runtime_action": "validate-then-reload-only",
   "ssh_mutation": false,
