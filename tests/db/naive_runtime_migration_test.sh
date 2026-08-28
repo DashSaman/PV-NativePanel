@@ -5,6 +5,7 @@ umask 077
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 up="${repo_root}/db/migrations/0003_naive_runtime_credentials.up.sql"
 down="${repo_root}/db/migrations/0003_naive_runtime_credentials.down.sql"
+temp_migrations="$(mktemp -d)"
 
 [[ -f "${up}" ]] || { echo "ERROR: missing 0003_naive_runtime_credentials.up.sql" >&2; exit 1; }
 [[ -f "${down}" ]] || { echo "ERROR: missing 0003_naive_runtime_credentials.down.sql" >&2; exit 1; }
@@ -15,6 +16,14 @@ grep -Fqx -- '-- pvnaive:destructive false' "${up}"
 grep -Fqx -- '-- pvnaive:migration-version 0003' "${down}"
 grep -Fqx -- '-- pvnaive:transactional true' "${down}"
 grep -Fqx -- '-- pvnaive:destructive true' "${down}"
+
+cp "${repo_root}"/db/migrations/0001_* "${temp_migrations}/"
+cp "${repo_root}"/db/migrations/0002_* "${temp_migrations}/"
+cp "${repo_root}"/db/migrations/0003_* "${temp_migrations}/"
+(
+  cd "${temp_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
 
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
@@ -39,9 +48,21 @@ cleanup() {
     --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command \
     'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
+  rm -rf -- "${temp_migrations}"
 }
 trap cleanup EXIT
 cleanup
+
+# cleanup removes the initial temporary directory while normalizing stale DB/roles;
+# recreate the v3-only migration fixture after cleanup.
+temp_migrations="$(mktemp -d)"
+cp "${repo_root}"/db/migrations/0001_* "${temp_migrations}/"
+cp "${repo_root}"/db/migrations/0002_* "${temp_migrations}/"
+cp "${repo_root}"/db/migrations/0003_* "${temp_migrations}/"
+(
+  cd "${temp_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
 
 psql_admin --dbname postgres <<'SQL' >/dev/null
 CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
@@ -52,7 +73,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
   --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 export PVNAIVE_DB_NAME="${test_db}"
-"${repo_root}/scripts/db/migrate.sh" >/dev/null
+PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
   'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
@@ -167,6 +188,7 @@ set -e
 [[ "${idempotency_rc}" -ne 0 ]] || { echo "ERROR: duplicate runtime idempotency key was accepted" >&2; exit 1; }
 
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+  PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" \
   "${repo_root}/scripts/db/rollback.sh" >/dev/null
 
 remaining="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
