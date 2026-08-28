@@ -29,6 +29,10 @@ export type RuntimeMutationResult = {
 export type RuntimeError = Error & { code?: string; status?: number };
 type Fetcher = typeof fetch;
 
+export function buildNaiveURI(username: string, password: string, host: string): string {
+  return `naive+https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:443`;
+}
+
 async function parseJSON(response: Response): Promise<Record<string, unknown>> {
   const contentType = response.headers.get("Content-Type") || "";
   if (!contentType.includes("application/json")) return {};
