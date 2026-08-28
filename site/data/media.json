@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "items": [
     {
       "id": "khamenei-1999-speech-clip",
@@ -32,23 +32,23 @@
       "slug": "khamenei-1994-friday-prayer",
       "kind": "video",
       "title": "گزیده خطبه دوم نماز جمعه تهران، ۲۹ بهمن ۱۳۷۲",
-      "summary": "نسخه آرشیوی منبع‌دار برای پخش آنلاین؛ فایل اصلی در Wikimedia Commons با انتساب به Khamenei.ir نگهداری می‌شود.",
+      "summary": "نسخه آرشیوی خطبه دوم نماز جمعه تهران؛ فایل منبع Khamenei.ir با مجوز CC BY 4.0 در Wikimedia Commons بازبینی شده است.",
       "published_label": "۲۹ بهمن ۱۳۷۲",
       "source_name": "Khamenei.ir / Wikimedia Commons",
       "source_domain": "commons.wikimedia.org",
       "source_url": "https://commons.wikimedia.org/wiki/File:Second_Khutbah_of_Tehran_Friday_Prayer,_18_February_1994_(4744-4905).webm",
       "poster": "/assets/news-fallback.svg",
-      "duration_seconds": 82,
-      "mirror_allowed": false,
-      "rights_note": "CC BY 4.0 در صفحه فایل Commons درج شده است؛ این ورودی در نسخه اول remote-only است.",
-      "attribution": "Khamenei.ir",
+      "duration_seconds": 81.807,
+      "mirror_allowed": true,
+      "rights_note": "CC BY 4.0؛ صفحه فایل Commons منبع را Khamenei.ir معرفی می‌کند و مجوز را ثبت کرده است.",
+      "attribution": "Khamenei.ir — Creative Commons Attribution 4.0 International",
       "qualities": [
         {
           "label": "نسخه اصلی WebM",
           "mime": "video/webm",
-          "bytes": null,
-          "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Second%20Khutbah%20of%20Tehran%20Friday%20Prayer%2C%2018%20February%201994%20%284744-4905%29.webm",
-          "local_path": null,
+          "bytes": 4368912,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/6/65/Second_Khutbah_of_Tehran_Friday_Prayer%2C_18_February_1994_%284744-4905%29.webm",
+          "local_path": "video/khamenei-1994-friday-prayer.webm",
           "sha256": null
         }
       ]
@@ -66,7 +66,7 @@
       "poster": "/assets/news-fallback.svg",
       "duration_seconds": 20,
       "mirror_allowed": false,
-      "rights_note": "CC BY 4.0 در صفحه فایل Commons درج شده است؛ این ورودی در نسخه اول remote-only است.",
+      "rights_note": "CC BY 4.0 در صفحه فایل Commons درج شده است؛ این ورودی برای حفظ اندازه دقیق remote-only باقی می‌ماند.",
       "attribution": "Khamenei.ir",
       "qualities": [
         {
@@ -75,6 +75,84 @@
           "bytes": null,
           "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Inauguration%20of%20Mohammad%20Khatami%20-%20August%203%2C%201997%20%28Video%20speech%20of%20Khamenei%2C1000%20-%201018%29.webm",
           "local_path": null,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-1991-martyrs-veterans",
+      "slug": "khamenei-1991-martyrs-veterans",
+      "kind": "video",
+      "title": "بیانات در دیدار جمعی از ایثارگران و خانواده‌های شهدا، مهر ۱۳۷۰",
+      "summary": "فیلم آرشیوی دیدار ۱۶ مهر ۱۳۷۰؛ منبع اولیه Khamenei.ir است و نسخه Commons با CC BY 4.0 بازبینی شده است.",
+      "published_label": "۱۶ مهر ۱۳۷۰",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ali_Khamenei_meeting_with_a_group_of_martyrs_and_veterans_-_8_October_1991_(13700717_1203).webm",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 333.208,
+      "mirror_allowed": true,
+      "rights_note": "CC BY 4.0؛ Commons ثبت کرده که فایل منبع Khamenei.ir در بازبینی مجوز تحت همین مجوز در دسترس بوده است.",
+      "attribution": "Khamenei.ir — Creative Commons Attribution 4.0 International",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": 40771983,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Ali_Khamenei_meeting_with_a_group_of_martyrs_and_veterans_-_8_October_1991_%2813700717_1203%29.webm",
+          "local_path": "video/khamenei-1991-martyrs-veterans.webm",
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-2016-khuzestan-arabic",
+      "slug": "khamenei-2016-khuzestan-arabic",
+      "kind": "video",
+      "title": "سخنرانی به زبان عربی برای جمعی از مردم خوزستان",
+      "summary": "فیلم سخنرانی عربی منتشرشده از Khamenei.ir؛ نسخه آرشیوی Commons با مجوز CC BY 4.0 در دسترس است.",
+      "published_label": "۶ مهر ۱۳۹۵",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ayatollah_Khamenei_Speaks_to_arab_residents_of_Khuzestan_province_in_Arabic.webm",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 315.097,
+      "mirror_allowed": true,
+      "rights_note": "CC BY 4.0؛ منبع و انتساب Khamenei.ir در صفحه فایل Wikimedia Commons ثبت شده است.",
+      "attribution": "Khamenei.ir — Creative Commons Attribution 4.0 International",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": 34643957,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/1/12/Ayatollah_Khamenei_Speaks_to_arab_residents_of_Khuzestan_province_in_Arabic.webm",
+          "local_path": "video/khamenei-2016-khuzestan-arabic.webm",
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "khamenei-2023-soleimani-family",
+      "slug": "khamenei-2023-soleimani-family",
+      "kind": "video",
+      "title": "گزیده بیانات در دیدار خانواده شهید قاسم سلیمانی، دی ۱۴۰۲",
+      "summary": "کلیپ کوتاه از بیانات منتشرشده در Khamenei.ir؛ نسخه Commons فایل را با مجوز CC BY 4.0 و اندازه دقیق ثبت کرده است.",
+      "published_label": "۱۰ دی ۱۴۰۲",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_domain": "commons.wikimedia.org",
+      "source_url": "https://farsi.khamenei.ir/video-content?id=54790",
+      "poster": "/assets/news-fallback.svg",
+      "duration_seconds": 23.529,
+      "mirror_allowed": true,
+      "rights_note": "CC BY 4.0؛ صفحه Commons منبع را Khamenei.ir و مجوز را Creative Commons Attribution 4.0 ثبت کرده است.",
+      "attribution": "Khamenei.ir — Creative Commons Attribution 4.0 International",
+      "qualities": [
+        {
+          "label": "نسخه اصلی WebM",
+          "mime": "video/webm",
+          "bytes": 558449,
+          "url": "https://upload.wikimedia.org/wikipedia/commons/0/08/Supreme_Leader_of_Iran_Ali_Khamenei_and_the_Claim_of_Speaking_with_God.webm",
+          "local_path": "video/khamenei-2023-soleimani-family.webm",
           "sha256": null
         }
       ]
@@ -92,7 +170,7 @@
       "poster": "/assets/news-fallback.svg",
       "duration_seconds": 40.382,
       "mirror_allowed": false,
-      "rights_note": "ترنسکد MP3 از فایل CC BY 4.0 در Wikimedia Commons؛ در نسخه اول remote-only است.",
+      "rights_note": "ترنسکد MP3 از فایل CC BY 4.0 در Wikimedia Commons؛ پخش مستقیم از منبع انجام می‌شود.",
       "attribution": "Khamenei.ir — CC BY 4.0",
       "qualities": [
         {
