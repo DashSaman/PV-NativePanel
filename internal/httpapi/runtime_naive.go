@@ -326,6 +326,8 @@ func writeRuntimeServiceError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusConflict, envelope{"code": "runtime_import_equivalence_failed", "message": "Import was stopped because reconstructed Caddy state was not byte-equivalent to live state."})
 	case errors.Is(err, runtimecred.ErrIdempotentReplay):
 		writeJSON(w, http.StatusConflict, envelope{"code": "idempotency_replay", "message": "This mutation key has already been used. Refresh runtime state."})
+	case errors.Is(err, runtimecred.ErrReconciliationRequired):
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "runtime_reconciliation_required", "message": "Runtime rollback failed; reconciliation is required before further mutations."})
 	case errors.Is(err, runtimecred.ErrConsistency):
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "consistency_error", "message": "Runtime mutation was not committed consistently; rollback was attempted."})
 	default:
