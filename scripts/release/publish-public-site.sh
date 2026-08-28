@@ -15,6 +15,7 @@ backup_dir="${backup_root}/${stamp}"
 stage_root="/var/www/.naive.stage.${stamp}"
 previous_root="/var/www/.naive.previous.${stamp}"
 failed_root="/var/www/.naive.failed.${stamp}"
+root_body=""
 published=0
 
 fail() {
@@ -25,10 +26,13 @@ fail() {
 
 cleanup_unpublished() {
   rm -rf -- "${stage_root}" >/dev/null 2>&1 || true
+  if [[ -n "${root_body}" ]]; then
+    rm -f -- "${root_body}" >/dev/null 2>&1 || true
+  fi
 }
 
 rollback_on_error() {
-  local rc=$?
+  local rc="${1:-1}"
   trap - ERR EXIT HUP INT TERM
   if ((published == 1)); then
     if [[ -d "${live_root}" && -d "${previous_root}" ]]; then
@@ -41,7 +45,10 @@ rollback_on_error() {
   echo "PUBLIC_SITE_ROLLBACK=ATTEMPTED" >&2
   exit "${rc}"
 }
-trap rollback_on_error ERR HUP INT TERM
+trap 'rollback_on_error $?' ERR
+trap 'rollback_on_error 129' HUP
+trap 'rollback_on_error 130' INT
+trap 'rollback_on_error 143' TERM
 trap cleanup_unpublished EXIT
 
 [[ ${EUID} -eq 0 ]] || fail 'run as root'
@@ -50,6 +57,7 @@ trap cleanup_unpublished EXIT
 for command_name in sha256sum systemctl tar curl grep find cp mv install stat rm; do
   command -v "${command_name}" >/dev/null 2>&1 || fail "missing command: ${command_name}"
 done
+[[ -x /usr/local/bin/caddy ]] || fail 'Caddy binary is missing'
 
 [[ -d "${source_dir}" ]] || fail "public source directory is missing: ${source_dir}"
 for required in index.html assets/site.css assets/site.js assets/news-mark.svg assets/news-fallback.svg data/articles.json; do
@@ -111,7 +119,6 @@ mv -- "${stage_root}" "${live_root}"
 published=1
 
 root_body="$(mktemp)"
-trap 'rm -f -- "${root_body}"; rollback_on_error' ERR HUP INT TERM
 root_code="$(curl --silent --show-error --max-time 8 \
   --resolve "${public_host}:443:127.0.0.1" \
   --output "${root_body}" --write-out '%{http_code}' \
@@ -119,6 +126,7 @@ root_code="$(curl --silent --show-error --max-time 8 \
 [[ "${root_code}" == "200" ]] || fail "public root returned HTTP ${root_code}"
 grep -Fq 'درگاه ایران' "${root_body}" || fail 'public root did not return the promoted page'
 rm -f -- "${root_body}"
+root_body=""
 
 panel_code_after="$(curl --silent --show-error --max-time 8 \
   --resolve "${public_host}:443:127.0.0.1" \
