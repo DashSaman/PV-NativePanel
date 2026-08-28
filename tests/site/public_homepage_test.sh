@@ -2,10 +2,11 @@
 set -Eeuo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-index="${repo_root}/site/index.html"
-css="${repo_root}/site/assets/site.css"
-script="${repo_root}/site/assets/site.js"
-articles="${repo_root}/site/data/articles.json"
+public_root="${repo_root}/site"
+index="${public_root}/index.html"
+css="${public_root}/assets/site.css"
+script="${public_root}/assets/site.js"
+articles="${public_root}/data/articles.json"
 
 for required_file in "${index}" "${css}" "${script}" "${articles}"; do
   [[ -f "${required_file}" ]] || {
@@ -40,10 +41,16 @@ for source_domain in khamenei.ir president.ir irna.ir isna.ir tasnimnews.com far
   }
 done
 
-# Public assets must not disclose management/data-plane product vocabulary.
-if grep -Eiq 'PVNaive|PVNETWORK|NaiveProxy|VPN|Proxy|Tunnel|Credential|Subscription Management' \
-  "${index}" "${css}" "${script}" "${articles}"; then
-  echo 'ERROR: public newsroom leaks management/data-plane product vocabulary' >&2
+# Everything under site/ is potentially file-server reachable. Both file names
+# and textual source must remain neutral; internal product/data-plane vocabulary
+# belongs only behind the management surface.
+forbidden='PVNaive|PVNETWORK|NaiveProxy|VPN|Proxy|Tunnel|Credential|Subscription Management'
+if find "${public_root}" -type f -printf '%P\n' | grep -Eiq "${forbidden}"; then
+  echo 'ERROR: public tree contains a product-revealing file name' >&2
+  exit 1
+fi
+if grep -RIiEq --binary-files=without-match "${forbidden}" "${public_root}"; then
+  echo 'ERROR: public tree leaks management/data-plane product vocabulary' >&2
   exit 1
 fi
 
