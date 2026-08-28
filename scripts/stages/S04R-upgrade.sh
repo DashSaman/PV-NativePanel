@@ -27,7 +27,7 @@ api_was_active=0
 runtime_was_active=0
 rollback_started=0
 
-fail() { echo "ERROR: $*" >&2; exit 1; }
+fail() { echo "ERROR: $*" >&2; return 1; }
 
 [[ ${EUID} -eq 0 ]] || fail 'run as root'
 [[ "${expected_caddy_sha}" =~ ^[0-9a-f]{64}$ ]] || fail 'PVNAIVE_EXPECTED_CADDY_SHA256 must be the 64-character SHA from the read-only preflight'
