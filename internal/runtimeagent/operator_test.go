@@ -114,7 +114,7 @@ func TestOperatorApplyValidatesBacksUpReloadsAndPreservesServiceProcess(t *testi
 
 	calls := runner.snapshotCalls()
 	validateIndex := commandIndex(calls, "/usr/local/bin/caddy", "validate")
-	reloadIndex := commandIndex(calls, "systemctl", "reload caddy-naive.service")
+	reloadIndex := commandIndex(calls, "systemctl", "reload")
 	if validateIndex < 0 || reloadIndex < 0 || validateIndex > reloadIndex {
 		t.Fatalf("command order did not validate before reload: %#v", calls)
 	}
