@@ -65,4 +65,19 @@ PVNAIVE_DB_RELEASE_OWNER_GROUP="$(id -gn)" \
   exit 1
 }
 
+stage="${repo_root}/scripts/stages/S04-auth.sh"
+grep -Fq 'scripts/db/promote-release.sh' "${stage}" || {
+  echo 'ERROR: S04 stage does not require the DB release promotion helper' >&2
+  exit 1
+}
+grep -Fq 'promote_db_tooling_release' "${stage}" || {
+  echo 'ERROR: S04 stage does not wire DB release promotion' >&2
+  exit 1
+}
+call_count="$(grep -Fc 'promote_db_tooling_release' "${stage}")"
+((call_count >= 3)) || {
+  echo "ERROR: S04 stage must define promotion and invoke it for existing-marker plus fresh/recovery paths; count=${call_count}" >&2
+  exit 1
+}
+
 echo 'S04_DB_RELEASE_PROMOTION_TEST=PASSED'
