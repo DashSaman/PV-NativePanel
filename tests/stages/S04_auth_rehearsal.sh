@@ -16,9 +16,10 @@ done
 [[ -x "${api_binary}" ]] || { echo "ERROR: rehearsal API binary is missing" >&2; exit 1; }
 [[ -x "${password_binary}" ]] || { echo "ERROR: rehearsal password helper is missing" >&2; exit 1; }
 
-suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
-suffix="${suffix//[^a-zA-Z0-9_]/_}"
-test_db="pvnaive_migration_test_s04_${suffix,,}"
+# This job owns an isolated PostgreSQL container, so use the exact production
+# database name. That keeps the rehearsal contract identical to systemd and
+# lets the API fail closed on unexpected database names.
+test_db="pvnaive"
 api_port="18080"
 api_pid=""
 tmpdir=""
