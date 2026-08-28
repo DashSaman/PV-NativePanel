@@ -46,3 +46,13 @@ type CreateServiceTermRecord struct {
 	ExpiresAt       *time.Time
 	State           TermState
 }
+
+type CreateSubscriptionTokenRecord struct {
+	TenantID            string
+	UserID              string
+	ServiceTermID       string
+	RuntimeCredentialID string
+	TokenHash           []byte
+	TokenPrefix         string
+	ExpiresAt           *time.Time
+}
