@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  buildNaiveURI,
   createRuntimeCredential,
   importCurrentRuntime,
   listRuntimeCredentials,
@@ -32,6 +33,12 @@ beforeEach(() => {
 });
 
 describe("runtime API client", () => {
+  it("builds a copy-ready Naive URI and percent-encodes credentials", () => {
+    expect(buildNaiveURI("customer+one", "p@ss:word", "namir.softarg.ir")).toBe(
+      "naive+https://customer%2Bone:p%40ss%3Aword@namir.softarg.ir:443",
+    );
+  });
+
   it("lists credentials with same-origin credentials and no secret fields", async () => {
     const fetcher = vi.fn(async () => jsonResponse({ credentials: [credential] }));
     const result = await listRuntimeCredentials(fetcher as typeof fetch);
