@@ -1,7 +1,7 @@
 [Unit]
 Description=PVNaive management API
-After=network-online.target postgresql.service
-Wants=network-online.target
+After=network-online.target postgresql.service pvnaive-runtime-agent.service
+Wants=network-online.target pvnaive-runtime-agent.service
 
 [Service]
 Type=simple
@@ -9,6 +9,9 @@ User=pvnaive
 Group=pvnaive
 EnvironmentFile=/etc/pvnaive/db.env
 Environment=PVNAIVE_AUTH_KEY_FILE=/etc/pvnaive/auth.key
+Environment=PVNAIVE_RUNTIME_KEY_FILE=/etc/pvnaive/runtime.key
+Environment=PVNAIVE_RUNTIME_KEY_ID=runtime-v1
+Environment=PVNAIVE_RUNTIME_AGENT_SOCKET=/run/pvnaive/runtime-agent.sock
 Environment=PVNAIVE_LISTEN=127.0.0.1:8080
 ExecStart=/opt/pvnaive/bin/pvnaive
 Restart=on-failure
