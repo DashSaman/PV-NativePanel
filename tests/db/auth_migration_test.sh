@@ -5,7 +5,7 @@ umask 077
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 up="${repo_root}/db/migrations/0002_auth_foundation.up.sql"
 down="${repo_root}/db/migrations/0002_auth_foundation.down.sql"
-auth_migrations="$(mktemp -d)"
+auth_migrations=""
 
 [[ -f "${up}" ]] || { echo "ERROR: missing 0002_auth_foundation.up.sql" >&2; exit 1; }
 [[ -f "${down}" ]] || { echo "ERROR: missing 0002_auth_foundation.down.sql" >&2; exit 1; }
@@ -16,15 +16,6 @@ grep -Fqx -- '-- pvnaive:destructive false' "${up}"
 grep -Fqx -- '-- pvnaive:migration-version 0002' "${down}"
 grep -Fqx -- '-- pvnaive:transactional true' "${down}"
 grep -Fqx -- '-- pvnaive:destructive true' "${down}"
-
-cp "${repo_root}/db/migrations/0001_initial.up.sql" "${auth_migrations}/"
-cp "${repo_root}/db/migrations/0001_initial.down.sql" "${auth_migrations}/"
-cp "${repo_root}/db/migrations/0002_auth_foundation.up.sql" "${auth_migrations}/"
-cp "${repo_root}/db/migrations/0002_auth_foundation.down.sql" "${auth_migrations}/"
-(
-  cd "${auth_migrations}"
-  sha256sum *.sql > SHA256SUMS
-)
 
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
@@ -49,10 +40,22 @@ cleanup() {
     --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command \
     'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
-  rm -rf -- "${auth_migrations}"
+  if [[ -n "${auth_migrations}" ]]; then
+    rm -rf -- "${auth_migrations}"
+  fi
 }
 trap cleanup EXIT
 cleanup
+
+auth_migrations="$(mktemp -d)"
+cp "${repo_root}/db/migrations/0001_initial.up.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0001_initial.down.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.up.sql" "${auth_migrations}/"
+cp "${repo_root}/db/migrations/0002_auth_foundation.down.sql" "${auth_migrations}/"
+(
+  cd "${auth_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
 
 psql_admin --dbname postgres <<'SQL' >/dev/null
 CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
