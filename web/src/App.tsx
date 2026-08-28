@@ -1,13 +1,18 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
-import { appRoutes, assertRouteManifest } from "./routes";
+import { RuntimeNaive } from "./RuntimeNaive";
+import { assertRouteManifest } from "./routes";
 
 assertRouteManifest();
 
 type Theme = "system" | "dark" | "light";
 type AuthState = "loading" | "anonymous" | "authenticated";
-const metrics = [["وضعیت Runtime","در انتظار اتصال"],["کاربران فعال","—"],["مصرف امروز","—"],["اعتبار TLS","—"]];
-const enabledRoutes = appRoutes.filter((route) => route.navigation && route.path === "/");
+type View = "dashboard" | "runtime-naive";
+const metrics = [["وضعیت Runtime","قابل مدیریت"],["اکانت‌های Naive","از Runtime"],["مصرف امروز","—"],["اعتبار TLS","—"]];
+
+function currentView(): View {
+  return window.location.hash === "#/runtime/naive" ? "runtime-naive" : "dashboard";
+}
 
 function ThemeSwitch() {
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("pvnaive.theme") as Theme) || "system");
@@ -70,10 +75,30 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Princip
   );
 }
 
+function Sidebar({ principal, signOut }: { principal: Principal; signOut: () => Promise<void> }) {
+  return <aside className="sidebar">
+    <div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div>
+    <nav aria-label="ناوبری اصلی">
+      <a href="/panel/">داشبورد</a>
+      {principal.role === "owner" && <a href="/panel/#/runtime/naive">Naive Runtime</a>}
+    </nav>
+    <ThemeSwitch />
+    <button className="logout-button" onClick={signOut}>خروج امن</button>
+    <div className="stage">S04R · Naive credential manager</div>
+  </aside>;
+}
+
 export function App() {
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [authMessage, setAuthMessage] = useState("");
+  const [view, setView] = useState<View>(currentView);
+
+  useEffect(() => {
+    const onHash = () => setView(currentView());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -112,24 +137,26 @@ export function App() {
     return <><LoginScreen onAuthenticated={(current) => { setPrincipal(current); setAuthState("authenticated"); setAuthMessage(""); }}/>{authMessage && <div className="global-auth-message" role="alert">{authMessage}</div>}</>;
   }
 
+  if (view === "runtime-naive" && principal.role === "owner") {
+    return <div className="shell">
+      <Sidebar principal={principal} signOut={signOut} />
+      <RuntimeNaive />
+      <nav className="mobile-nav" aria-label="ناوبری موبایل"><a href="/panel/">داشبورد</a><button onClick={signOut}>خروج</button></nav>
+    </div>;
+  }
+
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div>
-        <nav aria-label="ناوبری اصلی">{enabledRoutes.map((route) => <a href={route.path} key={route.path}>{route.label}</a>)}</nav>
-        <ThemeSwitch />
-        <button className="logout-button" onClick={signOut}>خروج امن</button>
-        <div className="stage">S04 Auth · protected preview</div>
-      </aside>
+      <Sidebar principal={principal} signOut={signOut} />
       <main>
         <header><div><p className="eyebrow">Standalone control plane</p><h1>داشبورد PVNaive</h1></div><span className="badge">ورود امن فعال</span></header>
         <section className="notice" role="status">{principal.display_name} · {principal.email} · نقش: {principal.role}</section>
         <section className="metrics" aria-label="شاخص‌ها">{metrics.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>
-        <section className="panel"><div><p className="eyebrow">S04 Authentication</p><h2>هویت و نشست مدیریت فعال است</h2><p>قابلیت‌های کاربران، فروش و Runtime تا عبور مرحله‌های بعدی عمداً غیرفعال می‌مانند.</p></div><button disabled>ایجاد کاربر</button></section>
+        <section className="panel"><div><p className="eyebrow">Naive Runtime</p><h2>مدیریت اکانت‌های Naive آماده است</h2><p>{principal.role === "owner" ? "ابتدا اکانت فعلی سرور به‌صورت امن Import می‌شود؛ سپس ساخت، تغییر رمز، فعال/غیرفعال و لغو اکانت‌ها در دسترس است." : "مدیریت Runtime فقط برای Owner در دسترس است."}</p></div>{principal.role === "owner" ? <a className="button-secondary" href="/panel/#/runtime/naive">مدیریت Naive</a> : <button disabled>فقط Owner</button>}</section>
       </main>
       <nav className="mobile-nav" aria-label="ناوبری موبایل">
-        <a href="/">داشبورد</a>
-        <button onClick={signOut}>خروج</button>
+        <a href="/panel/">داشبورد</a>
+        {principal.role === "owner" ? <a href="/panel/#/runtime/naive">Runtime</a> : <button onClick={signOut}>خروج</button>}
       </nav>
     </div>
   );
