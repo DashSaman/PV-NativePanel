@@ -27,7 +27,7 @@ func (f *fakeRuntimeRPC) Rollback(_ context.Context, request RollbackRequest) (R
 func TestRuntimeCredAdapterMapsTypedProtocol(t *testing.T) {
 	rpc := &fakeRuntimeRPC{
 		inspect: InspectResponse{CaddySHA256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-		apply: ApplyResponse{PreviousSHA256: "old", AppliedSHA256: "new", BackupID: "backup-1", MainPID: 42, NRestarts: 0},
+		apply:   ApplyResponse{PreviousSHA256: "old", AppliedSHA256: "new", BackupID: "backup-1", MainPID: 42, NRestarts: 0},
 	}
 	adapter := NewRuntimeCredAdapter(rpc)
 	inspection, err := adapter.Inspect(context.Background())
@@ -37,7 +37,7 @@ func TestRuntimeCredAdapterMapsTypedProtocol(t *testing.T) {
 	result, err := adapter.Apply(context.Background(), runtimecred.AgentApplyRequest{
 		ExpectedCaddySHA256: rpc.inspect.CaddySHA256,
 		Revision:            "7",
-		Credentials: []runtimecred.AgentCredential{{ID: "c1", Username: "alice", Password: "safe-password-123", Status: runtimecred.CredentialActive}},
+		Credentials:         []runtimecred.AgentCredential{{ID: "c1", Username: "alice", Password: "safe-password-123", Status: runtimecred.CredentialActive}},
 	})
 	if err != nil {
 		t.Fatal(err)
