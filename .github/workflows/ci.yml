@@ -96,6 +96,7 @@ jobs:
               bash tests/db/backup_restore_test.sh
               bash tests/db/backup_collision_test.sh
               bash tests/db/auth_migration_test.sh
+              bash tests/db/naive_runtime_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
             '
 
