@@ -189,7 +189,7 @@
 
   const hydrate = async () => {
     try {
-      const response = await fetch(dataPath, { cache: 'no-store', credentials: 'same-origin' });
+      const response = await fetch(dataPath, { cache: 'no-store' });
       if (!response.ok) throw new Error('local cache unavailable');
       renderPayload(await response.json());
     } catch (_) {
