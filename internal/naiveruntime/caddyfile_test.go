@@ -88,6 +88,27 @@ example.com {
 	}
 }
 
+func TestInspectCaddyfilePreservesLiteralBackslashesLikeCaddyLexer(t *testing.T) {
+	input := []byte(`example.com {
+    forward_proxy {
+        basic_auth real-user "two\\slashes"
+        hide_ip
+    }
+}
+`)
+
+	inspection, err := InspectCaddyfile(input)
+	if err != nil {
+		t.Fatalf("InspectCaddyfile() error = %v", err)
+	}
+	if len(inspection.credentials) != 1 {
+		t.Fatalf("credential count = %d, want 1", len(inspection.credentials))
+	}
+	if got, want := inspection.credentials[0].password, `two\\slashes`; got != want {
+		t.Fatalf("parsed password = %q, want %q", got, want)
+	}
+}
+
 func TestRenderCredentialsPreservesEveryNonCredentialByte(t *testing.T) {
 	input := mustReadFixture(t)
 	first := mustImportedCredential(t, "new.owner", `quote"brace{}\\colon: safe password`, runtimecred.CredentialActive)
@@ -123,6 +144,20 @@ func TestRenderCredentialsPreservesEveryNonCredentialByte(t *testing.T) {
 	}
 	if !bytes.Equal(output, again) {
 		t.Fatal("RenderCredentials() is not deterministic for identical input/state")
+	}
+}
+
+func TestRenderCredentialsUsesCaddyCompatibleQuotedEscapes(t *testing.T) {
+	input := mustReadFixture(t)
+	credential := mustImportedCredential(t, "escape.user", `slash\path and "quote"`, runtimecred.CredentialActive)
+
+	output, err := RenderCredentials(input, []runtimecred.DesiredCredential{credential})
+	if err != nil {
+		t.Fatalf("RenderCredentials() error = %v", err)
+	}
+	want := []byte(`        basic_auth escape.user "slash\path and \"quote\""` + "\n")
+	if !bytes.Contains(output, want) {
+		t.Fatalf("rendered basic_auth bytes are not Caddy-compatible\n--- got ---\n%s\n--- want line ---\n%s", output, want)
 	}
 }
 
