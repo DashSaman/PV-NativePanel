@@ -7,6 +7,7 @@ index="${public_root}/index.html"
 css="${public_root}/assets/site.css"
 script="${public_root}/assets/site.js"
 articles="${public_root}/data/articles.json"
+publisher="${repo_root}/scripts/release/publish-public-site.sh"
 
 for required_file in "${index}" "${css}" "${script}" "${articles}"; do
   [[ -f "${required_file}" ]] || {
@@ -80,5 +81,37 @@ fi
 grep -Fq '@media' "${css}" || { echo 'ERROR: public homepage lacks responsive CSS' >&2; exit 1; }
 grep -Fq 'aria-label=' "${index}" || { echo 'ERROR: public navigation needs accessible labels' >&2; exit 1; }
 grep -Fq 'loading="lazy"' "${index}" || { echo 'ERROR: news imagery must lazy-load below the fold' >&2; exit 1; }
+
+# Live-root publication must replace only the legacy camouflage root that S02
+# backed up at /var/www/naive. It must preserve Caddy byte-for-byte and prove
+# that the already-separated /panel/ route remains available after promotion.
+[[ -f "${publisher}" ]] || {
+  echo 'ERROR: missing safe public-site publisher' >&2
+  exit 1
+}
+bash -n "${publisher}"
+for required in \
+  '/var/www/naive' \
+  '/var/backups/pvnaive/public-site' \
+  'sha256sum /etc/caddy/Caddyfile' \
+  'MainPID' \
+  'NRestarts' \
+  'public-site-before.tar.gz' \
+  'https://${public_host}/' \
+  'https://${public_host}/panel/' \
+  'PUBLIC_SITE_RESULT=PASSED'; do
+  grep -Fq -- "${required}" "${publisher}" || {
+    echo "ERROR: public-site publisher missing contract token: ${required}" >&2
+    exit 1
+  }
+done
+if grep -Eq 'systemctl[[:space:]]+(restart|reload)[[:space:]]+caddy-naive\.service' "${publisher}"; then
+  echo 'ERROR: public-site publication must not restart or reload Caddy' >&2
+  exit 1
+fi
+if grep -Eq '(^|[[:space:]])(cp|mv|install|sed|perl|python[^[:space:]]*)[^\n]*/etc/caddy/Caddyfile' "${publisher}"; then
+  echo 'ERROR: public-site publication must not rewrite the Caddyfile' >&2
+  exit 1
+fi
 
 echo 'PUBLIC_HOMEPAGE_CONTRACT=PASSED'
