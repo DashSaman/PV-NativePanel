@@ -23,7 +23,7 @@ export PVNAIVE_DB_HOST PVNAIVE_DB_PORT PVNAIVE_DB_USER
 
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
-test_db="pvnaive_customer_lifecycle_${test_suffix,,}"
+test_db="pvnaive_migration_test_customer_lifecycle_${test_suffix,,}"
 
 psql_admin() {
   psql --no-psqlrc --set ON_ERROR_STOP=1 \
