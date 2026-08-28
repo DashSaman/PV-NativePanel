@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCustomer, subscriptionURL, type CreateCustomerRequest } from "./customers";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -8,11 +8,15 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, "document");
+});
+
 describe("customer API", () => {
   it("posts the owner customer form with CSRF and idempotency protection", async () => {
-    Object.defineProperty(document, "cookie", {
+    Object.defineProperty(globalThis, "document", {
       configurable: true,
-      value: "__Host-pvnaive_csrf=csrf-test-value",
+      value: { cookie: "__Host-pvnaive_csrf=csrf-test-value" },
     });
     const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({
