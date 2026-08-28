@@ -38,6 +38,7 @@ auth_key_created=0
 unit_installed=0
 service_enabled=0
 marker_created=0
+db_env_schema_updated=0
 rollback_failures=()
 
 postgres_psql() {
@@ -118,6 +119,19 @@ rollback_on_error() {
     fi
   fi
 
+  if [[ "${db_env_schema_updated}" == "1" ]]; then
+    rollback_schema="$(current_schema_version 2>/dev/null || true)"
+    if [[ "${rollback_schema}" == "1" ]]; then
+      PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \
+        bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 1 >/dev/null 2>&1 || \
+        rollback_failures+=("restore-db-env-schema1")
+    elif [[ "${rollback_schema}" == "2" ]]; then
+      :
+    else
+      rollback_failures+=("db-env-schema-consistency")
+    fi
+  fi
+
   verify_caddy_invariants >/dev/null 2>&1 || rollback_failures+=("caddy-invariant")
   if ((${#rollback_failures[@]} == 0)); then
     echo "ROLLBACK=COMPLETED"
@@ -159,7 +173,7 @@ for required_source in \
   db/migrations/0001_initial.up.sql db/migrations/0001_initial.down.sql \
   db/migrations/0002_auth_foundation.up.sql db/migrations/0002_auth_foundation.down.sql \
   db/migrations/SHA256SUMS \
-  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh \
+  scripts/db/lib.sh scripts/db/migrate.sh scripts/db/rollback.sh scripts/db/backup.sh scripts/db/set-expected-schema-version.sh \
   scripts/auth/bootstrap-owner.sh ops/systemd/pvnaive-api.service \
   dist/s04/linux-amd64/pvnaive dist/s04/linux-amd64/pvnaive-password; do
   [[ -f "${repo_root}/${required_source}" ]] || die "bundle file missing: ${required_source}"
@@ -191,6 +205,9 @@ if [[ -f "${marker}" ]]; then
   grep -Fqx '  "stage": "S04-AUTH",' "${marker}" || die "invalid S04 marker"
   grep -Fqx '  "host": "testAmir5-3",' "${marker}" || die "S04 marker host mismatch"
   [[ "$(current_schema_version)" == "${expected_schema_after}" ]] || die "S04 marker exists but schema is not version 2"
+  grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=2' /etc/pvnaive/db.env || die "S04 marker exists but database environment does not expect schema 2"
+  systemctl start pvnaive-db-health.service
+  [[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service is not successful for schema 2"
   systemctl is-active --quiet pvnaive-api.service || die "S04 marker exists but API service is not active"
   ss -H -lnt | awk '$4 == "127.0.0.1:8080" {found=1} END {exit !found}' || die "API is not loopback-only on 127.0.0.1:8080"
   curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health/live >/dev/null
@@ -277,6 +294,12 @@ backup_output="$(
 echo "${backup_output}"
 rollback_backup="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {print $2}' <<<"${backup_output}")"
 [[ -f "${rollback_backup}" ]] || die "schema-v2 encrypted backup was not produced"
+
+PVNAIVE_DB_ENV_FILE=/etc/pvnaive/db.env \
+  bash "${release_link}/scripts/db/set-expected-schema-version.sh" 2
+db_env_schema_updated=1
+systemctl start pvnaive-db-health.service
+[[ "$(systemctl show --property=Result --value pvnaive-db-health.service)" == "success" ]] || die "database health service failed after schema-v2 environment update"
 
 install -o root -g pvnaive -m 0640 /dev/null "${auth_key}"
 dd if=/dev/urandom of="${auth_key}" bs=32 count=1 status=none
