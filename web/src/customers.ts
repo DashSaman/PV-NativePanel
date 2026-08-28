@@ -14,6 +14,11 @@ export type CreateCustomerRequest = {
   };
 };
 
+export type UsageCapability = {
+  available: boolean;
+  reason?: string;
+};
+
 export type CustomerCreateResult = {
   user: {
     id: string;
@@ -39,10 +44,29 @@ export type CustomerCreateResult = {
   generated_password?: string;
   subscription_path: string;
   delivery_notice?: string;
-  usage_capability: {
-    available: boolean;
-    reason?: string;
-  };
+  usage_capability: UsageCapability;
+};
+
+export type CustomerView = {
+  id: string;
+  username: string;
+  status: string;
+  service_term_id: string;
+  service_state: string;
+  quota_bytes: number | null;
+  duration_seconds: number;
+  start_policy: string;
+  starts_at?: string;
+  first_connected_at?: string;
+  expires_at?: string;
+  runtime_credential_id: string;
+  subscription_available: boolean;
+  usage_capability: UsageCapability;
+};
+
+export type SubscriptionDelivery = {
+  subscription_path: string;
+  delivery_notice?: string;
 };
 
 export type CustomerAPIError = Error & { code?: string; status?: number };
@@ -58,36 +82,77 @@ async function parseJSON(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;
 }
 
+function mutationHeaders(): Record<string, string> {
+  const csrf = readCookie("__Host-pvnaive_csrf", browserCookieSource());
+  if (!csrf) throw new Error("CSRF token is unavailable.");
+  return {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrf,
+    "Idempotency-Key": `customer-${crypto.randomUUID()}`,
+  };
+}
+
+function apiError(body: Record<string, unknown>, status: number): CustomerAPIError {
+  const error = new Error(
+    typeof body.message === "string" ? body.message : "Customer request failed.",
+  ) as CustomerAPIError;
+  error.code = typeof body.code === "string" ? body.code : undefined;
+  error.status = status;
+  return error;
+}
+
 export async function createCustomer(
   input: CreateCustomerRequest,
   fetcher: Fetcher = fetch,
 ): Promise<CustomerCreateResult> {
-  const csrf = readCookie("__Host-pvnaive_csrf", browserCookieSource());
-  if (!csrf) throw new Error("CSRF token is unavailable.");
-
   const response = await fetcher("/api/v1/customers", {
     method: "POST",
     credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRF-Token": csrf,
-      "Idempotency-Key": `customer-${crypto.randomUUID()}`,
-    },
+    headers: mutationHeaders(),
     body: JSON.stringify(input),
   });
   const body = await parseJSON(response);
-  if (!response.ok) {
-    const error = new Error(
-      typeof body.message === "string" ? body.message : "Customer request failed.",
-    ) as CustomerAPIError;
-    error.code = typeof body.code === "string" ? body.code : undefined;
-    error.status = response.status;
-    throw error;
-  }
+  if (!response.ok) throw apiError(body, response.status);
   return body as unknown as CustomerCreateResult;
+}
+
+export async function listCustomers(fetcher: Fetcher = fetch): Promise<CustomerView[]> {
+  const response = await fetcher("/api/v1/customers", {
+    method: "GET",
+    credentials: "same-origin",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return Array.isArray(body.customers) ? (body.customers as CustomerView[]) : [];
+}
+
+export async function rotateSubscription(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<SubscriptionDelivery> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/subscription/rotate`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: "{}",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as SubscriptionDelivery;
 }
 
 export function subscriptionURL(path: string, base?: string): string {
   const source = base || (typeof window === "undefined" ? "https://localhost/" : window.location.href);
   return new URL(path, source).toString();
+}
+
+export function quotaLabel(bytes: number | null): string {
+  if (bytes === null || bytes === undefined) return "نامحدود";
+  return `${Math.round(bytes / 1073741824)} GB`;
+}
+
+export function expiryLabel(value?: string): string {
+  if (!value) return "پس از اولین اتصال";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("fa-IR");
 }
