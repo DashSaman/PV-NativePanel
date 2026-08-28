@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -96,14 +97,19 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	subscriptionHost, err := subscriptionProxyHost(os.Getenv, customerService != nil && subscriptionService != nil)
+	if err != nil {
+		return err
+	}
 
 	handler := httpapi.NewServer(httpapi.ServerConfig{
-		AuthService:         service,
-		AuthStore:           store,
-		MFAKey:              mfaKey,
-		RuntimeService:      runtimeService,
-		CustomerService:     customerService,
-		SubscriptionService: subscriptionService,
+		AuthService:           service,
+		AuthStore:             store,
+		MFAKey:                mfaKey,
+		RuntimeService:        runtimeService,
+		CustomerService:       customerService,
+		SubscriptionService:   subscriptionService,
+		SubscriptionProxyHost: subscriptionHost,
 	})
 	server := &http.Server{
 		Addr:              listen,
@@ -205,6 +211,20 @@ func buildCustomerServices(
 		return nil, nil, err
 	}
 	return customerService, subscriptionService, nil
+}
+
+func subscriptionProxyHost(getenv func(string) string, enabled bool) (string, error) {
+	if !enabled {
+		return "", nil
+	}
+	host := strings.TrimSpace(getenv("PVNAIVE_NAIVE_PUBLIC_HOST"))
+	if host == "" {
+		return "", errors.New("PVNAIVE_NAIVE_PUBLIC_HOST is required when Naive customer subscriptions are enabled")
+	}
+	if _, err := subscription.BuildNaiveURI("pvnaive-probe", "probe-secret", host); err != nil {
+		return "", fmt.Errorf("invalid PVNAIVE_NAIVE_PUBLIC_HOST: %w", err)
+	}
+	return host, nil
 }
 
 func databaseDSN(getenv func(string) string) (string, error) {
