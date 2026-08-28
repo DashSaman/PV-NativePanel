@@ -76,20 +76,21 @@ plaintext_dump="$(find "${temp_root}" -type f -name '*.dump' -print -quit)"
 }
 
 # Production rollback must accept the verified backup taken immediately before
-# the migration being reverted. For a v3 -> v2 rollback, that backup is schema 2.
+# the migration being reverted. For a v4 -> v3 rollback, that backup is schema 3.
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${rollback_db}"
-v2_migrations="${temp_root}/migrations-v2"
-mkdir -p "${v2_migrations}"
-cp "${repo_root}"/db/migrations/0001_* "${v2_migrations}/"
-cp "${repo_root}"/db/migrations/0002_* "${v2_migrations}/"
+v3_migrations="${temp_root}/migrations-v3"
+mkdir -p "${v3_migrations}"
+cp "${repo_root}"/db/migrations/0001_* "${v3_migrations}/"
+cp "${repo_root}"/db/migrations/0002_* "${v3_migrations}/"
+cp "${repo_root}"/db/migrations/0003_* "${v3_migrations}/"
 (
-  cd "${v2_migrations}"
+  cd "${v3_migrations}"
   sha256sum *.sql > SHA256SUMS
 )
-PVNAIVE_DB_NAME="${rollback_db}" PVNAIVE_MIGRATIONS_DIR="${v2_migrations}" \
+PVNAIVE_DB_NAME="${rollback_db}" PVNAIVE_MIGRATIONS_DIR="${v3_migrations}" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 rollback_schema_before="$(psql_admin --dbname "${rollback_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${rollback_schema_before}" == "2" ]] || { echo "ERROR: rollback fixture did not reach schema 2" >&2; exit 1; }
+[[ "${rollback_schema_before}" == "3" ]] || { echo "ERROR: rollback fixture did not reach schema 3" >&2; exit 1; }
 
 rollback_backup_output="$(
   PVNAIVE_DB_NAME="${rollback_db}" \
@@ -100,12 +101,12 @@ rollback_backup_output="$(
 )"
 rollback_backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {value=$2} END {print value}' <<< "${rollback_backup_output}")"
 [[ -f "${rollback_backup_file}" ]] || { echo "ERROR: pre-migration rollback backup was not created" >&2; exit 1; }
-grep -Fq '"schema_version": 2,' "$(dirname -- "${rollback_backup_file}")/metadata.json"
+grep -Fq '"schema_version": 3,' "$(dirname -- "${rollback_backup_file}")/metadata.json"
 
 PVNAIVE_DB_NAME="${rollback_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 rollback_schema_migrated="$(psql_admin --dbname "${rollback_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${rollback_schema_migrated}" == "3" ]] || { echo "ERROR: rollback fixture did not reach schema 3" >&2; exit 1; }
+[[ "${rollback_schema_migrated}" == "4" ]] || { echo "ERROR: rollback fixture did not reach schema 4" >&2; exit 1; }
 
 rollback_output="$(
   PVNAIVE_DB_NAME="${rollback_db}" \
@@ -115,9 +116,9 @@ rollback_output="$(
   PVNAIVE_BACKUP_IDENTITY_FILE="${temp_root}/backup.agekey" \
     "${repo_root}/scripts/db/rollback.sh"
 )"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=2' <<< "${rollback_output}"
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=3' <<< "${rollback_output}"
 grep -Fqx 'PVNAIVE_ROLLBACK_RESULT=PASSED' <<< "${rollback_output}"
 rollback_schema_after="$(psql_admin --dbname "${rollback_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${rollback_schema_after}" == "2" ]] || { echo "ERROR: production rollback did not return schema 3 to 2" >&2; exit 1; }
+[[ "${rollback_schema_after}" == "3" ]] || { echo "ERROR: production rollback did not return schema 4 to 3" >&2; exit 1; }
 
 echo "PVNAIVE_DB_BACKUP_RESTORE_TEST=PASSED"
