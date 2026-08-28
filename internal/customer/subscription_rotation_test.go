@@ -10,14 +10,14 @@ import (
 
 type rotationStore struct {
 	fakeCustomerStore
-	claim              bool
-	claimErr           error
-	claimActor         string
-	claimKey           string
-	revoked            int
-	created            int
-	lastCreated        CreateSubscriptionTokenRecord
-	target             SubscriptionTarget
+	claim       bool
+	claimErr    error
+	claimActor  string
+	claimKey    string
+	revoked     int
+	created     int
+	lastCreated CreateSubscriptionTokenRecord
+	target      SubscriptionTarget
 }
 
 func (s *rotationStore) SubscriptionTargetTx(context.Context, *sql.Tx, string) (SubscriptionTarget, error) {
@@ -42,7 +42,7 @@ func TestRotateSubscriptionClaimsIdempotencyBeforeRevokingOldToken(t *testing.T)
 		TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1", RuntimeCredentialID: "runtime-1",
 	}}
 	service := NewService(store, nil, time.Now)
-	raw, err := service.RotateSubscription(context.Background(), nil, "owner-1", "customer-rotate-0001", "user-1")
+	raw, err := service.RotateSubscription(context.Background(), &sql.Tx{}, "owner-1", "customer-rotate-0001", "user-1")
 	if err != nil {
 		t.Fatalf("RotateSubscription() error = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestRotateSubscriptionReplayNeverRevokesAgain(t *testing.T) {
 		TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1", RuntimeCredentialID: "runtime-1",
 	}}
 	service := NewService(store, nil, time.Now)
-	_, err := service.RotateSubscription(context.Background(), nil, "owner-1", "customer-rotate-0001", "user-1")
+	_, err := service.RotateSubscription(context.Background(), &sql.Tx{}, "owner-1", "customer-rotate-0001", "user-1")
 	if !errors.Is(err, ErrSubscriptionRotationReplay) {
 		t.Fatalf("RotateSubscription() error = %v, want replay", err)
 	}
