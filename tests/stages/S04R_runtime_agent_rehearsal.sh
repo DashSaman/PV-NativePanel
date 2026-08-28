@@ -25,6 +25,19 @@ grep -Fq 'productionCaddyBinary   = "/usr/local/bin/caddy"' internal/runtimeagen
 grep -Fq 'productionServiceName   = "caddy-naive.service"' internal/runtimeagent/operator.go
 grep -Fq 'productionBackupRoot    = "/var/backups/pvnaive/caddy"' internal/runtimeagent/operator.go
 
+# systemd evaluates ReadWritePaths before ExecStart. The runtime directory must
+# therefore be created by systemd itself; the Go process cannot be responsible
+# for creating a path required by its own mount namespace setup.
+grep -Fq 'RuntimeDirectory=pvnaive' ops/systemd/pvnaive-runtime-agent.service || {
+  echo "ERROR: runtime agent unit must let systemd create /run/pvnaive before namespace setup" >&2
+  exit 1
+}
+grep -Fq 'RuntimeDirectoryMode=0750' ops/systemd/pvnaive-runtime-agent.service || {
+  echo "ERROR: runtime agent RuntimeDirectoryMode must be 0750" >&2
+  exit 1
+}
+grep -Fq 'ReadWritePaths=/run/pvnaive' ops/systemd/pvnaive-runtime-agent.service
+
 grep -Fq 'RestrictAddressFamilies=AF_UNIX' ops/systemd/pvnaive-runtime-agent.service
 grep -Fq 'IPAddressDeny=any' ops/systemd/pvnaive-runtime-agent.service
 if grep -Eq 'AF_INET|AF_INET6' ops/systemd/pvnaive-runtime-agent.service; then
