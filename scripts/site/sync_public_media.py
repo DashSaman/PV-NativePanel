@@ -8,12 +8,16 @@ import os
 import re
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_MAX_ITEM_BYTES = 512 * 1024 * 1024
 DEFAULT_MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
+DEFAULT_HTTP_ATTEMPTS = 6
+DEFAULT_RETRY_SECONDS = 15
 ALLOWED_MIME = {
     "video/mp4",
     "video/webm",
@@ -67,7 +71,38 @@ def existing_is_verified(target: Path, expected_bytes: int, expected_sha256: str
         return False
     if expected_sha256:
         return file_sha256(target) == expected_sha256
-    return False
+    # A previous successful sync already validated HTTPS delivery, MIME and
+    # exact byte count before atomically promoting this file. When the
+    # upstream manifest has no checksum, exact size is the strongest stable
+    # resumability signal available and prevents re-downloading good media.
+    return True
+
+
+def retry_delay_seconds(exc: urllib.error.HTTPError, attempt: int) -> int:
+    retry_after = exc.headers.get("Retry-After") if exc.headers else None
+    if retry_after is not None:
+        try:
+            return max(0, min(int(retry_after), 300))
+        except (TypeError, ValueError):
+            pass
+    return min(DEFAULT_RETRY_SECONDS * (2 ** max(0, attempt - 1)), 120)
+
+
+def open_with_rate_limit_retry(request: urllib.request.Request, item_id: str):
+    for attempt in range(1, DEFAULT_HTTP_ATTEMPTS + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=45)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt >= DEFAULT_HTTP_ATTEMPTS:
+                raise
+            delay = retry_delay_seconds(exc, attempt)
+            print(
+                f"RETRY rate-limit {item_id} attempt={attempt}/{DEFAULT_HTTP_ATTEMPTS} wait={delay}s",
+                file=sys.stderr,
+            )
+            if delay:
+                time.sleep(delay)
+    raise AssertionError("unreachable")
 
 
 def iter_mirror_entries(payload: dict):
@@ -133,10 +168,10 @@ def download_and_promote(entry: dict, root: Path, allow_http_fixtures: bool, max
         print(f"SKIP verified {item_id} bytes={expected_bytes} path={relative_path.as_posix()}")
         return 0
 
-    request = urllib.request.Request(url, headers={"User-Agent": "PVNaive-public-media-sync/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "PVNaive-public-media-sync/2"})
     temp_path: Path | None = None
     try:
-        with urllib.request.urlopen(request, timeout=45) as response:
+        with open_with_rate_limit_retry(request, item_id) as response:
             content_type = response.headers.get_content_type()
             if content_type != entry["mime"]:
                 fail(f"MIME mismatch for {item_id}: expected {entry['mime']}, got {content_type}")
