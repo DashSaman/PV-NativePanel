@@ -15,3 +15,5 @@ ALTER TABLE pvnaive.runtime_revisions
     DROP COLUMN IF EXISTS idempotency_key;
 
 DROP TABLE IF EXISTS pvnaive.naive_runtime_credentials;
+
+DELETE FROM pvnaive.schema_migrations WHERE version = 3;
