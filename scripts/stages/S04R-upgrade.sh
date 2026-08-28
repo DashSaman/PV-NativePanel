@@ -15,6 +15,10 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_dir="/var/backups/pvnaive/s04r/${stamp}"
 web_release_dir=""
 web_current_before=""
+preview_release_root="/var/www/pvnaive-preview/releases"
+preview_current="/var/www/pvnaive-preview/current"
+preview_release_dir=""
+preview_current_before=""
 db_release_before=""
 db_backup_path=""
 schema_before=""
@@ -93,6 +97,9 @@ runtime_unit_existed=0
 if systemctl is-active --quiet pvnaive-api.service; then api_was_active=1; fi
 if systemctl is-active --quiet pvnaive-runtime-agent.service; then runtime_was_active=1; fi
 web_current_before="$(readlink -f /opt/pvnaive/web/current 2>/dev/null || true)"
+[[ -d "${preview_release_root}" && -L "${preview_current}" ]] || fail 'Caddy preview publication baseline is missing'
+preview_current_before="$(readlink -f "${preview_current}" 2>/dev/null || true)"
+[[ -n "${preview_current_before}" && -d "${preview_current_before}" ]] || fail 'Caddy preview current target is invalid'
 db_release_before="$(readlink -f /opt/pvnaive/db/current 2>/dev/null || true)"
 
 install -d -o root -g root -m 0700 "${backup_dir}"
@@ -103,6 +110,7 @@ cp -a -- "${caddy_file}" "${backup_dir}/Caddyfile.before"
 [[ "${api_unit_existed}" == "0" ]] || cp -a -- /etc/systemd/system/pvnaive-api.service "${backup_dir}/pvnaive-api.service.before"
 [[ "${runtime_unit_existed}" == "0" ]] || cp -a -- /etc/systemd/system/pvnaive-runtime-agent.service "${backup_dir}/pvnaive-runtime-agent.service.before"
 printf '%s\n' "${web_current_before}" >"${backup_dir}/web-current.before"
+printf '%s\n' "${preview_current_before}" >"${backup_dir}/preview-current.before"
 printf '%s\n' "${db_release_before}" >"${backup_dir}/db-current.before"
 printf '%s\n' "${current_caddy_sha}" >"${backup_dir}/caddy-sha256.before"
 printf '%s\n' "${caddy_mainpid_before}" >"${backup_dir}/caddy-mainpid.before"
@@ -153,6 +161,13 @@ rollback_on_error() {
     ln -sfn -- "${web_current_before}" /opt/pvnaive/web/current
   fi
   [[ -z "${web_release_dir}" ]] || rm -rf -- "${web_release_dir}"
+
+  if [[ -n "${preview_current_before}" && -d "${preview_current_before}" ]]; then
+    rm -f -- "${preview_current}.rollback"
+    ln -s -- "${preview_current_before}" "${preview_current}.rollback"
+    mv -Tf -- "${preview_current}.rollback" "${preview_current}"
+  fi
+  [[ -z "${preview_release_dir}" ]] || rm -rf -- "${preview_release_dir}"
 
   if [[ "${migration_applied}" == "1" && -n "${db_backup_path}" ]]; then
     if PVNAIVE_DB_HOST=/var/run/postgresql \
@@ -217,10 +232,27 @@ source_commit="$(awk -F'"' '$2=="source_commit" {print $4}' "${bundle_root}/RELE
 [[ "${source_commit}" =~ ^[0-9a-f]{40}$ ]] || fail 'invalid bundle source commit'
 release_id="${source_commit:0:12}"
 web_release_dir="/opt/pvnaive/web/releases/${stamp}-${release_id}"
+preview_release_dir="${preview_release_root}/${stamp}-${release_id}"
+[[ ! -e "${preview_release_dir}" && ! -L "${preview_release_dir}" ]] || fail 'preview release destination already exists'
+
 install -d -o root -g pvnaive -m 0750 "${web_release_dir}"
 cp -a -- "${bundle_root}/web/." "${web_release_dir}/"
 chown -R root:pvnaive "${web_release_dir}"
 ln -sfn -- "${web_release_dir}" /opt/pvnaive/web/current
+
+install -d -o root -g caddy -m 0750 "${preview_release_dir}"
+cp -a -- "${bundle_root}/web/." "${preview_release_dir}/"
+chown -R root:caddy "${preview_release_dir}"
+find "${preview_release_dir}" -type d -exec chmod 0750 {} +
+find "${preview_release_dir}" -type f -exec chmod 0640 {} +
+runuser -u caddy -- test -r "${preview_release_dir}/index.html" || fail 'Caddy cannot read staged preview index'
+
+panel_script="$(sed -nE 's@.*<script[^>]+src="([^"]+\.js)"[^>]*>.*@\1@p' "${preview_release_dir}/index.html" | head -n1)"
+panel_css="$(sed -nE 's@.*<link[^>]+href="([^"]+\.css)"[^>]*>.*@\1@p' "${preview_release_dir}/index.html" | head -n1)"
+[[ "${panel_script}" == /panel/assets/*.js ]] || fail "web build script is not under /panel/assets: ${panel_script:-missing}"
+[[ "${panel_css}" == /panel/assets/*.css ]] || fail "web build stylesheet is not under /panel/assets: ${panel_css:-missing}"
+runuser -u caddy -- test -r "${preview_release_dir}/${panel_script#/panel/}" || fail 'Caddy cannot read staged preview script'
+runuser -u caddy -- test -r "${preview_release_dir}/${panel_css#/panel/}" || fail 'Caddy cannot read staged preview stylesheet'
 
 install -o root -g pvnaive -m 0750 "${bundle_root}/bin/pvnaive" /opt/pvnaive/bin/pvnaive
 install -o root -g pvnaive -m 0750 "${bundle_root}/bin/pvnaive-password" /opt/pvnaive/bin/pvnaive-password
@@ -287,10 +319,42 @@ final_caddy_restarts="$(systemctl show caddy-naive.service --property=NRestarts 
 [[ "${final_caddy_restarts}" == "${caddy_nrestarts_before}" ]] || fail 'Caddy NRestarts changed during S04R upgrade'
 /usr/local/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || fail 'Caddy validation failed after S04R upgrade'
 
+rm -f -- "${preview_current}.new"
+ln -s -- "${preview_release_dir}" "${preview_current}.new"
+mv -Tf -- "${preview_current}.new" "${preview_current}"
+[[ "$(readlink -f "${preview_current}")" == "${preview_release_dir}" ]] || fail 'preview current promotion failed'
+
+panel_index_body="${backup_dir}/panel-index.after"
+panel_script_body="${backup_dir}/panel-script.after"
+panel_css_body="${backup_dir}/panel-style.after"
+curl --fail --silent --show-error --resolve 'namir.softarg.ir:443:127.0.0.1' \
+  'https://namir.softarg.ir/panel/' -o "${panel_index_body}"
+[[ "$(sha256sum "${panel_index_body}" | awk '{print $1}')" == "$(sha256sum "${preview_release_dir}/index.html" | awk '{print $1}')" ]] || \
+  fail 'served panel index does not match promoted preview release'
+curl --fail --silent --show-error --resolve 'namir.softarg.ir:443:127.0.0.1' \
+  "https://namir.softarg.ir${panel_script}" -o "${panel_script_body}"
+[[ "$(sha256sum "${panel_script_body}" | awk '{print $1}')" == "$(sha256sum "${preview_release_dir}/${panel_script#/panel/}" | awk '{print $1}')" ]] || \
+  fail 'served panel script does not match promoted preview release'
+curl --fail --silent --show-error --resolve 'namir.softarg.ir:443:127.0.0.1' \
+  "https://namir.softarg.ir${panel_css}" -o "${panel_css_body}"
+[[ "$(sha256sum "${panel_css_body}" | awk '{print $1}')" == "$(sha256sum "${preview_release_dir}/${panel_css#/panel/}" | awk '{print $1}')" ]] || \
+  fail 'served panel stylesheet does not match promoted preview release'
+grep -Fq 'مدیریت اکانت‌های Naive' "${panel_script_body}" || fail 'served panel script is missing Naive runtime manager marker'
+
+final_caddy_sha="$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')"
+final_caddy_pid="$(systemctl show caddy-naive.service --property=MainPID --value)"
+final_caddy_restarts="$(systemctl show caddy-naive.service --property=NRestarts --value)"
+[[ "${final_caddy_sha}" == "${current_caddy_sha}" ]] || fail 'Caddyfile changed during preview publication'
+[[ "${final_caddy_pid}" == "${caddy_mainpid_before}" ]] || fail 'Caddy MainPID changed during preview publication'
+[[ "${final_caddy_restarts}" == "${caddy_nrestarts_before}" ]] || fail 'Caddy NRestarts changed during preview publication'
+
 trap - ERR HUP INT TERM
 echo "S04R_RESULT=PASSED"
 echo "SOURCE_COMMIT=${source_commit}"
 echo "SCHEMA_VERSION=${schema_after}"
+echo "WEB_PREVIEW_RELEASE=${preview_release_dir}"
+echo "WEB_PANEL_SCRIPT=${panel_script}"
+echo "WEB_PANEL_STYLESHEET=${panel_css}"
 echo "CADDY_SHA256_AFTER=${final_caddy_sha}"
 echo "CADDY_MainPID_AFTER=${final_caddy_pid}"
 echo "CADDY_NRestarts_AFTER=${final_caddy_restarts}"
