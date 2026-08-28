@@ -54,7 +54,7 @@ type fakeCustomerRuntimeMutation struct {
 }
 
 func (f *fakeCustomerRuntimeMutation) Credential() runtimecred.CredentialView { return f.view }
-func (f *fakeCustomerRuntimeMutation) RuntimeRevisionID() string             { return "runtime-rev-1" }
+func (f *fakeCustomerRuntimeMutation) RuntimeRevisionID() string              { return "runtime-rev-1" }
 func (f *fakeCustomerRuntimeMutation) CommitAndFinalize(context.Context, *sql.Tx) error {
 	if f.aborted {
 		return errors.New("mutation aborted")
@@ -80,7 +80,7 @@ func TestCreateCustomerCreatesBusinessRowsAndBindsStableRuntimeCredential(t *tes
 	now := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
 	store := &fakeCustomerStore{}
 	runtimeMutation := &fakeCustomerRuntimeMutation{
-		view: runtimecred.CredentialView{ID: "runtime-uuid-1", Username: "customer1", Status: runtimecred.CredentialActive},
+		view:     runtimecred.CredentialView{ID: "runtime-uuid-1", Username: "customer1", Status: runtimecred.CredentialActive},
 		password: "generated-secret",
 	}
 	var runtimeInput runtimecred.CreateInput
@@ -123,7 +123,7 @@ func TestCreateCustomerCreatesBusinessRowsAndBindsStableRuntimeCredential(t *tes
 func TestCreateCustomerRollsRuntimeBackWhenBusinessBindingFails(t *testing.T) {
 	store := &fakeCustomerStore{bindingError: errors.New("binding refused")}
 	runtimeMutation := &fakeCustomerRuntimeMutation{
-		view: runtimecred.CredentialView{ID: "runtime-uuid-2", Username: "customer2", Status: runtimecred.CredentialActive},
+		view:     runtimecred.CredentialView{ID: "runtime-uuid-2", Username: "customer2", Status: runtimecred.CredentialActive},
 		password: "secret-that-must-disappear",
 	}
 	service := NewService(store, func(context.Context, *sql.Tx, string, string, runtimecred.CreateInput) (RuntimeMutation, error) {
