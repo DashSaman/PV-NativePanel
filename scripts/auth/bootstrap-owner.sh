@@ -120,6 +120,13 @@ COMMIT;
 SQL
 unset email_sql display_sql hash_sql
 
+# The file is created and populated by root, but psql below deliberately runs
+# as the postgres OS user. Hand ownership to postgres only after the complete
+# SQL payload has been written, while retaining mode 0600 so no other account
+# can read the password hash or bootstrap data.
+chown postgres:postgres "${sql_file}"
+chmod 0600 "${sql_file}"
+
 postgres_psql --dbname "${PVNAIVE_DB_NAME}" --file "${sql_file}" >/dev/null
 rm -f -- "${sql_file}"
 trap - EXIT HUP INT TERM
