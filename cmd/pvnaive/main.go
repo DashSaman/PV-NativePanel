@@ -16,12 +16,16 @@ import (
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
+	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
+	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
-	defaultListen      = "127.0.0.1:8080"
-	defaultAuthKeyFile = "/etc/pvnaive/auth.key"
+	defaultListen             = "127.0.0.1:8080"
+	defaultAuthKeyFile        = "/etc/pvnaive/auth.key"
+	defaultRuntimeKeyID       = "runtime-v1"
+	defaultRuntimeAgentSocket = runtimeagent.DefaultSocketPath
 )
 
 func main() {
@@ -78,7 +82,20 @@ func run() error {
 		return err
 	}
 
-	handler := httpapi.NewServer(httpapi.ServerConfig{AuthService: service, AuthStore: store, MFAKey: mfaKey})
+	runtimeService, runtimeKey, err := buildRuntimeService(db, os.Getenv)
+	if err != nil {
+		return err
+	}
+	if runtimeKey != nil {
+		defer zeroBytes(runtimeKey)
+	}
+
+	handler := httpapi.NewServer(httpapi.ServerConfig{
+		AuthService:    service,
+		AuthStore:      store,
+		MFAKey:         mfaKey,
+		RuntimeService: runtimeService,
+	})
 	server := &http.Server{
 		Addr:              listen,
 		Handler:           handler,
@@ -113,6 +130,44 @@ func run() error {
 		}
 		return <-serveErr
 	}
+}
+
+func buildRuntimeService(db *sql.DB, getenv func(string) string) (*runtimecred.Service, []byte, error) {
+	keyFile := getenv("PVNAIVE_RUNTIME_KEY_FILE")
+	if keyFile == "" {
+		// S04 auth rehearsal is intentionally frozen at schema v2. Runtime
+		// management is enabled only by the S04R deployment contract.
+		return nil, nil, nil
+	}
+	key, err := os.ReadFile(keyFile)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read runtime key: %w", err)
+	}
+	if len(key) != 32 {
+		zeroBytes(key)
+		return nil, nil, fmt.Errorf("runtime key must be exactly 32 bytes, got %d", len(key))
+	}
+	store, err := runtimecred.NewStore(db)
+	if err != nil {
+		zeroBytes(key)
+		return nil, nil, err
+	}
+	keyID := getenv("PVNAIVE_RUNTIME_KEY_ID")
+	if keyID == "" {
+		keyID = defaultRuntimeKeyID
+	}
+	socketPath := getenv("PVNAIVE_RUNTIME_AGENT_SOCKET")
+	if socketPath == "" {
+		socketPath = defaultRuntimeAgentSocket
+	}
+	client := runtimeagent.NewClient(socketPath)
+	adapter := runtimeagent.NewRuntimeCredAdapter(client)
+	service, err := runtimecred.NewService(store, adapter, key, keyID)
+	if err != nil {
+		zeroBytes(key)
+		return nil, nil, err
+	}
+	return service, key, nil
 }
 
 func databaseDSN(getenv func(string) string) (string, error) {
@@ -152,9 +207,6 @@ func databaseDSN(getenv func(string) string) (string, error) {
 		return "", fmt.Errorf("invalid PVNAIVE_DB_CONNECT_TIMEOUT %q", timeout)
 	}
 
-	// pgx still reads PGPASSFILE from the process environment. The explicit
-	// connection string prevents it from silently falling back to the OS user
-	// or an empty database name when only PVNAIVE_DB_* variables are present.
 	return fmt.Sprintf(
 		"host=%s port=%s dbname=%s user=%s connect_timeout=%s sslmode=disable",
 		host, port, name, user, timeout,
