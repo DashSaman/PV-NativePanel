@@ -144,7 +144,11 @@ func RenderCredentials(input []byte, credentials []runtimecred.DesiredCredential
 		replacement.WriteString("basic_auth ")
 		replacement.WriteString(credential.Username)
 		replacement.WriteByte(' ')
-		replacement.WriteString(quoteCaddyToken(credential.Password()))
+		encodedPassword, err := quoteCaddyToken(credential.Password())
+		if err != nil {
+			return nil, fmt.Errorf("naiveruntime: render password for %q: %w", credential.Username, err)
+		}
+		replacement.WriteString(encodedPassword)
 		replacement.WriteString(inspection.newline)
 	}
 
@@ -351,43 +355,37 @@ func tokenValue(input []byte, tok token) (string, error) {
 	var out strings.Builder
 	out.Grow(len(raw))
 	for i := 0; i < len(raw); i++ {
-		if raw[i] != '\\' {
-			out.WriteByte(raw[i])
+		if raw[i] == '\\' && i+1 < len(raw) && raw[i+1] == '"' {
+			out.WriteByte('"')
+			i++
 			continue
 		}
-		if i+1 >= len(raw) {
-			return "", errors.New("dangling quoted-token escape")
-		}
-		next := raw[i+1]
-		switch next {
-		case '\\', '"':
-			out.WriteByte(next)
-		default:
-			// Unknown escapes are preserved literally so import never silently
-			// changes a working secret before the exact Caddy validation gate.
-			out.WriteByte('\\')
-			out.WriteByte(next)
-		}
-		i++
+		out.WriteByte(raw[i])
 	}
 	return out.String(), nil
 }
 
-func quoteCaddyToken(value string) string {
+func quoteCaddyToken(value string) (string, error) {
+	if strings.HasSuffix(value, "\\") {
+		return "", errors.New("password ending in backslash is not safely representable by the conservative Caddy renderer")
+	}
+	for i := 1; i < len(value); i++ {
+		if value[i] == '"' && value[i-1] == '\\' {
+			return "", errors.New("password containing backslash immediately before quote is not safely representable by the conservative Caddy renderer")
+		}
+	}
+
 	var out strings.Builder
 	out.Grow(len(value) + 2)
 	out.WriteByte('"')
 	for i := 0; i < len(value); i++ {
-		switch value[i] {
-		case '\\', '"':
+		if value[i] == '"' {
 			out.WriteByte('\\')
-			out.WriteByte(value[i])
-		default:
-			out.WriteByte(value[i])
 		}
+		out.WriteByte(value[i])
 	}
 	out.WriteByte('"')
-	return out.String()
+	return out.String(), nil
 }
 
 func lineBounds(input []byte, offset int) (start, end int, newline string) {
