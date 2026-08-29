@@ -43,12 +43,7 @@ prepare_forwardproxy() {
 
   (
     cd "${src}"
-    # Run both the pinned upstream suite and PVNaive exact-byte/failure tests.
     go test ./...
-    # The pin contains a pre-existing testing.T.Fatal-from-goroutine vet finding
-    # in httpclient_test.go under Go 1.25. After the full tests pass, remove only
-    # test sources from this disposable checkout and vet the exact production
-    # source copied into the final vendor tree.
     find . -type f -name '*_test.go' -delete
     go vet ./...
   )
@@ -59,9 +54,13 @@ build_vendor_candidate() {
   local patched_src="$2"
   local output="$3"
   local build_root="${work_root}/caddy-build"
-  local vendor_fp="${build_root}/vendor/github.com/caddyserver/forwardproxy"
+  local local_fp="${build_root}/forwardproxy"
 
   mkdir -p "${build_root}"
+  cp -a "${patched_src}" "${local_fp}"
+  rm -rf -- "${local_fp}/.git"
+  find "${local_fp}" -type f -name '*_test.go' -delete
+
   cat > "${build_root}/main.go" <<'GOEOF'
 package main
 
@@ -80,20 +79,14 @@ GOEOF
     cd "${build_root}"
     go mod init caddy >/dev/null
     go get "github.com/caddyserver/caddy/v2@${caddy_version}" >/dev/null
-    go get "github.com/caddyserver/forwardproxy@${forwardproxy_commit}" >/dev/null
+    # The upstream accounting source is already independently fetched and
+    # verified by exact Git SHA above. A synthetic module version plus a fixed
+    # relative replacement lets `go mod vendor` consume those audited bytes
+    # without asking the Go proxy to resolve an unadvertised Git commit.
+    go mod edit -require=github.com/caddyserver/forwardproxy@v0.0.0
+    go mod edit -replace=github.com/caddyserver/forwardproxy=./forwardproxy
     go mod tidy >/dev/null
-    go list -m -f '{{.Version}}' github.com/caddyserver/forwardproxy > "${work_root}/forwardproxy.module-version"
-    # The final binary is built from a vendor tree so Go build metadata never
-    # contains a random local `replace => /tmp/...` path. The pinned module graph
-    # stays intact while the audited PVNaive patch replaces only the vendored
-    # forwardproxy source bytes.
     go mod vendor
-    rm -rf -- "${vendor_fp}"
-    mkdir -p "${vendor_fp}"
-    cp -a "${patched_src}/." "${vendor_fp}/"
-    rm -rf -- "${vendor_fp}/.git"
-    rm -f -- "${vendor_fp}/go.mod" "${vendor_fp}/go.sum"
-    find "${vendor_fp}" -type f -name '*_test.go' -delete
 
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
       go build -mod=vendor -trimpath -buildvcs=false \
@@ -102,11 +95,9 @@ GOEOF
   )
 }
 
-src_a="${work_a}/forwardproxy"
+src_a="${work_a}/forwardproxy-src"
 prepare_forwardproxy "${src_a}"
-# Reproduce from a second, different absolute workspace. If any build metadata
-# leaks either random path, the final SHA comparison below fails.
-src_b="${work_b}/forwardproxy"
+src_b="${work_b}/forwardproxy-src"
 mkdir -p "${src_b}"
 cp -a "${src_a}/." "${src_b}/"
 
@@ -123,21 +114,19 @@ sha_secondary="$(sha256sum "${secondary}" | awk '{print $1}')"
   exit 1
 }
 cmp -s "${primary}" "${secondary}" || { echo 'ERROR: reproducible SHA matched but binary bytes differ' >&2; exit 1; }
-forwardproxy_module_version="$(cat "${work_a}/forwardproxy.module-version")"
-[[ "$(cat "${work_b}/forwardproxy.module-version")" == "${forwardproxy_module_version}" ]] || {
-  echo 'ERROR: pinned forwardproxy module version changed between builds' >&2
-  exit 1
-}
 
 "${primary}" version > "${out_dir}/caddy.version.txt"
 "${primary}" list-modules | grep -Fx 'http.handlers.forward_proxy' >/dev/null
 go version -m "${primary}" > "${out_dir}/caddy.buildinfo.txt"
-if grep -Fq $'\t=>\t' "${out_dir}/caddy.buildinfo.txt"; then
-  echo 'ERROR: final binary still contains a local Go module replacement path' >&2
+# A deterministic relative replacement is allowed; an absolute workspace path
+# is not. This line must be identical in both independent builds.
+grep -Fq $'\t=>\t./forwardproxy\t(devel)' "${out_dir}/caddy.buildinfo.txt"
+if grep -Eq $'\t=>\t/' "${out_dir}/caddy.buildinfo.txt"; then
+  echo 'ERROR: final binary contains an absolute local Go module replacement path' >&2
   exit 1
 fi
 grep -Fq $'github.com/caddyserver/caddy/v2\t'"${caddy_version}" "${out_dir}/caddy.buildinfo.txt"
-grep -Fq $'github.com/caddyserver/forwardproxy\t'"${forwardproxy_module_version}" "${out_dir}/caddy.buildinfo.txt"
+grep -Fq $'github.com/caddyserver/forwardproxy\tv0.0.0' "${out_dir}/caddy.buildinfo.txt"
 
 sha256sum "${primary}" > "${out_dir}/caddy-pvnaive-accounting.sha256"
 printf '%s  caddy-pvnaive-accounting\n%s  caddy-pvnaive-accounting.repro\n' \
@@ -151,7 +140,8 @@ build_driver=go-vendor
 caddy_version=${caddy_version}
 forwardproxy_repo=https://github.com/klzgrad/forwardproxy.git
 forwardproxy_commit=${forwardproxy_commit}
-forwardproxy_module_version=${forwardproxy_module_version}
+forwardproxy_module_version=v0.0.0
+forwardproxy_replace=./forwardproxy
 xcaddy_version_pin=${xcaddy_version}
 xcaddy_used=false
 patch_sha256=$(sha256sum "${patch_file}" | awk '{print $1}')
