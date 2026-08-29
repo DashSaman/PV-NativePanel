@@ -67,6 +67,14 @@ export type CustomerView = {
   subscription_available: boolean;
   subscription_retrievable?: boolean;
   usage_capability: UsageCapability;
+  upload_bytes: number;
+  download_bytes: number;
+  used_bytes: number;
+  remaining_bytes?: number | null;
+  accounting_complete: boolean;
+  online: boolean;
+  online_sessions: number;
+  last_online?: string;
 };
 
 export type SubscriptionDelivery = {
@@ -283,6 +291,34 @@ export function subscriptionURL(path: string, base?: string): string {
 export function quotaLabel(bytes: number | null): string {
   if (bytes === null || bytes === undefined) return "نامحدود";
   return `${Math.round(bytes / 1073741824)} GB`;
+}
+
+export function trafficLabel(bytes: number): string {
+  const safe = Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
+  const gib = 1024 ** 3;
+  const mib = 1024 ** 2;
+  if (safe >= gib) return `${Math.round((safe / gib) * 10) / 10} GB`;
+  if (safe >= mib) return `${Math.round(safe / mib)} MB`;
+  if (safe >= 1024) return `${Math.round(safe / 1024)} KB`;
+  return `${Math.round(safe)} B`;
+}
+
+export function customerUsagePresentation(customer: CustomerView): { primary: string; secondary: string; exact: boolean } {
+  if (!customer.usage_capability.available || !customer.accounting_complete) {
+    return {
+      primary: `حداقل ${trafficLabel(customer.used_bytes)} ثبت‌شده`,
+      secondary: "Accounting ناقص · باقی‌مانده نامشخص",
+      exact: false,
+    };
+  }
+  const primary = `${trafficLabel(customer.used_bytes)} مصرف`;
+  const remaining = customer.quota_bytes === null
+    ? "حجم نامحدود"
+    : `${trafficLabel(customer.remaining_bytes ?? 0)} مانده`;
+  const presence = customer.online
+    ? `آنلاین (${Math.max(1, customer.online_sessions)})`
+    : "آفلاین";
+  return { primary, secondary: `${remaining} · ${presence}`, exact: true };
 }
 
 export function expiryLabel(value?: string): string {
