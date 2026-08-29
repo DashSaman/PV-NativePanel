@@ -1,18 +1,22 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
 import { CustomersV2 } from "./CustomersV2";
+import { ProductCatalog } from "./ProductCatalog";
+import { ProductCustomers } from "./ProductCustomers";
 import { RuntimeNaive } from "./RuntimeNaive";
+import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { assertRouteManifest } from "./routes";
 
 assertRouteManifest();
 
 type Theme = "system" | "dark" | "light";
 type AuthState = "loading" | "anonymous" | "authenticated";
-type View = "dashboard" | "customers" | "runtime-naive";
-const metrics = [["مدیریت مشتری","فعال"],["Subscription / QR","فعال"],["Accounting دقیق","در انتظار PoC"],["Runtime","قابل مدیریت"]];
+type View = "dashboard" | "customers" | "catalog" | "runtime-adoption" | "runtime-naive";
 
 export function currentView(hash = window.location.hash): View {
   if (hash === "#/customers") return "customers";
+  if (hash === "#/catalog" || hash === "#/plans") return "catalog";
+  if (hash === "#/customers/runtime-adoption") return "runtime-adoption";
   if (hash === "#/runtime/naive") return "runtime-naive";
   return "dashboard";
 }
@@ -57,11 +61,19 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Princip
 }
 
 function Sidebar({ principal, signOut }: { principal: Principal; signOut: () => Promise<void> }) {
-  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a href="/panel/">داشبورد</a>{principal.role === "owner" && <><a href="/panel/#/customers">مشتریان Naive</a><a href="/panel/#/runtime/naive">Runtime پیشرفته</a></>}</nav><ThemeSwitch/><button className="logout-button" onClick={signOut}>خروج امن</button><div className="stage">S06 · Owner customer operations</div></aside>;
+  const customerProduct = canUseCustomerProduct(principal.role);
+  const rawRuntime = canUseRawRuntime(principal.role);
+  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a href="/panel/">داشبورد</a>{customerProduct && <><a href="/panel/#/customers">کاربران</a><a href="/panel/#/catalog">پلن‌ها / گروه‌ها / تگ‌ها</a></>}{rawRuntime && <><a href="/panel/#/customers/runtime-adoption">اکانت‌های قدیمی Runtime</a><a href="/panel/#/runtime/naive">Runtime پیشرفته</a></>}</nav><ThemeSwitch/><button className="logout-button" onClick={signOut}>خروج امن</button><div className="stage">PVN-044 · WS1 + WS2 product UI</div></aside>;
 }
 
-function MobileNav({ owner, signOut }: { owner: boolean; signOut: () => Promise<void> }) {
-  return <nav className="mobile-nav" aria-label="ناوبری موبایل"><a href="/panel/">داشبورد</a>{owner && <a href="/panel/#/customers">مشتریان</a>}{owner && <a href="/panel/#/runtime/naive">Runtime</a>}<button onClick={signOut}>خروج</button></nav>;
+function MobileNav({ principal, signOut }: { principal: Principal; signOut: () => Promise<void> }) {
+  const customerProduct = canUseCustomerProduct(principal.role);
+  const rawRuntime = canUseRawRuntime(principal.role);
+  return <nav className="mobile-nav" aria-label="ناوبری موبایل"><a href="/panel/">داشبورد</a>{customerProduct && <a href="/panel/#/customers">کاربران</a>}{customerProduct && <a href="/panel/#/catalog">پلن‌ها</a>}{rawRuntime && <a href="/panel/#/runtime/naive">Runtime</a>}<button onClick={signOut}>خروج</button></nav>;
+}
+
+function Shell({ principal, signOut, children }: { principal: Principal; signOut: () => Promise<void>; children: React.ReactNode }) {
+  return <div className="shell"><Sidebar principal={principal} signOut={signOut}/>{children}<MobileNav principal={principal} signOut={signOut}/></div>;
 }
 
 export function App() {
@@ -80,10 +92,21 @@ export function App() {
 
   if (authState === "loading") return <main className="auth-page"><section className="auth-card"><p>در حال بررسی نشست امن…</p></section></main>;
   if (authState === "anonymous" || !principal) return <><LoginScreen onAuthenticated={(current) => { setPrincipal(current); setAuthState("authenticated"); setAuthMessage(""); }}/>{authMessage && <div className="global-auth-message" role="alert">{authMessage}</div>}</>;
-  const owner = principal.role === "owner";
 
-  if (view === "customers" && owner) return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><CustomersV2/><MobileNav owner={owner} signOut={signOut}/></div>;
-  if (view === "runtime-naive" && owner) return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><RuntimeNaive/><MobileNav owner={owner} signOut={signOut}/></div>;
+  const customerProduct = canUseCustomerProduct(principal.role);
+  const rawRuntime = canUseRawRuntime(principal.role);
 
-  return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><main><header><div><p className="eyebrow">Standalone control plane</p><h1>داشبورد PVNaive</h1></div><span className="badge">ورود امن فعال</span></header><section className="notice" role="status">{principal.display_name} · {principal.email} · نقش: {principal.role}</section><section className="metrics" aria-label="شاخص‌ها">{metrics.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="panel"><div><p className="eyebrow">Customer service</p><h2>مدیریت اکانت‌های Naive</h2><p>{owner ? "اکانت را با حجم، تاریخ انقضا، لینک اشتراک و QR بسازید؛ عملیات lifecycle و password به‌صورت صریح و مستقل در Customers در دسترس است." : "مدیریت مشتری فقط برای Owner در دسترس است."}</p></div>{owner ? <a className="button-secondary" href="/panel/#/customers">مدیریت مشتریان</a> : <button disabled>فقط Owner</button>}</section></main><MobileNav owner={owner} signOut={signOut}/></div>;
+  if (view === "customers" && customerProduct) return <Shell principal={principal} signOut={signOut}><ProductCustomers role={principal.role}/></Shell>;
+  if (view === "catalog" && customerProduct) return <Shell principal={principal} signOut={signOut}><ProductCatalog role={principal.role}/></Shell>;
+  if (view === "runtime-adoption" && rawRuntime) return <Shell principal={principal} signOut={signOut}><CustomersV2/></Shell>;
+  if (view === "runtime-naive" && rawRuntime) return <Shell principal={principal} signOut={signOut}><RuntimeNaive/></Shell>;
+
+  const metrics = [
+    ["Customer Product", customerProduct ? "فعال" : "طبق RBAC"],
+    ["Subscription / QR", customerProduct ? "فعال" : "طبق RBAC"],
+    ["Accounting دقیق", "فعال · capability-gated"],
+    ["Runtime خام", rawRuntime ? "Owner-only" : "محدود"],
+  ];
+
+  return <Shell principal={principal} signOut={signOut}><main><header><div><p className="eyebrow">Standalone control plane</p><h1>داشبورد PVNaive</h1></div><span className="badge">ورود امن فعال</span></header><section className="notice" role="status">{principal.display_name} · {principal.email} · نقش: {principal.role}</section><section className="metrics" aria-label="شاخص‌ها">{metrics.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>{customerProduct ? <><section className="panel"><div><p className="eyebrow">Customer product</p><h2>مدیریت کاربران، پلن و تمدید</h2><p>Plan، Renewal، Group/Tag، Next Plan، On hold، Bulk Preview/Execute، Subscription و Accounting دقیق حالا از مسیر Product API در پنل قابل استفاده‌اند.</p></div><a className="button-secondary" href="/panel/#/customers">مدیریت کاربران</a></section><section className="panel"><div><p className="eyebrow">Catalog</p><h2>پلن‌ها، گروه‌ها و تگ‌ها</h2><p>{principal.role === "reseller" ? "پلن‌های فعال را ببین و برای مشتری استفاده کن؛ ساخت Plan طبق RBAC برای Owner/Admin است." : "پلن‌های آماده و دسته‌بندی مشتریان را از خود پنل مدیریت کن."}</p></div><a className="button-secondary" href="/panel/#/catalog">بازکردن کاتالوگ</a></section></> : <section className="panel"><div><p className="eyebrow">RBAC</p><h2>دسترسی عملیاتی محدود است</h2><p>این نقش برای عملیات Customer Product مجاز نیست. صفحه‌هایی که Backend آن‌ها هنوز Ready نیست نیز عمداً در منو نمایش داده نمی‌شوند.</p></div><button disabled>طبق نقش فعلی</button></section>}</main></Shell>;
 }
