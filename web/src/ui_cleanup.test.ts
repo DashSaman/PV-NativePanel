@@ -35,4 +35,9 @@ describe("operator UI cleanup contract", () => {
     expect(customers).toContain("لینک ساب کلاینت");
     expect(customers).toContain("باز کردن صفحه");
   });
+  it("keeps subscription delivery visually focused with one primary QR and advanced direct access", () => {
+    expect(customers).toContain('className="subscription-primary-card"');
+    expect(customers).toContain('className="direct-details"');
+  });
+
 });
