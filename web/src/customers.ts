@@ -81,6 +81,23 @@ export type CustomerServiceUpdateResult = {
   message?: string;
 };
 
+export type CustomerLifecycleResult = {
+  status: string;
+  runtime_credential?: CustomerCreateResult["runtime_credential"];
+  message?: string;
+};
+
+export type PasswordRotationRequest = {
+  password: string;
+  generate_password: boolean;
+};
+
+export type PasswordRotationResult = {
+  runtime_credential: CustomerCreateResult["runtime_credential"];
+  generated_password?: string;
+  delivery_notice?: string;
+};
+
 export type CustomerAPIError = Error & { code?: string; status?: number };
 type Fetcher = typeof fetch;
 
@@ -196,6 +213,66 @@ export async function rotateSubscription(
   const body = await parseJSON(response);
   if (!response.ok) throw apiError(body, response.status);
   return body as unknown as SubscriptionDelivery;
+}
+
+async function customerLifecycleMutation(
+  customerID: string,
+  action: "suspend" | "resume",
+  fetcher: Fetcher,
+): Promise<CustomerLifecycleResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/${action}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: "{}",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerLifecycleResult;
+}
+
+export async function suspendCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  return customerLifecycleMutation(customerID, "suspend", fetcher);
+}
+
+export async function resumeCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  return customerLifecycleMutation(customerID, "resume", fetcher);
+}
+
+export async function deleteCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerLifecycleResult;
+}
+
+export async function rotateCustomerPassword(
+  customerID: string,
+  input: PasswordRotationRequest,
+  fetcher: Fetcher = fetch,
+): Promise<PasswordRotationResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/rotate-password`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: JSON.stringify(input),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as PasswordRotationResult;
 }
 
 export function subscriptionURL(path: string, base?: string): string {
