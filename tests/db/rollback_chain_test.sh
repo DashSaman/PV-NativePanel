@@ -74,10 +74,10 @@ PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations"
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align \
   --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema}" == 6 ]] || { echo "ERROR: chain fixture expected schema 6, got ${schema}" >&2; exit 1; }
+[[ "${schema}" == 7 ]] || { echo "ERROR: chain fixture expected schema 7, got ${schema}" >&2; exit 1; }
 
 # The old single-step gate must remain strict: a schema2 backup is not fresh
-# enough to authorize a normal 6 -> 5 rollback.
+# enough to authorize a normal 7 -> 6 rollback.
 if PVNAIVE_DB_NAME="${test_db}" \
   PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
   PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
@@ -88,7 +88,7 @@ if PVNAIVE_DB_NAME="${test_db}" \
   exit 1
 fi
 
-for expected in 5 4 3 2; do
+for expected in 6 5 4 3 2; do
   rollback_output="$(
     PVNAIVE_DB_NAME="${test_db}" \
     PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
