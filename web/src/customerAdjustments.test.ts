@@ -20,7 +20,9 @@ afterEach(() => Reflect.deleteProperty(globalThis, "document"));
 describe("customer service adjustments", () => {
   it("adds volume as a delta instead of replacing the total", async () => {
     installCSRF();
-    const fetcher = vi.fn(async () => jsonResponse({ service_term: { id: "term-1" }, runtime_mutated: false }));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ service_term: { id: "term-1" }, runtime_mutated: false }),
+    );
 
     await addCustomerVolume("user-1", 20, fetcher as typeof fetch);
 
@@ -32,7 +34,9 @@ describe("customer service adjustments", () => {
 
   it("extends validity by whole days without runtime fields", async () => {
     installCSRF();
-    const fetcher = vi.fn(async () => jsonResponse({ service_term: { id: "term-1" }, runtime_mutated: false }));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ service_term: { id: "term-1" }, runtime_mutated: false }),
+    );
 
     await extendCustomerTime("user-1", 30, fetcher as typeof fetch);
 
