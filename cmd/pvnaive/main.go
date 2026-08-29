@@ -21,6 +21,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
+	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -84,6 +85,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	accountingStore, err := telemetry.NewPostgresStore(db)
+	if err != nil {
+		return err
+	}
 
 	runtimeService, runtimeKey, err := buildRuntimeService(db, os.Getenv)
 	if err != nil {
@@ -108,6 +113,7 @@ func run() error {
 		MFAKey:                mfaKey,
 		RuntimeService:        runtimeService,
 		CustomerService:       customerService,
+		AccountingStore:       accountingStore,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
 	})
