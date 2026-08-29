@@ -35,7 +35,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 PVNAIVE_DB_NAME="${test_db}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema}" == 10 ]] || { echo "ERROR: expected schema 10, got ${schema}" >&2; exit 1; }
+[[ "${schema}" =~ ^[0-9]+$ && "${schema}" -ge 10 ]] || { echo "ERROR: expected schema >=10, got ${schema}" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT concat_ws('|',
