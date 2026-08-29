@@ -1,0 +1,22 @@
+[Unit]
+Description=PVNaive isolated encrypted-backup restore drill
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/opt/pvnaive/ops/restore-drill.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/etc/pvnaive /opt/pvnaive /var/backups/pvnaive
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
