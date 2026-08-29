@@ -34,6 +34,8 @@ func TestAccountingMigrationManifestHashes(t *testing.T) {
 	for _, name := range []string{
 		"0009_direct_naive_exact_accounting.up.sql",
 		"0009_direct_naive_exact_accounting.down.sql",
+		"0010_pending_reservation_completeness.up.sql",
+		"0010_pending_reservation_completeness.down.sql",
 	} {
 		data, err := os.ReadFile(filepath.Join(root, "db", "migrations", name))
 		if err != nil {
