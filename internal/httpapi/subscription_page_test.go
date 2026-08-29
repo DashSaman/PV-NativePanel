@@ -11,7 +11,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
-func TestPublicSubscriptionBrowserGetsPVNaiveStatusPage(t *testing.T) {
+func TestPublicAccountPageUsesExplicitHumanEndpoint(t *testing.T) {
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = byte(i + 1)
@@ -25,7 +25,7 @@ func TestPublicSubscriptionBrowserGetsPVNaiveStatusPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	quota := int64(50 * 1024 * 1024 * 1024)
-	expires := time.Date(2026, 9, 28, 14, 0, 0, 0, time.UTC)
+	expires := time.Now().UTC().Add(30 * 24 * time.Hour)
 	store := &fakeSubscriptionStore{hash: hash, record: subscription.Record{
 		RuntimeCredentialID: "runtime-1",
 		Username:            "Amir22",
@@ -44,9 +44,9 @@ func TestPublicSubscriptionBrowserGetsPVNaiveStatusPage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/subscriptions/"+rawToken, nil)
+	req := httptest.NewRequest(http.MethodGet, "/s/"+rawToken+"?lang=fa", nil)
 	req.Host = "attacker.example"
-	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	req.Header.Set("Accept", "text/plain")
 	res := httptest.NewRecorder()
 	NewServer(ServerConfig{
 		SubscriptionService:   service,
@@ -60,18 +60,18 @@ func TestPublicSubscriptionBrowserGetsPVNaiveStatusPage(t *testing.T) {
 		t.Fatalf("content-type=%q", got)
 	}
 	body := res.Body.String()
-	for _, want := range []string{"PVNaive", "Amir22", "50 GB", "QR", "مصرف دقیق", "data:image/png;base64,"} {
+	for _, want := range []string{"PVNaive", "PVNETWORK", "Amir22", "50 GB", "در دسترس نیست", "data:image/png;base64,", "/sub/" + rawToken} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("browser page missing %q: %s", want, body)
+			t.Fatalf("account page missing %q: %s", want, body)
 		}
 	}
 	if strings.Contains(body, "attacker.example") {
-		t.Fatal("untrusted request Host leaked into browser subscription page")
+		t.Fatal("untrusted request Host leaked into account page")
 	}
 	if !strings.Contains(body, "namir.softarg.ir") {
-		t.Fatal("browser page did not use configured canonical host")
+		t.Fatal("account page did not use configured canonical host")
 	}
 	if res.Header().Get("Cache-Control") != "no-store" {
-		t.Fatal("browser subscription response is cacheable")
+		t.Fatal("account page response is cacheable")
 	}
 }

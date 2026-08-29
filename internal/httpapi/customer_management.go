@@ -3,7 +3,6 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"net/url"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 )
@@ -53,8 +52,10 @@ func (s *server) currentCustomerSubscription(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "subscription_read_failed", "message": "Current subscription could not be read."})
 		return
 	}
+	subscriptionPath, accountPagePath := subscriptionDeliveryPaths(rawToken)
 	response := envelope{
-		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
+		"subscription_path": subscriptionPath,
+		"account_page_path": accountPagePath,
 		"delivery_notice":   "Read-only current subscription. No token, password, Runtime credential, quota or expiry was changed.",
 	}
 	if s.config.SubscriptionService != nil && s.config.SubscriptionProxyHost != "" {
@@ -101,8 +102,10 @@ func (s *server) rotateCustomerSubscription(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
+	subscriptionPath, accountPagePath := subscriptionDeliveryPaths(rawToken)
 	response := envelope{
-		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
+		"subscription_path": subscriptionPath,
+		"account_page_path": accountPagePath,
 		"delivery_notice":   "Old subscription link will stop working. Runtime password was not rotated.",
 	}
 	if s.config.SubscriptionService != nil && s.config.SubscriptionProxyHost != "" {

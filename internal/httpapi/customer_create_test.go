@@ -91,8 +91,12 @@ func TestCreateCustomerEndpointReturnsOneTimeDeliveryMaterial(t *testing.T) {
 		t.Fatalf("generated password = %v", payload["generated_password"])
 	}
 	path, _ := payload["subscription_path"].(string)
-	if !strings.HasPrefix(path, "/api/v1/subscriptions/") || len(strings.TrimPrefix(path, "/api/v1/subscriptions/")) < 40 {
+	if !strings.HasPrefix(path, "/sub/") || len(strings.TrimPrefix(path, "/sub/")) < 40 {
 		t.Fatalf("subscription path = %q", path)
+	}
+	accountPath, _ := payload["account_page_path"].(string)
+	if !strings.HasPrefix(accountPath, "/s/") || strings.TrimPrefix(accountPath, "/s/") != strings.TrimPrefix(path, "/sub/") {
+		t.Fatalf("account page path = %q subscription=%q", accountPath, path)
 	}
 	usage, _ := payload["usage_capability"].(map[string]any)
 	if usage["available"] != false || usage["reason"] != "exact_accounting_not_proven" {

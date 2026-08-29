@@ -76,8 +76,12 @@ func TestAdoptRuntimeCustomerEndpointKeepsExistingRuntimeIdentity(t *testing.T) 
 		t.Fatalf("adoption must not return a password: %#v", payload)
 	}
 	path, _ := payload["subscription_path"].(string)
-	if !strings.HasPrefix(path, "/api/v1/subscriptions/") {
+	if !strings.HasPrefix(path, "/sub/") {
 		t.Fatalf("subscription path=%q", path)
+	}
+	accountPath, _ := payload["account_page_path"].(string)
+	if strings.TrimPrefix(accountPath, "/s/") != strings.TrimPrefix(path, "/sub/") {
+		t.Fatalf("account page path=%q subscription=%q", accountPath, path)
 	}
 }
 
