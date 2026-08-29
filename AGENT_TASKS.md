@@ -1,8 +1,27 @@
 # PVNaive — Agent / Workstream Task Board
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 
 The current Chat environment does **not** expose an independent sub-agent execution tool. The roles below are durable workstreams/ownership labels, not a claim that Claude/Gemini/Qwen/DeepSeek are currently running.
+
+## Mandatory Owner requirements — READ BEFORE CUSTOMER WORK
+
+`OWNER_REQUIREMENTS.md` is now the authoritative Owner product/UX backlog for `/panel/#/customers`, subscription/QR behavior, customer lifecycle, quota/validity, accounting and later operator-parity work.
+
+Every agent touching customer code must read it first. In particular:
+
+- a backend endpoint does not count as complete if the Owner cannot perform the action clearly from the UI;
+- add a clear customer `Edit` action and customer details/action surface;
+- `View QR`, `Copy Subscription`, `Copy Direct Link` and `View Details` must be read-only;
+- viewing QR must not require reissuing the Subscription;
+- viewing/copying existing Subscription must not rotate token or password;
+- `Reissue Subscription` and `Rotate Password` are two separate explicit actions;
+- customer `Delete/Revoke` must be exposed safely with confirmation/audit;
+- complete enable/disable/suspend/revoke/delete, add/set volume, extend/change expiry and unlimited controls;
+- do not fabricate usage/remaining/online/device/speed state before Runtime proof;
+- after P0 lifecycle/accounting work, continue Sanaei/PasarGuard-class search/filter/sort/bulk/renewal ergonomics and then OV-PvNetwork-derived monitoring/fleet patterns.
+
+If any older handoff text conflicts with `OWNER_REQUIREMENTS.md` about customer UX, the Owner Requirements file wins unless the Owner explicitly changes it later.
 
 ## Mandatory report format
 
@@ -73,6 +92,7 @@ Full S04R checkpoint:
 
 ## File conflict rules
 
+- `OWNER_REQUIREMENTS.md`: Owner-authoritative customer product behavior. Agents may update status/evidence after verified work but must not weaken/remove requirements without explicit Owner direction.
 - `internal/runtimecred/*`: next changes only for later runtime/accounting work; do not reopen completed S04R behavior casually.
 - `internal/runtimeagent/*`: production safety boundary; any change requires failure-path tests and full rehearsal.
 - `internal/httpapi/*`: auth-hardening tasks `PVN-030/031/034` must be coordinated; do not parallel-write the same middleware/handler files.
@@ -98,4 +118,4 @@ Immediately return to the critical security/closure chain:
 
 `PVN-030 + PVN-031 + PVN-032 + PVN-033 + PVN-034 → PVN-035 → PVN-036`
 
-Then continue user/business/accounting/subscription work without pretending the Pilot already supplies quota, expiry, customer portal or billing.
+Then execute the customer/product backlog according to `OWNER_REQUIREMENTS.md`, prioritizing P0 customer UX/lifecycle, exact accounting/hard quota, trusted first-use, and production S05 rollout before P1/P2 feature expansion.
