@@ -35,7 +35,7 @@ type UpdateServiceTermRecord struct {
 	EffectiveAt     time.Time
 	StartsAt        *time.Time
 	ExpiresAt       *time.Time
-	State           ServiceTermState
+	State           TermState
 }
 
 type runtimeAdoptionStore interface {
