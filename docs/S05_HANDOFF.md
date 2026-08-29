@@ -112,9 +112,33 @@ PVNAIVE_NAIVE_PUBLIC_HOST=<real-naive-host-or-host:port>
 
 Do not include `https://` or a path. Do not hardcode the panel Host header as the data-plane host.
 
+## Verified CI checkpoint
+
+Feature-code checkpoint `26873435d0460d0297900629ece6a7fc93553c0a` passed CI run `33222914088` (run #570) on 2026-08-29.
+
+Verified evidence from that run:
+
+- Go formatting, `go vet ./...`, `go test ./...`, and Runtime Agent safety rehearsal: PASS;
+- Web tests and production build: PASS (`22` tests across `6` files during bundle build);
+- PostgreSQL 18 readiness, migration, health, backup/restore, backup collision, auth migration, Runtime migration, customer lifecycle migration, customer idempotency migration, and direct Subscription migration: PASS;
+- exact pinned Naive Caddy multi-`basic_auth` proof: PASS;
+- S04 authentication rehearsal: PASS;
+- full S04R Runtime rehearsal: PASS;
+- S04R production bundle contract and archive checksum: PASS;
+- artifact upload: PASS, artifact ID `9705854213`;
+- bundle: `PVNaive-S04R-26873435d046.tar.gz`;
+- bundle SHA-256: `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7`.
+
+Two CI-only regression defects were fixed on the way to this checkpoint without changing production evidence:
+
+1. `tests/db/direct_subscription_migration_test.sh` had a PostgreSQL expression-precedence bug around `NOT (...) ||`; fixed by explicitly parenthesizing the boolean expression.
+2. `tests/stages/S04R_full_rehearsal.sh` still expected schema version 5 and did not provide the new explicit S05 public-host configuration; it now expects schema 6 and uses the reserved test-only host `naive-rehearsal.example.invalid:443`.
+
+This checkpoint proves the feature code/rehearsal/bundle path is green. It does **not** prove live deployment, exact per-credential traffic accounting, hard byte-quota enforcement, or a production trusted first-successful-CONNECT producer.
+
 ## Verification rule
 
-Before calling this feature complete, require one fresh CI on the final branch head with:
+Before calling a later branch head complete, require one fresh CI on that exact head with:
 
 - Go formatting/vet/tests: PASS;
 - Web tests/build: PASS;

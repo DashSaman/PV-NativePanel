@@ -99,9 +99,25 @@ Do not include a scheme or path. This value must be supplied by deployment confi
 
 ## Verification state
 
-Go and Web test/build jobs have repeatedly passed during this implementation. PostgreSQL 18 migration/rollback fixtures are being advanced through the new schema-v6 stack and must be green on the final branch head before this feature is called complete.
+The S05 feature-code checkpoint `26873435d0460d0297900629ece6a7fc93553c0a` is verified green by GitHub Actions CI run `33222914088` (run #570).
 
-The final completion claim requires one fresh CI on the final feature-branch HEAD with all applicable jobs green, including downstream rehearsal/bundle jobs when the workflow enables them.
+Verified PASS scope:
+
+- Go formatting, vet, full Go tests, Runtime Agent safety rehearsal;
+- Web tests and production build;
+- PostgreSQL 18 schema/migration, health, backup/restore, collision and S05 migration contracts through schema v6;
+- pinned Naive Caddy multi-auth proof;
+- S04 authentication rehearsal;
+- full S04R Runtime rehearsal;
+- production bundle contract, archive checksum and artifact upload.
+
+Bundle evidence for that checkpoint:
+
+- artifact ID: `9705854213`;
+- bundle: `PVNaive-S04R-26873435d046.tar.gz`;
+- bundle SHA-256: `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7`.
+
+This is a development/release-candidate proof, not production deployment evidence. A fresh CI must still pass on any later branch head (including documentation-only finalization commits) before that later head is called final.
 
 ## Remaining blockers outside this feature slice
 

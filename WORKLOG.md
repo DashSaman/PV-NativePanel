@@ -37,15 +37,16 @@ This log records significant verified work. Fine-grained historical live evidenc
 | 2026-08-28 | Lead Engineer | PVN-026 | Added percent-encoded `naive+https://user:pass@host:443` builder and one-click Karing/Naive link in one-time secret dialog | `web/src/runtime.ts`, `RuntimeNaive.tsx` | Web job `33190796760`: tests + production build PASS | `69259a2e...` | DONE |
 | 2026-08-28 | Lead Engineer / PM | PVN-028 | Added Persian guarded Pilot install/customer-handoff runbook; explicitly scopes current Pilot vs future quota/customer portal/release work | `docs/PILOT_INSTALL_FA.md` | documentation review; final HEAD CI still required | docs commits | IN_PROGRESS |
 | 2026-08-28 | Lead Engineer / PM | PVN-068 | Canonical repository audit/PM documents updated from obsolete PVN-020 RED state toward S04R Pilot truth | ROADMAP/PROJECT_STATUS/AGENT_TASKS/FEATURE_MATRIX/KNOWN_ISSUES/WORKLOG/HANDOFF | cross-document review + final CI required | docs sync | IN_PROGRESS |
+| 2026-08-29 | Lead Engineer / QA | S05 customer flow CI | PostgreSQL 18 direct-subscription contract failed because the test expression parsed `NOT (...) ||` with the wrong precedence; fixed the regression test without changing migration semantics | `tests/db/direct_subscription_migration_test.sh` | RED CI `33222459957`; DB passes on later run | `a686bc6b4c5117a52b4c711c91e05608a385f877` | FIXED |
+| 2026-08-29 | Lead Engineer / QA | S05/S04R rehearsal compatibility | After DB became green, full S04R rehearsal exposed stale schema-v5 expectation; S05 also requires explicit Naive public host. Updated only the rehearsal harness to schema v6 and reserved `.invalid` test host | `tests/stages/S04R_full_rehearsal.sh` | RED CI `33222771113`; later full rehearsal PASS | `26873435d0460d0297900629ece6a7fc93553c0a` | FIXED |
+| 2026-08-29 | Lead Engineer / REVIEW | S05 final feature-code checkpoint | Fresh CI proved Go, Web, PostgreSQL 18/S05 migrations, pinned Naive Caddy proof, S04 auth rehearsal, full S04R rehearsal, production bundle contract/checksum and artifact upload | CI run `33222914088`, artifact `9705854213` | all jobs PASS; bundle SHA `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7` | `26873435d0460d0297900629ece6a7fc93553c0a` | VERIFIED GREEN |
 
 ## Current exact continuation
 
-- S04R code/rehearsal is complete through `PVN-027`.
-- `PVN-028` is the current live edge: **read-only preflight only** until its output passes.
-- Production schema remains v2 until the guarded S04R upgrade is actually executed and evidenced.
-- Use `docs/PILOT_INSTALL_FA.md` for the exact existing-server Pilot sequence.
-- Customers receive only generated Naive links/credentials; Owner panel credentials are never shared.
-- After live `PVN-029` smoke, return immediately to P0 auth hardening (`PVN-030`, `PVN-031`, `PVN-034`) before formal S04 closure.
+- S05 customer/service feature code is green at checkpoint `26873435d0460d0297900629ece6a7fc93553c0a`, CI `33222914088`; any later documentation head still requires its own fresh CI before final completion is claimed.
+- Exact accounting remains blocked (`usage_capability.available=false`, `exact_accounting_not_proven`); do not fabricate used/remaining traffic or enable hard byte quota.
+- Trusted first-successful-CONNECT producer instrumentation is not yet proven end-to-end; keep first-use terms pending in production unless/until that producer proof exists.
+- Production has not been upgraded by this S05 branch. Before any live mutation, re-read `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`, then perform the guarded read-only production preflight.
 
 ## Logging rule going forward
 
