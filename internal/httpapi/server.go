@@ -21,6 +21,7 @@ type ServerConfig struct {
 	SubscriptionService   *subscription.Service
 	SubscriptionProxyHost string
 	CustomerService       *customer.Service
+	SystemStatus          func(*http.Request) (any, error)
 }
 
 type server struct {
@@ -149,6 +150,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "runtime.naive.credentials.revoke":
 			if cfg.RuntimeService != nil {
 				handler = http.HandlerFunc(s.runtimeNaiveRevokeCredential)
+			}
+		case "system.status":
+			if cfg.SystemStatus != nil {
+				handler = http.HandlerFunc(s.systemStatus)
 			}
 		}
 		if extra := s.customerExtraHandler(route.Name); extra != nil {
