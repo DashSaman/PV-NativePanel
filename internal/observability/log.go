@@ -35,6 +35,9 @@ var redactionPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)(authorization\s*:\s*bearer\s+)[^\s,;]+`),
 	regexp.MustCompile(`(?i)((?:subscription[_-]?token|db[_-]?password|runtime[_-]?secret|password|private[_-]?key)\s*[=:]\s*)[^\s,;]+`),
 	regexp.MustCompile(`(?i)(postgres(?:ql)?://[^:\s/@]+:)[^@\s]+(@)`),
+	regexp.MustCompile(`(?i)(naive\+https://[^:\s/@]+:)[^@\s]+(@)`),
+	regexp.MustCompile(`(?i)(/(?:sub|s)/)[A-Za-z0-9_-]{32,}`),
+	regexp.MustCompile(`(?i)(/api/v1/subscriptions/)[A-Za-z0-9_-]{32,}`),
 }
 
 func MarshalLog(event Event) ([]byte, error) {
