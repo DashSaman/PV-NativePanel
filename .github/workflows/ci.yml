@@ -106,6 +106,7 @@ jobs:
               bash tests/db/auth_migration_test.sh
               bash tests/db/naive_runtime_migration_test.sh
               bash tests/db/customer_lifecycle_migration_test.sh
+              bash tests/db/runtime_accounting_migration_test.sh
               bash tests/db/customer_idempotency_migration_test.sh
               bash tests/db/run_schema_fixture_test.sh 6 tests/db/direct_subscription_migration_test.sh
               bash tests/db/subscription_token_recovery_migration_test.sh
