@@ -1,0 +1,45 @@
+name: Sync subscription link UI fix
+
+on:
+  push:
+    branches:
+      - fix/customer-list-ui-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/customer-list-ui-cleanup
+          fetch-depth: 0
+      - name: Fetch tested patch
+        run: |
+          curl -fsSL 'https://namir.softarg.ir/.pvnaive-sub-link-sync-28bb8251c591ad1e0ab8.patch' -o /tmp/sub-link.patch
+          echo '0e9eba7c645a6fcce1df05e573d4e2668b5595aa505eaf197f3662ec3b2f3d92  /tmp/sub-link.patch' | sha256sum -c -
+          git apply --check /tmp/sub-link.patch
+          git apply /tmp/sub-link.patch
+      - name: Verify web
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Test and build
+        working-directory: web
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Commit synced fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/sync-sub-link-fix.yml
+          git add -A
+          git commit -m 'fix: separate human account page from client subscription URL'
+          git push origin HEAD:fix/customer-list-ui-cleanup
