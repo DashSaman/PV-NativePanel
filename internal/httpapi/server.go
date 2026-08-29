@@ -23,6 +23,7 @@ type ServerConfig struct {
 	SubscriptionProxyHost string
 	CustomerService       *customer.Service
 	AccountingStore       telemetry.AccountingStore
+	SystemStatus          func(*http.Request) (any, error)
 }
 
 type server struct {
@@ -44,6 +45,8 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			handler = http.HandlerFunc(live)
 		case "health.ready":
 			handler = http.HandlerFunc(s.ready)
+		case "system.status":
+			handler = http.HandlerFunc(s.systemStatus)
 		case "auth.login":
 			if cfg.AuthService != nil {
 				handler = http.HandlerFunc(s.login)
