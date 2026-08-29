@@ -31,8 +31,10 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 migration_output="$("${repo_root}/scripts/db/migrate.sh")"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=8' <<< "${migration_output}" || {
-  echo 'ERROR: full customer migration stack did not advance schema to v8' >&2
+latest_version="$(find "${repo_root}/db/migrations" -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]_*.up.sql' -printf '%f\n' | sort | tail -n1 | cut -d_ -f1 | sed 's/^0*//')"
+[[ -n "${latest_version}" ]] || { echo 'ERROR: latest migration version could not be derived' >&2; exit 1; }
+grep -Fqx "PVNAIVE_SCHEMA_VERSION=${latest_version}" <<< "${migration_output}" || {
+  echo "ERROR: full migration stack did not advance schema to v${latest_version}" >&2
   exit 1
 }
 
@@ -88,8 +90,10 @@ then
   exit 1
 fi
 
-# Remove v8 profile projection, v7 token recovery, v6 direct subscription tokens, then exercise the v5 idempotency rollback.
-for _ in 1 2 3 4; do
+# Unwind any migrations newer than v5, then exercise the v5 idempotency rollback.
+while :; do
+  current_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
+  [[ "${current_version}" -gt 4 ]] || break
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
     "${repo_root}/scripts/db/rollback.sh" >/dev/null
 done

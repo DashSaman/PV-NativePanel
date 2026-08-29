@@ -1,0 +1,218 @@
+diff --git a/caddyfile.go b/caddyfile.go
+index b673f17..792067f 100644
+--- a/caddyfile.go
++++ b/caddyfile.go
+@@ -58,6 +58,36 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+ 			}
+ 			h.AuthCredentials = append(h.AuthCredentials, EncodeAuthCredentials(args[0], args[1]))
+ 
++		case "pvnaive_accounting_socket":
++			args := d.RemainingArgs()
++			if len(args) != 1 || h.PVNaiveAccountingSocket != "" {
++				return d.ArgErr()
++			}
++			h.PVNaiveAccountingSocket = args[0]
++
++		case "pvnaive_node_id":
++			args := d.RemainingArgs()
++			if len(args) != 1 || h.PVNaiveNodeID != "" {
++				return d.ArgErr()
++			}
++			h.PVNaiveNodeID = args[0]
++
++		case "pvnaive_runtime_credential":
++			args := d.RemainingArgs()
++			if len(args) != 2 {
++				return d.ArgErr()
++			}
++			if len(args[0]) == 0 || strings.Contains(args[0], ":") {
++				return d.Err("invalid pvnaive runtime-credential username")
++			}
++			if h.PVNaiveRuntimeCredentials == nil {
++				h.PVNaiveRuntimeCredentials = make(map[string]string)
++			}
++			if _, exists := h.PVNaiveRuntimeCredentials[args[0]]; exists {
++				return d.Errf("pvnaive runtime credential specified twice for user %s", args[0])
++			}
++			h.PVNaiveRuntimeCredentials[args[0]] = args[1]
++
+ 		case "hosts":
+ 			args := d.RemainingArgs()
+ 			if len(args) == 0 {
+diff --git a/forwardproxy.go b/forwardproxy.go
+index f92fe25..434aee2 100644
+--- a/forwardproxy.go
++++ b/forwardproxy.go
+@@ -107,6 +107,13 @@ type Handler struct {
+ 
+ 	// TODO: temporary/deprecated - we should try to reuse existing authentication modules instead!
+ 	AuthCredentials [][]byte `json:"auth_credentials,omitempty"` // slice with base64-encoded credentials
++
++	// PVNaive exact-accounting configuration. These are intentionally fixed,
++	// narrow values; Caddy never receives a management-agent endpoint.
++	PVNaiveAccountingSocket   string            `json:"pvnaive_accounting_socket,omitempty"`
++	PVNaiveNodeID             string            `json:"pvnaive_node_id,omitempty"`
++	PVNaiveRuntimeCredentials map[string]string `json:"pvnaive_runtime_credentials,omitempty"`
++	pvnaiveAccountingClient   *pvnaiveAccountingClient
+ }
+ 
+ // CaddyModule returns the Caddy module information.
+@@ -241,6 +248,10 @@ func (h *Handler) Provision(ctx caddy.Context) error {
+ 		}
+ 	}
+ 
++	if err := h.provisionPVNaiveAccounting(); err != nil {
++		return err
++	}
++
+ 	return nil
+ }
+ 
+@@ -301,6 +312,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
+ 			}
+ 		}
+ 
++		accountingSession, accountingErr := h.newPVNaiveAccountingSession(r)
++		if accountingErr != nil {
++			status := http.StatusServiceUnavailable
++			if errors.Is(accountingErr, errPVNaiveQuotaDepleted) {
++				status = http.StatusForbidden
++			}
++			return caddyhttp.Error(status, accountingErr)
++		}
++
+ 		// HTTP CONNECT Fast Open: Directly responds with a 200 OK
+ 		// before attempting to connect to origin to reduce response latency.
+ 		// We merely close the connection if Open fails.
+@@ -342,17 +362,34 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
+ 		}
+ 		defer targetConn.Close()
+ 
++		if accountingSession != nil {
++			if err := accountingSession.open(r.Context()); err != nil {
++				return caddyhttp.Error(http.StatusServiceUnavailable, err)
++			}
++			targetConn = &pvnaiveAccountingConn{Conn: targetConn, session: accountingSession}
++		}
++
++		var streamErr error
+ 		switch r.ProtoMajor {
+ 		case 1: // http1: hijack the whole flow
+-			return serveHijack(w, targetConn)
++			streamErr = serveHijack(w, targetConn, accountingSession)
+ 		case 2: // http2: keep reading from "request" and writing into same response
+ 			fallthrough
+ 		case 3:
+ 			defer r.Body.Close()
+-			return dualStream(targetConn, r.Body, w, r.Header.Get("Padding") != "")
++			streamErr = dualStream(targetConn, r.Body, w, r.Header.Get("Padding") != "", accountingSession)
++		default:
++			panic("There was a check for http version, yet it's incorrect")
+ 		}
+ 
+-		panic("There was a check for http version, yet it's incorrect")
++		var closeErr error
++		if accountingSession != nil {
++			closeErr = accountingSession.close(context.Background())
++		}
++		if streamErr != nil {
++			return streamErr
++		}
++		return closeErr
+ 	}
+ 
+ 	// Scheme has to be appended to avoid `unsupported protocol scheme ""` error.
+@@ -628,7 +665,7 @@ func serveHiddenPage(w http.ResponseWriter, authErr error) error {
+ 
+ // Hijacks the connection from ResponseWriter, writes the response and proxies data between targetConn
+ // and hijacked connection.
+-func serveHijack(w http.ResponseWriter, targetConn net.Conn) error {
++func serveHijack(w http.ResponseWriter, targetConn net.Conn, accountingSession *pvnaiveAccountingSession) error {
+ 	w.WriteHeader(http.StatusOK)
+ 	clientConn, brw, err := http.NewResponseController(w).Hijack()
+ 	if err != nil {
+@@ -640,7 +677,13 @@ func serveHijack(w http.ResponseWriter, targetConn net.Conn) error {
+ 	// snippet borrowed from `proxy` plugin
+ 	if n := brw.Reader.Buffered(); n > 0 {
+ 		rbuf, _ := brw.Peek(n)
+-		_, _ = targetConn.Write(rbuf)
++		nw, writeErr := targetConn.Write(rbuf)
++		if writeErr != nil {
++			return writeErr
++		}
++		if nw != len(rbuf) {
++			return io.ErrShortWrite
++		}
+ 	}
+ 	err = brw.Flush()
+ 	if err != nil {
+@@ -648,7 +691,7 @@ func serveHijack(w http.ResponseWriter, targetConn net.Conn) error {
+ 			fmt.Errorf("failed to flush to client: %v", err))
+ 	}
+ 
+-	return dualStream(targetConn, clientConn, clientConn, false)
++	return dualStream(targetConn, clientConn, clientConn, false, accountingSession)
+ }
+ 
+ const (
+@@ -661,13 +704,17 @@ const (
+ // Copies data target->clientReader and clientWriter->target, and flushes as needed
+ // Returns when clientWriter-> target stream is done.
+ // Caddy should finish writing target -> clientReader.
+-func dualStream(target net.Conn, clientReader io.ReadCloser, clientWriter io.Writer, padding bool) error {
++func dualStream(target net.Conn, clientReader io.ReadCloser, clientWriter io.Writer, padding bool, accountingSession *pvnaiveAccountingSession) error {
+ 	stream := func(w io.Writer, r io.Reader, paddingType int) error {
+ 		// copy bytes from r to w
+ 		bufPtr := bufferPool.Get().(*[]byte)
+ 		buf := *bufPtr
+ 		buf = buf[0:cap(buf)]
+-		_, _err := flushingIoCopy(w, r, buf, paddingType)
++		var downloadAccounting *pvnaiveAccountingSession
++		if w == clientWriter {
++			downloadAccounting = accountingSession
++		}
++		_, _err := flushingIoCopy(w, r, buf, paddingType, downloadAccounting)
+ 		bufferPool.Put(bufPtr)
+ 
+ 		if cw, ok := w.(closeWriter); ok {
+@@ -690,7 +737,7 @@ type closeWriter interface {
+ // flushingIoCopy is analogous to buffering io.Copy(), but also attempts to flush on each iteration.
+ // If dst does not implement http.Flusher(e.g. net.TCPConn), it will do a simple io.CopyBuffer().
+ // Reasoning: http2ResponseWriter will not flush on its own, so we have to do it manually.
+-func flushingIoCopy(dst io.Writer, src io.Reader, buf []byte, paddingType int) (written int64, err error) {
++func flushingIoCopy(dst io.Writer, src io.Reader, buf []byte, paddingType int, accountingSession *pvnaiveAccountingSession) (written int64, err error) {
+ 	rw, ok := dst.(http.ResponseWriter)
+ 	var rc *http.ResponseController
+ 	if ok {
+@@ -700,8 +747,10 @@ func flushingIoCopy(dst io.Writer, src io.Reader, buf []byte, paddingType int) (
+ 	for {
+ 		var nr int
+ 		var er error
++		addedPadding := false
+ 		if paddingType == AddPadding && numPadding < NumFirstPaddings {
+ 			numPadding++
++			addedPadding = true
+ 			paddingSize := rand.Intn(256)
+ 			maxRead := 65536 - 3 - paddingSize
+ 			nr, er = src.Read(buf[3:maxRead])
+@@ -730,7 +779,19 @@ func flushingIoCopy(dst io.Writer, src io.Reader, buf []byte, paddingType int) (
+ 			nr, er = src.Read(buf)
+ 		}
+ 		if nr > 0 {
+-			nw, ew := dst.Write(buf[0:nr])
++			var nw int
++			var ew error
++			if accountingSession != nil {
++				payloadOffset := 0
++				payloadLength := nr
++				if addedPadding {
++					payloadOffset = 3
++					payloadLength = int(buf[0])*256 + int(buf[1])
++				}
++				nw, ew = accountingSession.writeDownload(dst, buf[0:nr], payloadOffset, payloadLength)
++			} else {
++				nw, ew = dst.Write(buf[0:nr])
++			}
+ 			if nw > 0 {
+ 				written += int64(nw)
+ 			}

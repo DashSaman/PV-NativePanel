@@ -1,0 +1,178 @@
+package forwardproxy
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+)
+
+type pvnaiveRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f pvnaiveRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func pvnaiveJSONResponse(body string) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+}
+
+func TestPVNaiveSuccessfulPayload(t *testing.T) {
+	tests := []struct {
+		name          string
+		rawWritten    int
+		payloadOffset int
+		payloadLength int
+		want          int
+	}{
+		{name: "nothing", rawWritten: 0, payloadOffset: 0, payloadLength: 8, want: 0},
+		{name: "unframed partial", rawWritten: 3, payloadOffset: 0, payloadLength: 8, want: 3},
+		{name: "framing only", rawWritten: 3, payloadOffset: 3, payloadLength: 8, want: 0},
+		{name: "framed partial payload", rawWritten: 7, payloadOffset: 3, payloadLength: 8, want: 4},
+		{name: "framed full payload plus padding", rawWritten: 20, payloadOffset: 3, payloadLength: 8, want: 8},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := pvnaiveSuccessfulPayload(tt.rawWritten, tt.payloadOffset, tt.payloadLength); got != tt.want {
+				t.Fatalf("pvnaiveSuccessfulPayload()=%d want=%d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPVNaiveProxyUsername(t *testing.T) {
+	req, err := http.NewRequest(http.MethodConnect, "https://example.invalid", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("alice:secret")))
+	got, err := pvnaiveProxyUsername(req)
+	if err != nil {
+		t.Fatalf("pvnaiveProxyUsername() error=%v", err)
+	}
+	if got != "alice" {
+		t.Fatalf("pvnaiveProxyUsername()=%q want alice", got)
+	}
+	req.Header.Set("Proxy-Authorization", "Bearer nope")
+	if _, err := pvnaiveProxyUsername(req); err == nil {
+		t.Fatal("non-Basic authorization was accepted")
+	}
+}
+
+func TestPVNaiveDownloadPartialQuotaFrame(t *testing.T) {
+	var seenClaim pvnaiveClaimRequest
+	var seenEvent pvnaiveEvent
+	client := &pvnaiveAccountingClient{
+		httpClient: &http.Client{Transport: pvnaiveRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			switch r.URL.Path {
+			case "/v1/accounting/claim":
+				if err := json.NewDecoder(r.Body).Decode(&seenClaim); err != nil {
+					return nil, err
+				}
+				return pvnaiveJSONResponse(`{"tracked":true,"allowed":true,"granted_bytes":4}`), nil
+			case "/v1/accounting/event":
+				if err := json.NewDecoder(r.Body).Decode(&seenEvent); err != nil {
+					return nil, err
+				}
+				return pvnaiveJSONResponse(`{"tracked":true,"accepted":true,"accounting_complete":true}`), nil
+			default:
+				return nil, errors.New("unexpected telemetry route")
+			}
+		})},
+		nodeID: "node-a",
+		bootID: "11111111-1111-4111-8111-111111111111",
+	}
+	session := &pvnaiveAccountingSession{
+		client:              client,
+		runtimeCredentialID: "22222222-2222-4222-8222-222222222222",
+		username:            "alice",
+		sessionID:           "33333333-3333-4333-8333-333333333333",
+		opened:              true,
+		sequence:            1,
+	}
+	raw := []byte{0, 6, 2, 'a', 'b', 'c', 'd', 'e', 'f', 0, 0}
+	var dst bytes.Buffer
+	n, err := session.writeDownload(&dst, raw, 3, 6)
+	if !errors.Is(err, errPVNaiveQuotaDepleted) {
+		t.Fatalf("writeDownload error=%v want quota depleted", err)
+	}
+	if n != 9 {
+		t.Fatalf("raw written=%d want=9", n)
+	}
+	wantRaw := []byte{0, 4, 2, 'a', 'b', 'c', 'd', 0, 0}
+	if !bytes.Equal(dst.Bytes(), wantRaw) {
+		t.Fatalf("framed write=%v want=%v", dst.Bytes(), wantRaw)
+	}
+	if seenClaim.Direction != "download" || seenClaim.RequestedBytes != 6 || seenClaim.Sequence != 2 {
+		t.Fatalf("claim=%+v", seenClaim)
+	}
+	if seenEvent.DownloadBytes != 4 || seenEvent.UploadBytes != 0 || seenEvent.Sequence != 2 {
+		t.Fatalf("settlement event=%+v", seenEvent)
+	}
+}
+
+func TestPVNaiveClaimFailureDoesNotWrite(t *testing.T) {
+	client := &pvnaiveAccountingClient{
+		httpClient: &http.Client{Transport: pvnaiveRoundTripFunc(func(*http.Request) (*http.Response, error) {
+			return nil, errors.New("telemetry down")
+		})},
+		nodeID: "node-a",
+		bootID: "11111111-1111-4111-8111-111111111111",
+	}
+	session := &pvnaiveAccountingSession{
+		client:              client,
+		runtimeCredentialID: "22222222-2222-4222-8222-222222222222",
+		username:            "alice",
+		sessionID:           "33333333-3333-4333-8333-333333333333",
+		opened:              true,
+		sequence:            1,
+	}
+	var dst bytes.Buffer
+	n, err := session.writeUpload(&dst, []byte("abcd"))
+	if n != 0 || dst.Len() != 0 {
+		t.Fatalf("claim failure wrote n=%d dst=%d", n, dst.Len())
+	}
+	if !errors.Is(err, errPVNaiveAccountingUnhealthy) || !session.failed {
+		t.Fatalf("claim failure err=%v failed=%v", err, session.failed)
+	}
+}
+
+func TestPVNaiveSettlementFailureFailsClosedAfterSuccessfulWrite(t *testing.T) {
+	client := &pvnaiveAccountingClient{
+		httpClient: &http.Client{Transport: pvnaiveRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			if r.URL.Path == "/v1/accounting/claim" {
+				return pvnaiveJSONResponse(`{"tracked":true,"allowed":true,"granted_bytes":4}`), nil
+			}
+			return nil, errors.New("settlement telemetry down")
+		})},
+		nodeID: "node-a",
+		bootID: "11111111-1111-4111-8111-111111111111",
+	}
+	session := &pvnaiveAccountingSession{
+		client:              client,
+		runtimeCredentialID: "22222222-2222-4222-8222-222222222222",
+		username:            "alice",
+		sessionID:           "33333333-3333-4333-8333-333333333333",
+		opened:              true,
+		sequence:            1,
+	}
+	var dst bytes.Buffer
+	n, err := session.writeUpload(&dst, []byte("abcd"))
+	if n != 4 || dst.String() != "abcd" {
+		t.Fatalf("successful destination write n=%d data=%q", n, dst.String())
+	}
+	if !errors.Is(err, errPVNaiveAccountingUnhealthy) || !session.failed {
+		t.Fatalf("settlement failure err=%v failed=%v", err, session.failed)
+	}
+	if session.uploadBytes != 4 || session.sequence != 1 {
+		t.Fatalf("session counters upload=%d sequence=%d", session.uploadBytes, session.sequence)
+	}
+}
