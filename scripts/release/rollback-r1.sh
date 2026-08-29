@@ -11,6 +11,10 @@ done
 for name in pvnaive pvnaive-password pvnaive-runtime-agent pvnaive-telemetry-agent; do
   [[ -f "$backup/$name.before" ]] || { echo "ERROR: rollback asset missing: $name.before" >&2; exit 1; }
 done
+telemetry_binary_backup="$backup/pvnaive-telemetry-agent.before"
+telemetry_service_backup="$backup/pvnaive-telemetry-agent.service.before"
+[[ -f "$telemetry_binary_backup" ]] || { echo 'ERROR: telemetry binary rollback asset missing' >&2; exit 1; }
+[[ -f "$telemetry_service_backup" || -f "$backup/pvnaive-telemetry-agent.service.missing" ]] || { echo 'ERROR: telemetry service rollback state missing' >&2; exit 1; }
 [[ -f "$backup/web.before" && -f "$backup/db.before" ]] || { echo 'ERROR: rollback target metadata missing' >&2; exit 1; }
 
 web_before="$(cat "$backup/web.before")"
