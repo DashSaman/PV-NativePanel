@@ -29,6 +29,10 @@ func TestCurrentR1ReleaseToolingContracts(t *testing.T) {
 			"pvnaive-restore-drill.timer",
 			"/var/www/pvnaive-preview/current",
 			"preview.before",
+			"/opt/pvnaive/DEPLOYED_COMMIT",
+			"/opt/pvnaive/DEPLOYED_WEB_RELEASE",
+			"DEPLOYED_COMMIT.before",
+			"DEPLOYED_WEB_RELEASE.before",
 		},
 		filepath.Join(root, "scripts", "release", "rollback-r1.sh"): {
 			"pvnaive-telemetry-agent.before",
@@ -36,6 +40,10 @@ func TestCurrentR1ReleaseToolingContracts(t *testing.T) {
 			"PVNAIVE_R1_CADDY_ACTION=NONE",
 			"/var/www/pvnaive-preview/current",
 			"preview.before",
+			"/opt/pvnaive/DEPLOYED_COMMIT",
+			"/opt/pvnaive/DEPLOYED_WEB_RELEASE",
+			"DEPLOYED_COMMIT.before",
+			"DEPLOYED_WEB_RELEASE.before",
 		},
 	}
 	for path, wants := range contracts {
