@@ -1,204 +1,176 @@
-# PVNaive — Handoff
+# PVNaive — Canonical Handoff
 
-Last updated: 2026-08-28
+Last updated: 2026-08-30
 
-This is the canonical development handoff on branch `s04-auth`. Production truth must still be cross-checked against the newer production evidence on `main` before any live mutation.
+This file supersedes the old S04/S05 branch handoff. Do not resume work from `s04-auth`, PR #5, PR #6 or the old S06 branch unless extracting one specifically reviewed piece.
 
-## PROJECT
-
-PVNaive is a standalone-first management plane for standard NaiveProxy. The immediate Pilot is intentionally practical: the Owner uses the panel to manage real Naive credentials and hands a copy-ready `naive+https://...` link to a customer. Customer self-service, quota/accounting, expiry, reseller and subscriptions remain later work.
-
-## REPOSITORY
+## Repository
 
 - Repo: `DashSaman/PV-NativePanel`
-- Default: `main`
-- Active dev branch: `s04-auth`
-- Draft PR: #2 `S04-AUTH: production authentication foundation`
-- Branches are deliberately diverged; `PVN-070` owns non-force reconciliation.
-- Never reset/force-push or overwrite production evidence.
+- Product: **PVNaive**
+- Default branch: `main`
+- Audited main at start of this handoff: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
+- Active Lead branch: `lead/parity-truth-2026-08-30`
+- Active Lead PR: `#27`
+- Current schema head: 11 (`0011_customer_product_management`)
+- Current parity document: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
 
-## CURRENT PRODUCTION STATE BEFORE S04R
+Always re-fetch `main` before new implementation; do not trust this SHA if the repository has moved.
 
-Authoritative live references remain:
+## Production — last read-only audit
 
-1. `main:CONTINUE_HERE.md`
-2. `main:ops/S04_LIVE_STATE.md`
-3. newest `main:ops/evidence/*`
+Production: `https://namir.softarg.ir/panel/`
 
-Last canonical facts:
+Observed 2026-08-30 without printing secrets:
 
-- S00-S03 passed.
-- S04 Auth/public panel milestones were deployed and independently checked, but formal S04 closure remains open.
-- PostgreSQL production schema is still v2 until S04R is actually rolled out.
-- API is loopback-only on `127.0.0.1:8080`.
-- one real Owner exists.
-- panel is public at `https://namir.softarg.ir/panel/`.
-- Caddy/Naive data plane and camouflage must remain preserved.
+- API active and loopback-only on `127.0.0.1:8080`;
+- Runtime Agent active;
+- Telemetry Agent active;
+- Caddy/Naive active;
+- panel and readiness return HTTP 200;
+- PostgreSQL schema = 11;
+- six active customer users, six active Runtime credentials and six ServiceTerms;
+- six active direct Subscription tokens;
+- six direct accounting term projections, all complete at audit time;
+- direct accounting event/session data is live;
+- no PVNaive scheduled-backup timer was observed;
+- root filesystem was 79% used;
+- deployment marker files lag newer binary/web mtimes and cannot be treated as authoritative release provenance.
 
-## COMPLETED DEVELOPMENT
+Before any Production mutation, independently re-check all of this and take DB/config/Caddy/web/binary backups plus a rollback plan.
 
-`PVN-001`…`PVN-027` are complete except tasks outside the linear S04R chain; specifically the full S04R implementation chain `PVN-020`…`PVN-027` is now DONE.
+## What is genuinely integrated
 
-S04R provides:
+### Runtime / accounting
 
-- runtime secret AES-GCM envelope and conservative credential policy;
-- byte-preserving Naive Caddy parser/renderer;
-- root Runtime Agent on fixed AF_UNIX socket;
-- fixed-capability expected-SHA Caddy operator with exact backup, validate, reload-only, postflight and rollback;
-- runtime PostgreSQL store + desired/apply/applied revision saga;
-- compensation and explicit `runtime_reconciliation_required` double-failure contract;
-- Owner-only runtime API with CSRF/idempotency/If-Match/secret redaction;
-- `/panel/#/runtime/naive` UI;
-- secure live credential import semantics;
-- create/rename/rotate/enable/disable/soft-revoke;
-- last-active protection;
-- one-time generated password;
-- copy-ready percent-encoded `naive+https://...` link for Karing/compatible clients;
-- full disposable PG18/API/Unix-socket/Runtime rehearsal;
-- exact pinned `v2.11.2-naive` Caddy proof for multiple `basic_auth` entries;
-- checksum-gated S04R artifact with three binaries, migration 0003, web, systemd units, preflight and guarded upgrade.
+- safe Naive Runtime credential management;
+- privileged narrow Unix-socket Runtime Agent;
+- expected-SHA Caddy validate/backup/apply/reload/postflight/rollback;
+- exact successful-write direct-Naive accounting;
+- dedicated accounting socket + Telemetry Agent;
+- idempotent boot/session/sequence/cumulative accounting model;
+- ServiceTerm usage isolation;
+- trusted first-successful-CONNECT activation producer;
+- session/presence projection;
+- shared finite-quota reservation/settlement core.
 
-## VERIFIED GREEN CHECKPOINT
+Do **not** rewrite this lane from scratch.
 
-Full implementation/bundle checkpoint:
+### Customer / product
 
-- commit: `a41fd84c2f17076a3b190eafad3539c47b430503`
-- CI: `33190295766`
-- Go PASS
-- Web PASS
-- PostgreSQL 18/database gates PASS
-- exact pinned Caddy proof PASS
-- S04 auth rehearsal PASS
-- full S04R rehearsal PASS
-- bundle contract PASS
-- archive checksum PASS
-- artifact upload PASS
+- customer create and Runtime adoption;
+- edit/service update;
+- suspend/resume/revoke-safe-delete;
+- quota/unlimited, add/set volume;
+- expiry/no-expiry, creation/first-CONNECT/manual validity, extend days;
+- plans, groups, tags, notes;
+- renewal/new ServiceTerm;
+- Next Plan / On Hold foundations;
+- search/filter/sort/pagination;
+- supported bulk actions with preview + idempotent execution;
+- tenant/RLS product foundations.
 
-Artifact from that run was also downloaded and independently checked: outer `.tar.gz.sha256` passed and every internal `SHA256SUMS` entry passed.
+### Delivery
 
-Customer-link increment followed TDD:
+- `/sub/<token>` = machine Subscription;
+- `/s/<token>` = human Account Page;
+- local QR;
+- read-only current Subscription view;
+- explicit Subscription reissue;
+- explicit password rotation;
+- token/password/service mutations remain separate.
 
-- RED run `33190665847`: only new `buildNaiveURI` test failed (`not a function`), 17 prior tests passed.
-- implementation commits: `f7a8091128e8993f162f0965789e3a90f107125c` and `69259a2e4e8001dd125ad29e7272110864b07fd3`.
-- web job on `33190796760`: runtime tests and production build PASS.
+## What is NOT yet done
 
-A fresh full CI must still be checked on the final documentation HEAD before claiming this handoff release-ready.
+Do not mark these complete merely because schema/routes exist:
 
-## CURRENT TASK
+- Manual Reset Usage;
+- Bulk Reset Usage;
+- restart-safe periodic traffic reset execution;
+- complete accounting/presence wiring in every customer and `/s` view;
+- controlled hard-quota Production race/restart proof;
+- controlled first-CONNECT Production activation proof;
+- operator-facing session list/kill;
+- concurrent session limit;
+- simultaneous unique-IP limit/history;
+- trustworthy HWID/device limit PoC;
+- per-user speed-limit PoC/enforcement;
+- full reseller CRUD/wallet/ledger/plan restriction UX/API;
+- customer history + Audit Explorer;
+- notification engine/preferences/history/Telegram/rule builder;
+- real CPU/RAM/disk/network monitoring/history/log UIs;
+- diagnostics/support bundle/Doctor;
+- scheduled encrypted backup + product restore workflow;
+- OpenAPI/Swagger and stable webhook contracts;
+- final auth/security fixes and whole-route authorization/IDOR/fuzz gates;
+- SBOM/SAST/secret/dependency scans/release signing/provenance;
+- multi-node/fleet/failover/smart-node;
+- generic clean Ubuntu installer/upgrade/rollback/uninstall;
+- real Karing multi-OS compatibility matrix;
+- 50/100/200/400+ capacity campaign;
+- final UI/accessibility/clean-install/Production smoke/Release Candidate.
 
-### PVN-028 — Read-only live Naive import preflight
+## Confirmed current P0 defects
 
-Status: `IN_PROGRESS` because the script is implemented/rehearsed but has not yet been run and evidenced against the live server.
+Re-audited on current main:
 
-**Do not start with a mutation.**
+1. Refresh-token reuse-family handling remains unreachable for an already-revoked rotated token because `BeginAuthenticated` filters `revoked_at IS NULL` before rotation reuse detection.
+2. Generic authenticated middleware can write an HTTP success before `Tx.Commit()` is known; the commit result is ignored.
+3. `/health/ready` is not yet a bounded DB/schema readiness check.
 
-Use exactly:
+Do not silently remove these from `KNOWN_ISSUES.md`.
 
-`docs/PILOT_INSTALL_FA.md`
+## Old PR classification
 
-Live order:
+- **PR #4 — STILL USEFUL (small extract only):** old Karing export branch is obsolete as a whole, but `buildKaringSingBoxProfile` + explicit Copy Karing config UX is not present on main and can be re-evaluated during client compatibility work. Do not merge the branch wholesale.
+- **PR #5 — SUPERSEDED / MERGED ELSEWHERE:** customer lifecycle foundation is represented by newer main schema/code.
+- **PR #6 — SUPERSEDED / MERGED ELSEWHERE:** Sanaei-style customer flow has newer implementations on main.
+- **PR #8 — SUPERSEDED / ARCHIVE:** old exact-accounting branch was replaced by the integrated WS1 implementation; do not merge it.
+- **PR #16 — STILL USEFUL, REQUIRES MANUAL EXTRACTION:** contains ops/observability/backup/OpenAPI/load/fleet foundations on an old base. Never blind merge. Review commit/file units against current main.
 
-1. obtain the newest green S04R artifact for the final HEAD;
-2. verify outer and internal checksums;
-3. run `scripts/stages/S04R-preflight.sh` as root;
-4. require `PREFLIGHT_RESULT=PASS`;
-5. capture exact `CADDYFILE_SHA256`;
-6. only then run the guarded upgrade with that SHA;
-7. require schema v3, healthy Runtime Agent/API and unchanged Caddy SHA/MainPID/NRestarts;
-8. Owner logs into panel and securely imports current Runtime credential;
-9. create one generated customer credential;
-10. copy the one-time Karing/Naive link and test it in Karing;
-11. verify the old existing credential still works;
-12. record production evidence and then close PVN-028/029.
+## PR #16 useful candidate areas
 
-## PILOT CUSTOMER HANDOFF
+Changed files show isolated candidates for:
 
-The customer receives a link like:
+- real system/network metrics;
+- request IDs/redaction/rate-limit middleware;
+- OpenAPI;
+- application observability/logging;
+- doctor/diagnostics;
+- encrypted scheduled backup + restore drill systemd units/scripts;
+- generic deploy/rollback scripts;
+- bounded load rehearsal;
+- notification engine/Telegram foundation;
+- fleet model foundation;
+- System Dashboard/error boundary.
 
-```text
-naive+https://USERNAME:PASSWORD@namir.softarg.ir:443
-```
+Each must be extracted onto a fresh branch after this truth reconciliation, with newer main behavior preserved and fresh tests/CI.
 
-The actual UI percent-encodes username/password and builds the host from the panel hostname.
+## CI state for this handoff
 
-**Never give the customer Owner panel email/password/session/MFA information.**
+The final PR #26 bot head recorded failed workflow runs, but immediately preceding commits passed CI and both WS1 workflows. Lead PR #27 was created from exact current main to reproduce rather than guess.
 
-## PILOT LIMITS — DO NOT CLAIM THESE YET
+At the time of this handoff update, PR #27 had already produced a successful WS1 Exact Accounting run on the refreshed parity head, while other workflows were still running. Before merge, trigger/check all required workflows on the **final exact head**.
 
-- customer portal/login;
-- exact usage/accounting;
-- traffic quota;
-- commercial expiry/reset;
-- device/HWID/session limits;
-- speed limit;
-- reseller/credit;
-- subscription URL/page lifecycle;
-- notifications;
-- final generic fresh installer.
+## Exact next task
 
-## AFTER THE PILOT
+Do not jump to new features yet.
 
-Do not expand random features first. The next critical safety chain is:
+1. Finish Task #1/#2/#3 truth reconciliation on PR #27.
+2. Require exact-head CI green.
+3. Merge PR #27 only after review.
+4. Then Task #4: create a fresh PR #16 integration branch from latest main and extract useful units commit-by-commit.
+5. After PR #16 integration is resolved, continue Owner order with legacy/adopted accounting baseline truth, `/s` accounting, Manual Reset Usage, Bulk Reset Usage and periodic resets.
 
-1. `PVN-030` refresh-token reuse-family detection;
-2. `PVN-031` transaction commit-before-success;
-3. `PVN-032` DB-backed readiness;
-4. `PVN-033` recovery-code login decision;
-5. `PVN-034` HTTP/IP auth rate limit + progressive delay;
-6. `PVN-035` public security headers/cookies/CSP review;
-7. `PVN-036` independent formal S04 closure.
+## Safety invariants
 
-Then continue user lifecycle (`PVN-037+`), exact accounting (`PVN-045+`), subscription (`PVN-052+`) and generic installer/release (`PVN-058+`).
-
-## OPEN CRITICAL RISKS
-
-Read `KNOWN_ISSUES.md`. Highest priority after Pilot:
-
-- BUG-001 / PVN-030 refresh-token family reuse;
-- BUG-002 / PVN-031 generic commit-before-success integrity;
-- SECURITY-001 / PVN-034 HTTP/IP auth abuse controls;
-- DEPLOY-002 / PVN-028/029 live S04R evidence;
-- TECH-DEBT-001 / PVN-070 branch divergence;
-- TEST-003 / PVN-045+ exact accounting proof.
-
-Exact multiple-basic-auth Caddy syntax is no longer an open test gap; it was proven against the pinned Naive Caddy binary in CI.
-
-## IMPORTANT DECISIONS
-
-- standalone-first R1;
-- PostgreSQL stores management desired state;
-- API remains unprivileged;
-- privileged runtime changes only through narrow Unix-socket agent;
-- no arbitrary shell/path/service/URL control;
-- dedicated `/etc/pvnaive/runtime.key` separate from auth/backup keys;
-- Caddy changes touch only supported credential directives;
-- expected SHA + exact backup + validate + reload-only + postflight + rollback;
-- DB finalization failure after Runtime apply must compensate; if compensation itself fails, return reconciliation-required, never success;
-- delete means soft revoke;
-- last active credential cannot be disabled/revoked;
-- no secret in Git/log/evidence/list API;
-- no quota/accounting/session/device/speed promises until proven.
-
-## READ FIRST
-
-1. `PROJECT_STATUS.md`
-2. `ROADMAP.md`
-3. `docs/PILOT_INSTALL_FA.md`
-4. `KNOWN_ISSUES.md`
-5. `AGENT_TASKS.md`
-6. `WORKLOG.md`
-7. `FEATURE_MATRIX.md`
-8. `docs/superpowers/specs/2026-08-28-naive-runtime-credentials-design.md`
-9. `docs/superpowers/plans/2026-08-28-naive-runtime-credentials.md`
-10. before live work: `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest main evidence.
-
-## CONTINUE FROM HERE
-
-Do not ask the Owner to repeat context.
-
-1. verify current `s04-auth` HEAD and final CI;
-2. if any job is red, fix it before rollout;
-3. use the artifact from that exact green HEAD, not an older bundle;
-4. perform only the read-only `PVN-028` preflight first;
-5. wait for and inspect its complete output before running `PVN-029` mutation;
-6. after Karing live smoke, commit evidence before continuing development.
+- no force-push/reset of main;
+- no secret in Git/chat/CI/evidence;
+- no customer deletion/password rotation without the explicit requested action;
+- QR/Subscription view is read-only;
+- Subscription reissue != password rotation;
+- quota/expiry edits do not rotate token/password;
+- no fake usage/online/HWID/speed;
+- no Runtime mutation without validate → backup → apply → verify → rollback;
+- no Production mutation without DB/config/Caddy/web/binary backup and rollback plan;
+- do not copy GPL/AGPL competitor code without explicit license review.
