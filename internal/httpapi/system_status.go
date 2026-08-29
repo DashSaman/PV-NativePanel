@@ -13,7 +13,7 @@ func (s *server) systemStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, envelope{
-		"metrics":            snapshot,
+		"metrics":           snapshot,
 		"traffic_semantics": "server_counter_delta",
 	})
 }
