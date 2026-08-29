@@ -1,121 +1,171 @@
 # PVNaive — Agent / Workstream Task Board
 
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
-The current Chat environment does **not** expose an independent sub-agent execution tool. The roles below are durable workstreams/ownership labels, not a claim that Claude/Gemini/Qwen/DeepSeek are currently running.
+`OWNER_REQUIREMENTS.md` plus the Owner's Production/parity master prompt define product behavior and execution order. This board records current ownership and prevents duplicate work.
 
-## Mandatory Owner requirements — READ BEFORE CUSTOMER WORK
+## Shared rules
 
-`OWNER_REQUIREMENTS.md` is now the authoritative Owner product/UX backlog for `/panel/#/customers`, subscription/QR behavior, customer lifecycle, quota/validity, accounting and later operator-parity work.
+- start from latest `main`, never from a chat snapshot;
+- preserve already-working Runtime/accounting/customer/subscription behavior;
+- use isolated branches/PRs; never force-push/reset main;
+- TDD/fail-first where practical;
+- route/schema presence is not implementation evidence;
+- no fake usage/online/HWID/speed;
+- no secret/password/token/key in Git/chat/CI/evidence;
+- Production mutation requires DB/config/Caddy/web/binary backups + rollback;
+- GPL/AGPL competitors are behavior/architecture references unless explicit source-license compatibility is approved;
+- update a unique workstream report during parallel work; Lead owns canonical reconciliation.
 
-Every agent touching customer code must read it first. In particular:
+## Current Lead lane
 
-- a backend endpoint does not count as complete if the Owner cannot perform the action clearly from the UI;
-- add a clear customer `Edit` action and customer details/action surface;
-- `View QR`, `Copy Subscription`, `Copy Direct Link` and `View Details` must be read-only;
-- viewing QR must not require reissuing the Subscription;
-- viewing/copying existing Subscription must not rotate token or password;
-- `Reissue Subscription` and `Rotate Password` are two separate explicit actions;
-- customer `Delete/Revoke` must be exposed safely with confirmation/audit;
-- complete enable/disable/suspend/revoke/delete, add/set volume, extend/change expiry and unlimited controls;
-- do not fabricate usage/remaining/online/device/speed state before Runtime proof;
-- after P0 lifecycle/accounting work, continue Sanaei/PasarGuard-class search/filter/sort/bulk/renewal ergonomics and then OV-PvNetwork-derived monitoring/fleet patterns.
-
-If any older handoff text conflicts with `OWNER_REQUIREMENTS.md` about customer UX, the Owner Requirements file wins unless the Owner explicitly changes it later.
-
-## Mandatory report format
-
-Before work:
-
-```text
-AGENT: <role>
-TASK-ID: <PVN-ID>
-GOAL: <one outcome>
-FILES: <allowed scope>
-DEPENDENCIES: <IDs/evidence>
-```
-
-After a work unit:
-
-```text
-STATUS: RED | GREEN | BLOCKED | REVIEW
-CHANGES: <what changed>
-FILES MODIFIED: <paths>
-TESTS: <commands/CI run>
-RESULT: <evidence, not just Done>
-NEXT STEP: <exact next action>
-BLOCKERS: <none or evidence>
-```
-
-No workstream may mark a task `DONE`; final verification/ledger update belongs to Agent-REVIEW / Lead Engineer.
-
-## Current state
-
-`PVN-020` through `PVN-027` are complete in development/rehearsal. The active code-to-production edge is now `PVN-028`.
-
-Full S04R checkpoint:
-
-- commit `a41fd84c2f17076a3b190eafad3539c47b430503`;
-- CI `33190295766` — Go/Web/PG18/pinned-Caddy proof/full S04R rehearsal/bundle all PASS;
-- customer-handoff UI then added a TDD-tested `naive+https://...` builder and one-click Karing/Naive copy action.
-
-## Active assignments
-
-| Workstream | Task | Status | Scope | Handoff condition |
-|---|---|---|---|---|
-| Agent-REVIEW/DEVOPS | PVN-028 | ACTIVE | live read-only preflight on existing `testAmir5-3` | `PREFLIGHT_RESULT=PASS`; exact Caddy SHA captured; zero mutation |
-| Agent-REVIEW/DEVOPS | PVN-029 | WAITING_ON_028 | guarded S04R upgrade, secure live import, one customer credential + Karing smoke | current credential preserved; Caddy invariants; new credential works; evidence committed |
-| Agent-PM / Lead | PVN-068 | IN_PROGRESS | sync canonical PM/handoff files to S04R Pilot truth | PM files internally consistent + final HEAD CI checked |
-| Agent-SEC | PVN-030 | READY_AFTER_PILOT | refresh-token reuse-family regression/fix | RED→GREEN + auth rehearsal |
-| Agent-SEC | PVN-031 | READY_AFTER_PILOT | commit-before-success HTTP integrity | injected commit failure cannot emit success |
-| Agent-BACKEND/OPS | PVN-032 | READY_AFTER_PILOT | DB-backed readiness | bounded DB/schema probe + failure tests |
-| Agent-PM/SEC | PVN-033 | READY_AFTER_PILOT | recovery-code login product decision | explicit decision + tests/docs |
-| Agent-SEC | PVN-034 | READY_AFTER_PILOT | IP/identity auth abuse controls | trusted proxy boundary + tested limits/delay |
-| Agent-SEC/REVIEW | PVN-035/036 | WAITING | public security review + formal S04 closure | independent evidence after auth hardening |
-| Agent-DOCS | PVN-069 | READY | reconcile legacy README/SECURITY/API/product docs | actual vs planned clearly labeled |
-| Agent-ARCH/REVIEW | PVN-070 | WAIT_GREEN_CHECKPOINT | branch divergence integration | no force/reset; reviewed non-destructive integration + CI |
-| Agent-QA/SEC | PVN-071 | FUTURE | authorization/E2E/fuzz gates | CI enforced |
-| Agent-PM/OWNER | PVN-072 | NEEDS_OWNER_BUSINESS_DECISION | license policy | explicit license + NOTICE strategy |
-
-## Completed S04R workstreams
-
-| Task | Verified outcome |
+| Field | Value |
 |---|---|
-| PVN-020 | runtime secret envelope + input policy |
-| PVN-021 | byte-preserving Caddy parser/renderer |
-| PVN-022 | fixed Unix-socket Runtime Agent protocol |
-| PVN-023 | expected-SHA validate/backup/reload-only/rollback operator |
-| PVN-024 | runtime DB store + revision saga + compensation/reconciliation error |
-| PVN-025 | Owner-only runtime API + CSRF/idempotency/revision/secret boundaries |
-| PVN-026 | runtime UI + one-time generated secret + copy-ready customer Naive URI |
-| PVN-027 | full disposable S04R rehearsal + exact pinned Caddy multiple-basic-auth proof |
+| Agent | Lead Engineer / PM / Integration |
+| Branch | `lead/parity-truth-2026-08-30` |
+| PR | `#27` |
+| Start main | `a021aa4b62c35b775fb521d042b2f8e6dbde10b0` |
+| Plan | `docs/superpowers/plans/2026-08-30-production-parity-reconciliation.md` |
+| Goal | Current repo/Production truth → current competitor parity → canonical docs → exact-head CI → safe PR #16 integration plan |
+| Production mutation | none in this lane |
 
-## File conflict rules
+## Work already integrated — do not recreate
 
-- `OWNER_REQUIREMENTS.md`: Owner-authoritative customer product behavior. Agents may update status/evidence after verified work but must not weaken/remove requirements without explicit Owner direction.
-- `internal/runtimecred/*`: next changes only for later runtime/accounting work; do not reopen completed S04R behavior casually.
-- `internal/runtimeagent/*`: production safety boundary; any change requires failure-path tests and full rehearsal.
-- `internal/httpapi/*`: auth-hardening tasks `PVN-030/031/034` must be coordinated; do not parallel-write the same middleware/handler files.
-- `web/src/runtime*` / `RuntimeNaive.tsx`: Pilot behavior is frozen until live smoke unless a live-blocking defect is proven.
-- `db/migrations/*`: append-only after release; checksum changes require review.
-- canonical PM files may be updated after verified transitions, but sequential writes to the same file are required.
+### WS1 Runtime / Accounting
 
-## Production interaction rule
+Integrated main + Production contains:
 
-On `testAmir5-3`, use **one server step at a time** and preserve full output. Read-only preflight comes first. Never ask for or paste auth/runtime/age keys or raw secret-bearing Caddy content.
+- pinned forwardproxy exact successful-write accounting;
+- Runtime UUID identity;
+- dedicated accounting socket + Telemetry Agent;
+- append-only/idempotent direct accounting;
+- boot/session/sequence/cumulative semantics;
+- ServiceTerm usage isolation;
+- trusted first-successful-CONNECT activation producer;
+- session/presence projection;
+- shared finite-quota reservation/settlement core.
 
-Runbook: `docs/PILOT_INSTALL_FA.md`.
+Remaining WS1-style work is acceptance/completion, not a rewrite: legacy baseline truth, read-model wiring, reset semantics, hard-quota/first-CONNECT controlled Production proof, sessions/limits.
 
-The live sequence is:
+### WS2 Customer Product
 
-`artifact checksum → PVN-028 read-only preflight → exact Caddy SHA lock → PVN-029 guarded S04R upgrade → Owner secure import → one generated customer credential → Karing smoke → evidence commit`
+Integrated main contains:
 
-Do not hand the customer Owner panel credentials. The Pilot handoff is the generated Naive link only.
+- customer create/adopt/edit/suspend/resume/revoke-safe-delete;
+- plans, renewal/new ServiceTerm, Next Plan/On Hold foundations;
+- quota/unlimited/add/set volume;
+- validity/expiry/no-expiry/extend days;
+- groups/tags/notes;
+- search/filter/sort/pagination;
+- bulk preview/idempotent execution for supported actions;
+- tenant/RLS product foundations.
 
-## After the Pilot
+### WS3 Subscription / Client Delivery
 
-Immediately return to the critical security/closure chain:
+Integrated main contains:
 
-`PVN-030 + PVN-031 + PVN-032 + PVN-033 + PVN-034 → PVN-035 → PVN-036`
+- `/sub/<token>` machine endpoint;
+- `/s/<token>` human account page;
+- local QR;
+- read-only current Subscription;
+- explicit Subscription reissue;
+- explicit password rotation;
+- token/password mutation separation.
 
-Then execute the customer/product backlog according to `OWNER_REQUIREMENTS.md`, prioritizing P0 customer UX/lifecycle, exact accounting/hard quota, trusted first-use, and production S05 rollout before P1/P2 feature expansion.
+Real Karing acceptance matrix remains.
+
+## Current ordered task queue
+
+Do not reorder unless a real technical dependency is documented.
+
+| Order | Workstream | Status | Outcome / gate |
+|---:|---|---|---|
+| 1 | Lead audit latest repo/Production | IN_PROGRESS | repo/PR/CI/prod truth recorded, no secret leak |
+| 2 | Lead competitor parity | IN_PROGRESS | 120-feature current matrix at `docs/PANEL_PARITY_MASTER_2026-08-30.md` |
+| 3 | Lead canonical docs truth | IN_PROGRESS | FEATURE_MATRIX/PROJECT_STATUS/HANDOFF/ROADMAP/KNOWN_ISSUES/AGENT_TASKS/WORKLOG/CONTINUE_HERE current |
+| 4 | WS4 integration / PR #16 | WAITING_ON_1_3 | extract useful ops units onto fresh branch; no blind merge |
+| 5 | Accounting legacy baseline | TODO | no fake zero, provable baseline or Unknown |
+| 6 | `/s` accounting projection | TODO | Used/Remaining/Upload/Download/Last Online/Online/Expiry/Quota real or explicit unavailable |
+| 7 | Manual Reset Usage | TODO | confirm + audit + accounting event + idempotency; no token/password rotation |
+| 8 | Bulk Reset Usage | TODO | Preview → Execute with same idempotency key |
+| 9 | Periodic reset execution | TODO | persisted cursor/scheduler/timezone/exactly-once/audit/history |
+| 10 | Hard quota Production proof | TODO | concurrency/race/exhaustion/reload/restart/reconnect/no bypass |
+| 11 | First successful CONNECT proof | TODO | only successful authenticated CONNECT activates |
+| 12 | Customer sessions | TODO | active sessions/IP/timestamps/reliable bytes |
+| 13 | Kill session | TODO | real disconnect + confirmation/audit |
+| 14 | Concurrent session limit | TODO | Unlimited/N enforced under race |
+| 15 | Unique IP limit | TODO | simultaneous unique-IP semantics/enforcement |
+| 16 | IP/session history | TODO | bounded privacy-aware retention |
+| 17 | HWID PoC | TODO | implement only if identity is trustworthy |
+| 18 | Speed-limit PoC | TODO | implement only if data plane can enforce |
+| 19 | Reseller CRUD | TODO | create/edit/disable/revoke/list/search |
+| 20 | Tenant isolation full audit | TODO | cross-reseller read/edit/renew/delete/subscription IDOR negatives |
+| 21 | Reseller wallet/credit | TODO | correct balance mutation semantics |
+| 22 | Financial ledger | TODO | immutable credit/debit/create/renew/refund/adjustment history |
+| 23 | Reseller plan/restriction quotas | TODO | allowed plans/max users/max active/credit |
+| 24 | Customer history | TODO | all sensitive service actions projected |
+| 25 | Audit Explorer | TODO | actor/user/action/date/IP/result filters; redacted |
+| 26 | Notification engine/preferences/history | TODO | quota/expiry/runtime/node/backup/security/disk/cert events |
+| 27 | Telegram + rules | TODO | secure secret handling + retry/outbox/rule builder |
+| 28 | Dashboard/monitoring/history | TODO | CPU/RAM/disk/network/traffic/online/runtime real data |
+| 29 | Logs/request diagnostics/support bundle | TODO | application/runtime/security, request ID, redaction |
+| 30 | Doctor | TODO | command/page health checks |
+| 31 | Scheduled encrypted backup | TODO | retention/DB/config/runtime state/important files |
+| 32 | Restore/verification/drill/UI | TODO | strong safeguards + recurring restore proof |
+| 33 | API/OpenAPI | TODO | actual ready contracts only |
+| 34 | API rate limit/idempotency/webhooks | TODO | stable policy/event contracts |
+| 35 | Security BUG-001/002/003 | TODO | refresh reuse, commit-before-success, DB readiness |
+| 36 | Authorization/IDOR/CSRF/redaction/fuzz | TODO | complete route × role matrix |
+| 37 | Supply-chain security | TODO | dependency scan, secret scan, SAST, SBOM, signing/provenance/license |
+| 38 | Multi-node/fleet | TODO | node model/auth/health/metrics/capacity/assignment/deploy |
+| 39 | Drain/maintenance/canary/upgrade/rollback/failover/smart node | TODO | desired/applied + reconciliation loops |
+| 40 | Fresh installer | TODO | secure version-pinned clean Ubuntu install + Doctor |
+| 41 | Upgrade | TODO | pre-backup + safe migrations |
+| 42 | Rollback/uninstall | TODO | conservative data-preserving lifecycle |
+| 43 | Client compatibility | TODO | Karing Windows/Android/iOS/macOS/Linux first |
+| 44 | Load/capacity | TODO | 50/100/200/400+ + correctness under load |
+| 45 | Bulk/search completion | TODO | reset/delete/unlimited/no-expiry/change-expiry/next-plan, advanced filters/sorts/columns/URL state |
+| 46 | Final UI polish | TODO | professional customer/dashboard/account page + responsive/accessibility/theme |
+| 47 | Final docs reconciliation | TODO | no stale TODO for implemented features |
+| 48 | Clean-server installation | TODO | fresh VM proof |
+| 49 | Final Production smoke | TODO | exact RC deploy smoke + rollback readiness |
+| 50 | Release Candidate | TODO | no logical P0/P1 release blocker |
+
+## Old PR classification
+
+| PR | Classification | Action |
+|---:|---|---|
+| #4 | STILL USEFUL, small extract | re-evaluate only explicit Karing sing-box profile/export during client lane |
+| #5 | SUPERSEDED / MERGED ELSEWHERE | do not merge; newer customer lifecycle exists on main |
+| #6 | SUPERSEDED / MERGED ELSEWHERE | do not merge; newer customer/product/subscription flow exists on main |
+| #8 | SUPERSEDED / ARCHIVE | do not merge; replaced by integrated WS1 accounting |
+| #16 | STILL USEFUL, manual extraction required | fresh integration branch; inspect candidate units one-by-one |
+
+## File ownership / conflict rules for next integration
+
+During PR #16 extraction:
+
+- preserve current `internal/httpapi/server.go` customer/subscription/accounting changes;
+- preserve current schema 11; append migrations only if required;
+- metrics/observability/ops should avoid modifying customer semantics;
+- notification/fleet foundations are not automatically product-complete;
+- systemd backup/restore units require safe path/permission/retention review before Production;
+- web System Dashboard/error boundary must not regress current customer/product UI;
+- no Production deployment until the extracted branch has full green CI and required backups/rollback plan.
+
+## Mandatory work-unit report
+
+```text
+TASK #:
+STATUS:
+WHAT CHANGED:
+FILES:
+TESTS:
+CI:
+PRODUCTION:
+EVIDENCE:
+REMAINING:
+NEXT TASK:
+```
+
+Lead updates canonical documents only after evidence, then automatically proceeds to the next ordered task.
