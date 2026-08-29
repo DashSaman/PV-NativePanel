@@ -65,6 +65,16 @@ if [[ -f "$backup/RELEASE.json.before" ]]; then
 elif [[ -f "$backup/RELEASE.json.missing" ]]; then
   rm -f -- /opt/pvnaive/release/RELEASE.json
 fi
+if [[ -f "$backup/DEPLOYED_COMMIT.before" ]]; then
+  install -o root -g root -m 0644 "$backup/DEPLOYED_COMMIT.before" /opt/pvnaive/DEPLOYED_COMMIT
+elif [[ -f "$backup/DEPLOYED_COMMIT.missing" ]]; then
+  rm -f -- /opt/pvnaive/DEPLOYED_COMMIT
+fi
+if [[ -f "$backup/DEPLOYED_WEB_RELEASE.before" ]]; then
+  install -o root -g root -m 0644 "$backup/DEPLOYED_WEB_RELEASE.before" /opt/pvnaive/DEPLOYED_WEB_RELEASE
+elif [[ -f "$backup/DEPLOYED_WEB_RELEASE.missing" ]]; then
+  rm -f -- /opt/pvnaive/DEPLOYED_WEB_RELEASE
+fi
 
 systemctl daemon-reload
 systemctl restart pvnaive-telemetry-agent.service
