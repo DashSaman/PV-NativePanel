@@ -138,7 +138,6 @@ function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPl
         ...(groupID ? { group_id: groupID } : {}), tag_ids: Array.from(selectedTags), on_hold: onHold,
       });
       await onDone({ username: result.user.username, password: result.generated_password, subscriptionPath: result.subscription_path });
-      onClose();
     } catch (error) { setMessage(error instanceof Error ? error.message : "ساخت اکانت انجام نشد."); }
     finally { setBusy(false); }
   }
@@ -223,7 +222,7 @@ function PasswordForm({ customer, onDone, onClose }: { customer: ProductCustomer
   const [generate, setGenerate] = useState(true); const [password, setPassword] = useState(""); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setMessage("");
-    try { const result = await rotateProductPassword(customer.id, { password: generate ? "" : password, generate_password: generate }); await onDone(result.generated_password || (generate ? undefined : password)); onClose(); }
+    try { const result = await rotateProductPassword(customer.id, { password: generate ? "" : password, generate_password: generate }); await onDone(result.generated_password || (generate ? undefined : password)); }
     catch (error) { setMessage(error instanceof Error ? error.message : "تغییر رمز انجام نشد."); }
     finally { setBusy(false); }
   }
