@@ -10,46 +10,68 @@ def replace_once(path: str, old: str, new: str) -> None:
     p.write_text(text.replace(old, new, 1))
 
 
-# Latest-schema migration regression.
+def replace_count(path: str, old: str, new: str, expected: int) -> None:
+    p = Path(path)
+    text = p.read_text()
+    count = text.count(old)
+    if count != expected:
+        raise SystemExit(f"{path}: expected {expected} matches, found {count}: {old!r}")
+    p.write_text(text.replace(old, new))
+
+
+def transform_block(path: str, start: str, end: str, transform) -> None:
+    p = Path(path)
+    text = p.read_text()
+    if text.count(start) != 1 or text.count(end) != 1:
+        raise SystemExit(f"{path}: block markers changed: {start!r} -> {end!r}")
+    i = text.index(start)
+    j = text.index(end, i)
+    block = text[i:j]
+    updated = transform(block)
+    if updated == block:
+        raise SystemExit(f"{path}: block transform made no change: {start!r}")
+    p.write_text(text[:i] + updated + text[j:])
+
+
+migration_test = "tests/db/migration_test.sh"
 replace_once(
-    "tests/db/migration_test.sh",
+    migration_test,
     "for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009; do",
     "for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010; do",
 )
 replace_once(
-    "tests/db/migration_test.sh",
+    migration_test,
     "grep -Fqx 'PVNAIVE_SCHEMA_VERSION=9' <<< \"${reapply_output}\"",
     "grep -Fqx 'PVNAIVE_SCHEMA_VERSION=10' <<< \"${reapply_output}\"",
 )
-replace_once(
-    "tests/db/migration_test.sh",
+transform_block(
+    migration_test,
     "# Destructive SQL in the next contiguous migration (10) must fail closed.",
-    "# Destructive SQL in the next contiguous migration (11) must fail closed.",
+    "# An unlisted next migration (10) must fail checksum-manifest validation.",
+    lambda b: b.replace("migration (10)", "migration (11)").replace("0010", "0011"),
 )
-for old, new in [
-    ("-- pvnaive:migration-version 0010' \\", "-- pvnaive:migration-version 0011' \\") ,
-    ("0010_forbidden_drop.up.sql", "0011_forbidden_drop.up.sql"),
-    ("0010_forbidden_drop.down.sql", "0011_forbidden_drop.down.sql"),
-    ("# An unlisted next migration (10) must fail checksum-manifest validation.", "# An unlisted next migration (11) must fail checksum-manifest validation."),
-    ("0010_unlisted_file.up.sql", "0011_unlisted_file.up.sql"),
-    ("0010_unlisted_file.down.sql", "0011_unlisted_file.down.sql"),
-    ("# A version gap from 9 to 11 must fail before executing SQL.", "# A version gap from 10 to 12 must fail before executing SQL."),
-    ("-- pvnaive:migration-version 0011' \\", "-- pvnaive:migration-version 0012' \\") ,
-    ("0011_version_gap.up.sql", "0012_version_gap.up.sql"),
-    ("0011_version_gap.down.sql", "0012_version_gap.down.sql"),
-    ('expected_checksum="$(sha256sum "${repo_root}/db/migrations/0009_direct_naive_exact_accounting.up.sql" | awk \'{print $1}\')"', 'expected_checksum="$(sha256sum "${repo_root}/db/migrations/0010_pending_reservation_completeness.up.sql" | awk \'{print $1}\')"'),
-    ('WHERE version=9', 'WHERE version=10'),
-    ('for expected in 8 7 6 5 4 3 2 1; do', 'for expected in 9 8 7 6 5 4 3 2 1; do'),
-]:
-    replace_once("tests/db/migration_test.sh", old, new)
-
-# The two migration-version header replacements above occur in two separate
-# fixture blocks. The first replacement consumes the forbidden-drop header;
-# update the unlisted-file header explicitly after that.
+transform_block(
+    migration_test,
+    "# An unlisted next migration (10) must fail checksum-manifest validation.",
+    "# A version gap from 9 to 11 must fail before executing SQL.",
+    lambda b: b.replace("migration (10)", "migration (11)").replace("0010", "0011"),
+)
+transform_block(
+    migration_test,
+    "# A version gap from 9 to 11 must fail before executing SQL.",
+    "# Applied migration immutability includes the newest released migration.",
+    lambda b: b.replace("9 to 11", "10 to 12").replace("0011", "0012"),
+)
 replace_once(
-    "tests/db/migration_test.sh",
-    "'-- pvnaive:migration-version 0010' \\\n  '-- pvnaive:migration-name unlisted_file'",
-    "'-- pvnaive:migration-version 0011' \\\n  '-- pvnaive:migration-name unlisted_file'",
+    migration_test,
+    'expected_checksum="$(sha256sum "${repo_root}/db/migrations/0009_direct_naive_exact_accounting.up.sql" | awk \'{print $1}\')"',
+    'expected_checksum="$(sha256sum "${repo_root}/db/migrations/0010_pending_reservation_completeness.up.sql" | awk \'{print $1}\')"',
+)
+replace_count(migration_test, "WHERE version=9", "WHERE version=10", 2)
+replace_once(
+    migration_test,
+    "for expected in 8 7 6 5 4 3 2 1; do",
+    "for expected in 9 8 7 6 5 4 3 2 1; do",
 )
 
 # Customer lifecycle uses the newest repository schema, then proves every
