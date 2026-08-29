@@ -13,6 +13,14 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/observability"
 )
 
+func WithOperationalMiddleware(next http.Handler) http.Handler {
+	if next == nil {
+		next = http.NotFoundHandler()
+	}
+	limiter := newRequestRateLimiter()
+	return requestInstrumentation(securityHeaders(limiter.middleware(next)))
+}
+
 type responseStatusRecorder struct {
 	http.ResponseWriter
 	status int
