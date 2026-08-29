@@ -29,7 +29,7 @@ import {
   type ProductTag,
 } from "./productApi";
 import { encodeQR } from "./qr";
-import { canUseRawRuntime, formatBytes, formatPanelDate, usagePresentation } from "./productPanelModel";
+import { formatBytes, formatPanelDate, usagePresentation } from "./productPanelModel";
 import "./product-panel.css";
 
 type Props = { role: Principal["role"] };
@@ -40,7 +40,7 @@ type DialogState =
   | { type: "renew"; customer: ProductCustomer }
   | { type: "password"; customer: ProductCustomer }
   | { type: "subscription"; customer: ProductCustomer; delivery: ProductSubscriptionDelivery; rotated: boolean }
-  | { type: "secret"; username: string; password?: string; subscriptionPath?: string; notice: string }
+  | { type: "secret"; username: string; password?: string; subscriptionPath?: string; accountPagePath?: string; notice: string }
   | { type: "bulk" };
 
 type BulkPreviewState = { request: ProductBulkRequest; operation: ProductBulkOperation; idempotencyKey: string };
@@ -70,6 +70,18 @@ function QR({ value }: { value: string }) {
 function absoluteSubscription(path: string): string {
   const base = typeof window === "undefined" ? "https://localhost/" : window.location.origin;
   return new URL(path, base).toString();
+}
+
+function humanAccountPath(subscriptionPath: string, explicitPath?: string): string {
+  if (explicitPath) return explicitPath;
+  const prefixes = ["/sub/", "/api/v1/subscriptions/"];
+  for (const prefix of prefixes) {
+    if (subscriptionPath.startsWith(prefix)) {
+      const token = subscriptionPath.slice(prefix.length).split("/", 1)[0];
+      if (token) return `/s/${token}`;
+    }
+  }
+  return subscriptionPath;
 }
 
 function commercialLabel(customer: ProductCustomer): string {
@@ -108,7 +120,7 @@ function createValidity(noExpiry: boolean, validityMode: "on_creation" | "on_fir
   return { mode: validityMode, duration_days: Number(days) } as const;
 }
 
-function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: (result: { username: string; password?: string; subscriptionPath?: string }) => Promise<void>; onClose: () => void }) {
+function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: (result: { username: string; password?: string; subscriptionPath?: string; accountPagePath?: string }) => Promise<void>; onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [preset, setPreset] = useState("");
   const [generate, setGenerate] = useState(true);
@@ -137,7 +149,7 @@ function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPl
         }),
         ...(groupID ? { group_id: groupID } : {}), tag_ids: Array.from(selectedTags), on_hold: onHold,
       });
-      await onDone({ username: result.user.username, password: result.generated_password, subscriptionPath: result.subscription_path });
+      await onDone({ username: result.user.username, password: result.generated_password, subscriptionPath: result.subscription_path, accountPagePath: result.account_page_path });
     } catch (error) { setMessage(error instanceof Error ? error.message : "ساخت اکانت انجام نشد."); }
     finally { setBusy(false); }
   }
@@ -231,9 +243,28 @@ function PasswordForm({ customer, onDone, onClose }: { customer: ProductCustomer
 
 function SubscriptionContent({ delivery }: { delivery: ProductSubscriptionDelivery }) {
   const subscription = absoluteSubscription(delivery.subscription_path);
+  const accountPage = absoluteSubscription(humanAccountPath(delivery.subscription_path, delivery.account_page_path));
   const [copied, setCopied] = useState("");
   async function copy(key: string, value: string) { await navigator.clipboard.writeText(value); setCopied(key); window.setTimeout(() => setCopied(""), 1000); }
-  return <div className="subscription-grid"><div className="subscription-fields"><label>Subscription URL<div className="copy-row"><input readOnly value={subscription} /><button onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد" : "کپی"}</button></div></label>{delivery.direct_uri && <label>Direct Naive URI<div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد" : "کپی"}</button></div></label>}{delivery.delivery_notice && <p className="muted">{delivery.delivery_notice}</p>}</div><div className="qr-stack"><div><QR value={subscription} /><small>Subscription</small></div>{delivery.direct_uri && <div><QR value={delivery.direct_uri} /><small>Direct Naive</small></div>}</div></div>;
+  return <div className="subscription-delivery">
+    <section className="subscription-primary-card">
+      <div className="subscription-primary-copy">
+        <span className="subscription-kicker">Karing / Subscription</span>
+        <h3>لینک ساب کلاینت</h3>
+        <p>برای اضافه‌کردن سرویس در Karing همین QR را اسکن کن یا لینک را کپی کن.</p>
+        <div className="copy-row subscription-link-row"><input readOnly value={subscription} /><button className="primary-action" onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد ✓" : "کپی لینک"}</button></div>
+      </div>
+      <div className="subscription-primary-qr"><QR value={subscription} /><small>QR اشتراک Karing</small></div>
+    </section>
+
+    <section className="account-page-box">
+      <div><strong>صفحه وضعیت کاربر</strong><span>نمایش حجم، انقضا و راهنمای اتصال در مرورگر.</span></div>
+      <div className="account-page-actions"><a className="open-account-page" href={accountPage} target="_blank" rel="noreferrer">باز کردن صفحه</a><button className="button-secondary" onClick={() => void copy("page", accountPage)}>{copied === "page" ? "کپی شد ✓" : "کپی لینک صفحه"}</button></div>
+    </section>
+
+    {delivery.direct_uri && <details className="direct-details"><summary>Direct Naive · تنظیمات پیشرفته</summary><div className="direct-details-body"><div className="subscription-fields"><p className="field-hint">برای ورود دستی یا تست مستقیم استفاده می‌شود؛ برای Karing معمولاً Subscription پیشنهاد می‌شود.</p><div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد ✓" : "کپی"}</button></div></div><div className="direct-qr"><QR value={delivery.direct_uri} /><small>QR مستقیم Naive</small></div></div></details>}
+    {delivery.delivery_notice && <p className="subscription-notice">{delivery.delivery_notice}</p>}
+  </div>;
 }
 
 function BulkForm({ selected, plans, groups, tags, onDone, onClose }: { selected: string[]; plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: () => Promise<void>; onClose: () => void }) {
@@ -280,7 +311,7 @@ function BulkForm({ selected, plans, groups, tags, onDone, onClose }: { selected
   </form>;
 }
 
-export function ProductCustomers({ role }: Props) {
+export function ProductCustomers({ role: _role }: Props) {
   const [filters, setFilters] = useState<ProductFilters>({ ...DEFAULT_PRODUCT_FILTERS });
   const [searchDraft, setSearchDraft] = useState("");
   const [customers, setCustomers] = useState<ProductCustomer[]>([]);
@@ -297,90 +328,108 @@ export function ProductCustomers({ role }: Props) {
 
   const refresh = useCallback(async () => {
     setLoading(true); setMessage("");
-    try {
-      const page = await listProductCustomers(filters);
-      setCustomers(page.customers); setTotal(page.total);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "لیست کاربران بارگذاری نشد."); }
+    try { const page = await listProductCustomers(filters); setCustomers(page.customers); setTotal(page.total); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "لیست کاربران بارگذاری نشد."); }
     finally { setLoading(false); }
   }, [filters]);
 
-  useEffect(() => { void refreshCatalog().catch((error) => setMessage(error instanceof Error ? error.message : "کاتالوگ بارگذاری نشد.")); }, [refreshCatalog]);
+  useEffect(() => { void refreshCatalog().catch((error) => setMessage(error instanceof Error ? error.message : "اطلاعات پلن‌ها بارگذاری نشد.")); }, [refreshCatalog]);
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => { setSelected(new Set()); }, [filters.page, filters.pageSize]);
 
   const pageCount = Math.max(1, Math.ceil(total / filters.pageSize));
   const allPageSelected = customers.length > 0 && customers.every((customer) => selected.has(customer.id));
+  const onlineCount = customers.filter((customer) => customer.usage?.available && customer.usage.online).length;
+  const activeCount = customers.filter((customer) => commercialLabel(customer) === "فعال").length;
 
   function patchFilters(patch: Partial<ProductFilters>) { setFilters((current) => ({ ...current, ...patch, page: patch.page ?? 1 })); }
+  function resetFilters() { setSearchDraft(""); setFilters({ ...DEFAULT_PRODUCT_FILTERS }); }
   function toggle(id: string) { setSelected((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next; }); }
-  async function copiedSecret(username: string, password?: string, subscriptionPath?: string, notice = "اطلاعات حساس فقط همین بار نمایش داده می‌شود.") { setDialog({ type: "secret", username, password, subscriptionPath, notice }); await refresh(); }
+  async function copiedSecret(username: string, password?: string, subscriptionPath?: string, accountPagePath?: string, notice = "اطلاعات حساس فقط همین بار نمایش داده می‌شود.") { setDialog({ type: "secret", username, password, subscriptionPath, accountPagePath, notice }); await refresh(); }
 
   async function openSubscription(customer: ProductCustomer, rotate = false) {
     setBusyID(customer.id); setMessage("");
     try {
-      if (rotate && !window.confirm(`Subscription قبلی ${customer.username} باطل و لینک جدید صادر شود؟`)) return;
+      if (rotate && !window.confirm(`لینک اشتراک قبلی ${customer.username} باطل و لینک جدید صادر شود؟`)) return;
       const delivery = rotate ? await reissueProductSubscription(customer.id) : await getProductSubscription(customer.id);
       setDialog({ type: "subscription", customer, delivery, rotated: rotate });
       if (rotate) await refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Subscription در دسترس نیست."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "لینک اشتراک در دسترس نیست."); }
     finally { setBusyID(""); }
   }
 
   async function lifecycle(customer: ProductCustomer, action: "suspend" | "resume" | "revoke") {
-    if (action === "revoke" && !window.confirm(`اکانت ${customer.username} revoke شود؟`)) return;
+    if (action === "revoke" && !window.confirm(`اکانت ${customer.username} لغو شود؟`)) return;
     setBusyID(customer.id); setMessage("");
     try {
       if (action === "suspend") await suspendProductCustomer(customer.id);
       else if (action === "resume") await resumeProductCustomer(customer.id);
       else await revokeProductCustomer(customer.id);
       await refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "عملیات lifecycle انجام نشد."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "عملیات انجام نشد."); }
     finally { setBusyID(""); }
   }
 
   return <main className="product-page customers-product-page">
-    <header className="product-hero"><div><p className="eyebrow">PVNaive · Customer product</p><h1>مدیریت کاربران</h1><p>Plan، Renewal، Group/Tag، Bulk Preview و Accounting دقیق در یک نمای عملیاتی.</p></div><div className="hero-actions">{canUseRawRuntime(role) && <a className="button-secondary" href="/panel/#/customers/runtime-adoption">اکانت‌های قدیمی Runtime</a>}<button className="button-secondary" onClick={() => void refresh()}>↻ بروزرسانی</button><button className="primary-action" onClick={() => setDialog({ type: "create" })}>＋ ساخت اکانت</button></div></header>
+    <header className="product-hero clean-hero"><div><p className="eyebrow">مدیریت سرویس</p><h1>کاربران</h1><p>ساخت، تمدید و مدیریت حساب‌ها از یک صفحه ساده.</p></div><div className="hero-actions"><button className="button-secondary" onClick={() => void refresh()}>↻ بروزرسانی</button><button className="primary-action" onClick={() => setDialog({ type: "create" })}>＋ کاربر جدید</button></div></header>
 
-    <section className="product-stats"><article><span>کل نتیجه</span><strong>{total.toLocaleString("fa-IR")}</strong></article><article><span>آنلاین در این صفحه</span><strong>{customers.filter((c) => c.usage?.available && c.usage.online).length.toLocaleString("fa-IR")}</strong></article><article><span>Accounting دقیق</span><strong>{customers.filter((c) => c.usage_capability.available).length.toLocaleString("fa-IR")}/{customers.length.toLocaleString("fa-IR")}</strong></article><article><span>On hold</span><strong>{customers.filter((c) => c.on_hold).length.toLocaleString("fa-IR")}</strong></article></section>
-
-    <section className="product-card product-directory">
-      <form className="product-toolbar" onSubmit={(event) => { event.preventDefault(); patchFilters({ q: searchDraft }); }}>
-        <label className="search-box"><span>⌕</span><input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} placeholder="نام کاربری، ID، Note یا prefix اشتراک" /></label>
-        <button type="submit">جستجو</button>
-        <label><span>وضعیت</span><select value={filters.status} onChange={(e) => patchFilters({ status: e.target.value })}><option value="">همه</option><option value="active">فعال</option><option value="pending">منتظر اتصال</option><option value="on_hold">On hold</option><option value="suspended">تعلیق</option><option value="expired">منقضی</option><option value="depleted">حجم تمام</option><option value="revoked">لغوشده</option></select></label>
-        <label><span>پلن</span><select value={filters.plan} onChange={(e) => patchFilters({ plan: e.target.value })}><option value="">همه</option>{plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
-        <label><span>گروه</span><select value={filters.group} onChange={(e) => patchFilters({ group: e.target.value })}><option value="">همه</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
-        <label><span>تگ</span><select value={filters.tag} onChange={(e) => patchFilters({ tag: e.target.value })}><option value="">همه</option>{tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select></label>
-        <label><span>حجم</span><select value={filters.unlimitedVolume === null ? "" : String(filters.unlimitedVolume)} onChange={(e) => patchFilters({ unlimitedVolume: e.target.value === "" ? null : e.target.value === "true" })}><option value="">همه</option><option value="false">حجمی</option><option value="true">نامحدود</option></select></label>
-        <label><span>انقضا</span><select value={filters.unlimitedExpiry === null ? "" : String(filters.unlimitedExpiry)} onChange={(e) => patchFilters({ unlimitedExpiry: e.target.value === "" ? null : e.target.value === "true" })}><option value="">همه</option><option value="false">دارای انقضا</option><option value="true">بدون انقضا</option></select></label>
-        <label><span>از تاریخ</span><input type="date" value={filters.expiryFrom ? filters.expiryFrom.slice(0, 10) : ""} onChange={(e) => patchFilters({ expiryFrom: e.target.value ? `${e.target.value}T00:00:00.000Z` : "" })} /></label>
-        <label><span>تا تاریخ</span><input type="date" value={filters.expiryTo ? filters.expiryTo.slice(0, 10) : ""} onChange={(e) => patchFilters({ expiryTo: e.target.value ? `${e.target.value}T23:59:59.999Z` : "" })} /></label>
-        <label><span>Reseller ID</span><input value={filters.reseller} onChange={(e) => patchFilters({ reseller: e.target.value })} placeholder="اختیاری" /></label>
-        <label><span>مرتب‌سازی</span><select value={filters.sort} onChange={(e) => patchFilters({ sort: e.target.value as ProductFilters["sort"] })}><option value="updated">آخرین تغییر</option><option value="username">نام کاربری</option><option value="expiry">انقضا</option><option value="created">ساخت</option><option value="last_renewal">آخرین تمدید</option></select></label>
-        <label><span>جهت</span><select value={filters.direction} onChange={(e) => patchFilters({ direction: e.target.value as ProductFilters["direction"] })}><option value="desc">نزولی</option><option value="asc">صعودی</option></select></label>
-        <label><span>تعداد</span><select value={filters.pageSize} onChange={(e) => patchFilters({ pageSize: Number(e.target.value) as ProductFilters["pageSize"] })}><option value="10">10</option><option value="20">20</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
-      </form>
-
-      {selected.size > 0 && <div className="bulk-strip"><strong>{selected.size.toLocaleString("fa-IR")} اکانت انتخاب شده</strong><button className="primary-action" onClick={() => setDialog({ type: "bulk" })}>Bulk Preview / Execute</button><button onClick={() => setSelected(new Set())}>پاک‌کردن انتخاب</button></div>}
-      {message && <div className="product-message" role="status">{message}</div>}
-
-      <div className="product-table-wrap"><table className="product-table"><thead><tr><th><input type="checkbox" aria-label="انتخاب صفحه" checked={allPageSelected} onChange={() => setSelected((current) => { const next = new Set(current); const all = customers.every((c) => next.has(c.id)); customers.forEach((c) => all ? next.delete(c.id) : next.add(c.id)); return next; })} /></th><th>اکانت / وضعیت</th><th>پلن / گروه / تگ</th><th>حجم</th><th>مصرف / باقی‌مانده</th><th>Online / Session</th><th>انقضا / شروع</th><th>عملیات</th></tr></thead><tbody>
-        {loading && <tr><td colSpan={8}><div className="table-loading">در حال بارگذاری داده واقعی…</div></td></tr>}
-        {!loading && customers.length === 0 && <tr><td colSpan={8}><div className="empty-state"><strong>کاربری پیدا نشد</strong><span>فیلترها را تغییر بده.</span></div></td></tr>}
-        {customers.map((customer) => {
-          const usage = usagePresentation(customer); const busy = busyID === customer.id;
-          return <tr key={customer.id}><td><input type="checkbox" checked={selected.has(customer.id)} onChange={() => toggle(customer.id)} /></td><td><div className="account-cell"><span className="account-avatar">{customer.username.slice(0, 1).toUpperCase()}</span><div><strong>{customer.username}</strong><small>{customer.id.slice(0, 8)} · {customer.runtime_credential_id.slice(0, 8)}</small><span className={`status-pill ${statusTone(customer)}`}>{commercialLabel(customer)}</span></div></div></td><td><div className="stack-cell"><strong>{customer.plan_name || "Custom"}</strong><small>{customer.group?.name || "بدون گروه"}</small><div className="tag-row">{(customer.tags || []).map((tag) => <span key={tag.id}>{tag.name}</span>)}{!(customer.tags || []).length && <em>بدون تگ</em>}</div>{customer.next_plan_name && <small>Next: {customer.next_plan_name}</small>}</div></td><td><strong>{customer.quota_bytes === null ? "نامحدود" : formatBytes(customer.quota_bytes)}</strong>{customer.usage && !customer.usage.accounting_complete && <small className="warning-text">Accounting ناقص</small>}</td><td><div className="stack-cell"><strong>{usage.used}</strong><small>باقی: {usage.remaining}</small>{!usage.exact && <small className="warning-text">Proof-gated</small>}</div></td><td><div className="stack-cell"><strong className={usage.presence === "آنلاین" ? "online-text" : ""}>{usage.presence}</strong><small>Session: {usage.sessions}</small><small>آخرین: {usage.lastOnline}</small></div></td><td><div className="stack-cell"><strong>{customer.no_expiry ? "بدون انقضا" : formatPanelDate(customer.expires_at)}</strong><small>{customer.start_policy === "on_first_successful_connection" ? "از اولین اتصال" : "از زمان ثبت"}</small><small>اولین اتصال: {formatPanelDate(customer.first_connected_at)}</small></div></td><td><div className="row-actions"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>Subscription</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>Reissue</button>{customer.status_dimensions.lifecycle === "suspended" ? <button disabled={busy} onClick={() => void lifecycle(customer, "resume")}>فعال‌سازی</button> : <button disabled={busy} onClick={() => void lifecycle(customer, "suspend")}>تعلیق</button>}<button className="danger-action" disabled={busy || customer.status_dimensions.lifecycle === "revoked"} onClick={() => void lifecycle(customer, "revoke")}>Revoke</button></div></td></tr>;
-        })}
-      </tbody></table></div>
-      <div className="pagination"><button disabled={filters.page <= 1} onClick={() => patchFilters({ page: filters.page - 1 })}>قبلی</button><span>صفحه {filters.page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span><button disabled={filters.page >= pageCount} onClick={() => patchFilters({ page: filters.page + 1 })}>بعدی</button></div>
+    <section className="product-stats clean-stats">
+      <article><span className="stat-icon">◎</span><div><small>کل کاربران</small><strong>{total.toLocaleString("fa-IR")}</strong></div></article>
+      <article><span className="stat-icon success">✓</span><div><small>فعال در این صفحه</small><strong>{activeCount.toLocaleString("fa-IR")}</strong></div></article>
+      <article><span className="stat-icon online">●</span><div><small>آنلاین در این صفحه</small><strong>{onlineCount.toLocaleString("fa-IR")}</strong></div></article>
+      <article><span className="stat-icon gold">▣</span><div><small>پلن‌ها</small><strong>{plans.length.toLocaleString("fa-IR")}</strong></div></article>
     </section>
 
-    {dialog?.type === "create" && <Modal title="ساخت اکانت" eyebrow="Customer create" wide onClose={() => setDialog(null)}><CreateForm plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async (result) => copiedSecret(result.username, result.password, result.subscriptionPath, "اکانت ساخته شد. رمز تولیدشده فقط همین بار قابل مشاهده است.")} /></Modal>}
-    {dialog?.type === "metadata" && <Modal title={`ویرایش ${dialog.customer.username}`} eyebrow="Metadata / Next Plan" wide onClose={() => setDialog(null)}><MetadataForm customer={dialog.customer} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
-    {dialog?.type === "renew" && <Modal title={`تمدید ${dialog.customer.username}`} eyebrow="Renewal" onClose={() => setDialog(null)}><RenewalForm customer={dialog.customer} plans={plans} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
-    {dialog?.type === "password" && <Modal title={`تغییر رمز ${dialog.customer.username}`} eyebrow="Security action" onClose={() => setDialog(null)}><PasswordForm customer={dialog.customer} onClose={() => setDialog(null)} onDone={async (password) => copiedSecret(dialog.customer.username, password, undefined, "Password تغییر کرد؛ Subscription token تغییری نکرد.")} /></Modal>}
-    {dialog?.type === "subscription" && <Modal title={`Subscription · ${dialog.customer.username}`} eyebrow={dialog.rotated ? "New token issued" : "Read only"} wide onClose={() => setDialog(null)}><div className="readonly-banner">{dialog.rotated ? "لینک قبلی revoke و لینک جدید صادر شد؛ Password بدون تغییر است." : "فقط نمایش؛ هیچ stateی تغییر نکرد."}</div><SubscriptionContent delivery={dialog.delivery} /></Modal>}
-    {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="One-time delivery" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <label>Subscription URL<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label>}</Modal>}
-    {dialog?.type === "bulk" && <Modal title="Bulk Operations" eyebrow="Preview first" wide onClose={() => setDialog(null)}><BulkForm selected={Array.from(selected)} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async () => { setSelected(new Set()); await refresh(); }} /></Modal>}
+    <section className="product-card product-directory clean-directory">
+      <div className="directory-title"><div><h2>لیست کاربران</h2><p>جستجو و فیلتر سریع</p></div><span>{total.toLocaleString("fa-IR")} نتیجه</span></div>
+      <form className="product-toolbar compact-toolbar" onSubmit={(event) => { event.preventDefault(); patchFilters({ q: searchDraft }); }}>
+        <label className="search-box"><span>⌕</span><input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} placeholder="جستجوی نام کاربری یا یادداشت…" /></label>
+        <label><span>وضعیت</span><select value={filters.status} onChange={(e) => patchFilters({ status: e.target.value })}><option value="">همه وضعیت‌ها</option><option value="active">فعال</option><option value="pending">منتظر اتصال</option><option value="on_hold">On hold</option><option value="suspended">تعلیق</option><option value="expired">منقضی</option><option value="depleted">حجم تمام</option><option value="revoked">لغوشده</option></select></label>
+        <label><span>پلن</span><select value={filters.plan} onChange={(e) => patchFilters({ plan: e.target.value })}><option value="">همه پلن‌ها</option>{plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
+        <button type="submit">جستجو</button>
+        <details className="more-filters"><summary>فیلترهای بیشتر</summary><div className="advanced-filter-grid">
+          <label><span>گروه</span><select value={filters.group} onChange={(e) => patchFilters({ group: e.target.value })}><option value="">همه</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+          <label><span>تگ</span><select value={filters.tag} onChange={(e) => patchFilters({ tag: e.target.value })}><option value="">همه</option>{tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select></label>
+          <label><span>حجم</span><select value={filters.unlimitedVolume === null ? "" : String(filters.unlimitedVolume)} onChange={(e) => patchFilters({ unlimitedVolume: e.target.value === "" ? null : e.target.value === "true" })}><option value="">همه</option><option value="false">حجمی</option><option value="true">نامحدود</option></select></label>
+          <label><span>انقضا</span><select value={filters.unlimitedExpiry === null ? "" : String(filters.unlimitedExpiry)} onChange={(e) => patchFilters({ unlimitedExpiry: e.target.value === "" ? null : e.target.value === "true" })}><option value="">همه</option><option value="false">دارای انقضا</option><option value="true">بدون انقضا</option></select></label>
+          <label><span>از تاریخ</span><input type="date" value={filters.expiryFrom ? filters.expiryFrom.slice(0, 10) : ""} onChange={(e) => patchFilters({ expiryFrom: e.target.value ? `${e.target.value}T00:00:00.000Z` : "" })} /></label>
+          <label><span>تا تاریخ</span><input type="date" value={filters.expiryTo ? filters.expiryTo.slice(0, 10) : ""} onChange={(e) => patchFilters({ expiryTo: e.target.value ? `${e.target.value}T23:59:59.999Z` : "" })} /></label>
+          <label><span>مرتب‌سازی</span><select value={filters.sort} onChange={(e) => patchFilters({ sort: e.target.value as ProductFilters["sort"] })}><option value="updated">آخرین تغییر</option><option value="username">نام کاربری</option><option value="expiry">انقضا</option><option value="created">ساخت</option><option value="last_renewal">آخرین تمدید</option></select></label>
+          <label><span>تعداد در صفحه</span><select value={filters.pageSize} onChange={(e) => patchFilters({ pageSize: Number(e.target.value) as ProductFilters["pageSize"] })}><option value="10">10</option><option value="20">20</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+          <button type="button" className="button-secondary" onClick={resetFilters}>پاک کردن فیلترها</button>
+        </div></details>
+      </form>
+
+      {selected.size > 0 && <div className="bulk-strip"><strong>{selected.size.toLocaleString("fa-IR")} کاربر انتخاب شده</strong><div><button className="primary-action" onClick={() => setDialog({ type: "bulk" })}>عملیات گروهی</button><button className="button-secondary" onClick={() => setSelected(new Set())}>لغو انتخاب</button></div></div>}
+      {message && <div className="product-message" role="status">{message}</div>}
+
+      <div className="product-table-wrap"><table className="product-table compact-table"><thead><tr><th><input type="checkbox" aria-label="انتخاب صفحه" checked={allPageSelected} onChange={() => setSelected((current) => { const next = new Set(current); const all = customers.every((c) => next.has(c.id)); customers.forEach((c) => all ? next.delete(c.id) : next.add(c.id)); return next; })} /></th><th>کاربر</th><th>پلن</th><th>حجم</th><th>مصرف</th><th>وضعیت اتصال</th><th>انقضا</th><th>فعال</th><th></th></tr></thead><tbody>
+        {loading && <tr><td colSpan={9}><div className="table-loading">در حال بارگذاری…</div></td></tr>}
+        {!loading && customers.length === 0 && <tr><td colSpan={9}><div className="empty-state"><strong>کاربری پیدا نشد</strong><span>فیلترها را تغییر بده.</span></div></td></tr>}
+        {customers.map((customer) => {
+          const usage = usagePresentation(customer); const busy = busyID === customer.id; const suspended = customer.status_dimensions.lifecycle === "suspended"; const revoked = customer.status_dimensions.lifecycle === "revoked";
+          return <tr key={customer.id} className={revoked ? "muted-row" : ""}>
+            <td><input type="checkbox" checked={selected.has(customer.id)} onChange={() => toggle(customer.id)} /></td>
+            <td><div className="account-cell"><span className="account-avatar">{customer.username.slice(0, 1).toUpperCase()}</span><div><strong>{customer.username}</strong><span className={`status-pill ${statusTone(customer)}`}>{commercialLabel(customer)}</span>{customer.note && <small title={customer.note}>{customer.note}</small>}</div></div></td>
+            <td><div className="stack-cell"><strong>{customer.plan_name || "Custom"}</strong><small>{customer.group?.name || "بدون گروه"}</small>{customer.tags?.length ? <div className="tag-row">{customer.tags.slice(0, 2).map((tag) => <span key={tag.id}>{tag.name}</span>)}</div> : null}</div></td>
+            <td><strong>{customer.quota_bytes === null ? "نامحدود" : formatBytes(customer.quota_bytes)}</strong></td>
+            <td><div className="stack-cell"><strong>{usage.exact ? usage.used : "—"}</strong><small>{usage.exact ? `باقی: ${usage.remaining}` : "در انتظار داده"}</small></div></td>
+            <td><div className="presence-cell"><i className={usage.presence === "آنلاین" ? "online" : "offline"}/><div><strong>{usage.exact ? usage.presence : "—"}</strong><small>{usage.exact ? `${usage.sessions} نشست` : ""}</small></div></div></td>
+            <td><div className="stack-cell"><strong>{customer.no_expiry ? "بدون انقضا" : formatPanelDate(customer.expires_at)}</strong><small>{customer.start_policy === "on_first_successful_connection" ? "از اولین اتصال" : "از زمان ثبت"}</small></div></td>
+            <td><label className="toggle-switch" data-disabled={revoked ? "true" : "false"} title={suspended ? "فعال‌سازی" : "تعلیق"}><input type="checkbox" checked={!suspended && !revoked} disabled={busy || revoked} onChange={() => void lifecycle(customer, suspended ? "resume" : "suspend")} /><span/></label></td>
+            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
+          </tr>;
+        })}
+      </tbody></table></div>
+      <div className="pagination"><div><button disabled={filters.page <= 1} onClick={() => patchFilters({ page: filters.page - 1 })}>قبلی</button><button disabled={filters.page >= pageCount} onClick={() => patchFilters({ page: filters.page + 1 })}>بعدی</button></div><span>صفحه {filters.page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span></div>
+    </section>
+
+    {dialog?.type === "create" && <Modal title="کاربر جدید" eyebrow="ساخت حساب" wide onClose={() => setDialog(null)}><CreateForm plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async (result) => copiedSecret(result.username, result.password, result.subscriptionPath, result.accountPagePath, "اکانت ساخته شد. رمز تولیدشده فقط همین بار قابل مشاهده است.")} /></Modal>}
+    {dialog?.type === "metadata" && <Modal title={`ویرایش ${dialog.customer.username}`} eyebrow="مشخصات کاربر" wide onClose={() => setDialog(null)}><MetadataForm customer={dialog.customer} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
+    {dialog?.type === "renew" && <Modal title={`تمدید ${dialog.customer.username}`} eyebrow="تمدید سرویس" onClose={() => setDialog(null)}><RenewalForm customer={dialog.customer} plans={plans} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
+    {dialog?.type === "password" && <Modal title={`تغییر رمز ${dialog.customer.username}`} eyebrow="امنیت" onClose={() => setDialog(null)}><PasswordForm customer={dialog.customer} onClose={() => setDialog(null)} onDone={async (password) => copiedSecret(dialog.customer.username, password, undefined, undefined, "رمز تغییر کرد؛ لینک اشتراک بدون تغییر باقی ماند.")} /></Modal>}
+    {dialog?.type === "subscription" && <Modal title={`اشتراک · ${dialog.customer.username}`} eyebrow={dialog.rotated ? "لینک جدید" : "نمایش اشتراک"} wide onClose={() => setDialog(null)}><div className="readonly-banner">{dialog.rotated ? "لینک قبلی باطل و لینک جدید صادر شد؛ رمز کاربر تغییر نکرد." : "لینک اشتراک و QR آماده استفاده است."}</div><SubscriptionContent delivery={dialog.delivery} /></Modal>}
+    {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="فقط یک‌بار" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <><label>صفحه اشتراک کاربر<div className="copy-row"><input readOnly value={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} /><a className="open-account-page" href={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} target="_blank" rel="noreferrer">باز کردن صفحه</a></div></label><label>لینک ساب کلاینت<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label></>}</Modal>}
+    {dialog?.type === "bulk" && <Modal title="عملیات گروهی" eyebrow="بازبینی قبل از اجرا" wide onClose={() => setDialog(null)}><BulkForm selected={Array.from(selected)} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async () => { setSelected(new Set()); await refresh(); }} /></Modal>}
   </main>;
 }

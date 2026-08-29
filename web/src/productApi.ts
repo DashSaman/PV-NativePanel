@@ -134,11 +134,13 @@ export type ProductCreateResult = {
   runtime_credential: { id: string; username: string; status: string };
   generated_password?: string;
   subscription_path: string;
+  account_page_path?: string;
   delivery_notice?: string;
 };
 
 export type ProductSubscriptionDelivery = {
   subscription_path: string;
+  account_page_path?: string;
   direct_uri?: string;
   delivery_notice?: string;
 };

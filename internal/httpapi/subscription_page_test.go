@@ -60,7 +60,7 @@ func TestPublicAccountPageUsesExplicitHumanEndpoint(t *testing.T) {
 		t.Fatalf("content-type=%q", got)
 	}
 	body := res.Body.String()
-	for _, want := range []string{"PVNaive", "PVNETWORK", "Amir22", "50 GB", "در دسترس نیست", "data:image/png;base64,", "/sub/" + rawToken} {
+	for _, want := range []string{"PVNaive", "PVNETWORK", "Amir22", "50 GB", "در دسترس نیست", "data:image/png;base64,", "/sub/" + rawToken, `class="account-shell"`, `class="service-grid"`, `class="connect-card"`, `class="account-nav"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("account page missing %q: %s", want, body)
 		}
@@ -73,5 +73,17 @@ func TestPublicAccountPageUsesExplicitHumanEndpoint(t *testing.T) {
 	}
 	if res.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal("account page response is cacheable")
+	}
+}
+
+func TestAccountLanguageDefaultsToPersianUnlessExplicitlyEnglish(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/s/example", nil)
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	if got := accountLanguage(req); got != "fa" {
+		t.Fatalf("default language=%q want fa", got)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/s/example?lang=en", nil)
+	if got := accountLanguage(req); got != "en" {
+		t.Fatalf("explicit English language=%q want en", got)
 	}
 }

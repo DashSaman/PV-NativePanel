@@ -84,7 +84,7 @@ SELECT
     COALESCE(tr.tags,'[]'::jsonb),
     COALESCE(cp.assigned_actor_id::text,''),
     COALESCE(u.created_by_actor_id::text,''),
-    COALESCE(r.id::text,''),
+    COALESCE(r.primary_actor_id::text,''),
     u.created_at,
     u.updated_at,
     cp.last_renewal_at,
@@ -135,7 +135,7 @@ WHERE
         SELECT 1 FROM pvnaive.customer_tag_assignments filter_tag
         WHERE filter_tag.user_id=u.id AND filter_tag.tag_id=$5::uuid
     ))
-    AND ($6 = '' OR r.id = $6::uuid)
+    AND ($6 = '' OR r.primary_actor_id = $6::uuid)
     AND ($7::boolean IS NULL OR (st.quota_bytes IS NULL) = $7::boolean)
     AND ($8::boolean IS NULL OR st.no_expiry = $8::boolean)
     AND ($9::timestamptz IS NULL OR st.expires_at >= $9::timestamptz)
