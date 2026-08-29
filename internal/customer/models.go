@@ -81,14 +81,14 @@ type CreateServiceTermRecord struct {
 }
 
 type CreateSubscriptionTokenRecord struct {
-	TenantID            string
-	UserID              string
-	ServiceTermID       string
-	RuntimeCredentialID string
-	TokenHash           []byte
-	TokenPrefix         string
-	TokenCiphertext     []byte
-	TokenNonce          []byte
+	TenantID             string
+	UserID               string
+	ServiceTermID        string
+	RuntimeCredentialID  string
+	TokenHash            []byte
+	TokenPrefix          string
+	TokenCiphertext      []byte
+	TokenNonce           []byte
 	TokenEncryptionKeyID string
-	ExpiresAt           *time.Time
+	ExpiresAt            *time.Time
 }
