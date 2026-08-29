@@ -128,3 +128,54 @@ func (s *server) rotateCustomerPassword(w http.ResponseWriter, r *http.Request) 
 	}
 	writeJSON(w, http.StatusOK, response)
 }
+
+func (s *server) addCustomerVolume(w http.ResponseWriter, r *http.Request) {
+	authenticated, _, userID, ok := customerOperationIdentity(w, r, s)
+	if !ok {
+		return
+	}
+	var payload struct {
+		DeltaGB int64 `json:"delta_gb"`
+	}
+	if err := decodeRuntimeJSON(r, &payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_request", "message": "Invalid add-volume request."})
+		return
+	}
+	term, err := s.config.CustomerService.AddCustomerVolume(r.Context(), authenticated.Bound.Tx, userID, payload.DeltaGB)
+	if err != nil {
+		switch {
+		case errors.Is(err, customer.ErrInvalidAdjustment), errors.Is(err, customer.ErrQuotaOverflow):
+			writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_volume_adjustment", "message": "Volume increment must be a valid positive GB value."})
+		case errors.Is(err, customer.ErrUnlimitedQuotaAddition):
+			writeJSON(w, http.StatusConflict, envelope{"code": "unlimited_volume", "message": "This service is unlimited. Set a total quota before adding volume."})
+		default:
+			writeJSON(w, http.StatusNotFound, envelope{"code": "customer_not_found", "message": "Managed customer service was not found."})
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{"service_term": term, "runtime_mutated": false, "message": "Volume added without changing Runtime credentials or password."})
+}
+
+func (s *server) extendCustomerTime(w http.ResponseWriter, r *http.Request) {
+	authenticated, _, userID, ok := customerOperationIdentity(w, r, s)
+	if !ok {
+		return
+	}
+	var payload struct {
+		Days int64 `json:"days"`
+	}
+	if err := decodeRuntimeJSON(r, &payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_request", "message": "Invalid validity extension request."})
+		return
+	}
+	term, err := s.config.CustomerService.ExtendCustomerTime(r.Context(), authenticated.Bound.Tx, userID, payload.Days)
+	if err != nil {
+		if errors.Is(err, customer.ErrInvalidAdjustment) {
+			writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_time_adjustment", "message": "Extension must be a valid positive number of days."})
+			return
+		}
+		writeJSON(w, http.StatusNotFound, envelope{"code": "customer_not_found", "message": "Managed customer service was not found."})
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{"service_term": term, "runtime_mutated": false, "message": "Validity extended without changing Runtime credentials or password."})
+}
