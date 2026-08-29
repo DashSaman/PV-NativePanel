@@ -38,11 +38,19 @@ Migration `0006_direct_subscription_tokens` adds the revocable direct Subscripti
 
 - raw token: 256-bit CSPRNG, never persisted;
 - persisted identity: SHA-256 hash + short non-secret prefix;
-- public resolver joins live user/service/binding/runtime state;
 - Runtime password stays encrypted at rest and is decrypted only inside the renderer;
 - public URL host is not trusted as the Naive destination;
 - `PVNAIVE_NAIVE_PUBLIC_HOST` must be explicitly configured when customer Subscription is enabled;
 - QR is generated locally; no third-party QR endpoint receives a secret-bearing URL.
+
+Management tables use FORCE RLS, so the public resolver deliberately does not bypass them. Instead migration 0006 maintains a narrow Subscription projection with SECURITY DEFINER trigger functions owned by `pvnaive_owner`:
+
+- user state changes synchronize `user_state`;
+- service-term state/expiry changes synchronize `service_state` and `expires_at`;
+- active Runtime username/password-envelope rotation synchronizes the Subscription projection;
+- disabling/revoking the Runtime credential revokes the active direct Subscription token rather than leaving a stale secret delivery path.
+
+The resolver reads only this synchronized projection and requires active token/user/service state plus a non-expired term.
 
 ## Usage/quota boundary
 
@@ -113,4 +121,4 @@ Before calling this feature complete, require one fresh CI on the final branch h
 - PostgreSQL 18 migration/backup/rollback tests: PASS;
 - downstream rehearsal/bundle jobs: PASS when workflow conditions run them.
 
-If any job is red, fix the root cause and update this handoff with the final run ID rather than claiming completion.
+If any job is red, fix the root cause rather than claiming completion.
