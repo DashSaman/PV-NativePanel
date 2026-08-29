@@ -11,10 +11,10 @@ type NodeState string
 type MaintenanceState string
 
 const (
-	NodeUnknown NodeState = "unknown"
-	NodeHealthy NodeState = "healthy"
+	NodeUnknown  NodeState = "unknown"
+	NodeHealthy  NodeState = "healthy"
 	NodeDegraded NodeState = "degraded"
-	NodeOffline NodeState = "offline"
+	NodeOffline  NodeState = "offline"
 
 	MaintenanceActive   MaintenanceState = "active"
 	MaintenanceDraining MaintenanceState = "draining"
@@ -50,7 +50,7 @@ func (n Node) Validate() error {
 type DriftState string
 
 const (
-	InSync DriftState = "in_sync"
+	InSync  DriftState = "in_sync"
 	Pending DriftState = "pending"
 	Ahead   DriftState = "ahead"
 )
