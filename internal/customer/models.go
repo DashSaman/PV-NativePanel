@@ -29,20 +29,21 @@ type ServiceTerm struct {
 }
 
 type CustomerView struct {
-	UserID                string          `json:"id"`
-	Username              string          `json:"username"`
-	Status                UserAdminState  `json:"status"`
-	ServiceTermID         string          `json:"service_term_id"`
-	ServiceState          TermState       `json:"service_state"`
-	QuotaBytes            *int64          `json:"quota_bytes"`
-	DurationSeconds       int64           `json:"duration_seconds"`
-	StartPolicy           StartPolicy     `json:"start_policy"`
-	StartsAt              *time.Time      `json:"starts_at,omitempty"`
-	FirstConnectedAt      *time.Time      `json:"first_connected_at,omitempty"`
-	ExpiresAt             *time.Time      `json:"expires_at,omitempty"`
-	RuntimeCredentialID   string          `json:"runtime_credential_id"`
-	SubscriptionAvailable bool            `json:"subscription_available"`
-	UsageCapability       UsageCapability `json:"usage_capability"`
+	UserID                  string          `json:"id"`
+	Username                string          `json:"username"`
+	Status                  UserAdminState  `json:"status"`
+	ServiceTermID           string          `json:"service_term_id"`
+	ServiceState            TermState       `json:"service_state"`
+	QuotaBytes              *int64          `json:"quota_bytes"`
+	DurationSeconds         int64           `json:"duration_seconds"`
+	StartPolicy             StartPolicy     `json:"start_policy"`
+	StartsAt                *time.Time      `json:"starts_at,omitempty"`
+	FirstConnectedAt        *time.Time      `json:"first_connected_at,omitempty"`
+	ExpiresAt               *time.Time      `json:"expires_at,omitempty"`
+	RuntimeCredentialID     string          `json:"runtime_credential_id"`
+	SubscriptionAvailable   bool            `json:"subscription_available"`
+	SubscriptionRetrievable bool            `json:"subscription_retrievable"`
+	UsageCapability         UsageCapability `json:"usage_capability"`
 }
 
 type SubscriptionTarget struct {
@@ -51,6 +52,13 @@ type SubscriptionTarget struct {
 	ServiceTermID       string
 	RuntimeCredentialID string
 	ExpiresAt           *time.Time
+}
+
+type EncryptedSubscriptionToken struct {
+	UserID          string
+	Ciphertext      []byte
+	Nonce           []byte
+	EncryptionKeyID string
 }
 
 type CreateUserRecord struct {
@@ -79,5 +87,8 @@ type CreateSubscriptionTokenRecord struct {
 	RuntimeCredentialID string
 	TokenHash           []byte
 	TokenPrefix         string
+	TokenCiphertext     []byte
+	TokenNonce          []byte
+	TokenEncryptionKeyID string
 	ExpiresAt           *time.Time
 }
