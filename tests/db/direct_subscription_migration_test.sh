@@ -62,8 +62,11 @@ SELECT
     WHERE n.nspname='pvnaive' AND p.proname='resolve_direct_subscription_token' AND p.prosecdef
   ) || '|' ||
   (SELECT relrowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass) || '|' ||
-  NOT (SELECT relforcerowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass);")"
-[[ "${contract}" == "true|true|true|true" || "${contract}" == "t|t|t|t" ]] || {
+  NOT (SELECT relforcerowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass) || '|' ||
+  ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.users'::regclass AND tgname='direct_subscription_user_sync' AND NOT tgisinternal)=1) || '|' ||
+  ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.service_terms'::regclass AND tgname='direct_subscription_service_term_sync' AND NOT tgisinternal)=1) || '|' ||
+  ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.naive_runtime_credentials'::regclass AND tgname='direct_subscription_runtime_credential_sync' AND NOT tgisinternal)=1);")"
+[[ "${contract}" == "true|true|true|true|true|true|true" || "${contract}" == "t|t|t|t|t|t|t" ]] || {
   echo "ERROR: direct subscription schema contract failed: ${contract}" >&2
   exit 1
 }
@@ -138,15 +141,59 @@ WHERE u.id='d6000000-0000-0000-0000-000000000001';
 COMMIT;
 SQL
 
-resolved="$(PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
-  --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" \
-  --tuples-only --no-align --command "
+resolve_projection() {
+  PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
+    --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" \
+    --tuples-only --no-align --command "
 SELECT runtime_credential_id::text || '|' || runtime_username || '|' || user_state || '|' || service_state || '|' || encryption_key_id
-FROM pvnaive.resolve_direct_subscription_token(decode(repeat('76',32),'hex'));")"
+FROM pvnaive.resolve_direct_subscription_token(decode(repeat('76',32),'hex'));"
+}
+
+resolved="$(resolve_projection)"
 [[ "${resolved}" == "e6000000-0000-0000-0000-000000000001|sub-user|active|pending|runtime-v1" ]] || {
   echo "ERROR: resolver returned unexpected projection: ${resolved}" >&2
   exit 1
 }
+
+PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
+  --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" >/dev/null <<'SQL'
+BEGIN;
+SELECT pvnaive.set_request_context(decode(repeat('16',32),'hex'));
+UPDATE pvnaive.users SET status='suspended' WHERE id='d6000000-0000-0000-0000-000000000001';
+COMMIT;
+SQL
+suspended_count="$(PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" --tuples-only --no-align --command "SELECT count(*) FROM pvnaive.resolve_direct_subscription_token(decode(repeat('76',32),'hex'));")"
+[[ "${suspended_count}" == "0" ]] || { echo "ERROR: suspended user subscription still resolved" >&2; exit 1; }
+
+PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
+  --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" >/dev/null <<'SQL'
+BEGIN;
+SELECT pvnaive.set_request_context(decode(repeat('16',32),'hex'));
+UPDATE pvnaive.users SET status='active' WHERE id='d6000000-0000-0000-0000-000000000001';
+UPDATE pvnaive.naive_runtime_credentials
+   SET username='sub-user-rotated',
+       secret_ciphertext=decode(repeat('57',16),'hex'),
+       secret_nonce=decode(repeat('67',12),'hex')
+ WHERE id='e6000000-0000-0000-0000-000000000001';
+COMMIT;
+SQL
+rotated="$(resolve_projection)"
+[[ "${rotated}" == "e6000000-0000-0000-0000-000000000001|sub-user-rotated|active|pending|runtime-v1" ]] || {
+  echo "ERROR: runtime rotation did not synchronize subscription projection: ${rotated}" >&2
+  exit 1
+}
+
+PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
+  --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" >/dev/null <<'SQL'
+BEGIN;
+SELECT pvnaive.set_request_context(decode(repeat('16',32),'hex'));
+UPDATE pvnaive.naive_runtime_credentials SET status='disabled' WHERE id='e6000000-0000-0000-0000-000000000001';
+COMMIT;
+SQL
+revoked_count="$(PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" --tuples-only --no-align --command "SELECT count(*) FROM pvnaive.resolve_direct_subscription_token(decode(repeat('76',32),'hex'));")"
+[[ "${revoked_count}" == "0" ]] || { echo "ERROR: disabled runtime credential subscription still resolved" >&2; exit 1; }
+token_state="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT status || '|' || (revoked_at IS NOT NULL) FROM pvnaive.direct_subscription_tokens WHERE token_hash=decode(repeat('76',32),'hex')")"
+[[ "${token_state}" == "revoked|true" || "${token_state}" == "revoked|t" ]] || { echo "ERROR: runtime disable did not revoke subscription token: ${token_state}" >&2; exit 1; }
 
 missing="$(PGPASSWORD='pvnaive-direct-sub-ci' psql --no-psqlrc --set ON_ERROR_STOP=1 \
   --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username pvnaive_app --dbname "${test_db}" \
