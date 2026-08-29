@@ -39,6 +39,8 @@ var Routes = []Route{
 	{"DELETE", "/api/v1/me/mfa/totp", "me.mfa.delete", Authenticated, false},
 	{"GET", "/api/v1/customers", "customers.index", Owner, true},
 	{"POST", "/api/v1/customers", "customers.create", Owner, true},
+	{"POST", "/api/v1/customers/adopt-runtime", "customers.adopt-runtime", Owner, true},
+	{"PATCH", "/api/v1/customers/{id}/service", "customers.service.update", Owner, true},
 	{"POST", "/api/v1/customers/{id}/subscription/rotate", "customers.subscription.rotate", Owner, true},
 	{"GET", "/api/v1/users", "users.index", Reseller, false},
 	{"POST", "/api/v1/users", "users.create", Reseller, false},
