@@ -31,8 +31,8 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 migration_output="$("${repo_root}/scripts/db/migrate.sh")"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=6' <<< "${migration_output}" || {
-  echo 'ERROR: full customer migration stack did not advance schema to v6' >&2
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=7' <<< "${migration_output}" || {
+  echo 'ERROR: full customer migration stack did not advance schema to v7' >&2
   exit 1
 }
 
@@ -88,11 +88,11 @@ then
   exit 1
 fi
 
-# First remove v6 subscription tokens, then exercise the v5 idempotency rollback.
-PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
-  "${repo_root}/scripts/db/rollback.sh" >/dev/null
-PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
-  "${repo_root}/scripts/db/rollback.sh" >/dev/null
+# Remove v7 token recovery, v6 direct subscription tokens, then exercise the v5 idempotency rollback.
+for _ in 1 2 3; do
+  PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+    "${repo_root}/scripts/db/rollback.sh" >/dev/null
+done
 version_after_rollback="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
 [[ "${version_after_rollback}" == "4" ]] || { echo 'ERROR: v5 rollback did not return to v4' >&2; exit 1; }
 remaining="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT to_regclass('pvnaive.customer_mutation_keys') IS NOT NULL")"
