@@ -35,15 +35,25 @@ grep -qx -- "-- pvnaive:migration-version ${version_text}" "${down_file}" || pvn
 grep -qx -- "-- pvnaive:transactional true" "${down_file}" || pvnaive_die "non-transactional rollback refused"
 grep -qx -- "-- pvnaive:destructive true" "${down_file}" || pvnaive_die "rollback marker missing"
 
+rollback_mode="${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}"
+chain_target="${PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA:-}"
+expected_backup_schema_version=""
+
 if [[ "${PVNAIVE_DISPOSABLE_DB:-0}" == "1" && "${PVNAIVE_DB_NAME}" =~ ^pvnaive_(migration|restore)_test_[a-z0-9_]+$ ]]; then
   :
 else
   if ((current_version == 1)); then
-    [[ "${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}" == "DROP_PVNAIVE_SCHEMA" ]] || \
+    [[ "${rollback_mode}" == "DROP_PVNAIVE_SCHEMA" ]] || \
       pvnaive_die "schema-v1 production rollback requires PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=DROP_PVNAIVE_SCHEMA"
+    expected_backup_schema_version=1
+  elif [[ "${rollback_mode}" == "ROLLBACK_ONE_MIGRATION" ]]; then
+    expected_backup_schema_version=$((current_version - 1))
+  elif [[ "${rollback_mode}" == "ROLLBACK_MIGRATION_CHAIN" ]]; then
+    [[ "${chain_target}" =~ ^[1-9][0-9]*$ ]] || pvnaive_die "migration-chain rollback requires a numeric PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA"
+    ((10#${chain_target} < current_version)) || pvnaive_die "migration-chain rollback target must be older than current schema"
+    expected_backup_schema_version=$((10#${chain_target}))
   else
-    [[ "${PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK:-}" == "ROLLBACK_ONE_MIGRATION" ]] || \
-      pvnaive_die "production rollback requires PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION"
+    pvnaive_die "production rollback requires ROLLBACK_ONE_MIGRATION or ROLLBACK_MIGRATION_CHAIN"
   fi
 
   backup_file="${PVNAIVE_CONFIRMED_BACKUP:-}"
@@ -58,13 +68,8 @@ else
   grep -qx '  "product": "PVNaive",' "${backup_dir}/metadata.json" || pvnaive_die "backup metadata product mismatch"
   grep -qx '  "encrypted": true,' "${backup_dir}/metadata.json" || pvnaive_die "backup metadata encryption marker is missing"
   metadata_schema_version="$(sed -n 's/^  "schema_version": \([0-9][0-9]*\),$/\1/p' "${backup_dir}/metadata.json")"
-  if ((current_version == 1)); then
-    expected_backup_schema_version=1
-  else
-    expected_backup_schema_version=$((current_version - 1))
-  fi
   [[ "${metadata_schema_version}" == "${expected_backup_schema_version}" ]] || \
-    pvnaive_die "backup schema version ${metadata_schema_version:-unknown} does not match required pre-rollback schema ${expected_backup_schema_version}"
+    pvnaive_die "backup schema version ${metadata_schema_version:-unknown} does not match required rollback safety schema ${expected_backup_schema_version}"
   pvnaive_require_command age
   pvnaive_require_command pg_restore
   age --decrypt --identity "${identity_file}" "${backup_file}" | pg_restore --list >/dev/null || \
@@ -73,6 +78,9 @@ fi
 
 echo "ROLLBACK_VERSION=${version_text}"
 echo "ROLLBACK_IS_DESTRUCTIVE=true"
+if [[ "${rollback_mode}" == "ROLLBACK_MIGRATION_CHAIN" ]]; then
+  echo "ROLLBACK_CHAIN_TARGET_SCHEMA=${chain_target}"
+fi
 {
   printf '%s\n' "SELECT pg_advisory_xact_lock(hashtext('pvnaive-schema-migrations'));"
   cat -- "${down_file}"
