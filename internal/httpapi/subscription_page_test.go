@@ -75,3 +75,15 @@ func TestPublicAccountPageUsesExplicitHumanEndpoint(t *testing.T) {
 		t.Fatal("account page response is cacheable")
 	}
 }
+
+func TestAccountLanguageDefaultsToPersianUnlessExplicitlyEnglish(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/s/example", nil)
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	if got := accountLanguage(req); got != "fa" {
+		t.Fatalf("default language=%q want fa", got)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/s/example?lang=en", nil)
+	if got := accountLanguage(req); got != "en" {
+		t.Fatalf("explicit English language=%q want en", got)
+	}
+}

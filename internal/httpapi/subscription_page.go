@@ -186,9 +186,6 @@ func accountLanguage(r *http.Request) string {
 	if lang := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("lang"))); lang == "en" || lang == "fa" {
 		return lang
 	}
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Accept-Language"))), "en") {
-		return "en"
-	}
 	return "fa"
 }
 
