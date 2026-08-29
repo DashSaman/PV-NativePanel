@@ -9,6 +9,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
+	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
 )
 
 type envelope map[string]any
@@ -21,6 +22,7 @@ type ServerConfig struct {
 	SubscriptionService   *subscription.Service
 	SubscriptionProxyHost string
 	CustomerService       *customer.Service
+	AccountingStore       telemetry.AccountingStore
 }
 
 type server struct {
