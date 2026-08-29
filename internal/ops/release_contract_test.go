@@ -27,11 +27,15 @@ func TestCurrentR1ReleaseToolingContracts(t *testing.T) {
 			"PVNAIVE_R1_CADDY_ACTION=NONE",
 			"pvnaive-backup.timer",
 			"pvnaive-restore-drill.timer",
+			"/var/www/pvnaive-preview/current",
+			"preview.before",
 		},
 		filepath.Join(root, "scripts", "release", "rollback-r1.sh"): {
 			"pvnaive-telemetry-agent.before",
 			"pvnaive-telemetry-agent.service.before",
 			"PVNAIVE_R1_CADDY_ACTION=NONE",
+			"/var/www/pvnaive-preview/current",
+			"preview.before",
 		},
 	}
 	for path, wants := range contracts {
