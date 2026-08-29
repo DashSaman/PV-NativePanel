@@ -1,0 +1,44 @@
+name: Sync subscription clean UI
+
+on:
+  push:
+    branches: [fix/customer-list-ui-cleanup-sync-temp6]
+    paths:
+      - .github/workflows/sync-subscription-clean.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/customer-list-ui-cleanup-sync-temp6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download verified patch
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error --location 'https://namir.softarg.ir/.pvnaive-sub-clean-5761dd2bac80bbef.patch' -o /tmp/change.patch
+          echo 'e206890126d78e8db951fc834322c71167e528a85a339f524c822de7dd356e66  /tmp/change.patch' | sha256sum -c -
+          git apply --check /tmp/change.patch
+          git apply /tmp/change.patch
+      - name: Verify web
+        working-directory: web
+        run: |
+          npm ci --ignore-scripts --no-audit
+          npm test
+          npm run build
+      - name: Commit tested change and remove sync workflow
+        run: |
+          set -Eeuo pipefail
+          rm .github/workflows/sync-subscription-clean.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/src/ProductCustomers.tsx web/src/product-panel.css web/src/ui_cleanup.test.ts .github/workflows/sync-subscription-clean.yml
+          git commit -m 'fix: clean subscription delivery UI'
+          git push origin HEAD:fix/customer-list-ui-cleanup-sync-temp6
