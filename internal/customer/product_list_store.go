@@ -20,6 +20,9 @@ func (s *PostgresStore) SearchCustomersTx(ctx context.Context, tx *sql.Tx, query
 		SortUpdated:     "u.updated_at",
 		SortExpiry:      "st.expires_at",
 		SortLastRenewal: "cp.last_renewal_at",
+		SortUsage:       "COALESCE(acct.used_bytes,0)",
+		SortRemaining:   "acct.remaining_bytes",
+		SortLastOnline:  "acct.last_online",
 	}[query.Sort]
 	if sortColumn == "" {
 		sortColumn = "u.updated_at"
@@ -76,6 +79,15 @@ SELECT
           AND octet_length(dst.token_nonce) = 12
           AND dst.encryption_key_id <> ''
     ),
+    COALESCE(acct.upload_bytes,0),
+    COALESCE(acct.download_bytes,0),
+    COALESCE(acct.used_bytes,0),
+    acct.remaining_bytes,
+    COALESCE(acct.online,false),
+    COALESCE(acct.session_count,0),
+    acct.last_online,
+    COALESCE(acct.accounting_complete,false),
+    (acct.service_term_id IS NOT NULL),
     COALESCE(cp.note,''),
     COALESCE(cg.id::text,''),
     COALESCE(cg.name,''),
@@ -107,6 +119,9 @@ LEFT JOIN LATERAL (
     ORDER BY binding.bound_at DESC
     LIMIT 1
 ) urc ON TRUE
+LEFT JOIN LATERAL pvnaive.direct_naive_accounting_read(
+    st.id, clock_timestamp(), 90
+) acct ON TRUE
 WHERE
     ($1 = '' OR
         u.username ILIKE '%%' || $1 || '%%' OR
@@ -163,12 +178,16 @@ LIMIT $11 OFFSET $12`, sortColumn, direction)
 		var groupSort int
 		var tagsJSON []byte
 		var total int64
+		var accountingPresent bool
 		if err := rows.Scan(
 			&view.UserID, &view.Username, &view.DisplayName, &userState,
 			&view.ServiceTermID, &termState, &view.QuotaBytes, &view.DurationSeconds,
 			&view.NoExpiry, &startPolicy, &view.StartsAt, &view.FirstConnectedAt,
 			&view.ExpiresAt, &view.PlanID, &view.PlanName, &view.RuntimeCredentialID,
-			&view.SubscriptionAvailable, &view.SubscriptionRetrievable, &view.Note,
+			&view.SubscriptionAvailable, &view.SubscriptionRetrievable,
+			&view.UploadBytes, &view.DownloadBytes, &view.UsedBytes, &view.RemainingBytes,
+			&view.Online, &view.OnlineSessions, &view.LastOnline, &view.AccountingComplete,
+			&accountingPresent, &view.Note,
 			&groupID, &groupName, &groupEnabled, &groupSort, &tagsJSON,
 			&view.AssignedActorID, &view.CreatedByActorID, &view.ResellerID,
 			&view.CreatedAt, &view.UpdatedAt, &view.LastRenewalAt, &view.OnHold,
@@ -179,11 +198,16 @@ LIMIT $11 OFFSET $12`, sortColumn, direction)
 		view.Status = UserAdminState(userState)
 		view.ServiceState = TermState(termState)
 		view.StartPolicy = StartPolicy(startPolicy)
-		view.UsageCapability = DefaultUsageCapability()
-		view.StatusDimensions = DeriveStatusDimensions(StatusInput{
-			UserState: view.Status, TermState: view.ServiceState, StartPolicy: view.StartPolicy,
-			QuotaBytes: view.QuotaBytes, ExpiresAt: view.ExpiresAt, OnHold: view.OnHold,
-			AccountingAvailable: false, RuntimeHealthAvailable: false,
+		ApplyAccountingSnapshot(&view, AccountingSnapshot{
+			Present:            accountingPresent,
+			AccountingComplete: view.AccountingComplete,
+			UploadBytes:        view.UploadBytes,
+			DownloadBytes:      view.DownloadBytes,
+			UsedBytes:          view.UsedBytes,
+			RemainingBytes:     view.RemainingBytes,
+			Online:             view.Online,
+			OnlineSessions:     view.OnlineSessions,
+			LastOnline:         view.LastOnline,
 		})
 		if groupID != "" {
 			view.Group = &CustomerGroup{ID: groupID, Name: groupName, Enabled: groupEnabled, SortOrder: groupSort}
