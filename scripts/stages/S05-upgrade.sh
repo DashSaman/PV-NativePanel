@@ -163,6 +163,7 @@ backup_output="$(
 )"
 db_backup_path="$(awk -F= '$1=="PVNAIVE_BACKUP_PATH" {print $2}' <<<"${backup_output}")"
 [[ -n "${db_backup_path}" && -f "${db_backup_path}" ]] || fail 'encrypted pre-upgrade database backup failed'
+grep -Fq "\"schema_version\": ${schema_before}," "$(dirname -- "${db_backup_path}")/metadata.json" || fail 'pre-upgrade backup schema metadata mismatch'
 echo "DB_BACKUP_PATH=${db_backup_path}"
 echo 'DB_BACKUP=VERIFIED_ENCRYPTED'
 
@@ -223,7 +224,8 @@ rollback_on_error() {
         PVNAIVE_DB_USER=postgres \
         PVNAIVE_RUN_AS_OS_USER=postgres \
         PVNAIVE_MIGRATIONS_DIR="${bundle_root}/db/migrations" \
-        PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
+        PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_MIGRATION_CHAIN \
+        PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA="${schema_before}" \
         PVNAIVE_CONFIRMED_BACKUP="${db_backup_path}" \
           bash "${bundle_root}/scripts/db/rollback.sh" >/dev/null 2>&1; then
         rollback_ok=0
