@@ -5,7 +5,7 @@ umask 077
 backup="${1:-}"
 [[ ${EUID} -eq 0 ]] || { echo 'ERROR: rollback must run as root' >&2; exit 1; }
 [[ "$backup" == /var/backups/pvnaive/releases/* && -d "$backup" ]] || { echo 'ERROR: valid PVNaive release backup directory required' >&2; exit 1; }
-for cmd in sha256sum systemctl systemd-tmpfiles curl install ln readlink; do
+for cmd in sha256sum systemctl systemd-tmpfiles curl install ln readlink rm; do
   command -v "$cmd" >/dev/null || { echo "ERROR: missing $cmd" >&2; exit 1; }
 done
 for name in pvnaive pvnaive-password pvnaive-runtime-agent pvnaive-telemetry-agent; do
@@ -15,11 +15,13 @@ telemetry_binary_backup="$backup/pvnaive-telemetry-agent.before"
 telemetry_service_backup="$backup/pvnaive-telemetry-agent.service.before"
 [[ -f "$telemetry_binary_backup" ]] || { echo 'ERROR: telemetry binary rollback asset missing' >&2; exit 1; }
 [[ -f "$telemetry_service_backup" || -f "$backup/pvnaive-telemetry-agent.service.missing" ]] || { echo 'ERROR: telemetry service rollback state missing' >&2; exit 1; }
-[[ -f "$backup/web.before" && -f "$backup/db.before" ]] || { echo 'ERROR: rollback target metadata missing' >&2; exit 1; }
+[[ -f "$backup/web.before" && -f "$backup/preview.before" && -f "$backup/db.before" ]] || { echo 'ERROR: rollback target metadata missing' >&2; exit 1; }
 
 web_before="$(cat "$backup/web.before")"
+preview_before="$(cat "$backup/preview.before")"
 db_before="$(cat "$backup/db.before")"
 if [[ -n "$web_before" ]]; then [[ "$web_before" == /opt/pvnaive/web/releases/* && -d "$web_before" ]] || { echo 'ERROR: unsafe prior web target' >&2; exit 1; }; fi
+if [[ -n "$preview_before" ]]; then [[ "$preview_before" == /var/www/pvnaive-preview/releases/* && -d "$preview_before" ]] || { echo 'ERROR: unsafe prior preview target' >&2; exit 1; }; fi
 if [[ -n "$db_before" ]]; then [[ "$db_before" == /opt/pvnaive/db/releases/* && -d "$db_before" ]] || { echo 'ERROR: unsafe prior DB-script target' >&2; exit 1; }; fi
 
 caddy_sha="$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')"
@@ -51,6 +53,7 @@ elif [[ -f "$backup/pvnaive.conf.missing" ]]; then
 fi
 
 if [[ -n "$web_before" ]]; then ln -sfn "$web_before" /opt/pvnaive/web/current; fi
+if [[ -n "$preview_before" ]]; then ln -sfn "$preview_before" /var/www/pvnaive-preview/current; fi
 if [[ -n "$db_before" ]]; then ln -sfn "$db_before" /opt/pvnaive/db/current; fi
 if [[ -f "$backup/CURRENT.before" ]]; then
   install -o root -g root -m 0644 "$backup/CURRENT.before" /opt/pvnaive/release/CURRENT
@@ -74,6 +77,9 @@ done
 curl -fsS http://127.0.0.1:8080/api/v1/health/ready | grep -q '"ready":true'
 curl -fsS --unix-socket /run/pvnaive/runtime-agent.sock http://unix/v1/health | grep -q '"status":"ok"'
 curl -fsS --unix-socket /run/pvnaive/accounting.sock http://unix/v1/accounting/health | grep -q '"status":"ok"'
+if [[ -n "$web_before" ]]; then [[ "$(readlink -f /opt/pvnaive/web/current)" == "$web_before" ]]; fi
+if [[ -n "$preview_before" ]]; then [[ "$(readlink -f /var/www/pvnaive-preview/current)" == "$preview_before" ]]; fi
+if [[ -n "$db_before" ]]; then [[ "$(readlink -f /opt/pvnaive/db/current)" == "$db_before" ]]; fi
 [[ "$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')" == "$caddy_sha" ]]
 [[ "$(systemctl show caddy-naive.service -p MainPID --value)" == "$caddy_pid" ]]
 [[ "$(systemctl show caddy-naive.service -p NRestarts --value)" == "$caddy_restarts" ]]
