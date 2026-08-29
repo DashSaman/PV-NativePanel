@@ -37,9 +37,18 @@ func lifecycleService(t *testing.T) (*Service, *lifecycleCustomerStore, *fakeCus
 	var rotate runtimecred.RotateInput
 	var revoke runtimecred.RevokeInput
 	err := service.ConfigureRuntimeOperations(
-		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.UpdateInput) (RuntimeMutation, error) { update = input; return mutation, nil },
-		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.RotateInput) (RuntimeMutation, error) { rotate = input; return mutation, nil },
-		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.RevokeInput) (RuntimeMutation, error) { revoke = input; return mutation, nil },
+		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.UpdateInput) (RuntimeMutation, error) {
+			update = input
+			return mutation, nil
+		},
+		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.RotateInput) (RuntimeMutation, error) {
+			rotate = input
+			return mutation, nil
+		},
+		func(_ context.Context, _ *sql.Tx, _, _ string, input runtimecred.RevokeInput) (RuntimeMutation, error) {
+			revoke = input
+			return mutation, nil
+		},
 	)
 	if err != nil {
 		t.Fatalf("ConfigureRuntimeOperations() error = %v", err)
@@ -50,11 +59,15 @@ func lifecycleService(t *testing.T) (*Service, *lifecycleCustomerStore, *fakeCus
 func TestSuspendCustomerDisablesRuntimeAndSetsBusinessState(t *testing.T) {
 	service, store, mutation, update, _, _ := lifecycleService(t)
 	_, err := service.SuspendCustomer(context.Background(), nil, "owner-1", "idem-suspend-0001", "user-1")
-	if err != nil { t.Fatalf("SuspendCustomer() error = %v", err) }
+	if err != nil {
+		t.Fatalf("SuspendCustomer() error = %v", err)
+	}
 	if update.ID != "runtime-1" || update.ExpectedRevision != 7 || update.Username != "alice" || update.Status != runtimecred.CredentialDisabled {
 		t.Fatalf("runtime update = %#v", *update)
 	}
-	if store.state != UserSuspended || !mutation.committed { t.Fatalf("state=%q committed=%v", store.state, mutation.committed) }
+	if store.state != UserSuspended || !mutation.committed {
+		t.Fatalf("state=%q committed=%v", store.state, mutation.committed)
+	}
 }
 
 func TestResumeCustomerEnablesSameRuntimeCredential(t *testing.T) {
@@ -62,25 +75,41 @@ func TestResumeCustomerEnablesSameRuntimeCredential(t *testing.T) {
 	store.target.UserState = UserSuspended
 	store.target.RuntimeStatus = runtimecred.CredentialDisabled
 	_, err := service.ResumeCustomer(context.Background(), nil, "owner-1", "idem-resume-0001", "user-1")
-	if err != nil { t.Fatalf("ResumeCustomer() error = %v", err) }
+	if err != nil {
+		t.Fatalf("ResumeCustomer() error = %v", err)
+	}
 	if update.ID != "runtime-1" || update.ExpectedRevision != 7 || update.Username != "alice" || update.Status != runtimecred.CredentialActive {
 		t.Fatalf("runtime update = %#v", *update)
 	}
-	if store.state != UserActive || !mutation.committed { t.Fatalf("state=%q committed=%v", store.state, mutation.committed) }
+	if store.state != UserActive || !mutation.committed {
+		t.Fatalf("state=%q committed=%v", store.state, mutation.committed)
+	}
 }
 
 func TestRevokeCustomerRevokesRuntimeAndBusinessUser(t *testing.T) {
 	service, store, mutation, _, _, revoke := lifecycleService(t)
 	_, err := service.RevokeCustomer(context.Background(), nil, "owner-1", "idem-revoke-0001", "user-1")
-	if err != nil { t.Fatalf("RevokeCustomer() error = %v", err) }
-	if revoke.ID != "runtime-1" || revoke.ExpectedRevision != 7 { t.Fatalf("runtime revoke = %#v", *revoke) }
-	if store.state != UserRevoked || !mutation.committed { t.Fatalf("state=%q committed=%v", store.state, mutation.committed) }
+	if err != nil {
+		t.Fatalf("RevokeCustomer() error = %v", err)
+	}
+	if revoke.ID != "runtime-1" || revoke.ExpectedRevision != 7 {
+		t.Fatalf("runtime revoke = %#v", *revoke)
+	}
+	if store.state != UserRevoked || !mutation.committed {
+		t.Fatalf("state=%q committed=%v", store.state, mutation.committed)
+	}
 }
 
 func TestRotateCustomerPasswordDoesNotRotateSubscription(t *testing.T) {
 	service, _, mutation, _, rotate, _ := lifecycleService(t)
 	view, generated, err := service.RotateCustomerPassword(context.Background(), nil, "owner-1", "idem-password-0001", "user-1", "", true)
-	if err != nil { t.Fatalf("RotateCustomerPassword() error = %v", err) }
-	if rotate.ID != "runtime-1" || rotate.ExpectedRevision != 7 || !rotate.GeneratePassword { t.Fatalf("runtime rotate = %#v", *rotate) }
-	if view.ID != "runtime-1" || generated != "new-generated-password" || !mutation.committed { t.Fatalf("view=%#v generated=%q committed=%v", view, generated, mutation.committed) }
+	if err != nil {
+		t.Fatalf("RotateCustomerPassword() error = %v", err)
+	}
+	if rotate.ID != "runtime-1" || rotate.ExpectedRevision != 7 || !rotate.GeneratePassword {
+		t.Fatalf("runtime rotate = %#v", *rotate)
+	}
+	if view.ID != "runtime-1" || generated != "new-generated-password" || !mutation.committed {
+		t.Fatalf("view=%#v generated=%q committed=%v", view, generated, mutation.committed)
+	}
 }
