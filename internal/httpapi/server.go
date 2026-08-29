@@ -74,9 +74,29 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.updateCustomerService)
 			}
+		case "customers.subscription.current":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.currentCustomerSubscription)
+			}
 		case "customers.subscription.rotate":
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.rotateCustomerSubscription)
+			}
+		case "customers.suspend":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.suspendCustomer)
+			}
+		case "customers.resume":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.resumeCustomer)
+			}
+		case "customers.delete":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.deleteCustomer)
+			}
+		case "customers.password.rotate":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.rotateCustomerPassword)
 			}
 		case "me.show":
 			if cfg.AuthStore != nil {
@@ -130,6 +150,9 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.RuntimeService != nil {
 				handler = http.HandlerFunc(s.runtimeNaiveRevokeCredential)
 			}
+		}
+		if extra := s.customerExtraHandler(route.Name); extra != nil {
+			handler = extra
 		}
 		if route.Access != Public {
 			handler = s.requireAuthentication(route, handler)

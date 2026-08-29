@@ -65,11 +65,13 @@ export type CustomerView = {
   expires_at?: string;
   runtime_credential_id: string;
   subscription_available: boolean;
+  subscription_retrievable?: boolean;
   usage_capability: UsageCapability;
 };
 
 export type SubscriptionDelivery = {
   subscription_path: string;
+  direct_uri?: string;
   delivery_notice?: string;
 };
 
@@ -77,6 +79,23 @@ export type CustomerServiceUpdateResult = {
   service_term: CustomerCreateResult["service_term"];
   runtime_mutated: boolean;
   message?: string;
+};
+
+export type CustomerLifecycleResult = {
+  status: string;
+  runtime_credential?: CustomerCreateResult["runtime_credential"];
+  message?: string;
+};
+
+export type PasswordRotationRequest = {
+  password: string;
+  generate_password: boolean;
+};
+
+export type PasswordRotationResult = {
+  runtime_credential: CustomerCreateResult["runtime_credential"];
+  generated_password?: string;
+  delivery_notice?: string;
 };
 
 export type CustomerAPIError = Error & { code?: string; status?: number };
@@ -168,6 +187,19 @@ export async function listCustomers(fetcher: Fetcher = fetch): Promise<CustomerV
   return Array.isArray(body.customers) ? (body.customers as CustomerView[]) : [];
 }
 
+export async function getCurrentSubscription(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<SubscriptionDelivery> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/subscription`, {
+    method: "GET",
+    credentials: "same-origin",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as SubscriptionDelivery;
+}
+
 export async function rotateSubscription(
   customerID: string,
   fetcher: Fetcher = fetch,
@@ -181,6 +213,66 @@ export async function rotateSubscription(
   const body = await parseJSON(response);
   if (!response.ok) throw apiError(body, response.status);
   return body as unknown as SubscriptionDelivery;
+}
+
+async function customerLifecycleMutation(
+  customerID: string,
+  action: "suspend" | "resume",
+  fetcher: Fetcher,
+): Promise<CustomerLifecycleResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/${action}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: "{}",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerLifecycleResult;
+}
+
+export async function suspendCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  return customerLifecycleMutation(customerID, "suspend", fetcher);
+}
+
+export async function resumeCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  return customerLifecycleMutation(customerID, "resume", fetcher);
+}
+
+export async function deleteCustomer(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerLifecycleResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerLifecycleResult;
+}
+
+export async function rotateCustomerPassword(
+  customerID: string,
+  input: PasswordRotationRequest,
+  fetcher: Fetcher = fetch,
+): Promise<PasswordRotationResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/rotate-password`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: JSON.stringify(input),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as PasswordRotationResult;
 }
 
 export function subscriptionURL(path: string, base?: string): string {

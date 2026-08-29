@@ -21,7 +21,9 @@ func (s *PostgresStore) ResolveToken(ctx context.Context, hash [32]byte) (Record
 	}
 
 	var record Record
-	var expiresAt sql.NullTime
+	var quota, duration sql.NullInt64
+	var startPolicy sql.NullString
+	var startsAt, firstConnectedAt, expiresAt sql.NullTime
 	err := s.db.QueryRowContext(ctx, `
 SELECT
     runtime_credential_id::text,
@@ -31,8 +33,13 @@ SELECT
     secret_ciphertext,
     secret_nonce,
     encryption_key_id,
+    quota_bytes,
+    duration_seconds,
+    start_policy,
+    starts_at,
+    first_connected_at,
     expires_at
-FROM pvnaive.resolve_direct_subscription_token($1)`, hash[:]).Scan(
+FROM pvnaive.resolve_direct_subscription_profile($1)`, hash[:]).Scan(
 		&record.RuntimeCredentialID,
 		&record.Username,
 		&record.UserState,
@@ -40,6 +47,11 @@ FROM pvnaive.resolve_direct_subscription_token($1)`, hash[:]).Scan(
 		&record.SecretCiphertext,
 		&record.SecretNonce,
 		&record.EncryptionKeyID,
+		&quota,
+		&duration,
+		&startPolicy,
+		&startsAt,
+		&firstConnectedAt,
 		&expiresAt,
 	)
 	if err != nil {
@@ -48,9 +60,27 @@ FROM pvnaive.resolve_direct_subscription_token($1)`, hash[:]).Scan(
 		}
 		return Record{}, fmt.Errorf("subscription: resolve token: %w", err)
 	}
+	if quota.Valid {
+		value := quota.Int64
+		record.QuotaBytes = &value
+	}
+	if duration.Valid {
+		record.DurationSeconds = duration.Int64
+	}
+	if startPolicy.Valid {
+		record.StartPolicy = startPolicy.String
+	}
+	if startsAt.Valid {
+		value := startsAt.Time
+		record.StartsAt = &value
+	}
+	if firstConnectedAt.Valid {
+		value := firstConnectedAt.Time
+		record.FirstConnectedAt = &value
+	}
 	if expiresAt.Valid {
-		expires := expiresAt.Time
-		record.ExpiresAt = &expires
+		value := expiresAt.Time
+		record.ExpiresAt = &value
 	}
 	return record, nil
 }

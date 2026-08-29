@@ -39,12 +39,23 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
   --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
+# This is the frozen S05 rollback-chain regression. Keep its migration fixture
+# explicitly capped at schema 6 even when newer release migrations exist in the
+# repository. S06+ gets its own migration/rollback coverage.
 v2_migrations="${temp_root}/migrations-v2"
-mkdir -p "${v2_migrations}"
+v6_migrations="${temp_root}/migrations-v6"
+mkdir -p "${v2_migrations}" "${v6_migrations}"
 cp "${repo_root}"/db/migrations/0001_* "${v2_migrations}/"
 cp "${repo_root}"/db/migrations/0002_* "${v2_migrations}/"
+for version in 0001 0002 0003 0004 0005 0006; do
+  cp "${repo_root}"/db/migrations/${version}_* "${v6_migrations}/"
+done
 (
   cd "${v2_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
+(
+  cd "${v6_migrations}"
   sha256sum *.sql > SHA256SUMS
 )
 
@@ -70,7 +81,7 @@ backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {value=$2} END {print value}' <<
 [[ -f "${backup_file}" ]] || { echo 'ERROR: schema2 chain backup missing' >&2; exit 1; }
 grep -Fq '"schema_version": 2,' "$(dirname -- "${backup_file}")/metadata.json"
 
-PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
+PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${v6_migrations}" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align \
   --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
@@ -79,7 +90,7 @@ schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align \
 # The old single-step gate must remain strict: a schema2 backup is not fresh
 # enough to authorize a normal 6 -> 5 rollback.
 if PVNAIVE_DB_NAME="${test_db}" \
-  PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
+  PVNAIVE_MIGRATIONS_DIR="${v6_migrations}" \
   PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
   PVNAIVE_CONFIRMED_BACKUP="${backup_file}" \
   PVNAIVE_BACKUP_IDENTITY_FILE="${temp_root}/backup.agekey" \
@@ -91,7 +102,7 @@ fi
 for expected in 5 4 3 2; do
   rollback_output="$(
     PVNAIVE_DB_NAME="${test_db}" \
-    PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
+    PVNAIVE_MIGRATIONS_DIR="${v6_migrations}" \
     PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_MIGRATION_CHAIN \
     PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=2 \
     PVNAIVE_CONFIRMED_BACKUP="${backup_file}" \

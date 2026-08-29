@@ -35,7 +35,12 @@ type RuntimeCreateFunc func(context.Context, *sql.Tx, string, string, runtimecre
 type Service struct {
 	store         Store
 	createRuntime RuntimeCreateFunc
+	updateRuntime RuntimeUpdateFunc
+	rotateRuntime RuntimeRotateFunc
+	revokeRuntime RuntimeRevokeFunc
 	now           func() time.Time
+	tokenKey      []byte
+	tokenKeyID    string
 }
 
 type CreateCustomerInput struct {
@@ -60,6 +65,26 @@ func NewService(store Store, createRuntime RuntimeCreateFunc, now func() time.Ti
 		now = time.Now
 	}
 	return &Service{store: store, createRuntime: createRuntime, now: now}
+}
+
+func NewServiceWithTokenRecovery(store Store, createRuntime RuntimeCreateFunc, now func() time.Time, tokenKey []byte, tokenKeyID string) *Service {
+	service := NewService(store, createRuntime, now)
+	if len(tokenKey) == 32 && strings.TrimSpace(tokenKeyID) != "" {
+		service.tokenKey = append([]byte(nil), tokenKey...)
+		service.tokenKeyID = tokenKeyID
+	}
+	return service
+}
+
+func (s *Service) encryptedSubscriptionToken(raw string) (ciphertext, nonce []byte, keyID string, err error) {
+	if len(s.tokenKey) != 32 || s.tokenKeyID == "" {
+		return nil, nil, "", nil
+	}
+	ciphertext, nonce, err = runtimecred.EncryptSecret(s.tokenKey, []byte(raw))
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("customer: encrypt subscription token: %w", err)
+	}
+	return ciphertext, nonce, s.tokenKeyID, nil
 }
 
 func (s *Service) CreateCustomer(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input CreateCustomerInput) (CreateCustomerResult, error) {
@@ -135,16 +160,26 @@ func (s *Service) CreateCustomer(ctx context.Context, tx *sql.Tx, actorID, idemp
 	if len(tokenPrefix) > 10 {
 		tokenPrefix = tokenPrefix[:10]
 	}
+	tokenCiphertext, tokenNonce, tokenEncryptionKeyID, err := s.encryptedSubscriptionToken(rawSubscriptionToken)
+	if err != nil {
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "encrypt subscription token", err)
+	}
 	if err := s.store.CreateSubscriptionTokenTx(ctx, tx, CreateSubscriptionTokenRecord{
-		TenantID:            tenantID,
-		UserID:              user.ID,
-		ServiceTermID:       term.ID,
-		RuntimeCredentialID: credential.ID,
-		TokenHash:           append([]byte(nil), tokenHash[:]...),
-		TokenPrefix:         tokenPrefix,
-		ExpiresAt:           term.ExpiresAt,
+		TenantID:             tenantID,
+		UserID:               user.ID,
+		ServiceTermID:        term.ID,
+		RuntimeCredentialID:  credential.ID,
+		TokenHash:            append([]byte(nil), tokenHash[:]...),
+		TokenPrefix:          tokenPrefix,
+		TokenCiphertext:      tokenCiphertext,
+		TokenNonce:           tokenNonce,
+		TokenEncryptionKeyID: tokenEncryptionKeyID,
+		ExpiresAt:            term.ExpiresAt,
 	}); err != nil {
 		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "persist subscription token", err)
+	}
+	if err := s.persistSubscriptionRecovery(ctx, tx, tokenHash[:], tokenCiphertext, tokenNonce, tokenEncryptionKeyID); err != nil {
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "persist subscription recovery", err)
 	}
 
 	if err := mutation.CommitAndFinalize(ctx, tx); err != nil {
