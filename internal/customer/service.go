@@ -33,11 +33,11 @@ type RuntimeMutation interface {
 type RuntimeCreateFunc func(context.Context, *sql.Tx, string, string, runtimecred.CreateInput) (RuntimeMutation, error)
 
 type Service struct {
-	store          Store
-	createRuntime  RuntimeCreateFunc
-	now            func() time.Time
-	tokenKey       []byte
-	tokenKeyID     string
+	store         Store
+	createRuntime RuntimeCreateFunc
+	now           func() time.Time
+	tokenKey      []byte
+	tokenKeyID    string
 }
 
 type CreateCustomerInput struct {
@@ -174,6 +174,9 @@ func (s *Service) CreateCustomer(ctx context.Context, tx *sql.Tx, actorID, idemp
 		ExpiresAt:            term.ExpiresAt,
 	}); err != nil {
 		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "persist subscription token", err)
+	}
+	if err := s.persistSubscriptionRecovery(ctx, tx, tokenHash[:], tokenCiphertext, tokenNonce, tokenEncryptionKeyID); err != nil {
+		return CreateCustomerResult{}, abortRuntimeMutation(ctx, tx, mutation, "persist subscription recovery", err)
 	}
 
 	if err := mutation.CommitAndFinalize(ctx, tx); err != nil {
