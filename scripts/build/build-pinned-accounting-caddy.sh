@@ -17,7 +17,7 @@ done
 [[ "${caddy_version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'ERROR: invalid pinned Caddy version' >&2; exit 1; }
 [[ "${xcaddy_version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'ERROR: invalid pinned xcaddy version' >&2; exit 1; }
 [[ -f "${patch_file}" ]] || { echo 'ERROR: forwardproxy patch is missing' >&2; exit 1; }
-[[ -f "${overlay_dir}/pvnaive_accounting.go" ]] || { echo 'ERROR: forwardproxy overlay is missing' >&2; exit 1; }
+[[ -f "${overlay_dir}/pvnaive_accounting.go.src" ]] || { echo 'ERROR: forwardproxy overlay is missing' >&2; exit 1; }
 
 tmp="$(mktemp -d)"
 cleanup() { rm -rf -- "${tmp}"; }
@@ -31,7 +31,7 @@ git -C "${src}" checkout --quiet --detach FETCH_HEAD
 
 git -C "${src}" apply --check "${patch_file}"
 git -C "${src}" apply "${patch_file}"
-cp "${overlay_dir}/"*.go "${src}/"
+cp "${overlay_dir}/pvnaive_accounting.go.src" "${src}/pvnaive_accounting.go"
 
 gofmt -w "${src}/pvnaive_accounting.go" "${src}/forwardproxy.go" "${src}/caddyfile.go"
 (
@@ -50,7 +50,7 @@ GOBIN="${tmp}/bin" go install "github.com/caddyserver/xcaddy/cmd/xcaddy@${xcaddy
 "${out_dir}/caddy-pvnaive-accounting" list-modules | grep -Fx 'http.handlers.forward_proxy' >/dev/null
 sha256sum "${out_dir}/caddy-pvnaive-accounting" > "${out_dir}/caddy-pvnaive-accounting.sha256"
 sha256sum "${patch_file}" > "${out_dir}/forwardproxy-patch.sha256"
-sha256sum "${overlay_dir}/pvnaive_accounting.go" > "${out_dir}/forwardproxy-overlay.sha256"
+sha256sum "${overlay_dir}/pvnaive_accounting.go.src" > "${out_dir}/forwardproxy-overlay.sha256"
 cat > "${out_dir}/PROVENANCE.txt" <<EOF
 product=PVNaive
 caddy_version=${caddy_version}
@@ -58,7 +58,7 @@ forwardproxy_repo=https://github.com/klzgrad/forwardproxy.git
 forwardproxy_commit=${forwardproxy_commit}
 xcaddy_version=${xcaddy_version}
 patch_sha256=$(sha256sum "${patch_file}" | awk '{print $1}')
-overlay_sha256=$(sha256sum "${overlay_dir}/pvnaive_accounting.go" | awk '{print $1}')
+overlay_sha256=$(sha256sum "${overlay_dir}/pvnaive_accounting.go.src" | awk '{print $1}')
 binary_sha256=$(sha256sum "${out_dir}/caddy-pvnaive-accounting" | awk '{print $1}')
 EOF
 

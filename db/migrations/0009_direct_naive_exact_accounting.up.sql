@@ -220,7 +220,7 @@ BEGIN
 
     INSERT INTO pvnaive.direct_naive_accounting_terms(service_term_id)
     VALUES (v_term.id)
-    ON CONFLICT (service_term_id) DO NOTHING;
+    ON CONFLICT ON CONSTRAINT direct_naive_accounting_terms_pkey DO NOTHING;
 
     SELECT t.upload_bytes, t.download_bytes, t.reserved_bytes, t.accounting_complete
       INTO v_upload, v_download, v_reserved, v_complete
@@ -329,7 +329,7 @@ BEGIN
 
     INSERT INTO pvnaive.direct_naive_accounting_terms(service_term_id)
     VALUES (v_term.id)
-    ON CONFLICT (service_term_id) DO NOTHING;
+    ON CONFLICT ON CONSTRAINT direct_naive_accounting_terms_pkey DO NOTHING;
     SELECT * INTO v_projection
       FROM pvnaive.direct_naive_accounting_terms
      WHERE direct_naive_accounting_terms.service_term_id = v_term.id
@@ -527,7 +527,7 @@ BEGIN
     END IF;
 
     INSERT INTO pvnaive.direct_naive_accounting_terms(service_term_id)
-    VALUES(v_term.id) ON CONFLICT(service_term_id) DO NOTHING;
+    VALUES(v_term.id) ON CONFLICT ON CONSTRAINT direct_naive_accounting_terms_pkey DO NOTHING;
     SELECT * INTO v_projection FROM pvnaive.direct_naive_accounting_terms t
      WHERE t.service_term_id=v_term.id FOR UPDATE;
 
