@@ -130,11 +130,20 @@ func (s *Service) AdoptRuntimeCredential(ctx context.Context, tx *sql.Tx, actorI
 	if len(tokenPrefix) > 10 {
 		tokenPrefix = tokenPrefix[:10]
 	}
+	tokenCiphertext, tokenNonce, tokenEncryptionKeyID, err := s.encryptedSubscriptionToken(rawToken)
+	if err != nil {
+		return CreateCustomerResult{}, err
+	}
 	if err := s.store.CreateSubscriptionTokenTx(ctx, tx, CreateSubscriptionTokenRecord{
 		TenantID: tenantID, UserID: user.ID, ServiceTermID: term.ID, RuntimeCredentialID: credential.ID,
-		TokenHash: append([]byte(nil), tokenHash[:]...), TokenPrefix: tokenPrefix, ExpiresAt: term.ExpiresAt,
+		TokenHash: append([]byte(nil), tokenHash[:]...), TokenPrefix: tokenPrefix,
+		TokenCiphertext: tokenCiphertext, TokenNonce: tokenNonce, TokenEncryptionKeyID: tokenEncryptionKeyID,
+		ExpiresAt: term.ExpiresAt,
 	}); err != nil {
 		return CreateCustomerResult{}, fmt.Errorf("customer: persist adopted subscription token: %w", err)
+	}
+	if err := s.persistSubscriptionRecovery(ctx, tx, tokenHash[:], tokenCiphertext, tokenNonce, tokenEncryptionKeyID); err != nil {
+		return CreateCustomerResult{}, fmt.Errorf("customer: persist adopted subscription recovery: %w", err)
 	}
 
 	return CreateCustomerResult{
