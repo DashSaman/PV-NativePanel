@@ -161,8 +161,8 @@ func TestAccountPageSecurityHeadersAreSecretSafe(t *testing.T) {
 
 func TestAccountPageSupportsPersianRTLWithoutActivatingFirstUse(t *testing.T) {
 	handler, token := subscriptionContractFixture(t, subscription.Record{
-		TermState:       "pending",
-		StartPolicy:     "on_first_successful_connection",
+		TermState:        "pending",
+		StartPolicy:      "on_first_successful_connection",
 		FirstConnectedAt: nil,
 	})
 	req := httptest.NewRequest(http.MethodGet, "/s/"+token+"?lang=fa", nil)
