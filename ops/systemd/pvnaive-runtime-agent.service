@@ -15,6 +15,7 @@ TimeoutStopSec=20s
 UMask=0077
 RuntimeDirectory=pvnaive
 RuntimeDirectoryMode=0771
+RuntimeDirectoryPreserve=yes
 
 NoNewPrivileges=true
 PrivateTmp=true
