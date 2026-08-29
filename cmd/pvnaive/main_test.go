@@ -43,3 +43,28 @@ func TestDatabaseDSNRejectsMissingRequiredValues(t *testing.T) {
 		t.Fatal("databaseDSN accepted missing PVNAIVE_DB_USER")
 	}
 }
+
+func TestSubscriptionProxyHostRequiresValidExplicitHostWhenEnabled(t *testing.T) {
+	env := map[string]string{"PVNAIVE_NAIVE_PUBLIC_HOST": "proxy.example.test"}
+	got, err := subscriptionProxyHost(func(key string) string { return env[key] }, true)
+	if err != nil {
+		t.Fatalf("subscriptionProxyHost returned error: %v", err)
+	}
+	if got != "proxy.example.test" {
+		t.Fatalf("subscriptionProxyHost=%q", got)
+	}
+
+	if _, err := subscriptionProxyHost(func(string) string { return "" }, true); err == nil {
+		t.Fatal("enabled subscription accepted missing public host")
+	}
+	if _, err := subscriptionProxyHost(func(string) string { return "https://bad.example/path" }, true); err == nil {
+		t.Fatal("subscription accepted URL instead of host[:port]")
+	}
+}
+
+func TestSubscriptionProxyHostMayBeUnsetWhenCustomerRuntimeIsDisabled(t *testing.T) {
+	got, err := subscriptionProxyHost(func(string) string { return "" }, false)
+	if err != nil || got != "" {
+		t.Fatalf("disabled subscription host=%q err=%v", got, err)
+	}
+}

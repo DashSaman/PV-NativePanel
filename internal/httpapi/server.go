@@ -6,16 +6,21 @@ import (
 	"net/http"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
 type envelope map[string]any
 
 type ServerConfig struct {
-	AuthService    *auth.Service
-	AuthStore      *auth.Store
-	MFAKey         []byte
-	RuntimeService *runtimecred.Service
+	AuthService           *auth.Service
+	AuthStore             *auth.Store
+	MFAKey                []byte
+	RuntimeService        *runtimecred.Service
+	SubscriptionService   *subscription.Service
+	SubscriptionProxyHost string
+	CustomerService       *customer.Service
 }
 
 type server struct {
@@ -48,6 +53,30 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "auth.logout":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.logout)
+			}
+		case "subscriptions.show":
+			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
+				handler = http.HandlerFunc(s.publicSubscription)
+			}
+		case "customers.index":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.listCustomers)
+			}
+		case "customers.create":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.createCustomer)
+			}
+		case "customers.adopt-runtime":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.adoptRuntimeCustomer)
+			}
+		case "customers.service.update":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.updateCustomerService)
+			}
+		case "customers.subscription.rotate":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.rotateCustomerSubscription)
 			}
 		case "me.show":
 			if cfg.AuthStore != nil {

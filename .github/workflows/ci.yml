@@ -98,6 +98,7 @@ jobs:
               bash tests/stages/S04_db_release_promotion_test.sh
               bash tests/stages/S04R_preflight_contract_test.sh
               bash tests/stages/S04R_upgrade_contract_test.sh
+              bash tests/stages/S05_upgrade_contract_test.sh
               bash tests/db/lib_test.sh
               bash tests/db/migration_test.sh
               bash tests/db/health_test.sh
@@ -107,6 +108,7 @@ jobs:
               bash tests/db/naive_runtime_migration_test.sh
               bash tests/db/customer_lifecycle_migration_test.sh
               bash tests/db/customer_idempotency_migration_test.sh
+              bash tests/db/direct_subscription_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
             '
 
@@ -128,6 +130,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Prove pinned forwardproxy CONNECT accounting boundary
+        run: bash tests/accounting/pinned_forwardproxy_boundary_test.sh
       - name: Prove pinned Naive Caddy supports multiple basic_auth directives
         run: |
           set -Eeuo pipefail
@@ -229,12 +233,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Build production S04 bundle
+      - name: Build production S05 bundle
         env:
           PVNAIVE_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
-        run: bash scripts/release/build-s04-bundle.sh
-      - name: Verify S04R production bundle contract
-        run: bash tests/release/S04R_bundle_contract_test.sh dist/artifacts
+        run: bash scripts/release/build-s05-bundle.sh
+      - name: Verify S05 production bundle contract
+        run: bash tests/release/S05_bundle_contract_test.sh dist/artifacts
       - name: Verify production archive checksum
         run: |
           set -Eeuo pipefail
@@ -242,7 +246,7 @@ jobs:
           sha256sum --check --strict *.tar.gz.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: PVNaive-S04-${{ github.event.pull_request.head.sha }}
+          name: PVNaive-S05-${{ github.event.pull_request.head.sha }}
           path: |
             dist/artifacts/*.tar.gz
             dist/artifacts/*.tar.gz.sha256

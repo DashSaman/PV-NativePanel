@@ -1,171 +1,139 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 
-> This file is the canonical **development** status for the active branch. Production truth must also be cross-checked against `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, and production evidence before any live mutation.
+> This file is the canonical **development** status for the active feature branch. Production truth must still be cross-checked against `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, and production evidence before any live mutation.
 
 ## Project
 
-PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The immediate Pilot target is intentionally narrow: the Owner manages real Naive credentials from the panel and hands a `naive+https://...` link to customers. Customer portal, quota/accounting, expiry, reseller and subscription lifecycle remain later phases.
+PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The active development slice moves beyond raw Runtime credentials into an Owner-facing direct-customer workflow while preserving the existing Runtime safety boundary.
 
 ## Repository state
 
 - Repository: `DashSaman/PV-NativePanel`
 - Default branch: `main`
-- Active implementation branch: `s04-auth`
-- Draft PR: `#2` — `S04-AUTH: production authentication foundation`
-- `main` production-documentation head last audited: `b98ffbfbe8b30ddcc1bca06531650739a3647d22`
-- Branches remain deliberately diverged; `PVN-070` owns non-force reconciliation.
-- Never reset/force-push away production evidence or active S04R work.
+- Active feature branch: `s05-sanaei-customer-flow`
+- Draft PR: `#6` — `S05: Sanaei-style customer service flow`
+- PR base: `s05-user-quota-design`
+- Parent S05 draft: PR `#5`
+- `main` remains the source of production evidence; do not force-reset or overwrite it.
+- Detailed continuation notes: `docs/S05_HANDOFF.md`.
 
-## Current production state before S04R Pilot
+## Production state
 
-Evidence on `main` proves:
+This branch is a development branch, not proof of deployment. Existing production evidence on `main` remains authoritative for the live host. No statement in this file means the S05 customer flow has already been deployed to production.
 
-- S00-S03 passed.
-- PostgreSQL 18 is loopback-only and production schema is currently v2.
-- API is healthy on `127.0.0.1:8080` only.
-- one real Owner exists and real login/session/CSRF logout/revocation passed.
-- public panel/API exposure passed at `https://namir.softarg.ir/panel/`.
-- existing Caddy/Naive and camouflage were preserved during panel exposure.
-- S04 is still formally `IN PROGRESS`; formal closure is `PVN-036`.
+## Implemented S04R foundation
 
-No S04R migration/runtime mutation has yet been recorded as completed on production in this branch's canonical status.
+The branch retains the tested S04R Runtime foundation:
 
-## S04R implementation state
+- AES-GCM Runtime secret envelope and SHA-256 secret fingerprinting;
+- byte-preserving Naive/Caddy credential parser and renderer;
+- fixed Unix-socket Runtime Agent without arbitrary shell/path/service API;
+- expected-SHA Caddy mutation with validate, exact backup, reload-only postflight, verification and rollback;
+- Runtime credential PostgreSQL store and desired/apply/applied revision saga;
+- Owner-only Runtime API with CSRF, idempotency and optimistic revision checks;
+- `/panel/#/runtime/naive` advanced Runtime UI;
+- one-time generated password delivery;
+- stable Runtime credential UUIDs across business bindings.
 
-Development is complete through disposable rehearsal (`PVN-020`…`PVN-027`). Implemented and covered by tests/rehearsal:
+## S05 direct-customer flow implemented on this branch
 
-- AES-GCM runtime secret envelope, SHA-256 fingerprinting and conservative username/password policy;
-- byte-preserving `forward_proxy` parser/renderer with fail-closed ambiguity/injection handling;
-- root Runtime Agent on a fixed Unix socket, with no arbitrary shell/path/service/URL API;
-- expected-SHA Caddy operator with exact backup, validate-before-write, reload-only postflight and rollback;
-- runtime credential PostgreSQL store + desired/apply/applied revision saga and compensation;
-- dedicated reconciliation-required error when DB finalization and Runtime rollback cannot be reconciled;
-- Owner-only Runtime API with CSRF, idempotency, optimistic revisions and secret redaction;
-- `/panel/#/runtime/naive` UI for import/create/rename/rotate/enable/disable/revoke;
-- generated password is returned only after successful commit and only once to the browser;
-- one-click copy-ready `naive+https://...` URI for Karing/compatible clients;
-- last-active credential protection;
-- full PG18 + API + Unix-socket + safe Runtime rehearsal;
-- pinned Naive Caddy `v2.11.2-naive` proof that multiple `basic_auth` directives validate/adapt;
-- guarded S04R bundle with migration 0003, three binaries, web build, systemd units, preflight and upgrade scripts.
+The primary Owner workflow is `/panel/#/customers`. It follows a Sanaei/3x-ui-like operator experience without collapsing commercial state into the Runtime credential.
 
-## Verification checkpoints
+Implemented:
 
-### Full S04R implementation/bundle checkpoint
+- username creation;
+- generated secure password or custom password;
+- numeric binary-GB quota or unlimited (`quota_bytes = NULL`);
+- validity from creation;
+- validity from first successful connection;
+- fixed manual expiry;
+- business `User` plus immutable `ServiceTerm` snapshot;
+- stable binding to the actual Runtime credential UUID;
+- one-time password and direct Naive URI delivery when available;
+- revocable opaque Subscription URL;
+- browser-local QR generation without third-party QR service;
+- safe customer list projection without password, ciphertext or raw token leakage;
+- Subscription reissue with previous active token revocation;
+- idempotency claim before Subscription rotation so request retry cannot rotate twice;
+- explicit Naive public destination configuration through `PVNAIVE_NAIVE_PUBLIC_HOST` rather than request Host header;
+- responsive desktop/mobile customer UI;
+- raw Runtime credential management retained separately as the advanced screen.
 
-Commit: `a41fd84c2f17076a3b190eafad3539c47b430503`
+## Subscription security boundary
 
-CI run `33190295766`:
+Migration `0006_direct_subscription_tokens` stores only a SHA-256 token digest plus a short non-secret prefix. The raw 256-bit token exists only for one-time delivery. The public Subscription resolver checks live user/service/binding/Runtime state before decrypting the Runtime secret internally to render a `naive+https://...` entry.
 
-- Go: PASS
-- Web: PASS
-- PostgreSQL 18 / database safety contracts: PASS
-- exact pinned Caddy proof: PASS
-- S04 auth rehearsal: PASS
-- full S04R runtime rehearsal: PASS
-- production S04R bundle contract: PASS
-- archive checksum: PASS
-- uploaded artifact: `PVNaive-S04-a41fd84c2f17076a3b190eafad3539c47b430503`
+Subscription fetches do **not** start first-use validity.
 
-The downloaded artifact was independently unpacked and both the outer archive checksum and every file in internal `SHA256SUMS` verified successfully.
+## First-successful-connection boundary
 
-### Customer-handoff UI increment
+`internal/runtimeevent` accepts only an authenticated trusted `CONNECT` event carrying the stable Runtime credential UUID and trusted observation timestamp. `customer.ActivateFirstUse` then performs an atomic compare-and-set from `pending` to `active`, calculates expiry and synchronizes active Subscription expiry. Duplicate trusted events are harmless.
 
-The subsequent UI slice adds the tested URI builder and one-click Karing/Naive link. It followed RED→GREEN TDD: run `33190665847` failed only because `buildNaiveURI` did not exist; after implementation the web job on run `33190796760` passed all tests and the production web build.
+The branch does **not** claim that the pinned live Caddy/Naive path already produces this trusted event. Producer instrumentation remains a separate proof gate. Until it is proven end-to-end, production operators should use `on_creation` or `fixed_expiry` when automatic first-use activation is required immediately.
 
-A fresh full CI on the final documentation HEAD is still required before a completion/release-ready claim.
+## Exact usage / quota boundary
 
-## Immediate live task
+Configured quota is implemented as commercial service state, but exact byte accounting is still capability-gated.
 
-`PVN-028` — **read-only live preflight**.
+Until PVN-045..049 pass:
 
-Use `docs/PILOT_INSTALL_FA.md` and perform the live process one step at a time:
+- `usage_capability.available=false`;
+- reason is `exact_accounting_not_proven`;
+- used/remaining traffic is not fabricated;
+- UI does not display fake `0 used` or `quota remaining` values;
+- hard byte-quota enforcement remains disabled.
 
-1. verify artifact checksums;
-2. run `S04R-preflight.sh` read-only;
-3. continue only if `PREFLIGHT_RESULT=PASS`;
-4. pass the exact `CADDYFILE_SHA256` into `S04R-upgrade.sh`;
-5. require encrypted DB backup + schema v3 + unchanged Caddy SHA/PID/NRestarts;
-6. Owner securely imports the existing credential;
-7. create one new generated credential;
-8. test the generated Naive link in Karing before handing it to a customer;
-9. record live evidence under `ops/evidence/` and only then close `PVN-028/029`.
+This boundary is intentional and must not be bypassed for UI completeness.
 
-## Pilot capability boundary
+## Deployment precondition introduced by S05
 
-### Ready in code/rehearsal
+When Runtime/customer Subscription services are enabled, the API requires:
 
-- Owner authentication and protected panel
-- real Naive credential import and management
-- multiple credentials
-- one-time generated password
-- copy-ready Naive/Karing link
-- safe Caddy lifecycle and rollback
+```text
+PVNAIVE_NAIVE_PUBLIC_HOST=<real-naive-host-or-host:port>
+```
 
-### Not part of this Pilot yet
+Do not include a scheme or path. This value must be supplied by deployment configuration; it is not inferred from an HTTP Host header.
 
-- customer self-service login/portal
-- traffic quota or exact billable usage
-- automatic commercial expiry/reset
-- device/HWID/session/speed enforcement
-- reseller/credit
-- subscription page/token lifecycle
-- notifications
-- generic fresh-server installer
+## Verification state
 
-Customers receive only their Naive link/credential, never Owner panel credentials.
+The S05 feature-code checkpoint `26873435d0460d0297900629ece6a7fc93553c0a` is verified green by GitHub Actions CI run `33222914088` (run #570).
 
-## Numerical progress
+Verified PASS scope:
 
-Progress is an equal-weight count over the 72 concrete tasks in `ROADMAP.md`; in-progress work receives no partial credit.
+- Go formatting, vet, full Go tests, Runtime Agent safety rehearsal;
+- Web tests and production build;
+- PostgreSQL 18 schema/migration, health, backup/restore, collision and S05 migration contracts through schema v6;
+- pinned Naive Caddy multi-auth proof;
+- S04 authentication rehearsal;
+- full S04R Runtime rehearsal;
+- production bundle contract, archive checksum and artifact upload.
 
-| Metric | Count |
-|---|---:|
-| Total tracked tasks | 72 |
-| DONE | 27 |
-| IN PROGRESS | 2 (`PVN-028`, `PVN-068`) |
-| BLOCKED | 0 |
-| TODO | 43 |
-| Overall completed | **37.5%** |
+Bundle evidence for that checkpoint:
 
-### Phase progress by task count
+- artifact ID: `9705854213`;
+- bundle: `PVNaive-S04R-26873435d046.tar.gz`;
+- bundle SHA-256: `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7`.
 
-| Phase | Done / Total | Progress |
-|---|---:|---:|
-| A — Foundation / Database | 6 / 6 | 100% |
-| B — Authentication / Public preview | 11 / 11 | 100% of implemented milestones; formal closure remains Phase D |
-| C — S04R Naive credential management | 10 / 12 | 83.3%; live preflight/rollout remain |
-| D — Security hardening / S04 closure | 0 / 7 | 0% |
-| E — User / Plan / Reseller lifecycle | 0 / 8 | 0% |
-| F — Accounting / full Naive runtime | 0 / 7 | 0% |
-| G — Subscription / Notification | 0 / 6 | 0% |
-| H — Installer / Operations / Release | 0 / 10 | 0%; S04R has a stage-specific Pilot upgrade path, not the general installer |
-| I — Governance / quality | 0 / 5 | PVN-068 still syncing canonical PM docs |
+This is a development/release-candidate proof, not production deployment evidence. A fresh CI must still pass on any later branch head (including documentation-only finalization commits) before that later head is called final.
 
-## Known release/security boundaries
+## Remaining blockers outside this feature slice
 
-The Pilot is not equivalent to final Production R1. Highest-priority open items remain:
+1. exact per-credential byte accounting and reconciliation proof (`PVN-045+`);
+2. hard quota enforcement only after that proof;
+3. trusted Runtime producer instrumentation for `on_first_successful_connection` before claiming live automatic first-use activation;
+4. generic fresh-server installer/release lifecycle;
+5. production rollout and evidence capture on `main` as a separate controlled operation.
 
-1. `PVN-030` refresh-token reuse-family detection;
-2. `PVN-031` transaction commit-before-success integrity;
-3. `PVN-034` HTTP/IP-aware auth abuse controls;
-4. `PVN-035/036` formal public security review and independent S04 closure;
-5. `PVN-045+` exact accounting before quota/billing claims;
-6. `PVN-058+` generic fresh installer/release lifecycle.
+## Read first for continuation
 
-For Pilot use, keep panel access Owner-only, use strong Owner credentials/MFA where configured, and never give management login details to customers.
-
-## Read first
-
-1. `HANDOFF.md`
-2. `ROADMAP.md`
-3. `docs/PILOT_INSTALL_FA.md`
-4. `KNOWN_ISSUES.md`
-5. `AGENT_TASKS.md`
-6. `WORKLOG.md`
-7. `FEATURE_MATRIX.md`
-8. `docs/superpowers/specs/2026-08-28-naive-runtime-credentials-design.md`
-9. `docs/superpowers/plans/2026-08-28-naive-runtime-credentials.md`
-10. before any live change: `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`
+1. `docs/S05_HANDOFF.md`
+2. `docs/superpowers/specs/2026-08-29-sanaei-style-customer-service-ui-design.md`
+3. `docs/superpowers/plans/2026-08-29-sanaei-customer-service-flow.md`
+4. `docs/ARCHITECTURE_FA.md`
+5. `docs/DECISIONS_FA.md`
+6. `docs/API_FA.md`
+7. `ROADMAP.md`
+8. before any live change: `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`
