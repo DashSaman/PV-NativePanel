@@ -129,5 +129,8 @@ func (s *Service) RotateSubscription(ctx context.Context, tx *sql.Tx, actorID, i
 	}); err != nil {
 		return "", err
 	}
+	if err := s.persistSubscriptionRecovery(ctx, tx, hash[:], tokenCiphertext, tokenNonce, tokenEncryptionKeyID); err != nil {
+		return "", err
+	}
 	return raw, nil
 }
