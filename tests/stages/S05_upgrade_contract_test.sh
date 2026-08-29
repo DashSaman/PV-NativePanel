@@ -37,6 +37,8 @@ for required in \
   'ROLLBACK_DATABASE=PASS' \
   'ROLLBACK_DATABASE=FAIL' \
   'ROLLBACK_API_ENV=PASS' \
+  'ROLLBACK_MIGRATION_CHAIN' \
+  'PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA' \
   'S05_RESULT=PASSED'; do
   grep -Fq -- "${required}" "${upgrade}" || { echo "ERROR: S05 upgrade missing contract token: ${required}" >&2; exit 1; }
 done
@@ -75,5 +77,8 @@ rollback_call_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/rollback.sh"' 
   echo 'ERROR: S05 rollback must loop across every migration newer than the pre-upgrade schema' >&2
   exit 1
 }
+
+# Real PostgreSQL 18 integration proof for the chain safety gate.
+bash tests/db/rollback_chain_test.sh
 
 echo 'S05_UPGRADE_CONTRACT=PASSED'
