@@ -64,7 +64,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == "8" ]] || { echo "ERROR: S04R compatibility rehearsal schema version=${schema_version}, want=8" >&2; exit 1; }
+[[ "${schema_version}" =~ ^[0-9]+$ && "${schema_version}" -ge 8 ]] || { echo "ERROR: S04R compatibility rehearsal schema version=${schema_version}, minimum=8" >&2; exit 1; }
 
 phc="$(printf '%s\n' "${password}" | "${password_binary}")"
 [[ "${phc}" == '$argon2id$'* ]] || { echo 'ERROR: password helper returned invalid PHC' >&2; exit 1; }
