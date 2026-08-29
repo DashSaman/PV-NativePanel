@@ -20,29 +20,28 @@ grep -Fq 'productionCaddyBinary   = "/usr/local/bin/caddy"' internal/runtimeagen
 grep -Fq 'productionServiceName   = "caddy-naive.service"' internal/runtimeagent/operator.go
 grep -Fq 'productionBackupRoot    = "/var/backups/pvnaive/caddy"' internal/runtimeagent/operator.go
 
-# /run/pvnaive is a shared namespace: runtime-agent owns the management socket
-# while the independent telemetry service owns accounting.sock. Restarting or
-# stopping runtime-agent must therefore never let systemd recursively remove
-# the shared directory and unlink the telemetry socket underneath a still-live
-# telemetry process.
-grep -Fq 'RuntimeDirectory=pvnaive' ops/systemd/pvnaive-runtime-agent.service || {
-  echo "ERROR: runtime agent unit must let systemd create /run/pvnaive before namespace setup" >&2
+# /run/pvnaive is shared by two independently-owned sockets. A service-level
+# RuntimeDirectory declaration is forbidden because systemd may re-own existing
+# entries when that service starts. The shared namespace is created at boot by
+# tmpfiles instead, and each process owns only its own socket.
+if grep -Eq '^RuntimeDirectory(Mode|Preserve)?=' ops/systemd/pvnaive-runtime-agent.service; then
+  echo "ERROR: runtime agent must not own the shared /run/pvnaive lifecycle" >&2
+  exit 1
+fi
+grep -Fq 'After=caddy-naive.service systemd-tmpfiles-setup.service' ops/systemd/pvnaive-runtime-agent.service || {
+  echo "ERROR: runtime agent must start after tmpfiles creates the shared runtime directory" >&2
   exit 1
 }
-grep -Fq 'RuntimeDirectoryMode=0771' ops/systemd/pvnaive-runtime-agent.service || {
-  echo "ERROR: runtime agent RuntimeDirectoryMode must be 0771 for telemetry writer + Caddy traversal" >&2
-  exit 1
-}
-grep -Fq 'RuntimeDirectoryPreserve=yes' ops/systemd/pvnaive-runtime-agent.service || {
-  echo "ERROR: shared /run/pvnaive must survive runtime-agent stop/restart so accounting.sock is not unlinked" >&2
+grep -Fxq 'd /run/pvnaive 0771 root pvnaive -' ops/tmpfiles/pvnaive.conf || {
+  echo "ERROR: tmpfiles contract for shared /run/pvnaive is missing" >&2
   exit 1
 }
 grep -Fq 'os.MkdirAll(runtimeDir, 0771)' cmd/pvnaive-runtime-agent/main.go || {
-  echo "ERROR: runtime agent must create /run/pvnaive with mode 0771" >&2
+  echo "ERROR: runtime agent should retain a defensive runtime directory check" >&2
   exit 1
 }
 grep -Fq 'os.Chmod(runtimeDir, 0771)' cmd/pvnaive-runtime-agent/main.go || {
-  echo "ERROR: runtime agent must enforce /run/pvnaive mode 0771 after chown" >&2
+  echo "ERROR: runtime agent must enforce directory mode without touching peer sockets" >&2
   exit 1
 }
 grep -Fq 'os.Chmod(runtimeagent.DefaultSocketPath, 0660)' cmd/pvnaive-runtime-agent/main.go || {
