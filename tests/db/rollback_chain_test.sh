@@ -55,7 +55,7 @@ schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align \
 [[ "${schema}" == 2 ]] || { echo "ERROR: chain fixture expected schema 2, got ${schema}" >&2; exit 1; }
 
 psql_admin --dbname "${test_db}" --command \
-  "INSERT INTO pvnaive.tenants (id, tenant_type, slug, display_name) VALUES ('55000000-0000-0000-0000-000000000005', 'owner', 'chain_base', 'Chain Base')" >/dev/null
+  "INSERT INTO pvnaive.tenants (id, tenant_type, slug, display_name) VALUES ('55000000-0000-0000-0000-000000000005', 'system', 'chain_base', 'Chain Base')" >/dev/null
 
 age-keygen -o "${temp_root}/backup.agekey" >/dev/null 2>&1
 age-keygen -y "${temp_root}/backup.agekey" >"${temp_root}/backup.recipient"
