@@ -51,4 +51,46 @@ for invalid_root in / /etc relative/path /var/backups/../backups/pvnaive; do
   grep -Eq '^ERROR: storage root (is too broad|must be an absolute canonical path without symlink traversal)$' <<< "${storage_output}"
 done
 
+
+# Encrypted archive validation must materialize a private temporary file instead
+# of piping age into pg_restore --list. pg_restore may stop reading early after
+# the TOC, which gives age SIGPIPE (141) under pipefail on production hosts.
+archive_test_root="$(mktemp -d)"
+cleanup_archive_test() { rm -rf -- "${archive_test_root}"; }
+trap cleanup_archive_test EXIT
+mkdir -p "${archive_test_root}/bin"
+printf 'archive-bytes\n' > "${archive_test_root}/archive.age"
+printf 'AGE-SECRET-KEY-test\n' > "${archive_test_root}/identity"
+cat > "${archive_test_root}/bin/age" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+output=''
+input=''
+while (($#)); do
+  case "$1" in
+    --decrypt) shift ;;
+    --identity) shift 2 ;;
+    --output) output="$2"; shift 2 ;;
+    *) input="$1"; shift ;;
+  esac
+done
+[[ -n "${output}" && -n "${input}" ]] || { echo 'fake age requires --output and input file' >&2; exit 91; }
+cp -- "${input}" "${output}"
+EOF
+cat > "${archive_test_root}/bin/pg_restore" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+[[ "$1" == '--list' && $# -eq 2 && -f "$2" ]] || { echo 'fake pg_restore requires --list FILE' >&2; exit 92; }
+grep -Fqx 'archive-bytes' "$2"
+EOF
+chmod 0755 "${archive_test_root}/bin/age" "${archive_test_root}/bin/pg_restore"
+TMPDIR="${archive_test_root}" PATH="${archive_test_root}/bin:${PATH}" \
+  pvnaive_validate_encrypted_archive "${archive_test_root}/archive.age" "${archive_test_root}/identity"
+[[ -z "$(find "${archive_test_root}" -maxdepth 1 -type f -name 'pvnaive-archive-validate.*' -print -quit)" ]] || {
+  echo 'ERROR: archive validation left plaintext temp material behind' >&2
+  exit 1
+}
+cleanup_archive_test
+trap - EXIT
+
 echo 'PVNAIVE_DB_LIB_TEST=PASSED'

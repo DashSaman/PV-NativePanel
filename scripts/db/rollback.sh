@@ -70,9 +70,7 @@ else
   metadata_schema_version="$(sed -n 's/^  "schema_version": \([0-9][0-9]*\),$/\1/p' "${backup_dir}/metadata.json")"
   [[ "${metadata_schema_version}" == "${expected_backup_schema_version}" ]] || \
     pvnaive_die "backup schema version ${metadata_schema_version:-unknown} does not match required rollback safety schema ${expected_backup_schema_version}"
-  pvnaive_require_command age
-  pvnaive_require_command pg_restore
-  age --decrypt --identity "${identity_file}" "${backup_file}" | pg_restore --list >/dev/null || \
+  pvnaive_validate_encrypted_archive "${backup_file}" "${identity_file}" || \
     pvnaive_die "encrypted backup could not be decrypted and parsed"
 fi
 

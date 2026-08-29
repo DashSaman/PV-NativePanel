@@ -50,8 +50,8 @@ final_dir="${backup_root}/${stamp}-${BASHPID}-${temp_suffix}"
 pvnaive_db_tool pg_dump --format custom --compress=6 --dbname "${PVNAIVE_DB_NAME}" |
   age --recipient "${recipient}" --output "${temp_dir}/pvnaive.dump.age" ||
   pvnaive_die "encrypted pg_dump stream failed"
-age --decrypt --identity "${identity_file}" "${temp_dir}/pvnaive.dump.age" |
-  pg_restore --list >/dev/null || pvnaive_die "encrypted pg_dump archive validation failed"
+pvnaive_validate_encrypted_archive "${temp_dir}/pvnaive.dump.age" "${identity_file}" ||
+  pvnaive_die "encrypted pg_dump archive validation failed"
 
 schema_version="$(pvnaive_psql_at --command 'SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations')"
 ((schema_version > 0)) || pvnaive_die "database has no applied PVNaive migration"
