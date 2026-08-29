@@ -5,7 +5,7 @@ umask 077
 bundle="${1:-}"
 [[ ${EUID} -eq 0 ]] || { echo 'ERROR: deploy must run as root' >&2; exit 1; }
 [[ -d "$bundle" && -f "$bundle/RELEASE.json" && -f "$bundle/SHA256SUMS" ]] || { echo 'ERROR: unpacked R1 bundle required' >&2; exit 1; }
-for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar; do
+for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find; do
   command -v "$cmd" >/dev/null || { echo "ERROR: missing $cmd" >&2; exit 1; }
 done
 ( cd "$bundle" && sha256sum --check --strict SHA256SUMS >/dev/null ) || { echo 'ERROR: release checksums failed' >&2; exit 1; }
@@ -64,17 +64,28 @@ else
 fi
 
 web_before="$(readlink -f /opt/pvnaive/web/current 2>/dev/null || true)"
+preview_before="$(readlink -f /var/www/pvnaive-preview/current 2>/dev/null || true)"
 db_before="$(readlink -f /opt/pvnaive/db/current 2>/dev/null || true)"
+[[ -z "$web_before" || ( "$web_before" == /opt/pvnaive/web/releases/* && -d "$web_before" ) ]] || { echo 'ERROR: unsafe current web target' >&2; exit 1; }
+[[ -z "$preview_before" || ( "$preview_before" == /var/www/pvnaive-preview/releases/* && -d "$preview_before" ) ]] || { echo 'ERROR: unsafe current preview target' >&2; exit 1; }
+[[ -z "$db_before" || ( "$db_before" == /opt/pvnaive/db/releases/* && -d "$db_before" ) ]] || { echo 'ERROR: unsafe current DB-script target' >&2; exit 1; }
 printf '%s\n' "$web_before" >"$backup/web.before"
+printf '%s\n' "$preview_before" >"$backup/preview.before"
 printf '%s\n' "$db_before" >"$backup/db.before"
 if [[ -f /opt/pvnaive/release/CURRENT ]]; then cp -a /opt/pvnaive/release/CURRENT "$backup/CURRENT.before"; else : >"$backup/CURRENT.missing"; fi
 if [[ -f /opt/pvnaive/release/RELEASE.json ]]; then cp -a /opt/pvnaive/release/RELEASE.json "$backup/RELEASE.json.before"; else : >"$backup/RELEASE.json.missing"; fi
 
 web_release="/opt/pvnaive/web/releases/${stamp}-${commit:0:12}"
+preview_release="/var/www/pvnaive-preview/releases/${stamp}-${commit:0:12}"
 db_release="/opt/pvnaive/db/releases/${stamp}-${commit:0:12}"
 install -d -o root -g pvnaive -m 0750 "$web_release"
 cp -a "$bundle/web/." "$web_release/"
 chown -R root:pvnaive "$web_release"
+install -d -o root -g caddy -m 0750 /var/www/pvnaive-preview/releases "$preview_release"
+cp -a "$bundle/web/." "$preview_release/"
+chown -R root:caddy "$preview_release"
+find "$preview_release" -type d -exec chmod 0750 {} +
+find "$preview_release" -type f -exec chmod 0640 {} +
 install -d -o root -g pvnaive -m 0750 "$db_release/scripts/db"
 cp -a "$bundle/scripts/db/." "$db_release/scripts/db/"
 chown -R root:pvnaive "$db_release"
@@ -103,6 +114,7 @@ if [[ -f "$bundle/tmpfiles/pvnaive.conf" ]]; then
   systemd-tmpfiles --create /etc/tmpfiles.d/pvnaive.conf
 fi
 ln -sfn "$web_release" /opt/pvnaive/web/current
+ln -sfn "$preview_release" /var/www/pvnaive-preview/current
 ln -sfn "$db_release" /opt/pvnaive/db/current
 cp -a "$bundle/RELEASE.json" /opt/pvnaive/release/RELEASE.json
 printf '%s\n' "$commit" >/opt/pvnaive/release/CURRENT
@@ -121,6 +133,9 @@ curl -fsS http://127.0.0.1:8080/api/v1/health/ready | grep -q '"ready":true'
 curl -fsS --unix-socket /run/pvnaive/runtime-agent.sock http://unix/v1/health | grep -q '"status":"ok"'
 curl -fsS --unix-socket /run/pvnaive/accounting.sock http://unix/v1/accounting/health | grep -q '"status":"ok"'
 for unit in pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-agent.service pvnaive-backup.timer pvnaive-restore-drill.timer; do systemctl is-active --quiet "$unit"; done
+[[ "$(readlink -f /opt/pvnaive/web/current)" == "$web_release" ]]
+[[ "$(readlink -f /var/www/pvnaive-preview/current)" == "$preview_release" ]]
+[[ "$(readlink -f /opt/pvnaive/db/current)" == "$db_release" ]]
 [[ "$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')" == "$caddy_sha" ]]
 [[ "$(systemctl show caddy-naive.service -p MainPID --value)" == "$caddy_pid" ]]
 [[ "$(systemctl show caddy-naive.service -p NRestarts --value)" == "$caddy_restarts" ]]
