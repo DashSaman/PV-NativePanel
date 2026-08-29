@@ -35,6 +35,9 @@ type RuntimeCreateFunc func(context.Context, *sql.Tx, string, string, runtimecre
 type Service struct {
 	store         Store
 	createRuntime RuntimeCreateFunc
+	updateRuntime RuntimeUpdateFunc
+	rotateRuntime RuntimeRotateFunc
+	revokeRuntime RuntimeRevokeFunc
 	now           func() time.Time
 	tokenKey      []byte
 	tokenKeyID    string
