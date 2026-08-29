@@ -24,6 +24,10 @@ required=(
   bin/pvnaive-runtime-agent
   web/index.html
   public-site/index.html
+  db/migrations/0001_initial.up.sql
+  db/migrations/0001_initial.down.sql
+  db/migrations/0002_auth_foundation.up.sql
+  db/migrations/0002_auth_foundation.down.sql
   db/migrations/0003_naive_runtime_credentials.up.sql
   db/migrations/0003_naive_runtime_credentials.down.sql
   db/migrations/0004_customer_lifecycle_foundation.up.sql
@@ -32,6 +36,7 @@ required=(
   db/migrations/0005_customer_mutation_idempotency.down.sql
   db/migrations/0006_direct_subscription_tokens.up.sql
   db/migrations/0006_direct_subscription_tokens.down.sql
+  db/migrations/SHA256SUMS
   scripts/stages/S05-preflight.sh
   scripts/stages/S05-upgrade.sh
   systemd/pvnaive-api.service
@@ -42,11 +47,27 @@ for path in "${required[@]}"; do
   [[ -f "${root}/${path}" ]] || { echo "ERROR: S05 bundle missing ${path}" >&2; exit 1; }
 done
 
+if find "${root}/db/migrations" -maxdepth 1 -type f -name '0007_*' -print -quit | grep -q .; then
+  echo 'ERROR: S05 bundle must remain frozen at schema 6 and may not contain migration 0007' >&2
+  exit 1
+fi
+if grep -Eq '[[:space:]]0007_[^[:space:]]+\.sql$' "${root}/db/migrations/SHA256SUMS"; then
+  echo 'ERROR: S05 migration manifest contains schema7 entries' >&2
+  exit 1
+fi
+migration_sql_count="$(find "${root}/db/migrations" -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d '[:space:]')"
+[[ "${migration_sql_count}" == 12 ]] || {
+  echo "ERROR: S05 bundle must contain exactly 12 migration SQL files for schemas 1..6, got ${migration_sql_count}" >&2
+  exit 1
+}
+
 for path in bin/pvnaive bin/pvnaive-password bin/pvnaive-runtime-agent; do
   [[ -x "${root}/${path}" ]] || { echo "ERROR: ${path} is not executable" >&2; exit 1; }
 done
 (
   cd "${root}"
+  sha256sum --check --strict SHA256SUMS >/dev/null
+  cd db/migrations
   sha256sum --check --strict SHA256SUMS >/dev/null
 )
 
