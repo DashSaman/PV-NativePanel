@@ -10,7 +10,7 @@ patch_file="${repo_root}/third_party/forwardproxy/patches/0001-pvnaive-exact-acc
 overlay_dir="${repo_root}/third_party/forwardproxy/overlay"
 out_dir="${PVNAIVE_ACCOUNTING_BUILD_OUT:-${repo_root}/dist/ws1-accounting}"
 
-for cmd in git go sha256sum cp mkdir mktemp; do
+for cmd in git go sha256sum cp mkdir mktemp find; do
   command -v "${cmd}" >/dev/null 2>&1 || { echo "ERROR: ${cmd} is required" >&2; exit 1; }
 done
 [[ "${forwardproxy_commit}" =~ ^[0-9a-f]{40}$ ]] || { echo 'ERROR: invalid pinned forwardproxy commit' >&2; exit 1; }
@@ -36,12 +36,14 @@ cp "${overlay_dir}/pvnaive_accounting.go.src" "${src}/pvnaive_accounting.go"
 gofmt -w "${src}/pvnaive_accounting.go" "${src}/forwardproxy.go" "${src}/caddyfile.go"
 (
   cd "${src}"
+  # Run the pinned upstream test suite in full first.
   go test ./...
-  # The pinned upstream has a pre-existing testing.T.Fatal-from-goroutine
-  # finding in httpclient_test.go under newer Go vet. Vet production code here;
-  # the upstream test suite above still runs in full, and the PVNaive repo runs
-  # its own full go vet ./... gate separately.
-  go vet -tests=false ./...
+  # The pin contains a pre-existing testing.T.Fatal-from-goroutine vet finding
+  # in httpclient_test.go under Go 1.25. After the full tests pass, remove only
+  # test sources from this disposable checkout and vet the exact production
+  # sources that are subsequently compiled into Caddy.
+  find . -type f -name '*_test.go' -delete
+  go vet ./...
 )
 
 mkdir -p "${tmp}/bin" "${out_dir}"
