@@ -7,13 +7,8 @@ cd "${repo_root}"
 
 command -v go >/dev/null 2>&1 || { echo "ERROR: go is required" >&2; exit 1; }
 
-# The package tests inject a fixed command runner and disposable Caddyfile /
-# backup roots. This exercises validate -> backup -> reload-only -> verify and
-# rollback/compensation without touching production paths or secrets.
 go test ./internal/runtimeagent -run '^TestOperator' -count=1
 
-# Static capability gates ensure the production implementation cannot silently
-# drift from the narrow contract even if a test fake changes later.
 grep -Fq 'runSystemctl(ctx, "reload", o.config.serviceName)' internal/runtimeagent/operator.go
 if grep -Eq 'runSystemctl\([^\n]*"restart"|runner\.Run\([^\n]*"restart"' internal/runtimeagent/operator.go; then
   echo "ERROR: runtime operator contains forbidden restart execution" >&2
@@ -25,21 +20,21 @@ grep -Fq 'productionCaddyBinary   = "/usr/local/bin/caddy"' internal/runtimeagen
 grep -Fq 'productionServiceName   = "caddy-naive.service"' internal/runtimeagent/operator.go
 grep -Fq 'productionBackupRoot    = "/var/backups/pvnaive/caddy"' internal/runtimeagent/operator.go
 
-# systemd evaluates ReadWritePaths before ExecStart. The runtime directory must
-# therefore be created by systemd itself; the Go process cannot be responsible
-# for creating a path required by its own mount namespace setup.
-#
-# Exact accounting adds a non-root telemetry writer in group pvnaive and a
-# Caddy reader in group pvnaive-telemetry. 0771 is deliberate: group pvnaive
-# can create accounting.sock, while unrelated users (including Caddy before
-# its telemetry supplementary group is applied) get traverse-only access and
-# cannot list the directory or access runtime-agent.sock (0660 root:pvnaive).
+# /run/pvnaive is a shared namespace: runtime-agent owns the management socket
+# while the independent telemetry service owns accounting.sock. Restarting or
+# stopping runtime-agent must therefore never let systemd recursively remove
+# the shared directory and unlink the telemetry socket underneath a still-live
+# telemetry process.
 grep -Fq 'RuntimeDirectory=pvnaive' ops/systemd/pvnaive-runtime-agent.service || {
   echo "ERROR: runtime agent unit must let systemd create /run/pvnaive before namespace setup" >&2
   exit 1
 }
 grep -Fq 'RuntimeDirectoryMode=0771' ops/systemd/pvnaive-runtime-agent.service || {
   echo "ERROR: runtime agent RuntimeDirectoryMode must be 0771 for telemetry writer + Caddy traversal" >&2
+  exit 1
+}
+grep -Fq 'RuntimeDirectoryPreserve=yes' ops/systemd/pvnaive-runtime-agent.service || {
+  echo "ERROR: shared /run/pvnaive must survive runtime-agent stop/restart so accounting.sock is not unlinked" >&2
   exit 1
 }
 grep -Fq 'os.MkdirAll(runtimeDir, 0771)' cmd/pvnaive-runtime-agent/main.go || {
