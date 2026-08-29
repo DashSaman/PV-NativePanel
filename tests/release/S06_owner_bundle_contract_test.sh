@@ -5,7 +5,10 @@ artifact_dir="${1:-dist/artifacts}"
 archive="$(find "${artifact_dir}" -maxdepth 1 -type f -name 'PVNaive-S06-Owner-*.tar.gz' -print -quit)"
 [[ -n "${archive}" && -f "${archive}" ]] || { echo 'ERROR: S06 owner archive missing' >&2; exit 1; }
 [[ -f "${archive}.sha256" ]] || { echo 'ERROR: S06 owner archive checksum missing' >&2; exit 1; }
-sha256sum --check --strict "${archive}.sha256" >/dev/null
+(
+  cd "$(dirname -- "${archive}")"
+  sha256sum --check --strict "$(basename -- "${archive}").sha256" >/dev/null
+)
 
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "${tmp}"' EXIT HUP INT TERM
