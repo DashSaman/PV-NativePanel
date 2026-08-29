@@ -99,8 +99,8 @@ grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
   echo 'ERROR: expected schema setter did not persist schema version 6' >&2
   exit 1
 }
-if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 9 >/dev/null 2>&1; then
-  echo 'ERROR: expected schema setter accepted unsupported schema version 9' >&2
+if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 11 >/dev/null 2>&1; then
+  echo 'ERROR: expected schema setter accepted unsupported schema version 11' >&2
   exit 1
 fi
 trap - EXIT HUP INT TERM

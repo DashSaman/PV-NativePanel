@@ -35,7 +35,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 PVNAIVE_DB_NAME="${test_db}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema}" == 9 ]] || { echo "ERROR: expected schema 9, got ${schema}" >&2; exit 1; }
+[[ "${schema}" == 10 ]] || { echo "ERROR: expected schema 10, got ${schema}" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT concat_ws('|',
@@ -90,6 +90,16 @@ auth="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET
 [[ "${auth##*$'\n'}" == 'true|true|100' ]] || { echo "ERROR: authorize: ${auth}" >&2; exit 1; }
 not_started="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT first_connected_at IS NULL AND starts_at IS NULL FROM pvnaive.service_terms WHERE id='cccccccc-cccc-cccc-cccc-cccccccccccc';")"
 [[ "${not_started}" == t ]] || { echo 'ERROR: authorize started first-use' >&2; exit 1; }
+
+# Schema 10 truthfulness: any pending reservation is immediately incomplete.
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.direct_naive_accounting_terms SET reserved_bytes=1 WHERE service_term_id='cccccccc-cccc-cccc-cccc-cccccccccccc';" >/dev/null
+pending_auth="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT concat_ws('|',remaining_bytes::text,accounting_complete::text) FROM pvnaive.direct_naive_accounting_authorize('11111111-1111-1111-1111-111111111111','2026-08-29T18:00:00Z');")"
+[[ "${pending_auth##*$'\n'}" == '99|false' ]] || { echo "ERROR: schema10 pending authorize: ${pending_auth}" >&2; exit 1; }
+pending_read="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT concat_ws('|',remaining_bytes::text,accounting_complete::text) FROM pvnaive.direct_naive_accounting_read('cccccccc-cccc-cccc-cccc-cccccccccccc','2026-08-29T18:00:00Z',90);")"
+[[ "${pending_read##*$'\n'}" == '99|false' ]] || { echo "ERROR: schema10 pending read: ${pending_read}" >&2; exit 1; }
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.direct_naive_accounting_terms SET reserved_bytes=0 WHERE service_term_id='cccccccc-cccc-cccc-cccc-cccccccccccc';" >/dev/null
+complete_again="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT accounting_complete FROM pvnaive.direct_naive_accounting_authorize('11111111-1111-1111-1111-111111111111','2026-08-29T18:00:00Z');")"
+[[ "${complete_again##*$'\n'}" == t ]] || { echo "ERROR: schema10 settled completeness: ${complete_again}" >&2; exit 1; }
 
 # Sequence 1 is emitted only after authenticated CONNECT + successful target dial.
 open1="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT concat_ws('|',accepted::text,duplicate::text,reason) FROM pvnaive.direct_naive_accounting_ingest('11111111-1111-1111-1111-111111111111','alice','direct-1','22222222-2222-2222-2222-222222222222','33333333-3333-3333-3333-333333333333',1,'2026-08-29T18:00:01Z',true,0,0,false);")"
