@@ -71,6 +71,7 @@ export type CustomerView = {
 
 export type SubscriptionDelivery = {
   subscription_path: string;
+  direct_uri?: string;
   delivery_notice?: string;
 };
 
