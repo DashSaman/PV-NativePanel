@@ -74,6 +74,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.updateCustomerService)
 			}
+		case "customers.subscription.current":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.currentCustomerSubscription)
+			}
 		case "customers.subscription.rotate":
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.rotateCustomerSubscription)
