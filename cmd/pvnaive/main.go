@@ -207,6 +207,7 @@ func run() error {
 		SubscriptionProxyHost: subscriptionHost,
 		SystemStatus:          systemStatus,
 	})
+	handler = httpapi.WithOperationalMiddleware(handler)
 	server := &http.Server{
 		Addr:              listen,
 		Handler:           handler,
