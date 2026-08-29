@@ -36,7 +36,7 @@ PVNAIVE_DB_ENV_FILE="${env_file}" \
 grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=3' "${env_file}"
 
 if PVNAIVE_DB_ENV_FILE="${env_file}" \
-  bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 4 >/dev/null 2>&1; then
+  bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 7 >/dev/null 2>&1; then
   echo 'ERROR: unsupported schema version was accepted' >&2
   exit 1
 fi
