@@ -40,7 +40,7 @@ type DialogState =
   | { type: "renew"; customer: ProductCustomer }
   | { type: "password"; customer: ProductCustomer }
   | { type: "subscription"; customer: ProductCustomer; delivery: ProductSubscriptionDelivery; rotated: boolean }
-  | { type: "secret"; username: string; password?: string; subscriptionPath?: string; notice: string }
+  | { type: "secret"; username: string; password?: string; subscriptionPath?: string; accountPagePath?: string; notice: string }
   | { type: "bulk" };
 
 type BulkPreviewState = { request: ProductBulkRequest; operation: ProductBulkOperation; idempotencyKey: string };
@@ -70,6 +70,18 @@ function QR({ value }: { value: string }) {
 function absoluteSubscription(path: string): string {
   const base = typeof window === "undefined" ? "https://localhost/" : window.location.origin;
   return new URL(path, base).toString();
+}
+
+function humanAccountPath(subscriptionPath: string, explicitPath?: string): string {
+  if (explicitPath) return explicitPath;
+  const prefixes = ["/sub/", "/api/v1/subscriptions/"];
+  for (const prefix of prefixes) {
+    if (subscriptionPath.startsWith(prefix)) {
+      const token = subscriptionPath.slice(prefix.length).split("/", 1)[0];
+      if (token) return `/s/${token}`;
+    }
+  }
+  return subscriptionPath;
 }
 
 function commercialLabel(customer: ProductCustomer): string {
@@ -108,7 +120,7 @@ function createValidity(noExpiry: boolean, validityMode: "on_creation" | "on_fir
   return { mode: validityMode, duration_days: Number(days) } as const;
 }
 
-function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: (result: { username: string; password?: string; subscriptionPath?: string }) => Promise<void>; onClose: () => void }) {
+function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: (result: { username: string; password?: string; subscriptionPath?: string; accountPagePath?: string }) => Promise<void>; onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [preset, setPreset] = useState("");
   const [generate, setGenerate] = useState(true);
@@ -137,7 +149,7 @@ function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPl
         }),
         ...(groupID ? { group_id: groupID } : {}), tag_ids: Array.from(selectedTags), on_hold: onHold,
       });
-      await onDone({ username: result.user.username, password: result.generated_password, subscriptionPath: result.subscription_path });
+      await onDone({ username: result.user.username, password: result.generated_password, subscriptionPath: result.subscription_path, accountPagePath: result.account_page_path });
     } catch (error) { setMessage(error instanceof Error ? error.message : "ساخت اکانت انجام نشد."); }
     finally { setBusy(false); }
   }
@@ -231,9 +243,15 @@ function PasswordForm({ customer, onDone, onClose }: { customer: ProductCustomer
 
 function SubscriptionContent({ delivery }: { delivery: ProductSubscriptionDelivery }) {
   const subscription = absoluteSubscription(delivery.subscription_path);
+  const accountPage = absoluteSubscription(humanAccountPath(delivery.subscription_path, delivery.account_page_path));
   const [copied, setCopied] = useState("");
   async function copy(key: string, value: string) { await navigator.clipboard.writeText(value); setCopied(key); window.setTimeout(() => setCopied(""), 1000); }
-  return <div className="subscription-grid"><div className="subscription-fields"><label>Subscription URL<div className="copy-row"><input readOnly value={subscription} /><button onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد" : "کپی"}</button></div></label>{delivery.direct_uri && <label>Direct Naive URI<div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد" : "کپی"}</button></div></label>}{delivery.delivery_notice && <p className="muted">{delivery.delivery_notice}</p>}</div><div className="qr-stack"><div><QR value={subscription} /><small>Subscription</small></div>{delivery.direct_uri && <div><QR value={delivery.direct_uri} /><small>Direct Naive</small></div>}</div></div>;
+  return <div className="subscription-grid"><div className="subscription-fields">
+    <div className="account-page-box"><strong>صفحه اشتراک کاربر</strong><span>این لینک برای باز شدن در مرورگر و نمایش وضعیت حساب است.</span><div className="copy-row"><input readOnly value={accountPage} /><a className="open-account-page" href={accountPage} target="_blank" rel="noreferrer">باز کردن صفحه</a><button onClick={() => void copy("page", accountPage)}>{copied === "page" ? "کپی شد" : "کپی"}</button></div></div>
+    <label>لینک ساب کلاینت (Karing)<div className="copy-row"><input readOnly value={subscription} /><button onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد" : "کپی"}</button></div><small className="field-hint">این مسیر `/sub/` خروجی خام برای کلاینت است و در مرورگر صفحه گرافیکی نشان نمی‌دهد.</small></label>
+    {delivery.direct_uri && <label>Direct Naive URI<div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد" : "کپی"}</button></div></label>}
+    {delivery.delivery_notice && <p className="muted">{delivery.delivery_notice}</p>}
+  </div><div className="qr-stack"><div><QR value={subscription} /><small>QR ساب Karing</small></div>{delivery.direct_uri && <div><QR value={delivery.direct_uri} /><small>QR مستقیم Naive</small></div>}</div></div>;
 }
 
 function BulkForm({ selected, plans, groups, tags, onDone, onClose }: { selected: string[]; plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: () => Promise<void>; onClose: () => void }) {
@@ -314,7 +332,7 @@ export function ProductCustomers({ role: _role }: Props) {
   function patchFilters(patch: Partial<ProductFilters>) { setFilters((current) => ({ ...current, ...patch, page: patch.page ?? 1 })); }
   function resetFilters() { setSearchDraft(""); setFilters({ ...DEFAULT_PRODUCT_FILTERS }); }
   function toggle(id: string) { setSelected((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next; }); }
-  async function copiedSecret(username: string, password?: string, subscriptionPath?: string, notice = "اطلاعات حساس فقط همین بار نمایش داده می‌شود.") { setDialog({ type: "secret", username, password, subscriptionPath, notice }); await refresh(); }
+  async function copiedSecret(username: string, password?: string, subscriptionPath?: string, accountPagePath?: string, notice = "اطلاعات حساس فقط همین بار نمایش داده می‌شود.") { setDialog({ type: "secret", username, password, subscriptionPath, accountPagePath, notice }); await refresh(); }
 
   async function openSubscription(customer: ProductCustomer, rotate = false) {
     setBusyID(customer.id); setMessage("");
@@ -393,12 +411,12 @@ export function ProductCustomers({ role: _role }: Props) {
       <div className="pagination"><div><button disabled={filters.page <= 1} onClick={() => patchFilters({ page: filters.page - 1 })}>قبلی</button><button disabled={filters.page >= pageCount} onClick={() => patchFilters({ page: filters.page + 1 })}>بعدی</button></div><span>صفحه {filters.page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span></div>
     </section>
 
-    {dialog?.type === "create" && <Modal title="کاربر جدید" eyebrow="ساخت حساب" wide onClose={() => setDialog(null)}><CreateForm plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async (result) => copiedSecret(result.username, result.password, result.subscriptionPath, "اکانت ساخته شد. رمز تولیدشده فقط همین بار قابل مشاهده است.")} /></Modal>}
+    {dialog?.type === "create" && <Modal title="کاربر جدید" eyebrow="ساخت حساب" wide onClose={() => setDialog(null)}><CreateForm plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async (result) => copiedSecret(result.username, result.password, result.subscriptionPath, result.accountPagePath, "اکانت ساخته شد. رمز تولیدشده فقط همین بار قابل مشاهده است.")} /></Modal>}
     {dialog?.type === "metadata" && <Modal title={`ویرایش ${dialog.customer.username}`} eyebrow="مشخصات کاربر" wide onClose={() => setDialog(null)}><MetadataForm customer={dialog.customer} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
     {dialog?.type === "renew" && <Modal title={`تمدید ${dialog.customer.username}`} eyebrow="تمدید سرویس" onClose={() => setDialog(null)}><RenewalForm customer={dialog.customer} plans={plans} onClose={() => setDialog(null)} onDone={refresh} /></Modal>}
-    {dialog?.type === "password" && <Modal title={`تغییر رمز ${dialog.customer.username}`} eyebrow="امنیت" onClose={() => setDialog(null)}><PasswordForm customer={dialog.customer} onClose={() => setDialog(null)} onDone={async (password) => copiedSecret(dialog.customer.username, password, undefined, "رمز تغییر کرد؛ لینک اشتراک بدون تغییر باقی ماند.")} /></Modal>}
+    {dialog?.type === "password" && <Modal title={`تغییر رمز ${dialog.customer.username}`} eyebrow="امنیت" onClose={() => setDialog(null)}><PasswordForm customer={dialog.customer} onClose={() => setDialog(null)} onDone={async (password) => copiedSecret(dialog.customer.username, password, undefined, undefined, "رمز تغییر کرد؛ لینک اشتراک بدون تغییر باقی ماند.")} /></Modal>}
     {dialog?.type === "subscription" && <Modal title={`اشتراک · ${dialog.customer.username}`} eyebrow={dialog.rotated ? "لینک جدید" : "نمایش اشتراک"} wide onClose={() => setDialog(null)}><div className="readonly-banner">{dialog.rotated ? "لینک قبلی باطل و لینک جدید صادر شد؛ رمز کاربر تغییر نکرد." : "لینک اشتراک و QR آماده استفاده است."}</div><SubscriptionContent delivery={dialog.delivery} /></Modal>}
-    {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="فقط یک‌بار" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <label>لینک اشتراک<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label>}</Modal>}
+    {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="فقط یک‌بار" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <><label>صفحه اشتراک کاربر<div className="copy-row"><input readOnly value={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} /><a className="open-account-page" href={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} target="_blank" rel="noreferrer">باز کردن صفحه</a></div></label><label>لینک ساب کلاینت<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label></>}</Modal>}
     {dialog?.type === "bulk" && <Modal title="عملیات گروهی" eyebrow="بازبینی قبل از اجرا" wide onClose={() => setDialog(null)}><BulkForm selected={Array.from(selected)} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async () => { setSelected(new Set()); await refresh(); }} /></Modal>}
   </main>;
 }

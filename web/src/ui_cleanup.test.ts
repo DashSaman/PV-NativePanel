@@ -28,4 +28,11 @@ describe("operator UI cleanup contract", () => {
     expect(catalog).toContain("پلن جدید");
     expect(catalog).toContain("showPlanForm");
   });
+
+  it("separates the human account page from the machine subscription endpoint", () => {
+    expect(customers).toContain("account_page_path");
+    expect(customers).toContain("صفحه اشتراک کاربر");
+    expect(customers).toContain("لینک ساب کلاینت");
+    expect(customers).toContain("باز کردن صفحه");
+  });
 });
