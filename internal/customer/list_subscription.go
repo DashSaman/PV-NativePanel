@@ -21,7 +21,7 @@ type customerListStore interface {
 	ListCustomersTx(context.Context, *sql.Tx) ([]CustomerView, error)
 }
 
-type currentSubscriptionStore interface {
+type currentSubscriptionReader interface {
 	CurrentSubscriptionTokenTx(context.Context, *sql.Tx, string) (EncryptedSubscriptionToken, error)
 }
 
@@ -50,7 +50,7 @@ func (s *Service) CurrentSubscription(ctx context.Context, tx *sql.Tx, userID st
 	if len(s.tokenKey) != 32 || s.tokenKeyID == "" {
 		return "", ErrSubscriptionNotRetrievable
 	}
-	store, ok := s.store.(currentSubscriptionStore)
+	store, ok := s.store.(currentSubscriptionReader)
 	if !ok {
 		return "", errors.New("customer: current subscription capability is unavailable")
 	}
