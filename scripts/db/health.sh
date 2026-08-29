@@ -51,6 +51,12 @@ if ((expected_version >= 2)); then
   [[ "${mfa_direct}" == "false|false" || "${mfa_direct}" == "f|f" ]] || pvnaive_die "application role has direct SELECT on MFA secret tables"
 fi
 
+if ((expected_version >= 7)); then
+  accounting_sequence_direct="$(pvnaive_psql_at --command "SELECT has_table_privilege(current_user, 'pvnaive.usage_connection_sequences', 'SELECT')::text || '|' || has_table_privilege(current_user, 'pvnaive.usage_connection_sequences', 'INSERT')::text || '|' || has_table_privilege(current_user, 'pvnaive.usage_connection_sequences', 'UPDATE')::text")"
+  [[ "${accounting_sequence_direct}" == "false|false|false" || "${accounting_sequence_direct}" == "f|f|f" ]] || \
+    pvnaive_die "application role has direct access to accounting sequence ledger"
+fi
+
 health_row="$(pvnaive_psql_at --command "
 WITH required(name) AS (
   VALUES ('actors'), ('backups'), ('credentials'), ('notification_deliveries'),
@@ -62,7 +68,7 @@ WITH required(name) AS (
          ('users'), ('audit_events'), ('auth_sessions'), ('log_metadata'),
          ('actor_totp_factors'), ('actor_mfa_recovery_codes'), ('naive_runtime_credentials'),
          ('service_terms'), ('user_runtime_credentials'), ('customer_mutation_keys'),
-         ('direct_subscription_tokens')
+         ('direct_subscription_tokens'), ('usage_counters'), ('usage_connection_sequences')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -75,7 +81,9 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 6)); then
+if ((expected_version >= 7)); then
+  [[ "${required_tables}" == "35" ]] || pvnaive_die "required table check failed: ${required_tables}/35"
+elif ((expected_version >= 6)); then
   [[ "${required_tables}" == "33" ]] || pvnaive_die "required table check failed: ${required_tables}/33"
 elif ((expected_version >= 5)); then
   [[ "${required_tables}" == "32" ]] || pvnaive_die "required table check failed: ${required_tables}/32"
@@ -88,7 +96,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 6)); then
+if ((expected_version >= 7)); then
+  [[ "${rls_tables}" == "31" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/31"
+elif ((expected_version >= 6)); then
   [[ "${rls_tables}" == "30" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/30"
 elif ((expected_version >= 5)); then
   [[ "${rls_tables}" == "29" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/29"
@@ -110,4 +120,7 @@ echo "PVNAIVE_DB_CLIENT_ADDRESS=${client_address}"
 echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
 if ((expected_version >= 2)); then
   echo "PVNAIVE_MFA_DIRECT_SELECT=DENIED"
+fi
+if ((expected_version >= 7)); then
+  echo "PVNAIVE_ACCOUNTING_SEQUENCE_DIRECT_ACCESS=DENIED"
 fi
