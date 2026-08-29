@@ -1,0 +1,479 @@
+package forwardproxy
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+)
+
+const pvnaiveAccountingSocketPath = "/run/pvnaive/accounting.sock"
+
+var (
+	errPVNaiveQuotaDepleted       = errors.New("pvnaive: quota depleted")
+	errPVNaiveAccountingUnhealthy = errors.New("pvnaive: accounting unavailable")
+)
+
+type pvnaiveAuthorizeRequest struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	Timestamp           time.Time `json:"timestamp"`
+}
+
+type pvnaiveAuthorizeResult struct {
+	ServiceTermID      string `json:"service_term_id"`
+	Tracked            bool   `json:"tracked"`
+	Allowed            bool   `json:"allowed"`
+	Reason             string `json:"reason"`
+	AccountingComplete bool   `json:"accounting_complete"`
+}
+
+type pvnaiveClaimRequest struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	NodeID              string    `json:"node_id"`
+	BootID              string    `json:"boot_id"`
+	SessionID           string    `json:"session_id"`
+	Sequence            int64     `json:"sequence"`
+	Direction           string    `json:"direction"`
+	RequestedBytes      int64     `json:"requested_bytes"`
+	Timestamp           time.Time `json:"timestamp"`
+}
+
+type pvnaiveClaimResult struct {
+	Tracked      bool   `json:"tracked"`
+	Allowed      bool   `json:"allowed"`
+	Reason       string `json:"reason"`
+	GrantedBytes int64  `json:"granted_bytes"`
+}
+
+type pvnaiveEvent struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	Username            string    `json:"username"`
+	NodeID              string    `json:"node_id"`
+	BootID              string    `json:"boot_id"`
+	SessionID           string    `json:"session_id"`
+	Sequence            int64     `json:"sequence"`
+	Timestamp           time.Time `json:"timestamp"`
+	Authenticated       bool      `json:"authenticated_connect"`
+	UploadBytes         int64     `json:"upload_bytes"`
+	DownloadBytes       int64     `json:"download_bytes"`
+	Final               bool      `json:"final,omitempty"`
+}
+
+type pvnaiveEventResult struct {
+	Tracked            bool   `json:"tracked"`
+	Accepted           bool   `json:"accepted"`
+	Duplicate          bool   `json:"duplicate"`
+	Reason             string `json:"reason"`
+	AccountingComplete bool   `json:"accounting_complete"`
+}
+
+type pvnaiveAccountingClient struct {
+	httpClient *http.Client
+	nodeID     string
+	bootID     string
+	runtimeIDs map[string]string
+}
+
+func (h *Handler) provisionPVNaiveAccounting() error {
+	configured := h.PVNaiveAccountingSocket != "" || h.PVNaiveNodeID != "" || len(h.PVNaiveRuntimeCredentials) != 0
+	if !configured {
+		return nil
+	}
+	if h.PVNaiveAccountingSocket != pvnaiveAccountingSocketPath {
+		return fmt.Errorf("pvnaive accounting socket must be %s", pvnaiveAccountingSocketPath)
+	}
+	if !pvnaiveSafeLabel(h.PVNaiveNodeID) {
+		return errors.New("pvnaive node id is required and must be a safe label")
+	}
+	if len(h.AuthCredentials) == 0 {
+		return errors.New("pvnaive accounting requires basic_auth credentials")
+	}
+	if len(h.PVNaiveRuntimeCredentials) == 0 {
+		return errors.New("pvnaive accounting requires runtime UUID mappings")
+	}
+
+	configuredUsers := make(map[string]struct{}, len(h.AuthCredentials))
+	for _, encoded := range h.AuthCredentials {
+		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(encoded)))
+		n, err := base64.StdEncoding.Decode(decoded, encoded)
+		if err != nil {
+			return fmt.Errorf("pvnaive: decode configured auth credential: %w", err)
+		}
+		parts := bytes.SplitN(decoded[:n], []byte(":"), 2)
+		if len(parts) != 2 || len(parts[0]) == 0 {
+			return errors.New("pvnaive: malformed configured basic auth credential")
+		}
+		configuredUsers[string(parts[0])] = struct{}{}
+	}
+	for username := range configuredUsers {
+		runtimeID, ok := h.PVNaiveRuntimeCredentials[username]
+		if !ok || !pvnaiveValidUUID(runtimeID) {
+			return fmt.Errorf("pvnaive: missing or invalid runtime UUID mapping for configured user %q", username)
+		}
+	}
+	for username, runtimeID := range h.PVNaiveRuntimeCredentials {
+		if _, ok := configuredUsers[username]; !ok {
+			return fmt.Errorf("pvnaive: runtime UUID mapping has no matching basic_auth user %q", username)
+		}
+		if !pvnaiveValidUUID(runtimeID) {
+			return fmt.Errorf("pvnaive: invalid runtime UUID for user %q", username)
+		}
+	}
+
+	bootRaw, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
+	if err != nil {
+		return fmt.Errorf("pvnaive: read boot id: %w", err)
+	}
+	bootID := strings.TrimSpace(string(bootRaw))
+	if !pvnaiveValidUUID(bootID) {
+		return errors.New("pvnaive: kernel boot id is not a UUID")
+	}
+
+	transport := &http.Transport{
+		Proxy:                 nil,
+		DisableKeepAlives:     false,
+		MaxIdleConns:          4,
+		MaxIdleConnsPerHost:   4,
+		IdleConnTimeout:       30 * time.Second,
+		ResponseHeaderTimeout: 3 * time.Second,
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			var dialer net.Dialer
+			return dialer.DialContext(ctx, "unix", pvnaiveAccountingSocketPath)
+		},
+	}
+	h.pvnaiveAccountingClient = &pvnaiveAccountingClient{
+		httpClient: &http.Client{Transport: transport, Timeout: 5 * time.Second},
+		nodeID:     h.PVNaiveNodeID,
+		bootID:     bootID,
+		runtimeIDs: h.PVNaiveRuntimeCredentials,
+	}
+	return nil
+}
+
+func (h *Handler) newPVNaiveAccountingSession(r *http.Request) (*pvnaiveAccountingSession, error) {
+	if h.pvnaiveAccountingClient == nil {
+		return nil, nil
+	}
+	username, err := pvnaiveProxyUsername(r)
+	if err != nil {
+		return nil, err
+	}
+	runtimeID, ok := h.pvnaiveAccountingClient.runtimeIDs[username]
+	if !ok {
+		return nil, errors.New("pvnaive: authenticated user has no runtime UUID")
+	}
+	auth := pvnaiveAuthorizeResult{}
+	if err := h.pvnaiveAccountingClient.postJSON(r.Context(), "/v1/accounting/authorize", pvnaiveAuthorizeRequest{
+		RuntimeCredentialID: runtimeID,
+		Timestamp:           time.Now().UTC(),
+	}, &auth); err != nil {
+		return nil, fmt.Errorf("%w: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	if !auth.Tracked {
+		return nil, errors.New("pvnaive: configured runtime UUID is not tracked by accounting")
+	}
+	if !auth.AccountingComplete {
+		return nil, errors.New("pvnaive: accounting state is incomplete")
+	}
+	if !auth.Allowed {
+		return nil, fmt.Errorf("%w: %s", errPVNaiveQuotaDepleted, auth.Reason)
+	}
+	sessionID, err := pvnaiveNewUUID()
+	if err != nil {
+		return nil, err
+	}
+	return &pvnaiveAccountingSession{
+		client:              h.pvnaiveAccountingClient,
+		runtimeCredentialID: runtimeID,
+		username:            username,
+		sessionID:           sessionID,
+	}, nil
+}
+
+func (c *pvnaiveAccountingClient) postJSON(ctx context.Context, path string, requestValue, responseValue any) error {
+	body, err := json.Marshal(requestValue)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://unix"+path, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
+		return fmt.Errorf("telemetry status %d", response.StatusCode)
+	}
+	decoder := json.NewDecoder(io.LimitReader(response.Body, 64<<10))
+	if err := decoder.Decode(responseValue); err != nil {
+		return err
+	}
+	return nil
+}
+
+type pvnaiveAccountingSession struct {
+	client              *pvnaiveAccountingClient
+	runtimeCredentialID string
+	username            string
+	sessionID           string
+
+	mu            sync.Mutex
+	sequence      int64
+	uploadBytes   int64
+	downloadBytes int64
+	opened        bool
+	closed        bool
+	failed        bool
+}
+
+func (s *pvnaiveAccountingSession) open(ctx context.Context) error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.opened {
+		return nil
+	}
+	result := pvnaiveEventResult{}
+	event := s.eventLocked(1, false)
+	if err := s.client.postJSON(ctx, "/v1/accounting/event", event, &result); err != nil {
+		s.failed = true
+		return fmt.Errorf("%w: open event: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	if !result.Tracked || !result.Accepted || !result.AccountingComplete {
+		s.failed = true
+		return fmt.Errorf("pvnaive: open event rejected: %s", result.Reason)
+	}
+	s.sequence = 1
+	s.opened = true
+	return nil
+}
+
+func (s *pvnaiveAccountingSession) close(ctx context.Context) error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.opened || s.closed || s.failed {
+		return nil
+	}
+	seq := s.sequence + 1
+	result := pvnaiveEventResult{}
+	if err := s.client.postJSON(ctx, "/v1/accounting/event", s.eventLocked(seq, true), &result); err != nil {
+		s.failed = true
+		return fmt.Errorf("%w: final event: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	if !result.Accepted || !result.AccountingComplete {
+		s.failed = true
+		return fmt.Errorf("pvnaive: final event rejected: %s", result.Reason)
+	}
+	s.sequence = seq
+	s.closed = true
+	return nil
+}
+
+func (s *pvnaiveAccountingSession) writeUpload(dst io.Writer, payload []byte) (int, error) {
+	return s.write(ctxBackground(), "upload", dst, payload, 0, len(payload))
+}
+
+func (s *pvnaiveAccountingSession) writeDownload(dst io.Writer, raw []byte, payloadOffset, payloadLength int) (int, error) {
+	return s.write(ctxBackground(), "download", dst, raw, payloadOffset, payloadLength)
+}
+
+func (s *pvnaiveAccountingSession) write(ctx context.Context, direction string, dst io.Writer, raw []byte, payloadOffset, payloadLength int) (int, error) {
+	if s == nil {
+		return dst.Write(raw)
+	}
+	if payloadLength <= 0 || payloadOffset < 0 || payloadOffset+payloadLength > len(raw) {
+		return 0, errors.New("pvnaive: invalid payload accounting frame")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.opened || s.closed || s.failed {
+		return 0, errPVNaiveAccountingUnhealthy
+	}
+
+	seq := s.sequence + 1
+	claim := pvnaiveClaimResult{}
+	request := pvnaiveClaimRequest{
+		RuntimeCredentialID: s.runtimeCredentialID,
+		NodeID:              s.client.nodeID,
+		BootID:              s.client.bootID,
+		SessionID:           s.sessionID,
+		Sequence:            seq,
+		Direction:           direction,
+		RequestedBytes:      int64(payloadLength),
+		Timestamp:           time.Now().UTC(),
+	}
+	if err := s.client.postJSON(ctx, "/v1/accounting/claim", request, &claim); err != nil {
+		s.failed = true
+		return 0, fmt.Errorf("%w: claim: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	if !claim.Tracked || !claim.Allowed || claim.GrantedBytes <= 0 {
+		return 0, fmt.Errorf("%w: %s", errPVNaiveQuotaDepleted, claim.Reason)
+	}
+	if claim.GrantedBytes > int64(payloadLength) {
+		s.failed = true
+		return 0, errors.New("pvnaive: server granted more bytes than requested")
+	}
+
+	grant := int(claim.GrantedBytes)
+	toWrite := raw
+	writePayloadOffset := payloadOffset
+	if grant < payloadLength {
+		if payloadOffset == 0 {
+			toWrite = raw[:grant]
+			writePayloadOffset = 0
+		} else if payloadOffset == 3 && len(raw) >= 3+payloadLength {
+			paddingLength := len(raw) - 3 - payloadLength
+			truncated := make([]byte, 3+grant+paddingLength)
+			truncated[0] = byte(grant / 256)
+			truncated[1] = byte(grant % 256)
+			truncated[2] = byte(paddingLength)
+			copy(truncated[3:3+grant], raw[3:3+grant])
+			copy(truncated[3+grant:], raw[3+payloadLength:])
+			toWrite = truncated
+			writePayloadOffset = 3
+		} else {
+			s.failed = true
+			return 0, errors.New("pvnaive: unsupported framed partial quota write")
+		}
+	}
+
+	n, writeErr := dst.Write(toWrite)
+	actualPayload := pvnaiveSuccessfulPayload(n, writePayloadOffset, grant)
+	if direction == "upload" {
+		s.uploadBytes += int64(actualPayload)
+	} else {
+		s.downloadBytes += int64(actualPayload)
+	}
+	result := pvnaiveEventResult{}
+	if err := s.client.postJSON(ctx, "/v1/accounting/event", s.eventLocked(seq, false), &result); err != nil {
+		s.failed = true
+		return n, fmt.Errorf("%w: settle: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	if !result.Accepted || !result.AccountingComplete {
+		s.failed = true
+		return n, fmt.Errorf("pvnaive: settlement rejected: %s", result.Reason)
+	}
+	s.sequence = seq
+
+	if writeErr != nil {
+		return n, writeErr
+	}
+	if grant < payloadLength {
+		return n, errPVNaiveQuotaDepleted
+	}
+	return n, nil
+}
+
+func (s *pvnaiveAccountingSession) eventLocked(sequence int64, final bool) pvnaiveEvent {
+	return pvnaiveEvent{
+		RuntimeCredentialID: s.runtimeCredentialID,
+		Username:            s.username,
+		NodeID:              s.client.nodeID,
+		BootID:              s.client.bootID,
+		SessionID:           s.sessionID,
+		Sequence:            sequence,
+		Timestamp:           time.Now().UTC(),
+		Authenticated:       true,
+		UploadBytes:         s.uploadBytes,
+		DownloadBytes:       s.downloadBytes,
+		Final:               final,
+	}
+}
+
+type pvnaiveAccountingConn struct {
+	net.Conn
+	session *pvnaiveAccountingSession
+}
+
+func (c *pvnaiveAccountingConn) Write(p []byte) (int, error) {
+	if c.session == nil {
+		return c.Conn.Write(p)
+	}
+	return c.session.writeUpload(c.Conn, p)
+}
+
+func pvnaiveSuccessfulPayload(rawWritten, payloadOffset, payloadLength int) int {
+	if rawWritten <= payloadOffset || payloadLength <= 0 {
+		return 0
+	}
+	payloadWritten := rawWritten - payloadOffset
+	if payloadWritten > payloadLength {
+		payloadWritten = payloadLength
+	}
+	return payloadWritten
+}
+
+func pvnaiveProxyUsername(r *http.Request) (string, error) {
+	parts := strings.Fields(r.Header.Get("Proxy-Authorization"))
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "basic") {
+		return "", errors.New("pvnaive: missing trusted basic auth header")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", errors.New("pvnaive: invalid basic auth encoding")
+	}
+	separator := bytes.IndexByte(decoded, ':')
+	if separator <= 0 {
+		return "", errors.New("pvnaive: invalid basic auth credential")
+	}
+	return string(decoded[:separator]), nil
+}
+
+func pvnaiveSafeLabel(value string) bool {
+	if len(value) < 1 || len(value) > 160 {
+		return false
+	}
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func pvnaiveValidUUID(value string) bool {
+	if len(value) != 36 || value[8] != '-' || value[13] != '-' || value[18] != '-' || value[23] != '-' {
+		return false
+	}
+	hexValue := strings.ReplaceAll(value, "-", "")
+	decoded := make([]byte, 16)
+	_, err := hex.Decode(decoded, []byte(hexValue))
+	return err == nil
+}
+
+func pvnaiveNewUUID() (string, error) {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", fmt.Errorf("pvnaive: session id: %w", err)
+	}
+	raw[6] = (raw[6] & 0x0f) | 0x40
+	raw[8] = (raw[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		raw[0:4], raw[4:6], raw[6:8], raw[8:10], raw[10:16]), nil
+}
+
+func ctxBackground() context.Context {
+	return context.Background()
+}
