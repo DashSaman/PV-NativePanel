@@ -62,7 +62,7 @@ SELECT
     WHERE n.nspname='pvnaive' AND p.proname='resolve_direct_subscription_token' AND p.prosecdef
   ) || '|' ||
   (SELECT relrowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass) || '|' ||
-  NOT (SELECT relforcerowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass) || '|' ||
+  (NOT (SELECT relforcerowsecurity FROM pg_class WHERE oid='pvnaive.direct_subscription_tokens'::regclass)) || '|' ||
   ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.users'::regclass AND tgname='direct_subscription_user_sync' AND NOT tgisinternal)=1) || '|' ||
   ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.service_terms'::regclass AND tgname='direct_subscription_service_term_sync' AND NOT tgisinternal)=1) || '|' ||
   ((SELECT COUNT(*) FROM pg_trigger WHERE tgrelid='pvnaive.naive_runtime_credentials'::regclass AND tgname='direct_subscription_runtime_credential_sync' AND NOT tgisinternal)=1);")"
