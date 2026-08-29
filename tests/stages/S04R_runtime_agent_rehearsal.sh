@@ -28,12 +28,30 @@ grep -Fq 'productionBackupRoot    = "/var/backups/pvnaive/caddy"' internal/runti
 # systemd evaluates ReadWritePaths before ExecStart. The runtime directory must
 # therefore be created by systemd itself; the Go process cannot be responsible
 # for creating a path required by its own mount namespace setup.
+#
+# Exact accounting adds a non-root telemetry writer in group pvnaive and a
+# Caddy reader in group pvnaive-telemetry. 0771 is deliberate: group pvnaive
+# can create accounting.sock, while unrelated users (including Caddy before
+# its telemetry supplementary group is applied) get traverse-only access and
+# cannot list the directory or access runtime-agent.sock (0660 root:pvnaive).
 grep -Fq 'RuntimeDirectory=pvnaive' ops/systemd/pvnaive-runtime-agent.service || {
   echo "ERROR: runtime agent unit must let systemd create /run/pvnaive before namespace setup" >&2
   exit 1
 }
-grep -Fq 'RuntimeDirectoryMode=0750' ops/systemd/pvnaive-runtime-agent.service || {
-  echo "ERROR: runtime agent RuntimeDirectoryMode must be 0750" >&2
+grep -Fq 'RuntimeDirectoryMode=0771' ops/systemd/pvnaive-runtime-agent.service || {
+  echo "ERROR: runtime agent RuntimeDirectoryMode must be 0771 for telemetry writer + Caddy traversal" >&2
+  exit 1
+}
+grep -Fq 'os.MkdirAll(runtimeDir, 0771)' cmd/pvnaive-runtime-agent/main.go || {
+  echo "ERROR: runtime agent must create /run/pvnaive with mode 0771" >&2
+  exit 1
+}
+grep -Fq 'os.Chmod(runtimeDir, 0771)' cmd/pvnaive-runtime-agent/main.go || {
+  echo "ERROR: runtime agent must enforce /run/pvnaive mode 0771 after chown" >&2
+  exit 1
+}
+grep -Fq 'os.Chmod(runtimeagent.DefaultSocketPath, 0660)' cmd/pvnaive-runtime-agent/main.go || {
+  echo "ERROR: runtime-agent socket must remain 0660" >&2
   exit 1
 }
 grep -Fq 'ReadWritePaths=/run/pvnaive' ops/systemd/pvnaive-runtime-agent.service
