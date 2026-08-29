@@ -21,6 +21,10 @@ function installCSRF() {
   });
 }
 
+function callsOf(fetcher: ReturnType<typeof vi.fn>): Array<[RequestInfo | URL, RequestInit?]> {
+  return fetcher.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit?]>;
+}
+
 afterEach(() => {
   Reflect.deleteProperty(globalThis, "document");
 });
@@ -46,7 +50,7 @@ describe("WS2 product API client", () => {
       direction: "asc",
     }, fetcher as typeof fetch);
 
-    const [raw] = fetcher.mock.calls[0];
+    const [raw] = callsOf(fetcher)[0];
     const url = new URL(String(raw), "https://panel.example");
     expect(url.pathname).toBe("/api/v1/users");
     expect(url.searchParams.get("q")).toBe("ali");
@@ -66,7 +70,7 @@ describe("WS2 product API client", () => {
   it("loads plans from the ready product catalog endpoint", async () => {
     const fetcher = vi.fn(async () => jsonResponse({ plans: [{ id: "p1", name: "50G", enabled: true }] }));
     const result = await listProductPlans(fetcher as typeof fetch);
-    expect(fetcher.mock.calls[0][0]).toBe("/api/v1/plans");
+    expect(callsOf(fetcher)[0][0]).toBe("/api/v1/plans");
     expect(result[0].name).toBe("50G");
   });
 
@@ -83,7 +87,7 @@ describe("WS2 product API client", () => {
       next_plan_id: "p2",
     }, fetcher as typeof fetch);
 
-    const [path, init] = fetcher.mock.calls[0];
+    const [path, init] = callsOf(fetcher)[0];
     expect(path).toBe("/api/v1/users/user%201");
     expect(init?.method).toBe("PATCH");
     expect((init?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
@@ -100,9 +104,10 @@ describe("WS2 product API client", () => {
     const preview = await previewProductBulk(request, fetcher as typeof fetch);
     await executeProductBulk(request, preview.idempotencyKey, fetcher as typeof fetch);
 
-    expect(fetcher.mock.calls[0][0]).toBe("/api/v1/users/bulk/preview");
-    expect(fetcher.mock.calls[1][0]).toBe("/api/v1/users/bulk/execute");
-    expect((fetcher.mock.calls[0][1]?.headers as Record<string, string>)["Idempotency-Key"])
-      .toBe((fetcher.mock.calls[1][1]?.headers as Record<string, string>)["Idempotency-Key"]);
+    const calls = callsOf(fetcher);
+    expect(calls[0][0]).toBe("/api/v1/users/bulk/preview");
+    expect(calls[1][0]).toBe("/api/v1/users/bulk/execute");
+    expect((calls[0][1]?.headers as Record<string, string>)["Idempotency-Key"])
+      .toBe((calls[1][1]?.headers as Record<string, string>)["Idempotency-Key"]);
   });
 });
