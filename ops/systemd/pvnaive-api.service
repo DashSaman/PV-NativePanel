@@ -8,6 +8,7 @@ Type=simple
 User=pvnaive
 Group=pvnaive
 EnvironmentFile=/etc/pvnaive/db.env
+EnvironmentFile=-/etc/pvnaive/api.env
 Environment=PVNAIVE_AUTH_KEY_FILE=/etc/pvnaive/auth.key
 Environment=PVNAIVE_RUNTIME_KEY_FILE=/etc/pvnaive/runtime.key
 Environment=PVNAIVE_RUNTIME_KEY_ID=runtime-v1
