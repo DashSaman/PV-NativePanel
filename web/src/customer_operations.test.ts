@@ -30,7 +30,9 @@ describe("customer lifecycle API", () => {
     ["resume", resumeCustomer, "/api/v1/customers/user-1/resume"],
   ] as const)("%s is an explicit protected mutation", async (_name, action, path) => {
     installCSRF();
-    const fetcher = vi.fn(async () => jsonResponse({ status: "ok" }));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ status: "ok" }),
+    );
 
     await action("user-1", fetcher as typeof fetch);
 
@@ -43,7 +45,9 @@ describe("customer lifecycle API", () => {
 
   it("delete uses safe DELETE revoke API", async () => {
     installCSRF();
-    const fetcher = vi.fn(async () => jsonResponse({ status: "revoked" }));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ status: "revoked" }),
+    );
 
     await deleteCustomer("user-1", fetcher as typeof fetch);
 
@@ -55,7 +59,7 @@ describe("customer lifecycle API", () => {
 
   it("password rotation is independent and can request a generated password", async () => {
     installCSRF();
-    const fetcher = vi.fn(async () =>
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({
         runtime_credential: { id: "runtime-1", username: "alice", status: "active" },
         generated_password: "generated-once",
