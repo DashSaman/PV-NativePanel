@@ -33,7 +33,7 @@ cp -a web/dist/. "$bundle/web/"
 cp -a db/migrations/. "$bundle/db/migrations/"
 cp -a scripts/db/. "$bundle/scripts/db/"
 cp -a scripts/ops/. "$bundle/scripts/ops/"
-cp -a scripts/release/load-rehearsal.py "$bundle/scripts/release/" 2>/dev/null || true
+cp -a scripts/release/*.sh scripts/release/*.py "$bundle/scripts/release/" 2>/dev/null || true
 cp -a ops/systemd/pvnaive-*.service ops/systemd/pvnaive-*.timer "$bundle/systemd/" 2>/dev/null || true
 
 # Hard fail if a tracked real private-key PEM appears in the release input.
