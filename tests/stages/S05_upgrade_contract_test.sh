@@ -81,8 +81,9 @@ rollback_call_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/rollback.sh"' 
 }
 
 # Regression proof for the production failure observed during the guarded S05
-# upgrade: schema 6 must be a valid expected schema, while unknown future
-# schema versions remain rejected.
+# upgrade: S05 must still set schema 6 successfully. The shared version setter
+# may know newer release schemas, but unknown future schema versions remain
+# rejected.
 setter_tmp="$(mktemp -d)"
 cleanup_setter_tmp() {
   rm -rf -- "${setter_tmp}"
@@ -98,10 +99,14 @@ grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
   echo 'ERROR: expected schema setter did not persist schema version 6' >&2
   exit 1
 }
-if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 7 >/dev/null 2>&1; then
-  echo 'ERROR: expected schema setter accepted unsupported schema version 7' >&2
+if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 8 >/dev/null 2>&1; then
+  echo 'ERROR: expected schema setter accepted unsupported schema version 8' >&2
   exit 1
 fi
+grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
+  echo 'ERROR: rejected future schema version changed the S05 schema expectation' >&2
+  exit 1
+}
 trap - EXIT HUP INT TERM
 cleanup_setter_tmp
 
