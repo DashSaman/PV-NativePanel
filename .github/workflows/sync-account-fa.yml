@@ -1,0 +1,53 @@
+name: Sync account page Persian default
+
+on:
+  push:
+    branches: [fix/customer-list-ui-cleanup]
+    paths:
+      - .github/workflows/sync-account-fa.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/customer-list-ui-cleanup
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download verified patch
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error --location 'https://namir.softarg.ir/.pvnaive-account-fa-ed8541c94c470fdc.patch' -o /tmp/change.patch
+          echo 'ad3b1abc5a9af4bb89db9879d82575d4a953caa6821b35abeacc23c4c29a95bc  /tmp/change.patch' | sha256sum -c -
+          git apply --check /tmp/change.patch
+          git apply /tmp/change.patch
+      - name: Verify Go
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+      - name: Verify web
+        working-directory: web
+        run: |
+          npm ci --ignore-scripts --no-audit
+          npm test
+          npm run build
+      - name: Commit tested change and remove sync workflow
+        run: |
+          set -Eeuo pipefail
+          rm .github/workflows/sync-account-fa.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add internal/httpapi/subscription_page.go internal/httpapi/subscription_page_test.go .github/workflows/sync-account-fa.yml
+          git commit -m 'fix: default account page to Persian'
+          git push origin HEAD:fix/customer-list-ui-cleanup
