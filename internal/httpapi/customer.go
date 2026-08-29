@@ -3,7 +3,6 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
@@ -73,12 +72,14 @@ func (s *server) createCustomer(w http.ResponseWriter, r *http.Request) {
 	// it finalized so the authentication middleware never attempts a second commit.
 	authenticated.TransactionFinalized = true
 
+	subscriptionPath, accountPagePath := subscriptionDeliveryPaths(result.SubscriptionToken)
 	response := envelope{
 		"user":               result.User,
 		"service_term":       result.ServiceTerm,
 		"runtime_credential": result.RuntimeCredential,
 		"usage_capability":   result.UsageCapability,
-		"subscription_path":  "/api/v1/subscriptions/" + url.PathEscape(result.SubscriptionToken),
+		"subscription_path":  subscriptionPath,
+		"account_page_path":  accountPagePath,
 		"delivery_notice":    "Copy the subscription link and generated password now; one-time secrets are not shown again.",
 	}
 	if result.GeneratedPassword != "" {

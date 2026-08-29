@@ -3,7 +3,6 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
@@ -66,12 +65,14 @@ func (s *server) adoptRuntimeCustomer(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	subscriptionPath, accountPagePath := subscriptionDeliveryPaths(result.SubscriptionToken)
 	writeJSON(w, http.StatusCreated, envelope{
 		"user":               result.User,
 		"service_term":       result.ServiceTerm,
 		"runtime_credential": result.RuntimeCredential,
 		"usage_capability":   result.UsageCapability,
-		"subscription_path":  "/api/v1/subscriptions/" + url.PathEscape(result.SubscriptionToken),
+		"subscription_path":  subscriptionPath,
+		"account_page_path":  accountPagePath,
 		"delivery_notice":    "Existing username, password and Runtime credential were preserved. Only service metadata and a new subscription link were added.",
 	})
 }

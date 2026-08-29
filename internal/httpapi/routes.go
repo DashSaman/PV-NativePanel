@@ -26,6 +26,8 @@ var Routes = []Route{
 	{"POST", "/api/v1/auth/login", "auth.login", Public, false},
 	{"POST", "/api/v1/auth/logout", "auth.logout", Authenticated, false},
 	{"POST", "/api/v1/auth/refresh", "auth.refresh", Public, false},
+	{"GET", "/sub/{token}", "subscriptions.show", Public, true},
+	{"GET", "/s/{token}", "subscriptions.show", Public, true},
 	{"GET", "/api/v1/subscriptions/{token}", "subscriptions.show", Public, true},
 	{"GET", "/api/v1/subscriptions/{token}/info", "subscriptions.info", Public, false},
 	{"GET", "/api/v1/subscriptions/{token}/usage", "subscriptions.usage", Public, false},
