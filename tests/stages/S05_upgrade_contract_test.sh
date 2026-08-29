@@ -82,7 +82,8 @@ rollback_call_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/rollback.sh"' 
 
 # Regression proof for the production failure observed during the guarded S05
 # upgrade: schema 6 must be a valid expected schema, while unknown future
-# schema versions remain rejected.
+# schema versions remain rejected. The shared setter may know newer released
+# schemas; S05 therefore tests the first unsupported version beyond S06.
 setter_tmp="$(mktemp -d)"
 cleanup_setter_tmp() {
   rm -rf -- "${setter_tmp}"
@@ -98,14 +99,14 @@ grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
   echo 'ERROR: expected schema setter did not persist schema version 6' >&2
   exit 1
 }
-if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 7 >/dev/null 2>&1; then
-  echo 'ERROR: expected schema setter accepted unsupported schema version 7' >&2
+if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 8 >/dev/null 2>&1; then
+  echo 'ERROR: expected schema setter accepted unsupported schema version 8' >&2
   exit 1
 fi
 trap - EXIT HUP INT TERM
 cleanup_setter_tmp
 
-# Real PostgreSQL 18 integration proof for the chain safety gate.
+# Real PostgreSQL 18 integration proof for the frozen S05 chain safety gate.
 bash tests/db/rollback_chain_test.sh
 
 echo 'S05_UPGRADE_CONTRACT=PASSED'
