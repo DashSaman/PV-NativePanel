@@ -1,0 +1,85 @@
+name: WS1 Exact Accounting
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ws1-accounting-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  accounting-go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Format, vet and telemetry tests
+        run: |
+          set -Eeuo pipefail
+          test -z "$(gofmt -l internal/telemetry cmd/pvnaive-telemetry-agent)"
+          go vet ./internal/telemetry/... ./cmd/pvnaive-telemetry-agent
+          go test ./internal/telemetry/... ./cmd/pvnaive-telemetry-agent
+      - name: Build telemetry agent
+        run: |
+          set -Eeuo pipefail
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o /tmp/pvnaive-telemetry-agent ./cmd/pvnaive-telemetry-agent
+          test -x /tmp/pvnaive-telemetry-agent
+          sha256sum /tmp/pvnaive-telemetry-agent
+
+  accounting-postgres18:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL 18
+        run: |
+          set -Eeuo pipefail
+          docker pull postgres:18-bookworm
+          docker run --detach \
+            --name pvnaive-ws1-postgres18 \
+            --network host \
+            --env POSTGRES_PASSWORD=pvnaive-ci-only \
+            postgres:18-bookworm
+          for i in $(seq 1 60); do
+            if docker exec pvnaive-ws1-postgres18 pg_isready --username postgres --dbname postgres >/dev/null 2>&1; then
+              echo WS1_POSTGRES18_READY=PASSED
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs pvnaive-ws1-postgres18
+          exit 1
+      - name: Exact accounting migration and behavior
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --env GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
+            --env GITHUB_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT}" \
+            --volume "${GITHUB_WORKSPACE}:/repo" \
+            --workdir /repo \
+            postgres:18-bookworm \
+            bash -lc '
+              set -Eeuo pipefail
+              bash -n tests/db/direct_naive_accounting_migration_test.sh
+              bash tests/db/direct_naive_accounting_migration_test.sh
+            '
+      - name: PostgreSQL logs on failure
+        if: failure()
+        run: docker logs pvnaive-ws1-postgres18 || true
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-ws1-postgres18 >/dev/null 2>&1 || true
