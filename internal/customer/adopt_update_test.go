@@ -35,7 +35,7 @@ func TestAdoptRuntimeCredentialKeepsExistingCredentialAndAddsBusinessService(t *
 	store := &adoptUpdateCustomerStore{
 		adoptable: runtimecred.CredentialView{
 			ID: "runtime-existing-1", Username: "amirreza", Status: runtimecred.CredentialActive,
-			Origin: runtimecred.OriginPanel, Revision: 7,
+			Origin: runtimecred.CredentialPanel, Revision: 7,
 		},
 	}
 	service := NewService(store, func(context.Context, *sql.Tx, string, string, runtimecred.CreateInput) (RuntimeMutation, error) {
