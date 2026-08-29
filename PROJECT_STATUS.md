@@ -1,139 +1,193 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
-> This file is the canonical **development** status for the active feature branch. Production truth must still be cross-checked against `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, and production evidence before any live mutation.
+This file describes current repository + Production truth. Historical S04/S05 branch snapshots must not override this file.
 
-## Project
+## Product
 
-PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The active development slice moves beyond raw Runtime credentials into an Owner-facing direct-customer workflow while preserving the existing Runtime safety boundary.
+PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The current architecture deliberately separates:
+
+1. commercial customer/service state (`User`, immutable `ServiceTerm`, plan/group/tag metadata),
+2. Runtime Naive credential identity and secrets,
+3. opaque Subscription/account-page delivery,
+4. exact direct-Naive accounting/session telemetry,
+5. privileged Runtime mutation through a narrow local agent.
+
+Do not collapse these boundaries for UI convenience.
 
 ## Repository state
 
 - Repository: `DashSaman/PV-NativePanel`
 - Default branch: `main`
-- Active feature branch: `s05-sanaei-customer-flow`
-- Draft PR: `#6` — `S05: Sanaei-style customer service flow`
-- PR base: `s05-user-quota-design`
-- Parent S05 draft: PR `#5`
-- `main` remains the source of production evidence; do not force-reset or overwrite it.
-- Detailed continuation notes: `docs/S05_HANDOFF.md`.
+- Audited main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
+- Current Lead reconciliation branch: `lead/parity-truth-2026-08-30`
+- Current Lead PR: `#27` — truth/parity reconciliation
+- Current schema head in main: `0011_customer_product_management`
+- Full current parity matrix: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
 
-## Production state
+## Current Production truth — read-only audit 2026-08-30
 
-This branch is a development branch, not proof of deployment. Existing production evidence on `main` remains authoritative for the live host. No statement in this file means the S05 customer flow has already been deployed to production.
+Host/domain state was inspected without printing secrets.
 
-## Implemented S04R foundation
+- `pvnaive-api.service`: active
+- `pvnaive-runtime-agent.service`: active
+- `pvnaive-telemetry-agent.service`: active
+- `caddy-naive.service`: active
+- service restart counters observed at 0 for the current service lifetimes
+- API listener: loopback `127.0.0.1:8080`
+- local readiness: HTTP 200
+- public `https://namir.softarg.ir/panel/`: HTTP 200
+- public readiness: HTTP 200
+- PostgreSQL database present, schema version **11**
+- six active users
+- six active Runtime credentials
+- six ServiceTerms
+- six active direct Subscription tokens
+- six direct-accounting term projections; all six reported accounting complete at audit time
+- live direct-accounting event/session data is present
+- legacy `usage_ledger` is not the active direct-Naive billing path
+- Caddy accounting socket and Runtime Agent socket permissions remain separated
+- root filesystem was **79% used** at audit time
+- backup files exist under the PVNaive backup root, but no PVNaive scheduled-backup systemd timer was observed
 
-The branch retains the tested S04R Runtime foundation:
+### Production provenance warning
 
-- AES-GCM Runtime secret envelope and SHA-256 secret fingerprinting;
-- byte-preserving Naive/Caddy credential parser and renderer;
-- fixed Unix-socket Runtime Agent without arbitrary shell/path/service API;
-- expected-SHA Caddy mutation with validate, exact backup, reload-only postflight, verification and rollback;
-- Runtime credential PostgreSQL store and desired/apply/applied revision saga;
-- Owner-only Runtime API with CSRF, idempotency and optimistic revision checks;
-- `/panel/#/runtime/naive` advanced Runtime UI;
-- one-time generated password delivery;
-- stable Runtime credential UUIDs across business bindings.
+`/opt/pvnaive/DEPLOYED_COMMIT` and the web release marker do not reliably identify the newest running binary/web state: marker SHAs/timestamps lag newer binary/web mtimes. Current behavior is healthy, but deployment provenance is not trustworthy enough for a Release Candidate. This must be fixed before final release signing/provenance work.
 
-## S05 direct-customer flow implemented on this branch
+## Implemented and integrated capability
 
-The primary Owner workflow is `/panel/#/customers`. It follows a Sanaei/3x-ui-like operator experience without collapsing commercial state into the Runtime credential.
+### Runtime credential management
 
-Implemented:
+- AES-GCM Runtime secret envelope and fingerprinting;
+- stable Runtime credential UUIDs;
+- import/create/update/password rotation/enable-disable/revoke lifecycle;
+- fixed-capability Unix-socket Runtime Agent;
+- expected-SHA Caddy mutation;
+- validate → exact backup → apply → reload → postflight → rollback safety;
+- desired/applied Runtime revision saga and reconciliation-required failure state;
+- no arbitrary root shell/path/service API.
 
-- username creation;
-- generated secure password or custom password;
-- numeric binary-GB quota or unlimited (`quota_bytes = NULL`);
-- validity from creation;
-- validity from first successful connection;
-- fixed manual expiry;
-- business `User` plus immutable `ServiceTerm` snapshot;
-- stable binding to the actual Runtime credential UUID;
-- one-time password and direct Naive URI delivery when available;
-- revocable opaque Subscription URL;
-- browser-local QR generation without third-party QR service;
-- safe customer list projection without password, ciphertext or raw token leakage;
-- Subscription reissue with previous active token revocation;
-- idempotency claim before Subscription rotation so request retry cannot rotate twice;
-- explicit Naive public destination configuration through `PVNAIVE_NAIVE_PUBLIC_HOST` rather than request Host header;
-- responsive desktop/mobile customer UI;
-- raw Runtime credential management retained separately as the advanced screen.
+### Customer product management
 
-## Subscription security boundary
+Current main contains real customer/product implementations rather than route-only declarations:
 
-Migration `0006_direct_subscription_tokens` stores only a SHA-256 token digest plus a short non-secret prefix. The raw 256-bit token exists only for one-time delivery. The public Subscription resolver checks live user/service/binding/Runtime state before decrypting the Runtime secret internally to render a `naive+https://...` entry.
+- customer create and Runtime adoption;
+- customer edit/service update;
+- suspend/resume/revoke-safe-delete;
+- quota and unlimited quota;
+- add volume and set total volume;
+- validity from creation, first successful connection and manual expiry;
+- no-expiry and extend-days semantics;
+- plan presets;
+- renewal with new/immutable ServiceTerm semantics;
+- Next Plan / On Hold foundations;
+- groups, tags and notes;
+- server-side search/filter/sort/pagination;
+- bulk preview + idempotent execute for supported product/lifecycle actions;
+- reseller/tenant-safe product data foundations.
 
-Subscription fetches do **not** start first-use validity.
+### Subscription / customer delivery
 
-## First-successful-connection boundary
+- `/sub/<opaque-token>` is the machine/client endpoint;
+- `/s/<opaque-token>` is the human Account Page;
+- legacy API compatibility path remains machine-oriented;
+- local QR generation;
+- read-only Subscription view/copy does not rotate password/token;
+- Subscription reissue and password rotation are separate explicit mutations;
+- account/subscription paths are stable and token material is not listed in customer rows.
 
-`internal/runtimeevent` accepts only an authenticated trusted `CONNECT` event carrying the stable Runtime credential UUID and trusted observation timestamp. `customer.ActivateFirstUse` then performs an atomic compare-and-set from `pending` to `active`, calculates expiry and synchronizes active Subscription expiry. Duplicate trusted events are harmless.
+### Exact accounting / hard-quota core
 
-The branch does **not** claim that the pinned live Caddy/Naive path already produces this trusted event. Producer instrumentation remains a separate proof gate. Until it is proven end-to-end, production operators should use `on_creation` or `fixed_expiry` when automatic first-use activation is required immediately.
+The old `exact_accounting_not_proven` project status is obsolete.
 
-## Exact usage / quota boundary
+Merged WS1 plus Production evidence provides:
 
-Configured quota is implemented as commercial service state, but exact byte accounting is still capability-gated.
+- pinned forwardproxy instrumentation at the successful authenticated Naive CONNECT write boundary;
+- Runtime credential UUID billing identity;
+- dedicated telemetry Unix socket;
+- append-only/idempotent event ingest;
+- boot/session/sequence/cumulative counter semantics;
+- duplicate/conflict/gap/counter-regression handling;
+- restart-safe accounting projection;
+- ServiceTerm-isolated usage;
+- trusted first-CONNECT activation producer;
+- session/presence projection;
+- shared finite-quota reservation/settlement core.
 
-Until PVN-045..049 pass:
+What remains is not another accounting rewrite. Remaining P0 work is legacy/adopted baseline truth, UI/read-model completion, reset semantics, and controlled Production acceptance tests for hard quota and first-CONNECT race/restart behavior.
 
-- `usage_capability.available=false`;
-- reason is `exact_accounting_not_proven`;
-- used/remaining traffic is not fabricated;
-- UI does not display fake `0 used` or `quota remaining` values;
-- hard byte-quota enforcement remains disabled.
+## Important features that are NOT complete
 
-This boundary is intentional and must not be bypassed for UI completeness.
+Do not infer completion from `Routes` or schema tables.
 
-## Deployment precondition introduced by S05
+- Manual Reset Usage: not implemented as a ready customer capability.
+- Bulk Reset Usage: not implemented.
+- Periodic reset execution: plan model exists; restart-safe scheduler/cursor/exactly-once execution does not.
+- Operator-facing active session list / kill session: not ready.
+- Concurrent session/IP limits: not implemented/enforced.
+- trustworthy HWID limit: no proven identity source; no fake HWID is allowed.
+- per-user speed limit: no proven enforcement path; no fake control is allowed.
+- reseller CRUD/wallet/ledger/plan restrictions: foundations exist, product workflow incomplete.
+- customer history + Audit Explorer UI: incomplete.
+- notification engine/Telegram/preferences/history/rule UI: incomplete in current main.
+- real CPU/RAM/disk/network historical dashboard/log UI/doctor/support bundle: not integrated into current main; useful candidates exist in stale PR #16.
+- scheduled encrypted backup: not active on Production.
+- OpenAPI/Swagger: not in current main; PR #16 candidate.
+- multi-node/fleet/failover/smart node: future after standalone correctness.
+- generic clean-server one-line installer/upgrade/uninstall lifecycle: incomplete.
+- real Karing client compatibility matrix: pending.
+- 50/100/200/400+ concurrent capacity campaign: pending.
+- SBOM/SAST/secret/dependency scanning/release signing/provenance: pending.
 
-When Runtime/customer Subscription services are enabled, the API requires:
+## Current confirmed P0 security defects
 
-```text
-PVNAIVE_NAIVE_PUBLIC_HOST=<real-naive-host-or-host:port>
-```
+These were re-checked against current main on 2026-08-30 and remain open:
 
-Do not include a scheme or path. This value must be supplied by deployment configuration; it is not inferred from an HTTP Host header.
+1. **Refresh-token reuse-family path** — `refresh` calls `BeginAuthenticated`, while `BeginAuthenticated` requires `s.revoked_at IS NULL`; a reused already-rotated token can fail before `auth_rotate_session` reaches its intended reuse-family handling.
+2. **Commit-before-success integrity** — authenticated middleware executes the handler and may write the HTTP response before calling `bound.Tx.Commit()`, and the commit result is currently ignored for generic authenticated handlers.
+3. **DB-backed readiness** — `/health/ready` currently checks configured auth/MFA dependencies but does not perform the required bounded ongoing DB/schema readiness probe.
 
-## Verification state
+Fix these in the Owner-mandated security stage after the earlier accounting/session/reseller/ops sequence, unless a technical dependency requires an earlier minimal fix.
 
-The S05 feature-code checkpoint `26873435d0460d0297900629ece6a7fc93553c0a` is verified green by GitHub Actions CI run `33222914088` (run #570).
+## CI state
 
-Verified PASS scope:
+PR #26's final bot-authored head recorded failed CI/WS1 workflow runs, but its immediately preceding human commit and prior bot commit passed all three workflows. A clean Lead PR #27 was opened from exact current main to reproduce the baseline rather than guessing.
 
-- Go formatting, vet, full Go tests, Runtime Agent safety rehearsal;
-- Web tests and production build;
-- PostgreSQL 18 schema/migration, health, backup/restore, collision and S05 migration contracts through schema v6;
-- pinned Naive Caddy multi-auth proof;
-- S04 authentication rehearsal;
-- full S04R Runtime rehearsal;
-- production bundle contract, archive checksum and artifact upload.
+At the time this status was written:
 
-Bundle evidence for that checkpoint:
+- PR #27 WS1 Exact Accounting run for the refreshed parity head had completed successfully;
+- CI and pinned-forwardproxy runs were still in progress and must complete before the reconciliation head is called green;
+- after the final documentation head, CI must be triggered again for that exact SHA.
 
-- artifact ID: `9705854213`;
-- bundle: `PVNaive-S04R-26873435d046.tar.gz`;
-- bundle SHA-256: `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7`.
+## Current execution order
 
-This is a development/release-candidate proof, not production deployment evidence. A fresh CI must still pass on any later branch head (including documentation-only finalization commits) before that later head is called final.
+Follow the Owner master prompt without skipping numbered correctness gates:
 
-## Remaining blockers outside this feature slice
+1. finish audit + current competitor parity + documentation truth;
+2. safely reconcile useful PR #16 units;
+3. legacy accounting baseline;
+4. `/s` accounting/presence;
+5. Manual Reset Usage, Bulk Reset Usage, periodic resets;
+6. hard quota Production proof;
+7. first successful CONNECT Production proof;
+8. sessions/kill/concurrent/IP/history;
+9. HWID/speed PoCs;
+10. reseller/RBAC/wallet/ledger/restrictions;
+11. history/audit, notifications/Telegram, monitoring/logs/doctor, backup/restore, API/security;
+12. fleet/multi-node;
+13. installer/upgrade/rollback;
+14. client compatibility;
+15. load/capacity;
+16. final bulk/search/UI/docs/clean-install/Production smoke/RC.
 
-1. exact per-credential byte accounting and reconciliation proof (`PVN-045+`);
-2. hard quota enforcement only after that proof;
-3. trusted Runtime producer instrumentation for `on_first_successful_connection` before claiming live automatic first-use activation;
-4. generic fresh-server installer/release lifecycle;
-5. production rollout and evidence capture on `main` as a separate controlled operation.
+## Read next
 
-## Read first for continuation
-
-1. `docs/S05_HANDOFF.md`
-2. `docs/superpowers/specs/2026-08-29-sanaei-style-customer-service-ui-design.md`
-3. `docs/superpowers/plans/2026-08-29-sanaei-customer-service-flow.md`
-4. `docs/ARCHITECTURE_FA.md`
-5. `docs/DECISIONS_FA.md`
-6. `docs/API_FA.md`
-7. `ROADMAP.md`
-8. before any live change: `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`
+1. `OWNER_REQUIREMENTS.md`
+2. `docs/PANEL_PARITY_MASTER_2026-08-30.md`
+3. `HANDOFF.md`
+4. `KNOWN_ISSUES.md`
+5. `ROADMAP.md`
+6. `AGENT_TASKS.md`
+7. `WORKLOG.md`
+8. before any Production mutation: current `ops/evidence/*`, live service state, current backups and rollback plan.
