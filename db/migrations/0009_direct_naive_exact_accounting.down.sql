@@ -19,3 +19,5 @@ DROP TABLE IF EXISTS pvnaive.direct_naive_accounting_events;
 DROP TABLE IF EXISTS pvnaive.direct_naive_accounting_claims;
 DROP TABLE IF EXISTS pvnaive.direct_naive_accounting_sessions;
 DROP TABLE IF EXISTS pvnaive.direct_naive_accounting_terms;
+
+DELETE FROM pvnaive.schema_migrations WHERE version = 9;
