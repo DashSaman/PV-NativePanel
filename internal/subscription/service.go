@@ -29,7 +29,30 @@ type Record struct {
 	EncryptionKeyID     string
 	UserState           string
 	TermState           string
+	QuotaBytes          *int64
+	DurationSeconds     int64
+	StartPolicy         string
+	StartsAt            *time.Time
+	FirstConnectedAt    *time.Time
 	ExpiresAt           *time.Time
+}
+
+type Profile struct {
+	RuntimeCredentialID string
+	Username            string
+	UserState           string
+	TermState           string
+	QuotaBytes          *int64
+	DurationSeconds     int64
+	StartPolicy         string
+	StartsAt            *time.Time
+	FirstConnectedAt    *time.Time
+	ExpiresAt           *time.Time
+	DirectURI           string
+	Available           bool
+	UsageAvailable      bool
+	UsedBytes           *int64
+	RemainingBytes      *int64
 }
 
 type Store interface {
@@ -83,26 +106,49 @@ func NewService(store Store, key []byte, keyID string) (*Service, error) {
 }
 
 func (s *Service) Resolve(ctx context.Context, rawToken, host string) (string, error) {
+	profile, err := s.ResolveProfile(ctx, rawToken, host)
+	if err != nil || !profile.Available || profile.DirectURI == "" {
+		return "", ErrUnavailable
+	}
+	return profile.DirectURI, nil
+}
+
+func (s *Service) ResolveProfile(ctx context.Context, rawToken, host string) (Profile, error) {
 	hash, err := HashToken(rawToken)
 	if err != nil {
-		return "", ErrUnavailable
+		return Profile{}, ErrUnavailable
 	}
 	record, err := s.store.ResolveToken(ctx, hash)
 	if err != nil {
-		return "", ErrUnavailable
-	}
-	if record.UserState != "active" || (record.TermState != "active" && record.TermState != "pending") {
-		return "", ErrUnavailable
-	}
-	if record.ExpiresAt != nil && !record.ExpiresAt.After(s.now().UTC()) {
-		return "", ErrUnavailable
+		return Profile{}, ErrUnavailable
 	}
 	if record.EncryptionKeyID != s.keyID || record.Username == "" {
-		return "", ErrUnavailable
+		return Profile{}, ErrUnavailable
 	}
+
+	profile := Profile{
+		RuntimeCredentialID: record.RuntimeCredentialID,
+		Username:            record.Username,
+		UserState:           record.UserState,
+		TermState:           record.TermState,
+		QuotaBytes:          record.QuotaBytes,
+		DurationSeconds:     record.DurationSeconds,
+		StartPolicy:         record.StartPolicy,
+		StartsAt:            record.StartsAt,
+		FirstConnectedAt:    record.FirstConnectedAt,
+		ExpiresAt:           record.ExpiresAt,
+		UsageAvailable:      false,
+	}
+	profile.Available = record.UserState == "active" &&
+		(record.TermState == "active" || record.TermState == "pending") &&
+		(record.ExpiresAt == nil || record.ExpiresAt.After(s.now().UTC()))
+	if !profile.Available {
+		return profile, nil
+	}
+
 	plaintext, err := runtimecred.DecryptSecret(s.key, record.SecretNonce, record.SecretCiphertext)
 	if err != nil {
-		return "", ErrUnavailable
+		return Profile{}, ErrUnavailable
 	}
 	password := string(plaintext)
 	for i := range plaintext {
@@ -111,9 +157,10 @@ func (s *Service) Resolve(ctx context.Context, rawToken, host string) (string, e
 	uri, err := BuildNaiveURI(record.Username, password, host)
 	password = ""
 	if err != nil {
-		return "", ErrUnavailable
+		return Profile{}, ErrUnavailable
 	}
-	return uri, nil
+	profile.DirectURI = uri
+	return profile, nil
 }
 
 func BuildNaiveURI(username, password, host string) (string, error) {

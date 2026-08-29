@@ -22,7 +22,7 @@ root="$(find "${tmp}" -mindepth 1 -maxdepth 1 -type d -name 'PVNaive-S06-Owner-*
 
 for required in \
   RELEASE.json SHA256SUMS bin/pvnaive bin/pvnaive-password bin/pvnaive-runtime-agent web/index.html \
-  db/migrations/0007_subscription_token_recovery.up.sql db/migrations/0007_subscription_token_recovery.down.sql \
+  db/migrations/0008_subscription_profile_projection.up.sql db/migrations/0008_subscription_profile_projection.down.sql \
   db/migrations/SHA256SUMS scripts/db/backup.sh scripts/db/migrate.sh scripts/db/rollback.sh \
   scripts/db/promote-release.sh scripts/db/set-expected-schema-version.sh \
   scripts/stages/S06-owner-preflight.sh scripts/stages/S06-owner-upgrade.sh \
@@ -33,8 +33,8 @@ done
 for token in \
   '"product": "PVNaive"' \
   '"stage": "S06-OWNER-CUSTOMER-OPS"' \
-  '"base_schema_version": 6' \
-  '"schema_version": 7' \
+  '"base_schema_version": 7' \
+  '"schema_version": 8' \
   '"caddy_installer_mutation": false' \
   '"public_root_mutation": false' \
   '"usage_accounting_proven": false' \

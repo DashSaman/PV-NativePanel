@@ -59,8 +59,8 @@ if [[ -r "${db_env}" ]]; then
   actual="$(runuser -u postgres -- psql --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 --host /var/run/postgresql --port "${PVNAIVE_DB_PORT:-5432}" --username postgres --dbname pvnaive --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations' 2>/dev/null || true)"
   echo "DB_EXPECTED_SCHEMA_VERSION=${expected:-unknown}"
   echo "DB_SCHEMA_VERSION=${actual:-unavailable}"
-  [[ "${actual}" == 6 ]] && pass DB_SCHEMA_BASELINE || failcheck DB_SCHEMA_BASELINE
-  [[ "${expected}" == 6 ]] && pass DB_SCHEMA_EXPECTATION || failcheck DB_SCHEMA_EXPECTATION
+  [[ "${actual}" == 7 ]] && pass DB_SCHEMA_BASELINE || failcheck DB_SCHEMA_BASELINE
+  [[ "${expected}" == 7 ]] && pass DB_SCHEMA_EXPECTATION || failcheck DB_SCHEMA_EXPECTATION
 else
   failcheck DB_ENV
 fi
@@ -92,5 +92,5 @@ if ((${#failures[@]})); then
 fi
 
 echo 'PREFLIGHT_RESULT=PASS'
-echo 'S06_BASE_SCHEMA=6'
-echo 'S06_TARGET_SCHEMA=7'
+echo 'S06_BASE_SCHEMA=7'
+echo 'S06_TARGET_SCHEMA=8'

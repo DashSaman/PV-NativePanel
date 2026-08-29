@@ -6,22 +6,22 @@ upgrade="scripts/stages/S06-owner-upgrade.sh"
 [[ -f "${preflight}" && -f "${upgrade}" ]] || { echo 'ERROR: S06 stage scripts missing' >&2; exit 1; }
 bash -n "${preflight}" "${upgrade}"
 
-for token in 'S06_BASE_SCHEMA=6' 'S06_TARGET_SCHEMA=7' 'CADDYFILE_SHA256=' 'PREFLIGHT_RESULT=PASS' 'DB_SCHEMA_BASELINE' 'RUNTIME_AGENT_HEALTH'; do
+for token in 'S06_BASE_SCHEMA=7' 'S06_TARGET_SCHEMA=8' 'CADDYFILE_SHA256=' 'PREFLIGHT_RESULT=PASS' 'DB_SCHEMA_BASELINE' 'RUNTIME_AGENT_HEALTH'; do
   grep -Fq -- "${token}" "${preflight}" || { echo "ERROR: S06 preflight missing ${token}" >&2; exit 1; }
 done
 for token in \
   'PVNAIVE_EXPECTED_CADDY_SHA256' \
   '"stage": "S06-OWNER-CUSTOMER-OPS"' \
-  '"base_schema_version": 6' \
-  '"schema_version": 7' \
-  '0007_subscription_token_recovery.up.sql' \
+  '"base_schema_version": 7' \
+  '"schema_version": 8' \
+  '0008_subscription_profile_projection.up.sql' \
   'scripts/db/backup.sh' \
   'scripts/db/migrate.sh' \
   'scripts/db/rollback.sh' \
-  'PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=6' \
-  'PVNAIVE_DB_RELEASE_SCHEMA_VERSION=7' \
-  'PVNAIVE_DB_RELEASE_MIGRATION_FILE=0007_subscription_token_recovery.up.sql' \
-  'PVNAIVE_EXPECTED_SCHEMA_VERSION=7' \
+  'PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=7' \
+  'PVNAIVE_DB_RELEASE_SCHEMA_VERSION=8' \
+  'PVNAIVE_DB_RELEASE_MIGRATION_FILE=0008_subscription_profile_projection.up.sql' \
+  'PVNAIVE_EXPECTED_SCHEMA_VERSION=8' \
   'systemctl restart pvnaive-runtime-agent.service' \
   'systemctl restart pvnaive-api.service' \
   'ROLLBACK_CADDY_INVARIANTS=PASS' \

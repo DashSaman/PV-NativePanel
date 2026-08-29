@@ -247,12 +247,14 @@ func (s *PostgresStore) CreateSubscriptionTokenTx(ctx context.Context, tx *sql.T
 INSERT INTO pvnaive.direct_subscription_tokens (
     tenant_id, user_id, service_term_id, runtime_credential_id,
     token_hash, token_prefix, status, user_state, service_state,
-    runtime_username, secret_ciphertext, secret_nonce, encryption_key_id, expires_at
+    runtime_username, secret_ciphertext, secret_nonce, encryption_key_id, expires_at,
+    quota_bytes, duration_seconds, start_policy, starts_at, first_connected_at
 )
 SELECT
     u.tenant_id, u.id, st.id, rc.id,
     $5, $6, 'active', u.status, st.state,
-    rc.username, rc.secret_ciphertext, rc.secret_nonce, rc.encryption_key_id, $7
+    rc.username, rc.secret_ciphertext, rc.secret_nonce, rc.encryption_key_id, $7,
+    st.quota_bytes, st.duration_seconds, st.start_policy, st.starts_at, st.first_connected_at
 FROM pvnaive.users AS u
 JOIN pvnaive.service_terms AS st
   ON st.id = $3::uuid

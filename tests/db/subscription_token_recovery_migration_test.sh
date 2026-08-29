@@ -45,9 +45,13 @@ backup_file="$(awk -F= '$1=="PVNAIVE_BACKUP_PATH" {print $2}' <<<"${backup_outpu
 [[ -f "${backup_file}" ]] || { echo 'ERROR: schema 6 backup missing' >&2; exit 1; }
 grep -Fq '"schema_version": 6,' "$(dirname -- "${backup_file}")/metadata.json"
 
-PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
+v7="${tmp}/migrations-v7"
+mkdir -p "${v7}"
+for version in 0001 0002 0003 0004 0005 0006 0007; do cp "${repo_root}"/db/migrations/${version}_* "${v7}/"; done
+( cd "${v7}"; sha256sum *.sql > SHA256SUMS )
+PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${v7}" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema}" == 7 ]] || { echo "ERROR: S06 migration expected schema 7, got ${schema}" >&2; exit 1; }
+[[ "${schema}" == 7 ]] || { echo "ERROR: S06 token-recovery migration expected schema 7, got ${schema}" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT
@@ -62,7 +66,7 @@ SELECT
 legacy_allowed="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT pg_get_constraintdef(oid) LIKE '%token_ciphertext IS NULL%' FROM pg_constraint WHERE conrelid='pvnaive.direct_subscription_tokens'::regclass AND conname='direct_subscription_token_recovery_envelope_check';")"
 [[ "${legacy_allowed}" == t || "${legacy_allowed}" == true ]] || { echo 'ERROR: schema 7 does not preserve legacy NULL recovery envelope' >&2; exit 1; }
 
-rollback_output="$(PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_MIGRATION_CHAIN PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=6 PVNAIVE_CONFIRMED_BACKUP="${backup_file}" PVNAIVE_BACKUP_IDENTITY_FILE="${tmp}/backup.agekey" "${repo_root}/scripts/db/rollback.sh")"
+rollback_output="$(PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${v7}" PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_MIGRATION_CHAIN PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=6 PVNAIVE_CONFIRMED_BACKUP="${backup_file}" PVNAIVE_BACKUP_IDENTITY_FILE="${tmp}/backup.agekey" "${repo_root}/scripts/db/rollback.sh")"
 grep -Fqx 'PVNAIVE_SCHEMA_VERSION=6' <<<"${rollback_output}"
 grep -Fqx 'PVNAIVE_ROLLBACK_RESULT=PASSED' <<<"${rollback_output}"
 columns_after="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT count(*) FROM information_schema.columns WHERE table_schema='pvnaive' AND table_name='direct_subscription_tokens' AND column_name IN ('token_ciphertext','token_nonce','token_encryption_key_id');")"

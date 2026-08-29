@@ -48,13 +48,13 @@ done
   sha256sum --check --strict SHA256SUMS >/dev/null
 ) || fail 'bundle checksum verification failed'
 grep -Fq '"stage": "S06-OWNER-CUSTOMER-OPS"' "${bundle_root}/RELEASE.json" || fail 'bundle stage mismatch'
-grep -Fq '"base_schema_version": 6' "${bundle_root}/RELEASE.json" || fail 'bundle base schema mismatch'
-grep -Fq '"schema_version": 7' "${bundle_root}/RELEASE.json" || fail 'bundle target schema mismatch'
+grep -Fq '"base_schema_version": 7' "${bundle_root}/RELEASE.json" || fail 'bundle base schema mismatch'
+grep -Fq '"schema_version": 8' "${bundle_root}/RELEASE.json" || fail 'bundle target schema mismatch'
 grep -Fq '"usage_accounting_proven": false' "${bundle_root}/RELEASE.json" || fail 'bundle must not claim accounting proof'
 
 for required in \
   bin/pvnaive bin/pvnaive-password bin/pvnaive-runtime-agent web/index.html \
-  db/migrations/0007_subscription_token_recovery.up.sql db/migrations/0007_subscription_token_recovery.down.sql \
+  db/migrations/0008_subscription_profile_projection.up.sql db/migrations/0008_subscription_profile_projection.down.sql \
   db/migrations/SHA256SUMS scripts/db/backup.sh scripts/db/migrate.sh scripts/db/rollback.sh \
   scripts/db/promote-release.sh scripts/db/set-expected-schema-version.sh \
   systemd/pvnaive-api.service systemd/pvnaive-runtime-agent.service; do
@@ -81,9 +81,9 @@ set -a
 source "${db_env}"
 set +a
 [[ "${PVNAIVE_DB_NAME:-}" == pvnaive ]] || fail 'unexpected database name'
-[[ "${PVNAIVE_EXPECTED_SCHEMA_VERSION:-}" == 6 ]] || fail 'db.env must expect schema 6 before S06'
+[[ "${PVNAIVE_EXPECTED_SCHEMA_VERSION:-}" == 7 ]] || fail 'db.env must expect schema 7 before S06 subscription UX upgrade'
 schema_before="$(query_schema)"
-[[ "${schema_before}" == 6 ]] || fail "S06 requires live schema 6, got ${schema_before}"
+[[ "${schema_before}" == 7 ]] || fail "S06 subscription UX upgrade requires live schema 7, got ${schema_before}"
 
 web_before="$(readlink -f /opt/pvnaive/web/current 2>/dev/null || true)"
 preview_before="$(readlink -f "${preview_current}" 2>/dev/null || true)"
@@ -118,7 +118,7 @@ backup_output="$(
 )"
 db_backup_path="$(awk -F= '$1=="PVNAIVE_BACKUP_PATH" {print $2}' <<<"${backup_output}")"
 [[ -n "${db_backup_path}" && -f "${db_backup_path}" ]] || fail 'encrypted database backup failed'
-grep -Fq '"schema_version": 6,' "$(dirname -- "${db_backup_path}")/metadata.json" || fail 'database backup is not schema 6'
+grep -Fq '"schema_version": 7,' "$(dirname -- "${db_backup_path}")/metadata.json" || fail 'database backup is not schema 7'
 echo "DB_BACKUP_PATH=${db_backup_path}"
 echo 'DB_BACKUP=VERIFIED_ENCRYPTED'
 
@@ -153,7 +153,7 @@ rollback() {
   [[ -z "${db_release_before}" || ! -d "${db_release_before}" ]] || ln -sfn -- "${db_release_before}" /opt/pvnaive/db/current
 
   current_schema="$(query_schema 2>/dev/null || true)"
-  if [[ "${current_schema}" == 7 && -n "${db_backup_path}" ]]; then
+  if [[ "${current_schema}" == 8 && -n "${db_backup_path}" ]]; then
     if PVNAIVE_DB_HOST=/var/run/postgresql \
       PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" \
       PVNAIVE_DB_NAME=pvnaive \
@@ -161,10 +161,10 @@ rollback() {
       PVNAIVE_RUN_AS_OS_USER=postgres \
       PVNAIVE_MIGRATIONS_DIR="${bundle_root}/db/migrations" \
       PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_MIGRATION_CHAIN \
-      PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=6 \
+      PVNAIVE_ROLLBACK_CHAIN_TARGET_SCHEMA=7 \
       PVNAIVE_CONFIRMED_BACKUP="${db_backup_path}" \
         bash "${bundle_root}/scripts/db/rollback.sh" >/dev/null 2>&1; then
-      [[ "$(query_schema 2>/dev/null || true)" == 6 ]] && echo 'ROLLBACK_DATABASE=PASS' || echo 'ROLLBACK_DATABASE=FAIL'
+      [[ "$(query_schema 2>/dev/null || true)" == 7 ]] && echo 'ROLLBACK_DATABASE=PASS' || echo 'ROLLBACK_DATABASE=FAIL'
     else
       echo 'ROLLBACK_DATABASE=FAIL'
     fi
@@ -231,14 +231,14 @@ PVNAIVE_RUN_AS_OS_USER=postgres \
 PVNAIVE_MIGRATIONS_DIR="${bundle_root}/db/migrations" \
   bash "${bundle_root}/scripts/db/migrate.sh" >/dev/null
 schema_after="$(query_schema)"
-[[ "${schema_after}" == 7 ]] || fail "schema did not reach version 7: ${schema_after}"
-PVNAIVE_DB_ENV_FILE="${db_env}" bash "${bundle_root}/scripts/db/set-expected-schema-version.sh" 7 >/dev/null
+[[ "${schema_after}" == 8 ]] || fail "schema did not reach version 8: ${schema_after}"
+PVNAIVE_DB_ENV_FILE="${db_env}" bash "${bundle_root}/scripts/db/set-expected-schema-version.sh" 8 >/dev/null
 
 PVNAIVE_DB_RELEASE_SOURCE_ROOT="${bundle_root}" \
 PVNAIVE_DB_RELEASE_ROOT=/opt/pvnaive/db/releases \
 PVNAIVE_DB_CURRENT_LINK=/opt/pvnaive/db/current \
-PVNAIVE_DB_RELEASE_SCHEMA_VERSION=7 \
-PVNAIVE_DB_RELEASE_MIGRATION_FILE=0007_subscription_token_recovery.up.sql \
+PVNAIVE_DB_RELEASE_SCHEMA_VERSION=8 \
+PVNAIVE_DB_RELEASE_MIGRATION_FILE=0008_subscription_profile_projection.up.sql \
 PVNAIVE_DB_RELEASE_OWNER_USER=root \
 PVNAIVE_DB_RELEASE_OWNER_GROUP=pvnaive \
   bash "${bundle_root}/scripts/db/promote-release.sh" >/dev/null
@@ -254,9 +254,9 @@ for _ in $(seq 1 30); do
 done
 curl --fail --silent --show-error --unix-socket "${runtime_socket}" http://unix/v1/health | grep -q '"status":"ok"' || fail 'runtime agent health failed after upgrade'
 curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health/ready | grep -q '"ready":true' || fail 'API readiness failed after upgrade'
-[[ "$(query_schema)" == 7 ]] || fail 'schema verification failed after service restart'
+[[ "$(query_schema)" == 8 ]] || fail 'schema verification failed after service restart'
 
-grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=7' "${db_env}" || fail 'db.env schema expectation was not promoted to 7'
+grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=8' "${db_env}" || fail 'db.env schema expectation was not promoted to 8'
 final_sha="$(sha256sum "${caddy_file}" | awk '{print $1}')"
 final_pid="$(systemctl show caddy-naive.service --property=MainPID --value)"
 final_restarts="$(systemctl show caddy-naive.service --property=NRestarts --value)"
@@ -287,7 +287,7 @@ final_restarts="$(systemctl show caddy-naive.service --property=NRestarts --valu
 trap - ERR HUP INT TERM
 echo 'S06_RESULT=PASSED'
 echo "SOURCE_COMMIT=${source_commit}"
-echo 'SCHEMA_VERSION=7'
+echo 'SCHEMA_VERSION=8'
 echo "DB_BACKUP_PATH=${db_backup_path}"
 echo "WEB_RELEASE=${web_release_dir}"
 echo "WEB_PREVIEW_RELEASE=${preview_release_dir}"

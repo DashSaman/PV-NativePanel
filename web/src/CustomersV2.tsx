@@ -21,6 +21,8 @@ import {
 import { addCustomerVolume, extendCustomerTime } from "./customerAdjustments";
 import { listRuntimeCredentials, type RuntimeCredential } from "./runtime";
 import { encodeQR } from "./qr";
+import { buildUnifiedCustomerRows } from "./customerRows";
+import { buildCustomerDashboard, type CustomerDashboard } from "./customerDashboard";
 import "./customers.css";
 import "./customers-v2.css";
 
@@ -35,7 +37,7 @@ type DialogKind =
   | { type: "subscription"; customer: CustomerView; path: string; directURI?: string; notice?: string; readOnly: boolean }
   | { type: "secret"; username: string; password: string; notice: string };
 
-type StatusFilter = "all" | "active" | "suspended" | "revoked" | "pending" | "expired" | "depleted";
+type StatusFilter = "all" | "active" | "suspended" | "revoked" | "pending" | "expired" | "depleted" | "unmanaged";
 type SortKey = "username" | "created" | "expiry" | "quota";
 type BulkAction = "suspend" | "resume" | "delete" | "add-volume" | "extend";
 
@@ -196,6 +198,30 @@ function SubscriptionView({ customer, path, directURI, notice, readOnly }: { cus
   return <div className="subscription-view"><p className="readonly-banner">{notice || (readOnly ? "نمایش فقط‌خواندنی؛ هیچ Stateی تغییر نکرد." : "لینک جدید صادر شد.")}</p><div className="subscription-layout"><div><label>Subscription URL<div className="copy-row"><input readOnly value={link} /><button onClick={() => void copy("sub", link)}>{copied === "sub" ? "کپی شد" : "کپی"}</button></div></label>{directURI && <label>Direct Naive<div className="copy-row"><input readOnly value={directURI} /><button onClick={() => void copy("direct", directURI)}>{copied === "direct" ? "کپی شد" : "کپی"}</button></div></label>}</div><div className="delivery-qr-wrap"><QR value={link} /><small>QR محلی؛ هیچ URL حساسی به سرویس ثالث ارسال نمی‌شود.</small></div></div><p className="muted-line">{customer.username}</p></div>;
 }
 
+function StatusDonut({ dashboard }: { dashboard: CustomerDashboard }) {
+  const segments = [
+    { key: "active", label: "فعال", value: dashboard.active },
+    { key: "pending", label: "منتظر اتصال", value: dashboard.pending },
+    { key: "suspended", label: "تعلیق", value: dashboard.suspended },
+    { key: "ended", label: "پایان‌یافته", value: dashboard.ended },
+    { key: "setup", label: "نیازمند تنظیم", value: dashboard.needsSetup },
+  ];
+  const total = Math.max(1, segments.reduce((sum, item) => sum + item.value, 0));
+  let offset = 0;
+  return <div className="status-chart"><div className="donut-wrap"><svg className="status-donut" viewBox="0 0 120 120" role="img" aria-label="نمودار وضعیت اکانت‌ها"><circle className="donut-track" cx="60" cy="60" r="46" pathLength="100" />{segments.map((item) => { const percent = item.value / total * 100; const dashOffset = -offset; offset += percent; return <circle key={item.key} className={`donut-segment ${item.key}`} cx="60" cy="60" r="46" pathLength="100" strokeDasharray={`${percent} ${100 - percent}`} strokeDashoffset={dashOffset} />; })}</svg><div className="donut-center"><strong>{dashboard.totalAccounts}</strong><span>اکانت</span></div></div><div className="chart-legend">{segments.map((item) => <div key={item.key}><i className={`legend-dot ${item.key}`} /><span>{item.label}</span><strong>{item.value}</strong></div>)}</div></div>;
+}
+
+function ExpiryBars({ dashboard }: { dashboard: CustomerDashboard }) {
+  const items = [
+    { key: "soon", label: "تا ۷ روز", value: dashboard.expiry.within7Days },
+    { key: "month", label: "۸ تا ۳۰ روز", value: dashboard.expiry.within30Days },
+    { key: "later", label: "بیش از ۳۰ روز", value: dashboard.expiry.later },
+    { key: "none", label: "بدون انقضا / تنظیم", value: dashboard.expiry.noExpiry },
+  ];
+  const max = Math.max(1, ...items.map((item) => item.value));
+  return <div className="expiry-chart">{items.map((item) => <div className="expiry-row" key={item.key}><div className="expiry-label"><span>{item.label}</span><strong>{item.value}</strong></div><div className="expiry-track"><span className={`expiry-fill ${item.key}`} style={{ width: `${item.value / max * 100}%` }} /></div></div>)}</div>;
+}
+
 export function CustomersV2() {
   const [customers, setCustomers] = useState<CustomerView[]>([]);
   const [runtime, setRuntime] = useState<RuntimeCredential[]>([]);
@@ -223,15 +249,20 @@ export function CustomersV2() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const unmanaged = useMemo(() => {
-    const managed = new Set(customers.map((customer) => customer.runtime_credential_id));
-    return runtime.filter((credential) => credential.status === "active" && !managed.has(credential.id));
-  }, [customers, runtime]);
+  const unifiedRows = useMemo(() => buildUnifiedCustomerRows(customers, runtime), [customers, runtime]);
+  const dashboard = useMemo(() => buildCustomerDashboard(unifiedRows), [unifiedRows]);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    const matches = customers.filter((customer) => {
-      if (needle && !`${customer.username} ${customer.id} ${customer.runtime_credential_id}`.toLowerCase().includes(needle)) return false;
+    const matches = unifiedRows.filter((row) => {
+      if (needle && !`${row.username} ${row.id} ${row.runtimeCredentialID}`.toLowerCase().includes(needle)) return false;
+      if (row.kind === "runtime") {
+        if (filter === "all" || filter === "unmanaged") return true;
+        if (filter === "active") return row.credential.status === "active";
+        return false;
+      }
+      const customer = row.customer;
+      if (filter === "unmanaged") return false;
       if (filter === "all") return true;
       if (filter === "suspended" || filter === "revoked" || filter === "active") return customer.status === filter;
       if (filter === "pending") return customer.service_state === "pending";
@@ -240,17 +271,27 @@ export function CustomersV2() {
       return true;
     });
     matches.sort((a, b) => {
-      if (sort === "expiry") return (a.expires_at || "9999").localeCompare(b.expires_at || "9999");
-      if (sort === "quota") return (a.quota_bytes ?? Number.MAX_SAFE_INTEGER) - (b.quota_bytes ?? Number.MAX_SAFE_INTEGER);
+      if (sort === "expiry") {
+        const av = a.kind === "customer" ? (a.customer.expires_at || "9999") : "9999";
+        const bv = b.kind === "customer" ? (b.customer.expires_at || "9999") : "9999";
+        return av.localeCompare(bv);
+      }
+      if (sort === "quota") {
+        const av = a.kind === "customer" ? (a.customer.quota_bytes ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+        const bv = b.kind === "customer" ? (b.customer.quota_bytes ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+        return av - bv;
+      }
       if (sort === "created") return a.id.localeCompare(b.id);
       return a.username.localeCompare(b.username, "fa");
     });
     return matches;
-  }, [customers, filter, search, sort]);
+  }, [unifiedRows, filter, search, sort]);
 
   const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
   useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
   const pageRows = visible.slice((page - 1) * pageSize, page * pageSize);
+  const selectablePageIDs = pageRows.flatMap((row) => row.kind === "customer" ? [row.customer.id] : []);
+
   const selectedCustomers = customers.filter((customer) => selected.has(customer.id));
 
   function toggle(id: string) {
@@ -329,26 +370,52 @@ export function CustomersV2() {
 
   return (
     <main className="customers-page owner-customers-v2">
-      <header className="customers-header"><div><p className="eyebrow">Owner customer control</p><h1>مدیریت مشتریان Naive</h1><p>مدیریت سرویس، Runtime و تحویل از هم جدا هستند؛ View QR/Details/Copy هیچ mutationی انجام نمی‌دهد.</p></div><div className="header-actions"><button className="button-secondary" onClick={() => void refresh()}>بروزرسانی</button><button className="primary-action" onClick={() => setDialog({ type: "create" })}>+ ساخت اکانت</button></div></header>
+      <header className="owner-hero">
+        <div className="owner-hero-copy"><p className="eyebrow">PVNaive · Owner Control</p><h1>مدیریت اکانت‌ها</h1><p>همه اکانت‌های قدیمی و جدید در یک نمای واحد؛ مدیریت حجم، اعتبار، QR و وضعیت بدون دستکاری ناخواسته Runtime.</p></div>
+        <div className="header-actions"><button className="button-secondary refresh-action" onClick={() => void refresh()}>↻ بروزرسانی</button><button className="primary-action create-action" onClick={() => setDialog({ type: "create" })}>＋ ساخت اکانت</button></div>
+      </header>
 
-      <section className="customer-summary"><article><span>کل مشتری</span><strong>{customers.length}</strong></article><article><span>فعال</span><strong>{customers.filter((c) => c.status === "active" && c.service_state === "active").length}</strong></article><article><span>تعلیق</span><strong>{customers.filter((c) => c.status === "suspended").length}</strong></article><article><span>Accounting</span><strong className="muted-value">{customers.some((c) => c.usage_capability.available) ? "قابل استفاده" : "Proof-gated"}</strong></article></section>
+      <section className="owner-kpis" aria-label="خلاصه اکانت‌ها">
+        <article className="kpi-card"><div className="kpi-icon">◎</div><div><span>کل اکانت‌ها</span><strong>{dashboard.totalAccounts}</strong><small>{dashboard.managedAccounts} اکانت مدیریت‌شده</small></div></article>
+        <article className="kpi-card success"><div className="kpi-icon">✓</div><div><span>فعال</span><strong>{dashboard.active}</strong><small>{dashboard.pending} منتظر اولین اتصال</small></div></article>
+        <article className="kpi-card warning"><div className="kpi-icon">⚙</div><div><span>نیازمند تنظیم</span><strong>{dashboard.needsSetup}</strong><small>همان اکانت‌های موجود Runtime</small></div></article>
+        <article className="kpi-card quota"><div className="kpi-icon">◫</div><div><span>حجم تعریف‌شده</span><strong>{dashboard.configuredQuotaGB.toLocaleString("fa-IR")} <em>GB</em></strong><small>{dashboard.unlimitedAccounts} اکانت نامحدود</small></div></article>
+      </section>
 
-      {unmanaged.length > 0 && <section className="customer-table-card legacy-strip"><div className="section-title"><div><p className="eyebrow">Legacy Runtime</p><h2>اکانت‌های قبلی</h2><p>بدون تغییر Username/Password به مدیریت مشتری اضافه می‌شوند.</p></div></div><div className="legacy-grid">{unmanaged.map((credential) => <article key={credential.id}><div><strong>{credential.username}</strong><small>{credential.id.slice(0, 12)}</small></div><button className="button-secondary" onClick={() => setDialog({ type: "adopt", credential })}>افزودن حجم و تاریخ</button></article>)}</div></section>}
+      <section className="owner-analytics">
+        <article className="analytics-card"><div className="analytics-heading"><div><p className="eyebrow">Account health</p><h2>وضعیت اکانت‌ها</h2></div><span className="analytics-badge">Live config</span></div><StatusDonut dashboard={dashboard} /></article>
+        <article className="analytics-card"><div className="analytics-heading"><div><p className="eyebrow">Expiry horizon</p><h2>افق انقضا</h2></div><span className="analytics-badge">{dashboard.managedAccounts} سرویس</span></div><ExpiryBars dashboard={dashboard} /></article>
+      </section>
 
-      <section className="customer-table-card">
-        <div className="owner-toolbar"><label className="search-box">جستجو<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Username / ID / Runtime ID" /></label><label>فیلتر<select value={filter} onChange={(e) => { setFilter(e.target.value as StatusFilter); setPage(1); }}><option value="all">همه</option><option value="active">فعال</option><option value="suspended">تعلیق</option><option value="revoked">لغوشده</option><option value="pending">منتظر اتصال</option><option value="expired">منقضی</option><option value="depleted">حجم تمام</option></select></label><label>مرتب‌سازی<select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}><option value="username">نام کاربری</option><option value="expiry">انقضا</option><option value="quota">حجم</option><option value="created">شناسه</option></select></label><label>تعداد<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option>25</option><option>50</option><option>100</option></select></label></div>
-        {selected.size > 0 && <div className="bulk-bar"><strong>{selected.size} انتخاب</strong><button disabled={bulkBusy} onClick={() => void bulk("suspend")}>تعلیق</button><button disabled={bulkBusy} onClick={() => void bulk("resume")}>فعال</button><button disabled={bulkBusy} onClick={() => void bulk("add-volume")}>+ حجم</button><button disabled={bulkBusy} onClick={() => void bulk("extend")}>+ زمان</button><button className="danger-action" disabled={bulkBusy} onClick={() => void bulk("delete")}>لغو</button></div>}
+      {!dashboard.usageProven && <div className="accounting-note"><span className="accounting-icon">i</span><div><strong>Accounting دقیق هنوز Proof-gated است</strong><p>حجم کل و تاریخ واقعی‌اند؛ تا تکمیل accounting در Naive/Caddy، مصرف‌شده و باقی‌مانده جعلی نمایش داده نمی‌شود.</p></div></div>}
+
+      <section className="customer-table-card owner-directory">
+        <div className="directory-heading"><div><p className="eyebrow">Accounts directory</p><h2>لیست اکانت‌ها</h2><p>{visible.length} نتیجه از {dashboard.totalAccounts} اکانت</p></div></div>
+        <div className="owner-toolbar">
+          <label className="search-box"><span>⌕</span><input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="جستجو با نام کاربری، ID یا Runtime ID" /></label>
+          <label className="toolbar-field"><span>وضعیت</span><select value={filter} onChange={(e) => { setFilter(e.target.value as StatusFilter); setPage(1); }}><option value="all">همه</option><option value="active">فعال</option><option value="pending">منتظر اتصال</option><option value="suspended">تعلیق</option><option value="expired">منقضی</option><option value="depleted">حجم تمام</option><option value="revoked">لغوشده</option><option value="unmanaged">نیازمند تنظیم</option></select></label>
+          <label className="toolbar-field"><span>مرتب‌سازی</span><select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}><option value="username">نام کاربری</option><option value="expiry">نزدیک‌ترین انقضا</option><option value="quota">حجم</option><option value="created">شناسه</option></select></label>
+          <label className="toolbar-field compact"><span>نمایش</span><select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option>25</option><option>50</option><option>100</option></select></label>
+        </div>
+        {selected.size > 0 && <div className="bulk-bar"><strong>{selected.size} اکانت انتخاب شده</strong><div><button disabled={bulkBusy} onClick={() => void bulk("suspend")}>تعلیق</button><button disabled={bulkBusy} onClick={() => void bulk("resume")}>فعال‌سازی</button><button disabled={bulkBusy} onClick={() => void bulk("add-volume")}>＋ حجم</button><button disabled={bulkBusy} onClick={() => void bulk("extend")}>＋ زمان</button><button className="danger-action" disabled={bulkBusy} onClick={() => void bulk("delete")}>لغو / Revoke</button></div></div>}
         {message && <p className="customer-message" role="status">{message}</p>}
-        <div className="customer-table-wrap"><table className="customer-table owner-table"><thead><tr><th><input type="checkbox" aria-label="انتخاب صفحه" checked={pageRows.length > 0 && pageRows.every((c) => selected.has(c.id))} onChange={() => setSelected((current) => { const next = new Set(current); const all = pageRows.every((c) => next.has(c.id)); pageRows.forEach((c) => all ? next.delete(c.id) : next.add(c.id)); return next; })} /></th><th>کاربر</th><th>Account / Service</th><th>حجم</th><th>مصرف</th><th>انقضا</th><th>شروع</th><th>عملیات</th></tr></thead><tbody>
-          {loading && <tr><td colSpan={8}>در حال بارگذاری…</td></tr>}
-          {!loading && pageRows.length === 0 && <tr><td colSpan={8}>موردی پیدا نشد.</td></tr>}
-          {pageRows.map((customer) => { const status = statusDimension(customer); const busy = busyID === customer.id; return <tr key={customer.id} className={customer.status === "revoked" ? "row-muted" : ""}><td><input type="checkbox" checked={selected.has(customer.id)} onChange={() => toggle(customer.id)} /></td><td><strong>{customer.username}</strong><small>{customer.id.slice(0, 8)} · {customer.runtime_credential_id.slice(0, 8)}</small></td><td><span className={`dimension-badge ${status.tone}`}>{status.label}</span><small>{customer.status} / {customer.service_state}</small></td><td>{quotaLabel(customer.quota_bytes)}</td><td>{customer.usage_capability.available ? "قابل محاسبه" : <span className="usage-locked">Unavailable — exact accounting not proven</span>}</td><td>{expiryLabel(customer.expires_at)}</td><td>{startPolicyLabel(customer.start_policy)}</td><td><div className="action-grid"><button disabled={busy} onClick={() => setDialog({ type: "details", customer })}>جزئیات</button><button disabled={busy || customer.status === "revoked"} onClick={() => setDialog({ type: "edit", customer })}>ویرایش</button><button disabled={busy || !customer.subscription_available} onClick={() => void readSubscription(customer)}>QR / لینک</button>{customer.status === "suspended" ? <button disabled={busy} onClick={() => void lifecycle(customer, "resume")}>Resume</button> : customer.status !== "revoked" && <button disabled={busy} onClick={() => void lifecycle(customer, "suspend")}>Suspend</button>}<details><summary>بیشتر</summary><div className="more-menu">{customer.status !== "revoked" && <><button onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button onClick={() => setDialog({ type: "add-volume", customer })}>افزودن حجم</button><button onClick={() => setDialog({ type: "extend", customer })}>تمدید زمان</button><button onClick={() => void reissue(customer)}>Reissue Subscription</button><button className="danger-action" onClick={() => void lifecycle(customer, "delete")}>Delete / Revoke</button></>}</div></details></div></td></tr>; })}
+        <div className="customer-table-wrap"><table className="customer-table owner-table"><thead><tr><th><input className="customer-checkbox" type="checkbox" aria-label="انتخاب صفحه" checked={selectablePageIDs.length > 0 && selectablePageIDs.every((id) => selected.has(id))} onChange={() => setSelected((current) => { const next = new Set(current); const all = selectablePageIDs.every((id) => next.has(id)); selectablePageIDs.forEach((id) => all ? next.delete(id) : next.add(id)); return next; })} /></th><th>اکانت</th><th>وضعیت</th><th>حجم</th><th>انقضا</th><th>شروع اعتبار</th><th>مصرف</th><th>عملیات</th></tr></thead><tbody>
+          {loading && <tr><td colSpan={8}><div className="table-loading">در حال بارگذاری اکانت‌ها…</div></td></tr>}
+          {!loading && pageRows.length === 0 && <tr><td colSpan={8}><div className="empty-state"><strong>اکانتی پیدا نشد</strong><span>فیلتر یا عبارت جستجو را تغییر بده.</span></div></td></tr>}
+          {pageRows.map((row) => {
+            if (row.kind === "runtime") {
+              const credential = row.credential;
+              return <tr key={row.id} className="setup-row"><td></td><td><div className="account-cell"><span className="account-avatar setup">{row.username.slice(0, 1).toUpperCase()}</span><div><strong>{row.username}</strong><small>Runtime · {credential.id.slice(0, 8)}</small></div></div></td><td><span className="dimension-badge warning"><i />نیازمند تنظیم</span><small className="state-detail">اکانت موجود؛ هنوز سرویس تجاری ندارد</small></td><td><span className="cell-muted">تنظیم نشده</span></td><td><span className="cell-muted">—</span></td><td><span className="cell-muted">—</span></td><td><span className="usage-locked">در انتظار Accounting</span></td><td><div className="row-actions single"><button className="primary-action" disabled={credential.status !== "active"} onClick={() => setDialog({ type: "adopt", credential })}>تنظیم سرویس</button></div></td></tr>;
+            }
+            const customer = row.customer; const status = statusDimension(customer); const busy = busyID === customer.id;
+            return <tr key={customer.id} className={customer.status === "revoked" ? "row-muted" : ""}><td><input className="customer-checkbox" type="checkbox" checked={selected.has(customer.id)} onChange={() => toggle(customer.id)} /></td><td><div className="account-cell"><span className="account-avatar">{customer.username.slice(0, 1).toUpperCase()}</span><div><strong>{customer.username}</strong><small>{customer.id.slice(0, 8)} · {customer.runtime_credential_id.slice(0, 8)}</small></div></div></td><td><span className={`dimension-badge ${status.tone}`}><i />{status.label}</span><small className="state-detail">{customer.service_state === "pending" ? "در انتظار اولین اتصال موفق" : customer.service_state}</small></td><td><strong className="quota-cell">{quotaLabel(customer.quota_bytes)}</strong></td><td><strong className="expiry-cell">{expiryLabel(customer.expires_at)}</strong></td><td><span className="policy-cell">{startPolicyLabel(customer.start_policy)}</span></td><td>{customer.usage_capability.available ? <span className="usage-ready">آماده</span> : <span className="usage-locked">در انتظار Accounting</span>}</td><td><div className="row-actions"><button className="action-primary" disabled={busy || !customer.subscription_available} onClick={() => void readSubscription(customer)}>QR / لینک</button><button disabled={busy || customer.status === "revoked"} onClick={() => setDialog({ type: "edit", customer })}>ویرایش</button><button disabled={busy} onClick={() => setDialog({ type: "details", customer })}>جزئیات</button><details className="row-more"><summary aria-label="عملیات بیشتر">•••</summary><div className="more-menu">{customer.status === "suspended" ? <button disabled={busy} onClick={() => void lifecycle(customer, "resume")}>فعال‌سازی مجدد</button> : customer.status !== "revoked" && <button disabled={busy} onClick={() => void lifecycle(customer, "suspend")}>تعلیق اکانت</button>}{customer.status !== "revoked" && <><button onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button onClick={() => setDialog({ type: "add-volume", customer })}>افزودن حجم</button><button onClick={() => setDialog({ type: "extend", customer })}>تمدید زمان</button><button onClick={() => void reissue(customer)}>صدور لینک جدید</button><button className="danger-action" onClick={() => void lifecycle(customer, "delete")}>حذف امن / Revoke</button></>}</div></details></div></td></tr>;
+          })}
         </tbody></table></div>
-        <div className="pagination"><span>{visible.length} نتیجه</span><button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>قبلی</button><strong>{page} / {pageCount}</strong><button disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>بعدی</button></div>
+        <div className="pagination"><span>صفحه {page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span><div><button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>‹ قبلی</button><strong>{visible.length.toLocaleString("fa-IR")} نتیجه</strong><button disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>بعدی ›</button></div></div>
       </section>
 
       {dialog?.type === "create" && <Dialog eyebrow="Create customer" title="ساخت اکانت" onClose={() => setDialog(null)}><ServiceForm mode="create" onSaved={saved} onClose={() => setDialog(null)} /></Dialog>}
-      {dialog?.type === "adopt" && <Dialog eyebrow="Adopt legacy" title={`مدیریت ${dialog.credential.username}`} onClose={() => setDialog(null)}><ServiceForm mode="adopt" credential={dialog.credential} onSaved={saved} onClose={() => setDialog(null)} /></Dialog>}
+      {dialog?.type === "adopt" && <Dialog eyebrow="Configure account" title={`مدیریت ${dialog.credential.username}`} onClose={() => setDialog(null)}><ServiceForm mode="adopt" credential={dialog.credential} onSaved={saved} onClose={() => setDialog(null)} /></Dialog>}
       {dialog?.type === "edit" && <Dialog eyebrow="Edit service" title={`ویرایش ${dialog.customer.username}`} onClose={() => setDialog(null)}><ServiceForm mode="edit" customer={dialog.customer} onSaved={saved} onClose={() => setDialog(null)} /></Dialog>}
       {dialog?.type === "details" && <Dialog eyebrow="Customer details" title={dialog.customer.username} onClose={() => setDialog(null)}><div className="detail-list"><div><span>Customer ID</span><strong>{dialog.customer.id}</strong></div><div><span>Runtime ID</span><strong>{dialog.customer.runtime_credential_id}</strong></div><div><span>Account</span><strong>{dialog.customer.status}</strong></div><div><span>Service</span><strong>{dialog.customer.service_state}</strong></div><div><span>Volume</span><strong>{quotaLabel(dialog.customer.quota_bytes)}</strong></div><div><span>Expiry</span><strong>{expiryLabel(dialog.customer.expires_at)}</strong></div><div><span>First connected</span><strong>{dialog.customer.first_connected_at ? expiryLabel(dialog.customer.first_connected_at) : "ثبت نشده"}</strong></div><div><span>Accounting</span><strong>{dialog.customer.usage_capability.available ? "available" : "exact_accounting_not_proven"}</strong></div></div></Dialog>}
       {dialog?.type === "password" && <Dialog eyebrow="Explicit security action" title={`تغییر رمز ${dialog.customer.username}`} onClose={() => setDialog(null)}><PasswordForm customer={dialog.customer} onClose={() => setDialog(null)} onDone={async (password) => { await refresh(); if (password) setDialog({ type: "secret", username: dialog.customer.username, password, notice: "Subscription تغییر نکرد. رمز جدید فقط همین بار نمایش داده می‌شود." }); else setMessage("رمز تغییر کرد؛ Subscription همان لینک قبلی است."); }} /></Dialog>}

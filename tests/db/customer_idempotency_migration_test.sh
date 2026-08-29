@@ -31,8 +31,8 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 migration_output="$("${repo_root}/scripts/db/migrate.sh")"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=7' <<< "${migration_output}" || {
-  echo 'ERROR: full customer migration stack did not advance schema to v7' >&2
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=8' <<< "${migration_output}" || {
+  echo 'ERROR: full customer migration stack did not advance schema to v8' >&2
   exit 1
 }
 
@@ -88,8 +88,8 @@ then
   exit 1
 fi
 
-# Remove v7 token recovery, v6 direct subscription tokens, then exercise the v5 idempotency rollback.
-for _ in 1 2 3; do
+# Remove v8 profile projection, v7 token recovery, v6 direct subscription tokens, then exercise the v5 idempotency rollback.
+for _ in 1 2 3 4; do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION \
     "${repo_root}/scripts/db/rollback.sh" >/dev/null
 done
