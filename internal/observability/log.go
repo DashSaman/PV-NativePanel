@@ -20,15 +20,15 @@ type Event struct {
 }
 
 var sensitiveKeys = map[string]struct{}{
-	"authorization":      {},
-	"dbpassword":         {},
-	"dsn":                {},
-	"password":           {},
-	"privatekey":         {},
-	"runtimesecret":      {},
-	"secret":             {},
-	"subscriptiontoken":  {},
-	"token":              {},
+	"authorization":     {},
+	"dbpassword":        {},
+	"dsn":               {},
+	"password":          {},
+	"privatekey":        {},
+	"runtimesecret":     {},
+	"secret":            {},
+	"subscriptiontoken": {},
+	"token":             {},
 }
 
 var redactionPatterns = []*regexp.Regexp{
