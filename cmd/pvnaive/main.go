@@ -205,7 +205,7 @@ func buildCustomerServices(
 	createRuntime := func(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input runtimecred.CreateInput) (customer.RuntimeMutation, error) {
 		return runtimeService.Create(ctx, tx, actorID, idempotencyKey, input)
 	}
-	customerService := customer.NewService(customerStore, createRuntime, time.Now)
+	customerService := customer.NewServiceWithTokenRecovery(customerStore, createRuntime, time.Now, runtimeKey, keyID)
 	subscriptionService, err := subscription.NewService(subscription.NewPostgresStore(db), runtimeKey, keyID)
 	if err != nil {
 		return nil, nil, err
