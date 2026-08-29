@@ -16,6 +16,35 @@ pvnaive_require_identifier() {
   [[ "${value}" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || pvnaive_die "unsafe ${label}: ${value}"
 }
 
+pvnaive_validate_encrypted_archive() (
+  set -Eeuo pipefail
+  umask 077
+  local archive_file="$1"
+  local identity_file="$2"
+  local temp_file=''
+
+  pvnaive_require_command age
+  pvnaive_require_command pg_restore
+  pvnaive_require_command mktemp
+  [[ -f "${archive_file}" ]] || pvnaive_die "encrypted archive is missing"
+  [[ -f "${identity_file}" ]] || pvnaive_die "age identity is missing"
+
+  cleanup_archive_validation() {
+    local code="$?"
+    trap - EXIT HUP INT TERM
+    [[ -z "${temp_file}" ]] || rm -f -- "${temp_file}" 2>/dev/null || true
+    exit "${code}"
+  }
+  trap cleanup_archive_validation EXIT HUP INT TERM
+
+  temp_file="$(mktemp "${TMPDIR:-/tmp}/pvnaive-archive-validate.XXXXXX")"
+  chmod 0600 "${temp_file}"
+  age --decrypt --identity "${identity_file}" --output "${temp_file}" "${archive_file}" || \
+    pvnaive_die "encrypted backup could not be decrypted"
+  pg_restore --list "${temp_file}" >/dev/null || \
+    pvnaive_die "decrypted backup archive could not be parsed"
+)
+
 pvnaive_validate_storage_root() {
   local storage_root="$1"
   local canonical_storage_root
