@@ -1,0 +1,45 @@
+name: WS1 Pinned Forwardproxy
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ws1-forwardproxy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  forwardproxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify pins are immutable
+        run: |
+          set -Eeuo pipefail
+          grep -Eq '^[0-9a-f]{40}$' third_party/forwardproxy/UPSTREAM_COMMIT
+          grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' third_party/forwardproxy/CADDY_VERSION
+          grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' third_party/forwardproxy/XCADDY_VERSION
+          ! grep -R --line-number --fixed-strings '@latest' third_party/forwardproxy scripts/build/build-pinned-accounting-caddy.sh
+      - name: Patch, upstream tests, vet and reproducible build inputs
+        run: |
+          set -Eeuo pipefail
+          bash -n scripts/build/build-pinned-accounting-caddy.sh
+          bash scripts/build/build-pinned-accounting-caddy.sh
+      - name: Upload provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws1-accounting-caddy-provenance
+          path: |
+            dist/ws1-accounting/PROVENANCE.txt
+            dist/ws1-accounting/caddy.version.txt
+            dist/ws1-accounting/*.sha256
+          if-no-files-found: error
