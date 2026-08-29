@@ -14,3 +14,5 @@ ALTER TABLE pvnaive.direct_subscription_tokens
     DROP COLUMN IF EXISTS token_encryption_key_id,
     DROP COLUMN IF EXISTS token_nonce,
     DROP COLUMN IF EXISTS token_ciphertext;
+
+DELETE FROM pvnaive.schema_migrations WHERE version = 7;
