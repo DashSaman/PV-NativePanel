@@ -44,7 +44,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${version}" == "8" ]] || { echo "ERROR: schema version=${version}, want=8" >&2; exit 1; }
+[[ "${version}" == "9" ]] || { echo "ERROR: schema version=${version}, want=9" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT

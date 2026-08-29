@@ -31,8 +31,8 @@ SQL
 createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 
 migration_output="$("${repo_root}/scripts/db/migrate.sh")"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=8' <<< "${migration_output}" || {
-  echo 'ERROR: full customer migration stack did not advance schema to v8' >&2
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=9' <<< "${migration_output}" || {
+  echo 'ERROR: full customer migration stack did not advance schema to v9' >&2
   exit 1
 }
 
