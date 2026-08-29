@@ -1,5 +1,9 @@
 # PVNaive feature parity review — 2026-08-29
 
+> **Canonical update:** این فایل یک snapshot قبلی از بررسی همان روز است. برای مقایسه‌ی فعلی و جامع 3x-ui/Sanaei، PasarGuard v5.3.0، Hiddify Manager v12.3.3 و OV-PvNetwork و همچنین backlog چهار-lane، از `docs/PANEL_PARITY_MASTER_2026-08-29.md` استفاده کنید. Promptهای اجرای موازی در `docs/PARALLEL_WORKSTREAM_PROMPTS_2026-08-29.md` هستند.
+>
+> نکته: توضیح قدیمی پایین درباره‌ی یک URL مشترک browser/raw یک gap شناخته‌شده‌ی `main` است؛ قرارداد هدف جدید `/sub/<token>` برای machine و `/s/<token>` برای human است.
+
 این سند مقایسه‌ی عملی PVNaive با پنل‌های مرجع مدیریت پراکسی است. هدف کپی‌کردن 3x-ui/PasarGuard نیست؛ هدف این است که UX مدیریت مشتری در PVNaive از نظر عملیات روزمره عقب‌تر نباشد، در حالی که Runtime اصلی همچنان NaiveProxy و قواعد امنیتی PVNaive حفظ شوند.
 
 ## منابع مرجع
