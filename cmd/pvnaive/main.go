@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -18,6 +19,8 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
+	"github.com/DashSaman/PV-NaivePanel/internal/observability"
+	"github.com/DashSaman/PV-NaivePanel/internal/ops"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
@@ -32,10 +35,66 @@ const (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "doctor" {
+		if err := runDoctor(os.Args[2:]); err != nil {
+			log.Printf("PVNaive doctor failed: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		log.Printf("PVNaive API stopped: %v", err)
 		os.Exit(1)
 	}
+}
+
+func runDoctor(args []string) error {
+	jsonOutput := false
+	for _, arg := range args {
+		switch arg {
+		case "--json":
+			jsonOutput = true
+		case "--help", "-h":
+			fmt.Println("Usage: pvnaive doctor [--json]")
+			return nil
+		default:
+			return fmt.Errorf("unknown doctor argument %q", arg)
+		}
+	}
+	checks := []ops.Check{
+		ops.ServiceCheck("postgresql.service"),
+		ops.ServiceCheck("caddy-naive.service"),
+		ops.ServiceCheck("pvnaive-runtime-agent.service"),
+		ops.ServiceCheck("pvnaive-api.service"),
+		ops.RuntimeSocketCheck(defaultRuntimeAgentSocket),
+		ops.HTTPCheck("api-live", "http://127.0.0.1:8080/api/v1/health/live"),
+		ops.HTTPCheck("api-ready", "http://127.0.0.1:8080/api/v1/health/ready"),
+		ops.PortCheck("api-loopback", "127.0.0.1:8080", true),
+		ops.DiskCheck("/", 85, 95),
+		ops.BackupCheck("/var/backups/pvnaive/database", 26*time.Hour),
+		ops.FileModeCheck("auth-key", "/etc/pvnaive/auth.key", 0o640),
+		ops.FileModeCheck("runtime-key", "/etc/pvnaive/runtime.key", 0o640),
+	}
+	report := ops.NewDoctor(checks).Run(context.Background())
+	if jsonOutput {
+		payload := struct {
+			Results []ops.CheckResult `json:"results"`
+			Pass    int               `json:"pass"`
+			Warn    int               `json:"warn"`
+			Fail    int               `json:"fail"`
+		}{report.Results, report.Pass, report.Warn, report.Fail}
+		encoded, err := json.MarshalIndent(payload, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(encoded))
+	} else {
+		fmt.Print(report.String())
+	}
+	if report.Fail > 0 {
+		return fmt.Errorf("doctor reported %d failed checks", report.Fail)
+	}
+	return nil
 }
 
 func run() error {
@@ -102,6 +161,42 @@ func run() error {
 		return err
 	}
 
+	runtimeSocket := os.Getenv("PVNAIVE_RUNTIME_AGENT_SOCKET")
+	if runtimeSocket == "" {
+		runtimeSocket = defaultRuntimeAgentSocket
+	}
+	metricsCollector := observability.NewCollector(observability.NewLinuxSource())
+	runtimeClient := runtimeagent.NewClient(runtimeSocket)
+	systemStatus := func(r *http.Request) (any, error) {
+		snapshot, err := metricsCollector.Collect(r.Context())
+		if err != nil {
+			return nil, err
+		}
+		dependencies := map[string]any{
+			"api": map[string]any{"status": "ok"},
+		}
+		dbCtx, dbCancel := context.WithTimeout(r.Context(), 1500*time.Millisecond)
+		dbErr := db.PingContext(dbCtx)
+		dbCancel()
+		if dbErr == nil {
+			dependencies["database"] = map[string]any{"status": "ok"}
+		} else {
+			dependencies["database"] = map[string]any{"status": "unavailable"}
+		}
+		runtimeCtx, runtimeCancel := context.WithTimeout(r.Context(), 1500*time.Millisecond)
+		_, runtimeErr := runtimeClient.Health(runtimeCtx)
+		runtimeCancel()
+		if runtimeErr == nil {
+			dependencies["runtime"] = map[string]any{"status": "ok"}
+		} else {
+			dependencies["runtime"] = map[string]any{"status": "unavailable"}
+		}
+		return map[string]any{
+			"sample":       snapshot,
+			"dependencies": dependencies,
+		}, nil
+	}
+
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -110,6 +205,7 @@ func run() error {
 		CustomerService:       customerService,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
+		SystemStatus:          systemStatus,
 	})
 	server := &http.Server{
 		Addr:              listen,
@@ -150,8 +246,6 @@ func run() error {
 func buildRuntimeService(db *sql.DB, getenv func(string) string) (*runtimecred.Service, []byte, error) {
 	keyFile := getenv("PVNAIVE_RUNTIME_KEY_FILE")
 	if keyFile == "" {
-		// S04 auth rehearsal is intentionally frozen at schema v2. Runtime
-		// management is enabled only by the S04R deployment contract.
 		return nil, nil, nil
 	}
 	key, err := os.ReadFile(keyFile)
