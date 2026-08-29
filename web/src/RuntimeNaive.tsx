@@ -174,11 +174,11 @@ export function RuntimeNaive() {
     <div className="runtime-page" dir="rtl">
       <div className="runtime-heading">
         <div>
-          <p className="eyebrow">NaiveProxy Runtime</p>
-          <h1>مدیریت اکانت‌های Naive</h1>
-          <p className="runtime-muted">تغییرات با validate، backup، reload-only و rollback محافظت می‌شوند.</p>
+          <p className="eyebrow">سیستم / Runtime</p>
+          <h1>مدیریت Runtime</h1>
+          <p className="runtime-muted">اکانت‌های فنی Naive و وضعیت Runtime سرور.</p>
         </div>
-        <a className="button-secondary" href="/panel/">بازگشت به داشبورد</a>
+        <div className="runtime-heading-actions"><a className="button-secondary" href="/panel/#/customers/runtime-adoption">اتصال اکانت قدیمی</a><button className="button-secondary" onClick={() => run(reload)} disabled={busy}>↻ بروزرسانی</button></div>
       </div>
 
       {error && <div className="runtime-alert error" role="alert">{error}</div>}
@@ -188,7 +188,7 @@ export function RuntimeNaive() {
         <article><span>Runtime</span><strong>{status?.runtime_available ? "آماده" : "در دسترس نیست"}</strong></article>
         <article><span>اکانت فعال</span><strong>{activeCount}</strong></article>
         <article><span>کل اکانت‌ها</span><strong>{credentials.length}</strong></article>
-        <article title={status?.caddy_sha256 || ""}><span>Caddy SHA</span><strong className="mono">{shortSHA(status?.caddy_sha256)}</strong></article>
+        <article title={status?.caddy_sha256 || ""}><span>نسخه پیکربندی</span><strong className="mono">{shortSHA(status?.caddy_sha256)}</strong></article>
       </section>
 
       {!owned ? (
@@ -219,27 +219,26 @@ export function RuntimeNaive() {
           </section>
 
           <section className="runtime-card">
-            <div className="runtime-section-title"><div><p className="eyebrow">Credentials</p><h2>اکانت‌های Runtime</h2></div><button className="button-secondary" onClick={() => run(reload)} disabled={busy}>تازه‌سازی</button></div>
+            <div className="runtime-section-title"><div><p className="eyebrow">اکانت‌ها</p><h2>اکانت‌های Runtime</h2></div></div>
             <div className="runtime-table-wrap">
               <table className="runtime-table">
-                <thead><tr><th>نام کاربری</th><th>وضعیت</th><th>منشأ</th><th>Revision</th><th>آخرین تغییر</th><th>عملیات</th></tr></thead>
+                <thead><tr><th>نام کاربری</th><th>وضعیت</th><th>منشأ</th><th>آخرین تغییر</th><th></th></tr></thead>
                 <tbody>
                   {credentials.map((credential) => {
                     const lastActive = credential.status === "active" && activeCount <= 1;
                     return <tr key={credential.id}>
                       <td className="mono">{credential.username}</td>
                       <td><span className={`status-pill ${credential.status}`}>{credential.status === "active" ? "فعال" : credential.status === "disabled" ? "غیرفعال" : "لغوشده"}</span></td>
-                      <td>{credential.origin === "imported" ? "واردشده" : "پنل"}</td>
-                      <td>{credential.revision}</td>
+                      <td><span>{credential.origin === "imported" ? "واردشده" : "پنل"}</span><small className="runtime-revision">rev {credential.revision}</small></td>
                       <td>{formatTime(credential.updated_at)}</td>
                       <td>
-                        {credential.status !== "revoked" && <div className="runtime-actions">
-                          <button className="button-link" onClick={() => rename(credential)} disabled={busy}>تغییر نام</button>
-                          <button className="button-link" onClick={() => rotateGenerated(credential)} disabled={busy}>رمز تصادفی</button>
-                          <button className="button-link" onClick={() => rotateCustom(credential)} disabled={busy}>رمز دلخواه</button>
-                          <button className="button-link" onClick={() => toggle(credential)} disabled={busy || lastActive}>{credential.status === "active" ? "غیرفعال" : "فعال"}</button>
-                          <button className="button-danger" onClick={() => revoke(credential)} disabled={busy || lastActive}>لغو</button>
-                        </div>}
+                        {credential.status !== "revoked" && <details className="runtime-more"><summary aria-label={`عملیات ${credential.username}`}>•••</summary><div className="runtime-more-menu">
+                          <button onClick={() => rename(credential)} disabled={busy}>تغییر نام</button>
+                          <button onClick={() => rotateGenerated(credential)} disabled={busy}>رمز تصادفی</button>
+                          <button onClick={() => rotateCustom(credential)} disabled={busy}>رمز دلخواه</button>
+                          <button onClick={() => toggle(credential)} disabled={busy || lastActive}>{credential.status === "active" ? "غیرفعال‌سازی" : "فعال‌سازی"}</button>
+                          <button className="danger-action" onClick={() => revoke(credential)} disabled={busy || lastActive}>لغو اکانت</button>
+                        </div></details>}
                       </td>
                     </tr>;
                   })}

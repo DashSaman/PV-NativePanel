@@ -60,7 +60,7 @@ func TestPublicAccountPageUsesExplicitHumanEndpoint(t *testing.T) {
 		t.Fatalf("content-type=%q", got)
 	}
 	body := res.Body.String()
-	for _, want := range []string{"PVNaive", "PVNETWORK", "Amir22", "50 GB", "در دسترس نیست", "data:image/png;base64,", "/sub/" + rawToken} {
+	for _, want := range []string{"PVNaive", "PVNETWORK", "Amir22", "50 GB", "در دسترس نیست", "data:image/png;base64,", "/sub/" + rawToken, `class="account-shell"`, `class="service-grid"`, `class="connect-card"`, `class="account-nav"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("account page missing %q: %s", want, body)
 		}
