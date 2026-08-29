@@ -1,6 +1,6 @@
 [Unit]
 Description=PVNaive privileged runtime agent
-After=caddy-naive.service
+After=caddy-naive.service systemd-tmpfiles-setup.service
 Wants=caddy-naive.service
 
 [Service]
@@ -13,9 +13,6 @@ RestartSec=3s
 TimeoutStartSec=20s
 TimeoutStopSec=20s
 UMask=0077
-RuntimeDirectory=pvnaive
-RuntimeDirectoryMode=0771
-RuntimeDirectoryPreserve=yes
 
 NoNewPrivileges=true
 PrivateTmp=true
