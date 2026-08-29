@@ -53,10 +53,16 @@ func (s *server) currentCustomerSubscription(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "subscription_read_failed", "message": "Current subscription could not be read."})
 		return
 	}
-	writeJSON(w, http.StatusOK, envelope{
+	response := envelope{
 		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
 		"delivery_notice":   "Read-only current subscription. No token, password, Runtime credential, quota or expiry was changed.",
-	})
+	}
+	if s.config.SubscriptionService != nil && s.config.SubscriptionProxyHost != "" {
+		if directURI, resolveErr := s.config.SubscriptionService.Resolve(r.Context(), rawToken, s.config.SubscriptionProxyHost); resolveErr == nil {
+			response["direct_uri"] = directURI
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *server) rotateCustomerSubscription(w http.ResponseWriter, r *http.Request) {
@@ -95,8 +101,14 @@ func (s *server) rotateCustomerSubscription(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
-	writeJSON(w, http.StatusCreated, envelope{
+	response := envelope{
 		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
 		"delivery_notice":   "Old subscription link will stop working. Runtime password was not rotated.",
-	})
+	}
+	if s.config.SubscriptionService != nil && s.config.SubscriptionProxyHost != "" {
+		if directURI, resolveErr := s.config.SubscriptionService.Resolve(r.Context(), rawToken, s.config.SubscriptionProxyHost); resolveErr == nil {
+			response["direct_uri"] = directURI
+		}
+	}
+	writeJSON(w, http.StatusCreated, response)
 }
