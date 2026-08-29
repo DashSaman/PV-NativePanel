@@ -26,6 +26,39 @@ func (s *server) listCustomers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, envelope{"customers": customers})
 }
 
+func (s *server) currentCustomerSubscription(w http.ResponseWriter, r *http.Request) {
+	authenticated, ok := authenticatedFromRequest(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, envelope{"code": "authentication_required", "message": "Authentication is required."})
+		return
+	}
+	if s.config.CustomerService == nil {
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "customer_service_unavailable", "message": "Customer service is unavailable."})
+		return
+	}
+	userID := r.PathValue("id")
+	if userID == "" {
+		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_customer", "message": "Customer id is required."})
+		return
+	}
+	rawToken, err := s.config.CustomerService.CurrentSubscription(r.Context(), authenticated.Bound.Tx, userID)
+	if err != nil {
+		if errors.Is(err, customer.ErrSubscriptionNotRetrievable) {
+			writeJSON(w, http.StatusConflict, envelope{
+				"code":    "subscription_not_retrievable",
+				"message": "This legacy active subscription predates encrypted Owner recovery. Reissue it once; future QR views will be read-only.",
+			})
+			return
+		}
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "subscription_read_failed", "message": "Current subscription could not be read."})
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{
+		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
+		"delivery_notice":   "Read-only current subscription. No token, password, Runtime credential, quota or expiry was changed.",
+	})
+}
+
 func (s *server) rotateCustomerSubscription(w http.ResponseWriter, r *http.Request) {
 	authenticated, ok := authenticatedFromRequest(r)
 	if !ok {
@@ -64,6 +97,6 @@ func (s *server) rotateCustomerSubscription(w http.ResponseWriter, r *http.Reque
 	}
 	writeJSON(w, http.StatusCreated, envelope{
 		"subscription_path": "/api/v1/subscriptions/" + url.PathEscape(rawToken),
-		"delivery_notice":   "This replacement subscription token is shown once; previous active tokens were revoked.",
+		"delivery_notice":   "Old subscription link will stop working. Runtime password was not rotated.",
 	})
 }
