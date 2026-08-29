@@ -82,6 +82,22 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.rotateCustomerSubscription)
 			}
+		case "customers.suspend":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.suspendCustomer)
+			}
+		case "customers.resume":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.resumeCustomer)
+			}
+		case "customers.delete":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.deleteCustomer)
+			}
+		case "customers.password.rotate":
+			if cfg.CustomerService != nil {
+				handler = http.HandlerFunc(s.rotateCustomerPassword)
+			}
 		case "me.show":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.me)
