@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "galleries": [
+    {
+      "id": "leadership-archive",
+      "slug": "leadership-archive",
+      "title": "آرشیو تصویری منابع رهبری",
+      "summary": "مجموعه‌ای کوچک از تصاویر منبع‌دار برای دسترسی سریع به صفحات رسمی و آرشیوی.",
+      "published_label": "آرشیو",
+      "source_name": "Khamenei.ir / Wikimedia Commons",
+      "source_url": "https://commons.wikimedia.org/wiki/Category:Photos_from_Khamenei.ir",
+      "images": [
+        {
+          "src": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Portrait_of_Mojtaba_Khamenei.jpg",
+          "alt": "تصویر آیت‌الله سید مجتبی خامنه‌ای",
+          "caption": "تصویر آرشیوی با انتساب Khamenei.ir"
+        },
+        {
+          "src": "/assets/news-fallback.svg",
+          "alt": "نماد آرشیو منابع رسمی",
+          "caption": "پیوند به آرشیو چندرسانه‌ای"
+        }
+      ]
+    },
+    {
+      "id": "official-sources",
+      "slug": "official-sources",
+      "title": "منابع و پایگاه‌های رسمی",
+      "summary": "گالری راهنما برای دسترسی به رسانه‌ها و پایگاه‌های منبع که در این درگاه به آن‌ها ارجاع می‌شود.",
+      "published_label": "به‌روزرسانی مستمر",
+      "source_name": "درگاه ایران",
+      "source_url": "https://farsi.khamenei.ir/",
+      "images": [
+        {
+          "src": "/assets/news-mark.svg",
+          "alt": "نماد درگاه ایران",
+          "caption": "راهنمای منابع"
+        },
+        {
+          "src": "/assets/news-fallback.svg",
+          "alt": "نماد محتوای چندرسانه‌ای",
+          "caption": "خبر، صوت، ویدئو و اسناد"
+        }
+      ]
+    }
+  ]
+}

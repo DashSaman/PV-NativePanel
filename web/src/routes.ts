@@ -13,7 +13,7 @@ export const appRoutes: AppRoute[] = [
   { path: "/plans", label: "پلن‌ها", permission: "reseller", navigation: true },
   { path: "/subscriptions", label: "اشتراک‌ها", permission: "reseller", navigation: true },
   { path: "/notifications", label: "اعلان‌ها", permission: "admin", navigation: true },
-  { path: "/runtime", label: "Naive Runtime", permission: "admin", navigation: true },
+  { path: "/runtime/naive", label: "Naive Runtime", permission: "owner", navigation: true },
   { path: "/usage", label: "حجم و مصرف", permission: "auditor", navigation: true },
   { path: "/system", label: "وضعیت سیستم", permission: "operator", navigation: true },
   { path: "/logs/application", label: "لاگ برنامه", permission: "operator", navigation: true },
