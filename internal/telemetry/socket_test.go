@@ -23,16 +23,16 @@ func (r *recordingIngestor) Ingest(_ context.Context, event Event) (IngestResult
 
 func validSocketEvent() Event {
 	return Event{
-		RuntimeCredentialID: "11111111-1111-1111-1111-111111111111",
-		Username:            "alice",
-		NodeID:              "direct-1",
-		BootID:              "22222222-2222-2222-2222-222222222222",
-		SessionID:           "33333333-3333-3333-3333-333333333333",
-		Sequence:            1,
-		ObservedAt:          time.Date(2026, 8, 29, 18, 0, 0, 0, time.UTC),
+		RuntimeCredentialID:  "11111111-1111-1111-1111-111111111111",
+		Username:             "alice",
+		NodeID:               "direct-1",
+		BootID:               "22222222-2222-2222-2222-222222222222",
+		SessionID:            "33333333-3333-3333-3333-333333333333",
+		Sequence:             1,
+		ObservedAt:           time.Date(2026, 8, 29, 18, 0, 0, 0, time.UTC),
 		AuthenticatedConnect: true,
-		UploadBytes:         100,
-		DownloadBytes:       200,
+		UploadBytes:          100,
+		DownloadBytes:        200,
 	}
 }
 
