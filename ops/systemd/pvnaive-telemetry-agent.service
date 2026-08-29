@@ -6,7 +6,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=pvnaive
-Group=pvnaive
+Group=pvnaive-telemetry
+SupplementaryGroups=pvnaive
 EnvironmentFile=/etc/pvnaive/db.env
 ExecStart=/opt/pvnaive/bin/pvnaive-telemetry-agent
 Restart=on-failure
