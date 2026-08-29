@@ -85,7 +85,7 @@ func TestSessionStateRejectsGapOutOfOrderAndCounterRegression(t *testing.T) {
 		event Event
 		want  error
 	}{
-		{name: "gap", event: eventAt(3, 30, 30, base.Add(2 * time.Second)), want: ErrSequenceGap},
+		{name: "gap", event: eventAt(3, 30, 30, base.Add(2*time.Second)), want: ErrSequenceGap},
 		{name: "out_of_order", event: eventAt(0, 0, 0, base), want: ErrInvalidEvent},
 		{name: "counter_regression", event: eventAt(2, 9, 21, base.Add(time.Second)), want: ErrCounterRegression},
 	}
