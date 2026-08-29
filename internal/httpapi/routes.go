@@ -41,6 +41,7 @@ var Routes = []Route{
 	{"POST", "/api/v1/customers", "customers.create", Owner, true},
 	{"POST", "/api/v1/customers/adopt-runtime", "customers.adopt-runtime", Owner, true},
 	{"PATCH", "/api/v1/customers/{id}/service", "customers.service.update", Owner, true},
+	{"GET", "/api/v1/customers/{id}/subscription", "customers.subscription.current", Owner, true},
 	{"POST", "/api/v1/customers/{id}/subscription/rotate", "customers.subscription.rotate", Owner, true},
 	{"GET", "/api/v1/users", "users.index", Reseller, false},
 	{"POST", "/api/v1/users", "users.create", Reseller, false},
