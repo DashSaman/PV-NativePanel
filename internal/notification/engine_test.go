@@ -34,16 +34,28 @@ func TestEngineRetriesDeduplicatesAndSanitizes(t *testing.T) {
 		Sleep:       func(context.Context, time.Duration) error { return nil },
 	})
 	event := Event{Type: RuntimeDown, Key: "runtime:local", Title: "Runtime down", Body: "Authorization: Bearer top-secret password=hunter2"}
-	if err := engine.Deliver(context.Background(), channel, event); err != nil { t.Fatal(err) }
-	if channel.calls != 3 { t.Fatalf("calls=%d want 3", channel.calls) }
+	if err := engine.Deliver(context.Background(), channel, event); err != nil {
+		t.Fatal(err)
+	}
+	if channel.calls != 3 {
+		t.Fatalf("calls=%d want 3", channel.calls)
+	}
 	if len(channel.messages) == 0 || strings.Contains(channel.messages[len(channel.messages)-1].Body, "top-secret") || strings.Contains(channel.messages[len(channel.messages)-1].Body, "hunter2") {
 		t.Fatalf("notification leaked secret: %#v", channel.messages)
 	}
-	if err := engine.Deliver(context.Background(), channel, event); err != nil { t.Fatal(err) }
-	if channel.calls != 3 { t.Fatalf("dedupe failed, calls=%d", channel.calls) }
+	if err := engine.Deliver(context.Background(), channel, event); err != nil {
+		t.Fatal(err)
+	}
+	if channel.calls != 3 {
+		t.Fatalf("dedupe failed, calls=%d", channel.calls)
+	}
 	now = now.Add(11 * time.Minute)
-	if err := engine.Deliver(context.Background(), channel, event); err != nil { t.Fatal(err) }
-	if channel.calls != 4 { t.Fatalf("expired dedupe did not deliver, calls=%d", channel.calls) }
+	if err := engine.Deliver(context.Background(), channel, event); err != nil {
+		t.Fatal(err)
+	}
+	if channel.calls != 4 {
+		t.Fatalf("expired dedupe did not deliver, calls=%d", channel.calls)
+	}
 }
 
 func TestQuotaNotificationPolicyRemainsCapabilityGated(t *testing.T) {
