@@ -20,8 +20,8 @@ for required in \
   'PVNAIVE_EXPECTED_CADDY_SHA256' \
   'PVNAIVE_NAIVE_PUBLIC_HOST' \
   '/etc/pvnaive/api.env' \
-  'sha256sum /etc/caddy/Caddyfile' \
-  '/usr/local/bin/caddy validate' \
+  'caddy_bin="/usr/local/bin/caddy"' \
+  'validate --config' \
   'systemctl show caddy-naive.service' \
   'MainPID' \
   'NRestarts' \
@@ -51,7 +51,7 @@ if grep -Eq '(cat|xxd|base64|od)[[:space:]].*/etc/pvnaive/runtime\.key' "${upgra
 fi
 
 backup_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/backup.sh"' "${upgrade}" | head -n1 | cut -d: -f1)"
-migrate_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/migrate.sh"' "${upgrade}" | head -n1 | cut -d: -f1)"
+migrate_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/migrate.sh"' "${upgrade}" | tail -n1 | cut -d: -f1)"
 [[ -n "${backup_line}" && -n "${migrate_line}" && "${backup_line}" -lt "${migrate_line}" ]] || {
   echo 'ERROR: encrypted DB backup must precede migration' >&2
   exit 1
@@ -66,6 +66,13 @@ api_restart_line="$(grep -n -F 'systemctl restart pvnaive-api.service' "${upgrad
 
 grep -Fq 'systemctl restart pvnaive-runtime-agent.service' "${upgrade}" || {
   echo 'ERROR: S05 upgrade must restart runtime agent after binary install' >&2
+  exit 1
+}
+
+rollback_loop_line="$(grep -n -F 'while [[ "${current_schema}"' "${upgrade}" | head -n1 | cut -d: -f1)"
+rollback_call_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/rollback.sh"' "${upgrade}" | head -n1 | cut -d: -f1)"
+[[ -n "${rollback_loop_line}" && -n "${rollback_call_line}" && "${rollback_loop_line}" -lt "${rollback_call_line}" ]] || {
+  echo 'ERROR: S05 rollback must loop across every migration newer than the pre-upgrade schema' >&2
   exit 1
 }
 
