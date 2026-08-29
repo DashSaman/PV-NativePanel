@@ -10,7 +10,7 @@ export PVNAIVE_DB_HOST PVNAIVE_DB_PORT PVNAIVE_DB_USER
 
 suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
 suffix="${suffix//[^a-zA-Z0-9_]/_}"
-test_db="pvnaive_customer_lifecycle_${suffix,,}"
+test_db="pvnaive_migration_test_customer_lifecycle_${suffix,,}"
 app_password='pvnaive-customer-ci-only'
 
 psql_admin() {
