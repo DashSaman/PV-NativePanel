@@ -127,8 +127,8 @@ second_primary_rc=$?
 set -e
 [[ "${second_primary_rc}" -ne 0 ]] || { echo 'ERROR: second active primary binding was accepted' >&2; exit 1; }
 
-# Exercise each destructive rollback in order: v8 -> v7 -> v6 -> v5 -> v4 -> v3.
-for want in 7 6 5 4 3; do
+# Exercise each destructive rollback in order: v9 -> v8 -> v7 -> v6 -> v5 -> v4 -> v3.
+for want in 8 7 6 5 4 3; do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
   got="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${got}" == "${want}" ]] || { echo "ERROR: rollback schema=${got}, want=${want}" >&2; exit 1; }
