@@ -74,6 +74,8 @@ printf '%s\n' "$preview_before" >"$backup/preview.before"
 printf '%s\n' "$db_before" >"$backup/db.before"
 if [[ -f /opt/pvnaive/release/CURRENT ]]; then cp -a /opt/pvnaive/release/CURRENT "$backup/CURRENT.before"; else : >"$backup/CURRENT.missing"; fi
 if [[ -f /opt/pvnaive/release/RELEASE.json ]]; then cp -a /opt/pvnaive/release/RELEASE.json "$backup/RELEASE.json.before"; else : >"$backup/RELEASE.json.missing"; fi
+if [[ -f /opt/pvnaive/DEPLOYED_COMMIT ]]; then cp -a /opt/pvnaive/DEPLOYED_COMMIT "$backup/DEPLOYED_COMMIT.before"; else : >"$backup/DEPLOYED_COMMIT.missing"; fi
+if [[ -f /opt/pvnaive/DEPLOYED_WEB_RELEASE ]]; then cp -a /opt/pvnaive/DEPLOYED_WEB_RELEASE "$backup/DEPLOYED_WEB_RELEASE.before"; else : >"$backup/DEPLOYED_WEB_RELEASE.missing"; fi
 
 web_release="/opt/pvnaive/web/releases/${stamp}-${commit:0:12}"
 preview_release="/var/www/pvnaive-preview/releases/${stamp}-${commit:0:12}"
@@ -118,6 +120,8 @@ ln -sfn "$preview_release" /var/www/pvnaive-preview/current
 ln -sfn "$db_release" /opt/pvnaive/db/current
 cp -a "$bundle/RELEASE.json" /opt/pvnaive/release/RELEASE.json
 printf '%s\n' "$commit" >/opt/pvnaive/release/CURRENT
+printf '%s\n' "$commit" >/opt/pvnaive/DEPLOYED_COMMIT
+printf '%s\n' "$web_release" >/opt/pvnaive/DEPLOYED_WEB_RELEASE
 
 systemctl daemon-reload
 systemctl restart pvnaive-telemetry-agent.service
@@ -136,6 +140,8 @@ for unit in pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-
 [[ "$(readlink -f /opt/pvnaive/web/current)" == "$web_release" ]]
 [[ "$(readlink -f /var/www/pvnaive-preview/current)" == "$preview_release" ]]
 [[ "$(readlink -f /opt/pvnaive/db/current)" == "$db_release" ]]
+[[ "$(cat /opt/pvnaive/DEPLOYED_COMMIT)" == "$commit" ]]
+[[ "$(cat /opt/pvnaive/DEPLOYED_WEB_RELEASE)" == "$web_release" ]]
 [[ "$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')" == "$caddy_sha" ]]
 [[ "$(systemctl show caddy-naive.service -p MainPID --value)" == "$caddy_pid" ]]
 [[ "$(systemctl show caddy-naive.service -p NRestarts --value)" == "$caddy_restarts" ]]
