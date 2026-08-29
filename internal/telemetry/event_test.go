@@ -16,16 +16,16 @@ const (
 
 func eventAt(seq int64, upload int64, download int64, at time.Time) Event {
 	return Event{
-		RuntimeCredentialID: testRuntimeID,
-		Username:            "alice",
-		NodeID:              testNodeID,
-		BootID:              testBootID,
-		SessionID:           testSessionID,
-		Sequence:            seq,
-		ObservedAt:          at,
+		RuntimeCredentialID:  testRuntimeID,
+		Username:             "alice",
+		NodeID:               testNodeID,
+		BootID:               testBootID,
+		SessionID:            testSessionID,
+		Sequence:             seq,
+		ObservedAt:           at,
 		AuthenticatedConnect: true,
-		UploadBytes:         upload,
-		DownloadBytes:       download,
+		UploadBytes:          upload,
+		DownloadBytes:        download,
 	}
 }
 
@@ -81,9 +81,9 @@ func TestSessionStateSameSequenceConflictFailsClosed(t *testing.T) {
 func TestSessionStateRejectsGapOutOfOrderAndCounterRegression(t *testing.T) {
 	base := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
 	tests := []struct {
-		name string
+		name  string
 		event Event
-		want error
+		want  error
 	}{
 		{name: "gap", event: eventAt(3, 30, 30, base.Add(2 * time.Second)), want: ErrSequenceGap},
 		{name: "out_of_order", event: eventAt(0, 0, 0, base), want: ErrInvalidEvent},
