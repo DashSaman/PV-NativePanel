@@ -65,6 +65,7 @@ export type CustomerView = {
   expires_at?: string;
   runtime_credential_id: string;
   subscription_available: boolean;
+  subscription_retrievable?: boolean;
   usage_capability: UsageCapability;
 };
 
@@ -166,6 +167,19 @@ export async function listCustomers(fetcher: Fetcher = fetch): Promise<CustomerV
   const body = await parseJSON(response);
   if (!response.ok) throw apiError(body, response.status);
   return Array.isArray(body.customers) ? (body.customers as CustomerView[]) : [];
+}
+
+export async function getCurrentSubscription(
+  customerID: string,
+  fetcher: Fetcher = fetch,
+): Promise<SubscriptionDelivery> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/subscription`, {
+    method: "GET",
+    credentials: "same-origin",
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as SubscriptionDelivery;
 }
 
 export async function rotateSubscription(
