@@ -1,0 +1,23 @@
+[Unit]
+Description=PVNaive encrypted scheduled backup
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/opt/pvnaive/ops/backup-run.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/pvnaive
+ReadOnlyPaths=/etc/pvnaive /etc/caddy /etc/systemd/system /etc/tmpfiles.d /opt/pvnaive
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
