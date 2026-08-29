@@ -109,6 +109,7 @@ jobs:
               bash tests/db/customer_lifecycle_migration_test.sh
               bash tests/db/customer_idempotency_migration_test.sh
               bash tests/db/direct_subscription_migration_test.sh
+              bash tests/db/accounting_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
             '
 
