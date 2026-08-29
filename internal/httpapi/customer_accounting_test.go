@@ -13,23 +13,23 @@ func TestApplyCustomerAccountingPublishesExactUsageAndPresence(t *testing.T) {
 	remaining := int64(150)
 	lastOnline := time.Date(2026, 8, 29, 20, 0, 0, 0, time.UTC)
 	view := customer.CustomerView{
-		UserID: "user-1",
-		QuotaBytes: &quota,
-		Status: customer.UserActive,
+		UserID:       "user-1",
+		QuotaBytes:   &quota,
+		Status:       customer.UserActive,
 		ServiceState: customer.TermActive,
-		StartPolicy: customer.StartOnCreation,
+		StartPolicy:  customer.StartOnCreation,
 	}
 	model := telemetry.ReadModel{
-		ServiceTermID: "11111111-1111-4111-8111-111111111111",
-		UploadBytes: 300,
-		DownloadBytes: 550,
-		UsedBytes: 850,
-		QuotaBytes: &quota,
-		RemainingBytes: &remaining,
-		QuotaState: telemetry.QuotaActive,
-		LastOnline: &lastOnline,
-		Online: true,
-		SessionCount: 2,
+		ServiceTermID:      "11111111-1111-4111-8111-111111111111",
+		UploadBytes:        300,
+		DownloadBytes:      550,
+		UsedBytes:          850,
+		QuotaBytes:         &quota,
+		RemainingBytes:     &remaining,
+		QuotaState:         telemetry.QuotaActive,
+		LastOnline:         &lastOnline,
+		Online:             true,
+		SessionCount:       2,
 		AccountingComplete: true,
 	}
 
