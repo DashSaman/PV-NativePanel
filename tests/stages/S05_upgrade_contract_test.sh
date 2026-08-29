@@ -3,10 +3,12 @@ set -Eeuo pipefail
 
 preflight="scripts/stages/S05-preflight.sh"
 upgrade="scripts/stages/S05-upgrade.sh"
+expected_schema_setter="scripts/db/set-expected-schema-version.sh"
 
 [[ -f "${preflight}" ]] || { echo "ERROR: missing ${preflight}" >&2; exit 1; }
 [[ -f "${upgrade}" ]] || { echo "ERROR: missing ${upgrade}" >&2; exit 1; }
-bash -n "${preflight}" "${upgrade}"
+[[ -f "${expected_schema_setter}" ]] || { echo "ERROR: missing ${expected_schema_setter}" >&2; exit 1; }
+bash -n "${preflight}" "${upgrade}" "${expected_schema_setter}"
 
 for required in \
   'PVNAIVE_NAIVE_PUBLIC_HOST' \
@@ -77,6 +79,31 @@ rollback_call_line="$(grep -n -F 'bash "${bundle_root}/scripts/db/rollback.sh"' 
   echo 'ERROR: S05 rollback must loop across every migration newer than the pre-upgrade schema' >&2
   exit 1
 }
+
+# Regression proof for the production failure observed during the guarded S05
+# upgrade: schema 6 must be a valid expected schema, while unknown future
+# schema versions remain rejected.
+setter_tmp="$(mktemp -d)"
+cleanup_setter_tmp() {
+  rm -rf -- "${setter_tmp}"
+}
+trap cleanup_setter_tmp EXIT HUP INT TERM
+setter_env="${setter_tmp}/db.env"
+printf '%s\n' \
+  'PVNAIVE_EXPECTED_SCHEMA_VERSION=3' \
+  'PVNAIVE_DB_NAME=pvnaive' >"${setter_env}"
+chmod 0640 "${setter_env}"
+PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 6 >/dev/null
+grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
+  echo 'ERROR: expected schema setter did not persist schema version 6' >&2
+  exit 1
+}
+if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 7 >/dev/null 2>&1; then
+  echo 'ERROR: expected schema setter accepted unsupported schema version 7' >&2
+  exit 1
+fi
+trap - EXIT HUP INT TERM
+cleanup_setter_tmp
 
 # Real PostgreSQL 18 integration proof for the chain safety gate.
 bash tests/db/rollback_chain_test.sh
