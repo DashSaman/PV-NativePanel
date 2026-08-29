@@ -11,36 +11,36 @@ import (
 )
 
 type accountMessages struct {
-	Title             string
-	Subtitle          string
-	ReadOnlyNotice    string
-	Status            map[string]string
-	TotalQuota        string
-	Used              string
-	RemainingTraffic  string
-	Expiry            string
-	RemainingDays     string
-	StartPolicy       string
-	Online            string
-	LastOnline        string
-	UsageUnavailable  string
-	Unavailable       string
-	Unlimited         string
-	NoExpiry          string
-	Expired           string
-	DaysSuffix        string
-	FromCreation      string
-	FromFirstConnect  string
-	FixedTimestamp    string
-	Subscription      string
-	DirectNaive       string
-	SubscriptionQR    string
-	DirectNaiveQR     string
-	CopySubscription  string
-	CopyDirect        string
-	Copied            string
-	InactiveNotice    string
-	SecurityFootnote  string
+	Title            string
+	Subtitle         string
+	ReadOnlyNotice   string
+	Status           map[string]string
+	TotalQuota       string
+	Used             string
+	RemainingTraffic string
+	Expiry           string
+	RemainingDays    string
+	StartPolicy      string
+	Online           string
+	LastOnline       string
+	UsageUnavailable string
+	Unavailable      string
+	Unlimited        string
+	NoExpiry         string
+	Expired          string
+	DaysSuffix       string
+	FromCreation     string
+	FromFirstConnect string
+	FixedTimestamp   string
+	Subscription     string
+	DirectNaive      string
+	SubscriptionQR   string
+	DirectNaiveQR    string
+	CopySubscription string
+	CopyDirect       string
+	Copied           string
+	InactiveNotice   string
+	SecurityFootnote string
 }
 
 type accountPageData struct {
@@ -169,7 +169,7 @@ func messagesForLanguage(lang string) accountMessages {
 	if lang == "en" {
 		return accountMessages{
 			Title: "Account status", Subtitle: "NaiveProxy account", ReadOnlyNotice: "This page is read-only. Opening or copying it never changes your token, password, quota, expiry, first-use state, or Runtime credential.",
-			Status: map[string]string{"active": "Active", "pending": "Pending first connection", "suspended": "Suspended", "expired": "Expired", "depleted": "Quota depleted", "revoked": "Revoked", "inactive": "Inactive"},
+			Status:     map[string]string{"active": "Active", "pending": "Pending first connection", "suspended": "Suspended", "expired": "Expired", "depleted": "Quota depleted", "revoked": "Revoked", "inactive": "Inactive"},
 			TotalQuota: "Total quota", Used: "Used", RemainingTraffic: "Remaining", Expiry: "Expiry", RemainingDays: "Remaining days", StartPolicy: "Start policy", Online: "Online", LastOnline: "Last online",
 			UsageUnavailable: "Usage unavailable", Unavailable: "Unavailable", Unlimited: "Unlimited", NoExpiry: "No expiry", Expired: "Expired", DaysSuffix: "days",
 			FromCreation: "From creation", FromFirstConnect: "From first successful connection", FixedTimestamp: "Fixed expiry",
@@ -179,7 +179,7 @@ func messagesForLanguage(lang string) accountMessages {
 	}
 	return accountMessages{
 		Title: "وضعیت حساب", Subtitle: "سرویس NaiveProxy", ReadOnlyNotice: "این صفحه فقط خواندنی است؛ باز کردن یا کپی کردن آن توکن، رمز، حجم، انقضا، اولین اتصال یا اطلاعات Runtime را تغییر نمی‌دهد.",
-		Status: map[string]string{"active": "فعال", "pending": "منتظر اولین اتصال", "suspended": "تعلیق", "expired": "منقضی", "depleted": "حجم تمام", "revoked": "لغوشده", "inactive": "غیرفعال"},
+		Status:     map[string]string{"active": "فعال", "pending": "منتظر اولین اتصال", "suspended": "تعلیق", "expired": "منقضی", "depleted": "حجم تمام", "revoked": "لغوشده", "inactive": "غیرفعال"},
 		TotalQuota: "حجم کل", Used: "مصرف", RemainingTraffic: "حجم باقی‌مانده", Expiry: "انقضا", RemainingDays: "روز باقی‌مانده", StartPolicy: "شروع اعتبار", Online: "آنلاین", LastOnline: "آخرین آنلاین",
 		UsageUnavailable: "در دسترس نیست", Unavailable: "در دسترس نیست", Unlimited: "نامحدود", NoExpiry: "بدون انقضا", Expired: "منقضی", DaysSuffix: "روز",
 		FromCreation: "از زمان ثبت", FromFirstConnect: "از اولین اتصال موفق", FixedTimestamp: "تاریخ دستی",
