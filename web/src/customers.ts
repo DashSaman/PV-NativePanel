@@ -2,16 +2,19 @@ import { readCookie } from "./auth";
 
 export type CustomerValidityMode = "on_creation" | "on_first_successful_connection" | "fixed_expiry";
 
-export type CreateCustomerRequest = {
-  username: string;
-  password: string;
-  generate_password: boolean;
+export type CustomerServiceSettingsRequest = {
   quota_gb: number | null;
   validity: {
     mode: CustomerValidityMode;
     duration_days?: number;
     expires_at?: string;
   };
+};
+
+export type CreateCustomerRequest = CustomerServiceSettingsRequest & {
+  username: string;
+  password: string;
+  generate_password: boolean;
 };
 
 export type UsageCapability = {
@@ -35,6 +38,7 @@ export type CustomerCreateResult = {
     start_policy: string;
     starts_at?: string;
     expires_at?: string;
+    revision?: number;
   };
   runtime_credential: {
     id: string;
@@ -67,6 +71,12 @@ export type CustomerView = {
 export type SubscriptionDelivery = {
   subscription_path: string;
   delivery_notice?: string;
+};
+
+export type CustomerServiceUpdateResult = {
+  service_term: CustomerCreateResult["service_term"];
+  runtime_mutated: boolean;
+  message?: string;
 };
 
 export type CustomerAPIError = Error & { code?: string; status?: number };
@@ -114,6 +124,38 @@ export async function createCustomer(
   const body = await parseJSON(response);
   if (!response.ok) throw apiError(body, response.status);
   return body as unknown as CustomerCreateResult;
+}
+
+export async function adoptRuntimeCustomer(
+  runtimeCredentialID: string,
+  settings: CustomerServiceSettingsRequest,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerCreateResult> {
+  const response = await fetcher("/api/v1/customers/adopt-runtime", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: JSON.stringify({ runtime_credential_id: runtimeCredentialID, ...settings }),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerCreateResult;
+}
+
+export async function updateCustomerService(
+  customerID: string,
+  settings: CustomerServiceSettingsRequest,
+  fetcher: Fetcher = fetch,
+): Promise<CustomerServiceUpdateResult> {
+  const response = await fetcher(`/api/v1/customers/${encodeURIComponent(customerID)}/service`, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: mutationHeaders(),
+    body: JSON.stringify(settings),
+  });
+  const body = await parseJSON(response);
+  if (!response.ok) throw apiError(body, response.status);
+  return body as unknown as CustomerServiceUpdateResult;
 }
 
 export async function listCustomers(fetcher: Fetcher = fetch): Promise<CustomerView[]> {
