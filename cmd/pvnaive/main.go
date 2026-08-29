@@ -206,6 +206,19 @@ func buildCustomerServices(
 		return runtimeService.Create(ctx, tx, actorID, idempotencyKey, input)
 	}
 	customerService := customer.NewServiceWithTokenRecovery(customerStore, createRuntime, time.Now, runtimeKey, keyID)
+	if err := customerService.ConfigureRuntimeOperations(
+		func(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input runtimecred.UpdateInput) (customer.RuntimeMutation, error) {
+			return runtimeService.Update(ctx, tx, actorID, idempotencyKey, input)
+		},
+		func(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input runtimecred.RotateInput) (customer.RuntimeMutation, error) {
+			return runtimeService.Rotate(ctx, tx, actorID, idempotencyKey, input)
+		},
+		func(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, input runtimecred.RevokeInput) (customer.RuntimeMutation, error) {
+			return runtimeService.Revoke(ctx, tx, actorID, idempotencyKey, input)
+		},
+	); err != nil {
+		return nil, nil, err
+	}
 	subscriptionService, err := subscription.NewService(subscription.NewPostgresStore(db), runtimeKey, keyID)
 	if err != nil {
 		return nil, nil, err
