@@ -137,6 +137,23 @@ export type ProductCreateResult = {
   delivery_notice?: string;
 };
 
+export type ProductSubscriptionDelivery = {
+  subscription_path: string;
+  direct_uri?: string;
+  delivery_notice?: string;
+};
+
+export type ProductPasswordRotationInput = {
+  password: string;
+  generate_password: boolean;
+};
+
+export type ProductPasswordRotationResult = {
+  runtime_credential?: { id: string; username: string; status: string };
+  generated_password?: string;
+  delivery_notice?: string;
+};
+
 export type ProductRenewalInput =
   | { mode: "renew_current" }
   | { mode: "renew_plan"; plan_id: string }
@@ -268,6 +285,43 @@ export async function renewProductCustomer(id: string, input: ProductRenewalInpu
   return requestJSON(`/api/v1/users/${encodeURIComponent(id)}/renew`, {
     method: "POST", headers: csrfHeaders(), body: JSON.stringify(input),
   }, fetcher);
+}
+
+export async function getProductSubscription(id: string, fetcher: Fetcher = fetch): Promise<ProductSubscriptionDelivery> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/subscription`, { method: "GET" }, fetcher);
+  return body as unknown as ProductSubscriptionDelivery;
+}
+
+export async function reissueProductSubscription(id: string, fetcher: Fetcher = fetch): Promise<ProductSubscriptionDelivery> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/subscription/rotate`, {
+    method: "POST", headers: csrfHeaders(newProductKey("product-subscription")), body: "{}",
+  }, fetcher);
+  return body as unknown as ProductSubscriptionDelivery;
+}
+
+export async function rotateProductPassword(id: string, input: ProductPasswordRotationInput, fetcher: Fetcher = fetch): Promise<ProductPasswordRotationResult> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/rotate-password`, {
+    method: "POST", headers: csrfHeaders(newProductKey("product-password")), body: JSON.stringify(input),
+  }, fetcher);
+  return body as unknown as ProductPasswordRotationResult;
+}
+
+async function productLifecycle(id: string, action: "suspend" | "resume" | "revoke", fetcher: Fetcher): Promise<Record<string, unknown>> {
+  return requestJSON(`/api/v1/users/${encodeURIComponent(id)}/${action}`, {
+    method: "POST", headers: csrfHeaders(newProductKey(`product-${action}`)), body: "{}",
+  }, fetcher);
+}
+
+export async function suspendProductCustomer(id: string, fetcher: Fetcher = fetch): Promise<Record<string, unknown>> {
+  return productLifecycle(id, "suspend", fetcher);
+}
+
+export async function resumeProductCustomer(id: string, fetcher: Fetcher = fetch): Promise<Record<string, unknown>> {
+  return productLifecycle(id, "resume", fetcher);
+}
+
+export async function revokeProductCustomer(id: string, fetcher: Fetcher = fetch): Promise<Record<string, unknown>> {
+  return productLifecycle(id, "revoke", fetcher);
 }
 
 export async function listProductPlans(fetcher: Fetcher = fetch): Promise<ProductPlan[]> {
