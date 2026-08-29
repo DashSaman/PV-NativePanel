@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
-import { Customers } from "./Customers";
+import { CustomersV2 } from "./CustomersV2";
 import { RuntimeNaive } from "./RuntimeNaive";
 import { assertRouteManifest } from "./routes";
 
@@ -57,7 +57,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Princip
 }
 
 function Sidebar({ principal, signOut }: { principal: Principal; signOut: () => Promise<void> }) {
-  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a href="/panel/">داشبورد</a>{principal.role === "owner" && <><a href="/panel/#/customers">مشتریان Naive</a><a href="/panel/#/runtime/naive">Runtime پیشرفته</a></>}</nav><ThemeSwitch/><button className="logout-button" onClick={signOut}>خروج امن</button><div className="stage">S05 · Customer service manager</div></aside>;
+  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="44" height="44"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a href="/panel/">داشبورد</a>{principal.role === "owner" && <><a href="/panel/#/customers">مشتریان Naive</a><a href="/panel/#/runtime/naive">Runtime پیشرفته</a></>}</nav><ThemeSwitch/><button className="logout-button" onClick={signOut}>خروج امن</button><div className="stage">S06 · Owner customer operations</div></aside>;
 }
 
 function MobileNav({ owner, signOut }: { owner: boolean; signOut: () => Promise<void> }) {
@@ -82,8 +82,8 @@ export function App() {
   if (authState === "anonymous" || !principal) return <><LoginScreen onAuthenticated={(current) => { setPrincipal(current); setAuthState("authenticated"); setAuthMessage(""); }}/>{authMessage && <div className="global-auth-message" role="alert">{authMessage}</div>}</>;
   const owner = principal.role === "owner";
 
-  if (view === "customers" && owner) return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><Customers/><MobileNav owner={owner} signOut={signOut}/></div>;
+  if (view === "customers" && owner) return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><CustomersV2/><MobileNav owner={owner} signOut={signOut}/></div>;
   if (view === "runtime-naive" && owner) return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><RuntimeNaive/><MobileNav owner={owner} signOut={signOut}/></div>;
 
-  return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><main><header><div><p className="eyebrow">Standalone control plane</p><h1>داشبورد PVNaive</h1></div><span className="badge">ورود امن فعال</span></header><section className="notice" role="status">{principal.display_name} · {principal.email} · نقش: {principal.role}</section><section className="metrics" aria-label="شاخص‌ها">{metrics.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="panel"><div><p className="eyebrow">Customer service</p><h2>مدیریت اکانت‌های Naive</h2><p>{owner ? "اکانت را با حجم، تاریخ انقضا، لینک اشتراک و QR بسازید. Runtime خام برای عملیات پیشرفته جدا مانده است." : "مدیریت مشتری فقط برای Owner در دسترس است."}</p></div>{owner ? <a className="button-secondary" href="/panel/#/customers">مدیریت مشتریان</a> : <button disabled>فقط Owner</button>}</section></main><MobileNav owner={owner} signOut={signOut}/></div>;
+  return <div className="shell"><Sidebar principal={principal} signOut={signOut}/><main><header><div><p className="eyebrow">Standalone control plane</p><h1>داشبورد PVNaive</h1></div><span className="badge">ورود امن فعال</span></header><section className="notice" role="status">{principal.display_name} · {principal.email} · نقش: {principal.role}</section><section className="metrics" aria-label="شاخص‌ها">{metrics.map(([label,value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="panel"><div><p className="eyebrow">Customer service</p><h2>مدیریت اکانت‌های Naive</h2><p>{owner ? "اکانت را با حجم، تاریخ انقضا، لینک اشتراک و QR بسازید؛ عملیات lifecycle و password به‌صورت صریح و مستقل در Customers در دسترس است." : "مدیریت مشتری فقط برای Owner در دسترس است."}</p></div>{owner ? <a className="button-secondary" href="/panel/#/customers">مدیریت مشتریان</a> : <button disabled>فقط Owner</button>}</section></main><MobileNav owner={owner} signOut={signOut}/></div>;
 }
