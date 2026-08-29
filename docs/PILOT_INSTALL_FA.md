@@ -1,117 +1,142 @@
-# PVNaive — راهنمای نصب Pilot و تحویل اکانت به مشتری
+# PVNaive — راهنمای نصب S05 روی سرور موجود
 
-آخرین بروزرسانی: 2026-08-28
+آخرین بروزرسانی: 2026-08-29
 
-این Runbook برای **سرور فعلی `testAmir5-3`** نوشته شده است؛ یعنی همان سروری که S03 و S04 Auth روی آن نصب شده، پنل روی `https://namir.softarg.ir/panel/` در دسترس است و Caddy/NaiveProxy از قبل فعال است.
+این Runbook فقط برای سرور موجود `testAmir5-3` نوشته شده است؛ همان نصب production که پنل روی `https://namir.softarg.ir/panel/` فعال است، Caddy/NaiveProxy از قبل کار می‌کند و API مدیریت روی loopback قرار دارد.
 
-این فایل **Fresh Installer عمومی** نیست. هدف این مرحله این است که همین نصب موجود را به S04R ارتقا بدهیم تا Owner بتواند اکانت‌های واقعی NaiveProxy را از داخل پنل بسازد، رمز را rotate کند، اکانت را فعال/غیرفعال/لغو کند و لینک آماده‌ی `naive+https://...` را به مشتری بدهد. قابلیت‌هایی مثل quota، مصرف دقیق، expiry تجاری، reseller، subscription page و customer portal هنوز جزو این Pilot نیستند.
+> **هشدار:** برای این مرحله از artifact یا اسکریپت قدیمی `S04R` استفاده نکن. S05 تا schema `6` می‌رود و فقط باید با `PVNaive-S05-*`, `S05-preflight.sh` و `S05-upgrade.sh` نصب شود.
 
-## قبل از شروع
+این مسیر Fresh Installer عمومی نیست. هدف آن ارتقای کنترل‌شده‌ی نصب موجود به S05 Customer Service است: مدیریت Runtime واقعی Naive، ساخت مشتری، quota تجاری، تاریخ اعتبار، Subscription revocable و QR محلی. مصرف دقیق بایت و producer قابل‌اعتماد برای first-success هنوز اثبات نشده‌اند.
 
-فقط artifactای را استفاده کن که تمام jobهای CI آن سبز باشند:
+## شرط Release
 
-- Go
-- Web
-- Database / PostgreSQL 18
-- Full S04R rehearsal
-- Production bundle contract + checksum
+فقط artifactی مجاز است که تمام jobهای CI همان HEAD سبز باشند:
 
-نام artifact به شکل زیر است:
+- Go formatting/vet/tests؛
+- Web tests/build؛
+- PostgreSQL 18 + migrations/backup/restore/rollback؛
+- `S05_UPGRADE_CONTRACT=PASSED`؛
+- S04/S04R regression rehearsal؛
+- S05 bundle contract + archive checksum.
 
-```text
-PVNaive-S04-<40-char-commit>
-```
-
-داخل ZIP دو فایل وجود دارد:
+Artifact workflow:
 
 ```text
-PVNaive-S04R-<12-char-commit>.tar.gz
-PVNaive-S04R-<12-char-commit>.tar.gz.sha256
+PVNaive-S05-<40-char-commit>
 ```
 
-## قانون مهم Pilot
+داخل ZIP:
 
-- اطلاعات ورود Owner را به مشتری نده.
-- مشتری فقط لینک Naive خودش را می‌گیرد.
-- Runtime فعلی ابتدا **بدون تغییر Caddy** Import می‌شود.
-- تا Import امن و equivalence check پاس نشده، هیچ credential جدیدی نساز.
-- Installer خود S04R روی Caddy هیچ write/reload/restart انجام نمی‌دهد.
-- تغییرات credential بعداً توسط Runtime Agent با چرخه `expected SHA → backup → validate → write → reload-only → postflight → rollback on failure` انجام می‌شوند.
+```text
+PVNaive-S05-<12-char-commit>.tar.gz
+PVNaive-S05-<12-char-commit>.tar.gz.sha256
+```
 
-## مرحله 1 — انتقال و بررسی artifact روی سرور
+## متغیر production این سرور
 
-فایل‌های `.tar.gz` و `.tar.gz.sha256` را روی سرور مثلاً داخل `/root/pvnaive-s04r/` قرار بده.
+برای نصب فعلی، endpoint عمومی Naive همان دامنه production روی 443 است:
 
-سپس:
+```bash
+export PVNAIVE_NAIVE_PUBLIC_HOST='namir.softarg.ir:443'
+```
+
+Scheme یا path نگذار. مقدارهایی مانند `https://namir.softarg.ir/` معتبر نیستند.
+
+## مرحله 1 — انتقال و verify کردن artifact
+
+دو فایل `.tar.gz` و `.tar.gz.sha256` را در `/root/pvnaive-s05/` قرار بده، سپس:
 
 ```bash
 set -Eeuo pipefail
 umask 077
-cd /root/pvnaive-s04r
+install -d -m 0700 /root/pvnaive-s05
+cd /root/pvnaive-s05
 
-sha256sum --check --strict PVNaive-S04R-*.tar.gz.sha256
+sha256sum --check --strict PVNaive-S05-*.tar.gz.sha256
 rm -rf ./bundle
 mkdir -p ./bundle
-tar -xzf PVNaive-S04R-*.tar.gz -C ./bundle
-cd ./bundle/PVNaive-S04R-*
+tar -xzf PVNaive-S05-*.tar.gz -C ./bundle
+cd ./bundle/PVNaive-S05-*
 sha256sum --check --strict SHA256SUMS
+cat RELEASE.json
 ```
 
-هر دو checksum باید `OK` باشند. در غیر این صورت نصب را ادامه نده.
+ادامه فقط وقتی مجاز است که هر دو checksum `OK` باشند و `RELEASE.json` شامل این موارد باشد:
 
-## مرحله 2 — Read-only live preflight
+```text
+"stage": "S05-CUSTOMER-SERVICE"
+"schema_version": 6
+"caddy_installer_mutation": false
+```
 
-این مرحله برای خواندن وضعیت زنده است و نباید چیزی را تغییر دهد:
+## مرحله 2 — Read-only S05 preflight
+
+این مرحله نباید production را تغییر دهد:
 
 ```bash
 set -Eeuo pipefail
 umask 077
-cd /root/pvnaive-s04r/bundle/PVNaive-S04R-*
+cd /root/pvnaive-s05/bundle/PVNaive-S05-*
 
-bash scripts/stages/S04R-preflight.sh | tee /root/PVNaive-S04R-preflight.log
+export PVNAIVE_NAIVE_PUBLIC_HOST='namir.softarg.ir:443'
+bash scripts/stages/S05-preflight.sh | tee /root/PVNaive-S05-preflight.log
 ```
 
-ادامه فقط وقتی مجاز است که انتهای خروجی این باشد:
+فقط با این marker ادامه بده:
 
 ```text
 PREFLIGHT_RESULT=PASS
 ```
 
-همچنین مقدار زیر را دقیقاً از خروجی نگه دار:
+مقدار زیر را از خروجی دقیقاً ذخیره کن:
 
 ```text
 CADDYFILE_SHA256=<64-hex>
 ```
 
-اگر Preflight شکست خورد، upgrade را اجرا نکن و خروجی کامل را بررسی کن.
+Preflight همچنین باید schema فعلی DB، Caddy PID/NRestarts، API readiness، SSH، listenerهای 22/80/443 و loopback `127.0.0.1:8080` را نمایش دهد.
 
-## مرحله 3 — Guarded S04R upgrade
+اگر `PREFLIGHT_RESULT=FAIL` دیدی، **upgrade را اجرا نکن**.
 
-مقدار SHA مرحله قبل را بدون تغییر جایگزین کن:
+## مرحله 3 — Guarded S05 upgrade
+
+SHA مرحله قبل را مستقیم از log استخراج کن تا اشتباه تایپی نشود:
 
 ```bash
 set -Eeuo pipefail
 umask 077
-cd /root/pvnaive-s04r/bundle/PVNaive-S04R-*
+cd /root/pvnaive-s05/bundle/PVNaive-S05-*
 
-export PVNAIVE_EXPECTED_CADDY_SHA256='SHA_FROM_PREFLIGHT'
-bash scripts/stages/S04R-upgrade.sh | tee /root/PVNaive-S04R-upgrade.log
-unset PVNAIVE_EXPECTED_CADDY_SHA256
+export PVNAIVE_NAIVE_PUBLIC_HOST='namir.softarg.ir:443'
+export PVNAIVE_EXPECTED_CADDY_SHA256="$(awk -F= '$1=="CADDYFILE_SHA256" {print $2}' /root/PVNaive-S05-preflight.log | tail -n1)"
+
+[[ "${PVNAIVE_EXPECTED_CADDY_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+
+bash scripts/stages/S05-upgrade.sh | tee /root/PVNaive-S05-upgrade.log
 ```
 
-Upgrade قبل از migration یک backup رمز‌شده DB می‌گیرد و Caddy SHA/PID/NRestarts را قفل می‌کند.
+Upgrade قبل از migration یک backup رمز‌شده DB می‌گیرد. سپس در صورت نیاز schema را از یکی از نسخه‌های پشتیبانی‌شده `2..5` به `6` می‌برد، Runtime key موجود را حفظ می‌کند، `/etc/pvnaive/api.env` را با public Naive host می‌سازد/به‌روز می‌کند، Runtime Agent و API را ارتقا می‌دهد و web release را atomically publish می‌کند.
 
-موفقیت فقط با این خروجی‌ها پذیرفته می‌شود:
+Installer نباید Caddy را reload/restart کند.
+
+موفقیت فقط با markerهای زیر پذیرفته می‌شود:
 
 ```text
-S04R_RESULT=PASSED
-SCHEMA_VERSION=3
+S05_RESULT=PASSED
+SCHEMA_VERSION=6
+NAIVE_PUBLIC_HOST=namir.softarg.ir:443
 CADDY_ACTION=none
 ```
 
-و `CADDY_SHA256_AFTER` باید با SHA قبل برابر باشد.
+همچنین `CADDY_SHA256_AFTER`, `CADDY_MainPID_AFTER` و `CADDY_NRestarts_AFTER` باید با pre-upgrade state برابر باشند.
 
-## مرحله 4 — Postflight فوری روی سرور
+بعد از موفقیت:
+
+```bash
+unset PVNAIVE_EXPECTED_CADDY_SHA256
+```
+
+## مرحله 4 — Postflight فوری
 
 ```bash
 set -Eeuo pipefail
@@ -119,102 +144,111 @@ set -Eeuo pipefail
 systemctl is-active pvnaive-runtime-agent.service
 systemctl is-active pvnaive-api.service
 systemctl is-active caddy-naive.service
+systemctl is-active ssh.service
 
 curl --fail --silent --show-error \
   --unix-socket /run/pvnaive/runtime-agent.sock \
   http://unix/v1/health
 
+echo
 curl --fail --silent --show-error \
   http://127.0.0.1:8080/api/v1/health/ready
 
+echo
+printf 'SCHEMA='
+runuser -u postgres -- psql --no-psqlrc --tuples-only --no-align \
+  --host /var/run/postgresql --dbname pvnaive \
+  --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations'
+
+printf 'CADDY_SHA='
+sha256sum /etc/caddy/Caddyfile
+systemctl show caddy-naive.service --property=MainPID,NRestarts --no-pager
 ss -H -lnt | grep -E '(:22|:80|:443|127\.0\.0\.1:8080)'
 ```
 
-Runtime Agent باید فقط Unix socket داشته باشد؛ API باید روی `127.0.0.1:8080` باقی بماند.
+انتظار:
 
-## مرحله 5 — تحویل Runtime فعلی به پنل
+- Runtime Agent health = `status: ok`؛
+- API `ready=true`؛
+- schema = `6`؛
+- API فقط روی `127.0.0.1:8080`؛
+- Caddy/SSH فعال؛
+- Caddy SHA/PID/NRestarts بدون تغییر نسبت به preflight.
 
-در Browser:
+## مرحله 5 — Import امن Runtime فعلی
+
+قبل از ساخت هر مشتری جدید:
 
 1. وارد `https://namir.softarg.ir/panel/` شو.
-2. با حساب **Owner** وارد شو.
-3. از منوی `Naive Runtime` وارد صفحه مدیریت شو.
-4. اگر لیست خالی است، روی **«Import امن اکانت فعلی»** بزن.
-5. Import باید بدون نمایش password فعلی و بدون reload Caddy انجام شود.
-6. بعد از Import، credential فعلی باید در لیست با منشأ `واردشده` دیده شود.
+2. با Owner login کن.
+3. وارد `Naive Runtime` شو.
+4. اگر Runtime credential هنوز وارد DB نشده، `Import امن اکانت فعلی` را اجرا کن.
+5. Import باید existing credential را بدون تغییر data-plane و بدون نمایش plaintext قبلی ثبت کند.
+6. equivalence باید PASS شود.
 
-اگر Import پیام equivalence failure داد، هیچ mutation بعدی انجام نده.
+اگر import/equivalence fail شد، هیچ Create/Rotate/Disable/Revoke انجام نده.
 
-## مرحله 6 — ساخت اکانت مشتری
+## مرحله 6 — ساخت اولین مشتری آزمایشی
 
-1. در بخش «ساخت اکانت جدید» username مشتری را وارد کن.
-2. گزینه «تولید رمز امن توسط سرور» روشن باشد.
-3. روی «ساخت و اعمال اکانت» بزن.
-4. بعد از apply موفق، رمز فقط **یک بار** نمایش داده می‌شود.
-5. در همان پنجره دکمه **«کپی لینک Karing/Naive»** وجود دارد.
-6. لینک به فرم زیر است:
+بعد از Import موفق وارد `/panel/#/customers` شو.
 
-```text
-naive+https://USERNAME:PASSWORD@namir.softarg.ir:443
-```
+برای تست اول پیشنهاد production-safe:
 
-Username/password در لینک percent-encode می‌شوند تا کاراکترهای رزرو شده URL باعث خراب شدن لینک نشوند.
+- Username آزمایشی جدید؛
+- Generated password؛
+- مثلاً `1 GB` یا Unlimited؛
+- validity = **از زمان ساخت (`on_creation`)** یا fixed expiry؛
+- فعلاً برای Pilot از `on_first_successful_connection` استفاده نکن، چون trusted CONNECT producer هنوز end-to-end روی production اثبات نشده است.
 
-این لینک را به مشتری بده؛ **Owner login را هرگز به مشتری نده.**
+بعد از Create:
 
-## مرحله 7 — تست با Karing قبل از تحویل نهایی
+- password فقط یک بار نمایش داده می‌شود؛
+- Subscription URL فقط یک بار تحویل داده می‌شود؛
+- QR داخل Browser ساخته می‌شود؛
+- direct Naive URI را می‌توان برای Karing کپی کرد.
 
-روی یک کلاینت تست:
+## مرحله 7 — تست Client
 
-1. لینک ساخته‌شده را Copy کن.
-2. در Karing از Import from Clipboard استفاده کن.
-3. اتصال را فعال کن.
-4. یک سایت HTTPS معمولی را باز کن.
-5. بررسی کن credential قدیمی سرور نیز همچنان کار می‌کند.
+با Karing یا client استاندارد Naive:
 
-فقط بعد از اینکه اکانت جدید واقعاً وصل شد، می‌توانی rotate/disable/revoke را برای تست عملی انجام بدهی.
+1. direct Naive URI مشتری جدید را import کن؛
+2. اتصال HTTPS را تست کن؛
+3. Subscription URL را جداگانه تست کن؛
+4. existing credential قدیمی را هم دوباره تست کن تا regression نداشته باشیم؛
+5. سپس در صورت نیاز rotate/disable/revoke را روی **اکانت آزمایشی** تست کن، نه credential اصلی production.
 
-## رفتارهای آماده در Pilot
+## چیزهایی که در S05 آماده‌اند
 
-- Secure Owner login
-- Runtime status
-- Import امن credential فعلی
-- ساخت credential جدید
-- generated password یک‌بار مصرف
-- لینک آماده Karing/Naive
-- rename
-- password rotate تصادفی یا دلخواه
-- enable / disable
-- soft revoke
-- last-active guard
-- optimistic revision / stale-write rejection
-- idempotency protection
-- encrypted secret envelope در DB
-- Runtime Agent فقط روی Unix socket
-- Caddy validate/backup/reload-only/rollback برای mutationها
+- Owner authentication؛
+- Runtime import/create/rename/rotate/enable/disable/revoke؛
+- last-active guard؛
+- Runtime AES-GCM secret envelope؛
+- expected-SHA + Caddy validate + backup + reload-only برای mutationهای credential؛
+- customer creation؛
+- finite GB quota یا Unlimited به‌عنوان service-state تجاری؛
+- `on_creation`, `fixed_expiry`, و domain support برای first-success؛
+- revocable opaque Subscription token؛
+- local QR؛
+- subscription token rotation/revocation؛
+- idempotency و optimistic concurrency؛
+- secret-safe customer list.
 
-## چیزهایی که هنوز نباید به مشتری وعده داده شوند
+## مرزهایی که هنوز باید صادقانه حفظ شوند
 
-- حجم/traffic quota دقیق
-- مصرف لحظه‌ای یا billable usage
-- expiry خودکار تجاری
-- محدودیت device / HWID / concurrent session
-- speed limit
-- subscription token/page
-- customer self-service portal
-- reseller/credit
-- notification/Telegram
-
-این موارد بعد از Pilot تکمیل می‌شوند و تا زمانی که capability مربوطه اثبات نشده، UI نباید مقدار ساختگی نشان بدهد.
+- exact byte accounting هنوز proven نیست؛
+- used/remaining traffic نباید عدد ساختگی داشته باشد؛
+- hard byte quota enforcement تا PVN-045..049 غیرفعال است؛
+- trusted first-successful-CONNECT producer هنوز production proof ندارد؛
+- device/HWID limit، concurrent session limit، speed limit، reseller/credit و customer self-service هنوز در این Pilot نیستند.
 
 ## اگر Upgrade شکست خورد
 
-`S04R-upgrade.sh` rollback best-effort دارد. بعد از failure دوباره آن را کورکورانه اجرا نکن.
+`S05-upgrade.sh` rollback best-effort دارد و برای DB می‌تواند چند migration را تا schema قبل از upgrade برگرداند. بعد از failure، command را کورکورانه دوباره اجرا نکن.
 
-این خروجی‌ها را جمع کن:
+این موارد را جمع کن:
 
 ```bash
-systemctl status pvnaive-runtime-agent.service pvnaive-api.service caddy-naive.service --no-pager -l || true
+systemctl status pvnaive-runtime-agent.service pvnaive-api.service caddy-naive.service ssh.service --no-pager -l || true
 journalctl -u pvnaive-runtime-agent.service -n 150 --no-pager || true
 journalctl -u pvnaive-api.service -n 150 --no-pager || true
 journalctl -u caddy-naive.service -n 100 --no-pager || true
@@ -222,16 +256,12 @@ sha256sum /etc/caddy/Caddyfile
 ss -H -lntp
 ```
 
-و فایل‌های زیر را نگه دار:
+و این evidenceها را نگه دار:
 
 ```text
-/root/PVNaive-S04R-preflight.log
-/root/PVNaive-S04R-upgrade.log
-/var/backups/pvnaive/s04r/<timestamp>/
+/root/PVNaive-S05-preflight.log
+/root/PVNaive-S05-upgrade.log
+/var/backups/pvnaive/s05/<timestamp>/
 ```
 
-هیچ secret، runtime key، auth key یا backup age identity را داخل issue/chat عمومی paste نکن.
-
-## وضعیت Release
-
-این مسیر یک **Pilot روی نصب موجود** است، نه Release Candidate عمومی. بعد از اینکه Pilot واقعی با حداقل یک credential جدید و یک client Karing پاس شد، evidence آن باید در Repo ثبت شود و سپس توسعه‌ی security hardening، user lifecycle، accounting، subscription و installer عمومی ادامه پیدا کند.
+هیچ runtime key، auth key، plaintext password، raw Subscription token یا backup age identity را در issue/chat عمومی قرار نده.
