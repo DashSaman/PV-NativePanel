@@ -151,6 +151,9 @@ func NewServer(configs ...ServerConfig) http.Handler {
 				handler = http.HandlerFunc(s.runtimeNaiveRevokeCredential)
 			}
 		}
+		if extra := s.customerExtraHandler(route.Name); extra != nil {
+			handler = extra
+		}
 		if route.Access != Public {
 			handler = s.requireAuthentication(route, handler)
 		}
