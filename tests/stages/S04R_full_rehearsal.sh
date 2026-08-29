@@ -64,7 +64,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == "5" ]] || { echo "ERROR: S04R rehearsal schema version=${schema_version}" >&2; exit 1; }
+[[ "${schema_version}" == "6" ]] || { echo "ERROR: S04R rehearsal schema version=${schema_version}" >&2; exit 1; }
 
 phc="$(printf '%s\n' "${password}" | "${password_binary}")"
 [[ "${phc}" == '$argon2id$'* ]] || { echo 'ERROR: password helper returned invalid PHC' >&2; exit 1; }
@@ -105,6 +105,7 @@ PVNAIVE_AUTH_KEY_FILE="${tmpdir}/auth.key" \
 PVNAIVE_RUNTIME_KEY_FILE="${tmpdir}/runtime.key" \
 PVNAIVE_RUNTIME_KEY_ID=runtime-rehearsal-v1 \
 PVNAIVE_RUNTIME_AGENT_SOCKET="${socket}" \
+PVNAIVE_NAIVE_PUBLIC_HOST="naive-rehearsal.example.invalid:443" \
 PVNAIVE_LISTEN="127.0.0.1:${api_port}" \
   "${api_binary}" >"${tmpdir}/api.log" 2>&1 &
 api_pid=$!
