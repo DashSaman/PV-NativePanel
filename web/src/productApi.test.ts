@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   executeProductBulk,
+  getProductSubscription,
   listProductCustomers,
   listProductPlans,
   previewProductBulk,
+  reissueProductSubscription,
+  renewProductCustomer,
+  revokeProductCustomer,
+  rotateProductPassword,
+  suspendProductCustomer,
   updateProductCustomer,
 } from "./productApi";
 
@@ -91,6 +97,34 @@ describe("WS2 product API client", () => {
     expect(path).toBe("/api/v1/users/user%201");
     expect(init?.method).toBe("PATCH");
     expect((init?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
+  });
+
+  it("uses reseller-ready renewal, subscription, lifecycle and password endpoints", async () => {
+    installCSRF();
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path.endsWith("/subscription")) return jsonResponse({ subscription_path: "/sub/token", direct_uri: "naive+https://example" });
+      if (path.endsWith("/rotate-password")) return jsonResponse({ generated_password: "once-only" });
+      return jsonResponse({ status: "ok" });
+    });
+
+    await getProductSubscription("user 1", fetcher as typeof fetch);
+    await reissueProductSubscription("user 1", fetcher as typeof fetch);
+    await renewProductCustomer("user 1", { mode: "renew_current" }, fetcher as typeof fetch);
+    await rotateProductPassword("user 1", { password: "", generate_password: true }, fetcher as typeof fetch);
+    await suspendProductCustomer("user 1", fetcher as typeof fetch);
+    await revokeProductCustomer("user 1", fetcher as typeof fetch);
+
+    const calls = callsOf(fetcher);
+    expect(calls[0][0]).toBe("/api/v1/users/user%201/subscription");
+    expect(calls[0][1]?.method).toBe("GET");
+    expect(calls[1][0]).toBe("/api/v1/users/user%201/subscription/rotate");
+    expect(calls[1][1]?.method).toBe("POST");
+    expect(calls[2][0]).toBe("/api/v1/users/user%201/renew");
+    expect(calls[3][0]).toBe("/api/v1/users/user%201/rotate-password");
+    expect(calls[4][0]).toBe("/api/v1/users/user%201/suspend");
+    expect(calls[5][0]).toBe("/api/v1/users/user%201/revoke");
+    expect((calls[1][1]?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
   });
 
   it("reuses exactly the preview idempotency key for bulk execute", async () => {
