@@ -1,0 +1,108 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  executeProductBulk,
+  listProductCustomers,
+  listProductPlans,
+  previewProductBulk,
+  updateProductCustomer,
+} from "./productApi";
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function installCSRF() {
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: { cookie: "__Host-pvnaive_csrf=csrf-product-test" },
+  });
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, "document");
+});
+
+describe("WS2 product API client", () => {
+  it("sends customer directory filters to the server-side /users endpoint", async () => {
+    const fetcher = vi.fn(async () => jsonResponse({ customers: [], page: 2, page_size: 25, total: 0 }));
+
+    await listProductCustomers({
+      q: "ali",
+      status: "on_hold",
+      plan: "plan-1",
+      group: "group-1",
+      tag: "tag-1",
+      reseller: "reseller-1",
+      expiryFrom: "2026-08-01T00:00:00.000Z",
+      expiryTo: "2026-09-01T00:00:00.000Z",
+      unlimitedVolume: true,
+      unlimitedExpiry: false,
+      page: 2,
+      pageSize: 25,
+      sort: "expiry",
+      direction: "asc",
+    }, fetcher as typeof fetch);
+
+    const [raw] = fetcher.mock.calls[0];
+    const url = new URL(String(raw), "https://panel.example");
+    expect(url.pathname).toBe("/api/v1/users");
+    expect(url.searchParams.get("q")).toBe("ali");
+    expect(url.searchParams.get("status")).toBe("on_hold");
+    expect(url.searchParams.get("plan")).toBe("plan-1");
+    expect(url.searchParams.get("group")).toBe("group-1");
+    expect(url.searchParams.get("tag")).toBe("tag-1");
+    expect(url.searchParams.get("reseller")).toBe("reseller-1");
+    expect(url.searchParams.get("unlimited_volume")).toBe("true");
+    expect(url.searchParams.get("unlimited_expiry")).toBe("false");
+    expect(url.searchParams.get("page")).toBe("2");
+    expect(url.searchParams.get("page_size")).toBe("25");
+    expect(url.searchParams.get("sort")).toBe("expiry");
+    expect(url.searchParams.get("dir")).toBe("asc");
+  });
+
+  it("loads plans from the ready product catalog endpoint", async () => {
+    const fetcher = vi.fn(async () => jsonResponse({ plans: [{ id: "p1", name: "50G", enabled: true }] }));
+    const result = await listProductPlans(fetcher as typeof fetch);
+    expect(fetcher.mock.calls[0][0]).toBe("/api/v1/plans");
+    expect(result[0].name).toBe("50G");
+  });
+
+  it("updates note/group/on-hold/tags/next-plan through PATCH /users/:id", async () => {
+    installCSRF();
+    const fetcher = vi.fn(async () => jsonResponse({ metadata: { on_hold: true } }));
+
+    await updateProductCustomer("user 1", {
+      note: "VIP",
+      group_id: "g1",
+      on_hold: true,
+      add_tag_ids: ["t1"],
+      remove_tag_ids: ["t2"],
+      next_plan_id: "p2",
+    }, fetcher as typeof fetch);
+
+    const [path, init] = fetcher.mock.calls[0];
+    expect(path).toBe("/api/v1/users/user%201");
+    expect(init?.method).toBe("PATCH");
+    expect((init?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
+  });
+
+  it("reuses exactly the preview idempotency key for bulk execute", async () => {
+    installCSRF();
+    const request = { action: "add_volume" as const, customer_ids: ["u1", "u2"], volume_gb: 10 };
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(async () => jsonResponse({ bulk: { id: "b1", status: "previewed", preview: { requested: 2, affected: 2, changes: ["add_volume"], conflicts: [], skipped: [], invalid: [] }, request } }))
+      .mockImplementationOnce(async () => jsonResponse({ bulk: { id: "b1", status: "executed", preview: { requested: 2, affected: 2, changes: ["add_volume"], conflicts: [], skipped: [], invalid: [] }, result: { succeeded: 2, failed: 0, skipped: 0, items: [] }, request } }));
+
+    const preview = await previewProductBulk(request, fetcher as typeof fetch);
+    await executeProductBulk(request, preview.idempotencyKey, fetcher as typeof fetch);
+
+    expect(fetcher.mock.calls[0][0]).toBe("/api/v1/users/bulk/preview");
+    expect(fetcher.mock.calls[1][0]).toBe("/api/v1/users/bulk/execute");
+    expect((fetcher.mock.calls[0][1]?.headers as Record<string, string>)["Idempotency-Key"])
+      .toBe((fetcher.mock.calls[1][1]?.headers as Record<string, string>)["Idempotency-Key"]);
+  });
+});
