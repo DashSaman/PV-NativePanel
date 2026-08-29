@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
-import { CustomersV2 } from "./CustomersV2";
 import { ProductCatalog } from "./ProductCatalog";
 import { ProductCustomers } from "./ProductCustomers";
+import { RuntimeAdoption } from "./RuntimeAdoption";
 import { RuntimeNaive } from "./RuntimeNaive";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { assertRouteManifest } from "./routes";
@@ -98,7 +98,7 @@ export function App() {
 
   if (view === "customers" && customerProduct) return <Shell principal={principal} signOut={signOut}><ProductCustomers role={principal.role}/></Shell>;
   if (view === "catalog" && customerProduct) return <Shell principal={principal} signOut={signOut}><ProductCatalog role={principal.role}/></Shell>;
-  if (view === "runtime-adoption" && rawRuntime) return <Shell principal={principal} signOut={signOut}><CustomersV2/></Shell>;
+  if (view === "runtime-adoption" && rawRuntime) return <Shell principal={principal} signOut={signOut}><RuntimeAdoption/></Shell>;
   if (view === "runtime-naive" && rawRuntime) return <Shell principal={principal} signOut={signOut}><RuntimeNaive/></Shell>;
 
   const metrics = [
