@@ -1,146 +1,145 @@
 # PVNaive — Canonical Roadmap
 
-Last updated: 2026-08-28
+Last updated: 2026-08-30
 
-This is the canonical task ledger. Task IDs never change; status changes in place. Equal-weight completion is used only for the numerical project snapshot. A task is `DONE` only after implementation, review, tests, integration/security checks, and required docs/handoff updates.
+This roadmap follows the Owner's Production/parity master prompt. Historical `PVN-*` IDs remain valid audit references; they are not reused for unrelated work. The current execution ledger below is the controlling order for Production-Ready completion.
 
-Status vocabulary: `DONE`, `IN_PROGRESS`, `TODO`, `BLOCKED`.
-Priority: `P0` blocker/critical, `P1` production-important, `P2` important capability, `P3` improvement/future, `P4` optional.
+Status vocabulary: `DONE`, `IN_PROGRESS`, `TODO`, `BLOCKED`, `PARTIAL`, `SUPERSEDED`.
 
-## Phase A — Foundation / Database
+## Current baseline
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-001 | P0 | DONE | Product naming and repository safety baseline | — | PVNaive naming fixed; repo not renamed destructively |
-| PVN-002 | P0 | DONE | Production preflight | 001 | DNS/TLS/Caddy/listeners/capacity verified read-only |
-| PVN-003 | P0 | DONE | Filesystem/service foundation | 002 | service account, directories, permissions, backup base, postflight |
-| PVN-004 | P0 | DONE | PostgreSQL 18 schema v1 + RLS | 003 | migration, roles, RLS and privilege boundaries verified |
-| PVN-005 | P0 | DONE | Encrypted DB backup/restore/health | 004 | age backup, restore drill, loopback DB health and timer pass |
-| PVN-006 | P0 | DONE | S03 production deployment/postflight | 005 | real production + independent postflight pass |
+Audited start main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
 
-## Phase B — Authentication / protected public preview
+Already integrated and therefore **not** future TODOs:
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-007 | P0 | DONE | S04 authentication design | 006 | written reviewed design and implementation plan |
-| PVN-008 | P0 | DONE | Auth migration v2 | 007 | PostgreSQL 18 migration/down/checksum/RLS tests pass |
-| PVN-009 | P0 | DONE | Password/token/TOTP/envelope primitives | 008 | Argon2id, opaque tokens, TOTP, AES-GCM tests pass |
-| PVN-010 | P0 | DONE | Auth store + request-context/RLS binding | 008,009 | pre-auth and authenticated transaction tests pass |
-| PVN-011 | P0 | DONE | HTTP auth/session/CSRF/MFA surface | 010 | login/refresh/logout/me/sessions/TOTP endpoints exercised |
-| PVN-012 | P0 | DONE | Root-only Owner bootstrap | 010 | no default credential; bootstrap tests pass |
-| PVN-013 | P0 | DONE | S04 CI/rehearsal/bundle | 008-012 | Go/Web/PG18/E2E auth/bundle green |
-| PVN-014 | P0 | DONE | S04 localhost production deployment/recovery | 013 | startup/recovery defects fixed; API localhost healthy |
-| PVN-015 | P0 | DONE | S04 localhost independent postflight | 014 | service/listener/schema/backup/Caddy/SSH/firewall verified |
-| PVN-016 | P0 | DONE | Real Owner auth lifecycle | 015 | bootstrap + real login/me/CSRF logout/revocation pass |
-| PVN-017 | P0 | DONE | Public panel/API exposure | 016 | Caddy validate/reload-only/rollback plan, panel/API/camouflage preservation and visual Owner confirmation |
+- secure Runtime Naive credential lifecycle + privileged Runtime Agent;
+- customer create/adopt/edit/suspend/resume/revoke-safe-delete;
+- quota/unlimited/add/set volume;
+- expiry/no-expiry/creation/first-CONNECT/manual validity/extend days;
+- plans, groups, tags, notes;
+- renewal/new ServiceTerm, Next Plan/On Hold foundations;
+- server-side search/filter/sort/pagination;
+- supported bulk preview/idempotent execution;
+- `/sub`, `/s`, local QR, Subscription reissue, password rotation separation;
+- exact direct-Naive accounting and restart-safe telemetry core;
+- trusted first-CONNECT producer core;
+- session/presence projection core;
+- shared hard-quota reservation/settlement core;
+- tenant/RLS product foundations.
 
-> Formal `S04=PASSED` remains a separate gate in PVN-036; Phase B records implemented and verified milestones, not the final stage ledger transition.
+## Production-Ready master execution ledger
 
-## Phase C — S04R Naive runtime credential management
+Do not reorder unless a real technical dependency is documented in `WORKLOG.md`.
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-018 | P0 | DONE | S04R architecture + detailed TDD plan | 017 | approved spec + plan in `docs/superpowers` |
-| PVN-019 | P0 | DONE | Migration 0003 runtime credential state | 018 | owner-only FORCE RLS, runtime revision idempotency, rollback to v2, full DB CI green |
-| PVN-020 | P0 | DONE | Runtime secret envelope + credential policy | 019 | AES-GCM/tamper/wrong-key/nonce/password/username tests green; no secret-exposing DTO |
-| PVN-021 | P0 | DONE | Byte-preserving Caddy `forward_proxy` parser/renderer | 020 | zero/multiple/ambiguous fail closed; only credential span changes; injection tests green |
-| PVN-022 | P0 | DONE | Unix-socket Runtime Agent protocol | 021 | AF_UNIX only, strict typed JSON, no arbitrary path/service/command, tests green |
-| PVN-023 | P0 | DONE | Privileged validate/apply/rollback operator | 022 | expected-SHA, exact backup, validate-before-write, reload-only, postflight + exact rollback tests |
-| PVN-024 | P0 | DONE | Runtime credential store + revision saga/compensation | 020,023 | desired→apply→applied state machine and DB-commit-failure compensation tests |
-| PVN-025 | P0 | DONE | Owner-only `/api/v1/runtime/naive` API | 024 | RBAC/CSRF/idempotency/revision/secret-redaction tests |
-| PVN-026 | P1 | DONE | `/runtime/naive` UI | 025 | metadata/actions/one-time generated secret/destructive confirmation/mobile client build; copy-ready Naive URI |
-| PVN-027 | P0 | DONE | Full S04R disposable rehearsal | 021-026 | real binaries + PG18 + Unix socket + fake/safe Caddy lifecycle; multiple `basic_auth` syntax proven against pinned Caddy |
-| PVN-028 | P0 | IN_PROGRESS | Read-only live Naive import preflight | 027 | exact live Caddy/custom binary syntax/import equivalence verified; no mutation |
-| PVN-029 | P0 | TODO | Guarded production import + browser mutations postflight | 028 | current credential preserved, apply/rollback gates, new/rotate/disable/revoke behavior verified safely |
+| # | Status | Priority | Task | Done gate |
+|---:|---|---|---|---|
+| 1 | IN_PROGRESS | P0 | Audit latest main / PR / CI / Production | repository and live truth captured read-only, no secret leak, provenance risks recorded |
+| 2 | IN_PROGRESS | P0 | Compare current 3x-ui / PasarGuard / Hiddify / OV-PvNetwork | current official refs + 120-feature matrix + licensing guard |
+| 3 | IN_PROGRESS | P0 | Fix stale canonical project docs | canonical files match code + Production evidence; no implemented feature left “missing” |
+| 4 | TODO | P0 | Reconcile useful PR #16 work | fresh branch; commit/file extraction only; newer main preserved; full CI |
+| 5 | TODO | P0 | Legacy/adopted accounting baseline truth | no fake zero; baseline provable or Unknown; no double-count |
+| 6 | TODO | P0 | `/s` accounting/presence completion | real Used/Remaining/Upload/Download/Last Online/Online/Expiry/Quota or explicit unavailable |
+| 7 | TODO | P0 | Manual Reset Usage | confirmation + audit + accounting reset/baseline + idempotency; no token/password rotation |
+| 8 | TODO | P0 | Bulk Reset Usage | Preview → Execute using same idempotency identity |
+| 9 | TODO | P0 | Periodic traffic reset | persisted scheduler/cursor/timezone/exactly-once/audit/history |
+| 10 | TODO | P0 | Hard quota controlled Production proof | simultaneous connections/race/exhaustion/reload/restart/reconnect/no negative/no bypass |
+| 11 | TODO | P0 | First-successful-CONNECT controlled Production proof | only successful authenticated CONNECT activates; all read/failed-auth/reload paths stay inert |
+| 12 | TODO | P0 | Session management | active sessions/IP/connected/last-activity/reliable bytes |
+| 13 | TODO | P0 | Kill/disconnect session | real disconnect primitive + confirmation + audit |
+| 14 | TODO | P0 | Concurrent session limit | Unlimited/N enforced under races/reconnects |
+| 15 | TODO | P0 | Simultaneous unique-IP limit | exact semantics, enforcement and failure tests |
+| 16 | TODO | P1 | IP/session history | privacy-aware bounded retention |
+| 17 | TODO | P1 | HWID/device identity PoC | implement only if trustworthy standard Naive/Karing identity exists; otherwise unavailable |
+| 18 | TODO | P1 | Per-user speed-limit PoC | enforce in real data plane or do not expose option |
+| 19 | TODO | P1 | Reseller CRUD | create/edit/disable/revoke/list/search |
+| 20 | TODO | P0 | Full tenant-isolation / IDOR audit | no cross-reseller read/edit/renew/delete/subscription access |
+| 21 | TODO | P1 | Reseller wallet/credit | audited correct balance operations |
+| 22 | TODO | P1 | Immutable financial ledger | credit/debit/create/renew/refund/adjustment entries |
+| 23 | TODO | P1 | Reseller plan/user restrictions | allowed plans/max users/max active users/credit/Owner oversight |
+| 24 | TODO | P1 | Customer history | create/renew/volume/expiry/plan/group/tag/suspend/resume/revoke/rotate/reissue/reset events |
+| 25 | TODO | P1 | Audit Explorer | actor/user/action/date/IP/result filters; strict redaction |
+| 26 | TODO | P1 | Notification engine/preferences/history | quota/expiry/customer/runtime/node/backup/security/disk/cert events + outbox/retry |
+| 27 | TODO | P1 | Telegram + rule builder | secure token handling; rules such as traffic<10%, expiry<3d, runtime down>60s |
+| 28 | TODO | P1 | Dashboard / monitoring / historical charts | real users/traffic/CPU/RAM/disk/network/runtime/online/history, no fake values |
+| 29 | TODO | P1 | Application/runtime/security logs + request diagnostics/support bundle | bounded/redacted/request-ID linked |
+| 30 | TODO | P1 | Doctor command/page | actionable dependency/runtime/DB/disk/TLS checks |
+| 31 | TODO | P1 | Scheduled encrypted backup + retention | DB/config/runtime state/important files + failure alerts |
+| 32 | TODO | P1 | Restore / verification / automated drill / UI | isolated proof + strong safeguards |
+| 33 | TODO | P1 | Stabilize REST API + OpenAPI/Swagger | only ready handlers documented; auth policy explicit |
+| 34 | TODO | P1 | API rate limit / mutation idempotency / stable webhooks | stable event contracts; no premature webhook surface |
+| 35 | TODO | P0 | Fix auth/security BUG-001/002/003 | refresh reuse-family, commit-before-success, DB-backed readiness regression tests green |
+| 36 | TODO | P0 | Full authorization/IDOR/CSRF/redaction/fuzz gates | complete Route × Owner/Admin/Reseller/Operator/Auditor matrix |
+| 37 | TODO | P1 | Supply-chain security + license policy | dependency scan/secret scan/SAST/SBOM/signing/provenance/NOTICE |
+| 38 | TODO | P1 | Multi-node model/auth/health/metrics/capacity/assignment/deployment | standalone remains safe; desired/applied state modeled |
+| 39 | TODO | P1 | Drain/maintenance/canary/node upgrade/rollback/failover/smart selection/fleet dashboard | reconciliation-safe fleet operations |
+| 40 | TODO | P0 | Fresh secure Ubuntu installer | version-pinned dependencies/Postgres/Caddy/API/agents/systemd/firewall/TLS/migrations/web + Doctor |
+| 41 | TODO | P0 | Versioned upgrade | automatic pre-upgrade backup + migration safety |
+| 42 | TODO | P0 | Rollback + conservative uninstall | restore path proven; data preserved by default |
+| 43 | TODO | P0 | Client compatibility | Karing Windows/Android/iOS/macOS/Linux first; then only clients with verified Naive support |
+| 44 | TODO | P0 | Load / capacity campaign | 50/100/200/400+ plus accounting/quota/session/restart/reconnect correctness |
+| 45 | TODO | P1 | Bulk/search completion | reset/delete/unlimited/no-expiry/change-expiry/next-plan + advanced filters/sorts/columns/URL state |
+| 46 | TODO | P1 | Final UI polish | professional customer/dashboard/account page + mobile/desktop/accessibility/theme |
+| 47 | TODO | P0 | Final documentation reconciliation | every feature DONE/PARTIAL/BLOCKED/OPTIONAL/N/A with evidence; no stale contradictions |
+| 48 | TODO | P0 | Final clean-server installation proof | clean supported Ubuntu VM reaches healthy fully configured panel/runtime |
+| 49 | TODO | P0 | Final Production smoke | backed-up RC deploy, customer/sub/accounting/runtime smoke, rollback ready |
+| 50 | TODO | P0 | Release Candidate | all logical P0/P1 release blockers closed; CI exact HEAD green; provenance/evidence recorded |
 
-## Phase D — Security hardening / formal S04 closure
+## Current task #1-3 evidence
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-030 | P0 | TODO | Fix refresh-token reuse-family detection | 011 | regression proves reused revoked token reaches family revocation and returns fail-closed |
-| PVN-031 | P0 | TODO | Transaction commit-before-success integrity | 011 | mutation cannot emit success before durable DB commit; injected commit failure test |
-| PVN-032 | P1 | TODO | DB-backed readiness | 011 | readiness proves current DB dependency/schema, with timeout/failure tests |
-| PVN-033 | P1 | TODO | Recovery-code login decision + implementation | 011 | explicit product decision; if enabled, one-time recovery login/replay/session tests |
-| PVN-034 | P0 | TODO | HTTP/IP auth rate limit + progressive delay | 011 | bounded login abuse per identity/IP, reverse-proxy-aware trust boundary, tests |
-| PVN-035 | P1 | TODO | Public CSP/security-header/cookie exposure review | 017,030-034 | browser/API headers, cookie scope, cache controls and route exposure reviewed/tested |
-| PVN-036 | P0 | TODO | Formal independent external S04 postflight and stage closure | 029-035 | independent production evidence; only then S04 ledger may become PASSED |
+The Lead reconciliation branch `lead/parity-truth-2026-08-30` / PR #27 records:
 
-## Phase E — User / Plan / Reseller lifecycle
+- current main + PR/CI audit;
+- read-only Production schema/service/accounting/disk/backup/provenance audit;
+- current competitor snapshots;
+- `docs/PANEL_PARITY_MASTER_2026-08-30.md`;
+- canonical documentation reconciliation.
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-037 | P0 | TODO | User CRUD + lifecycle state machine | 036 | create/edit/suspend/resume/expire/revoke with tenant isolation and audit |
-| PVN-038 | P1 | TODO | Plans + quota policy lifecycle | 037 | plan/quota/reset/duration/concurrency/device capability-aware CRUD |
-| PVN-039 | P1 | TODO | Reseller + credit ledger + purchase/renewal | 037,038 | append-only credit, idempotent purchase/renewal and authorization tests |
-| PVN-040 | P0 | TODO | User-bound Naive credential lifecycle | 037,045 | commercial credentials map to real runtime without fake rows or secret leaks |
-| PVN-041 | P1 | TODO | Bulk operations with dry-run | 037-040 | affected-count/conflict/rollback preview then idempotent apply |
-| PVN-042 | P1 | TODO | Search/filter/sort/pagination + computed status | 037 | active/disabled/expired/depleted/on-hold style dimensions remain explainable |
-| PVN-043 | P0 | TODO | User/reseller API authorization matrix | 037-042 | owner/admin/reseller/operator/auditor tenant/IDOR tests pass |
-| PVN-044 | P1 | TODO | Users/plans/resellers production UI | 037-043 | responsive CRUD/bulk/status/error UX with no fabricated capabilities |
+Task #1-3 cannot become `DONE` until exact final PR #27 head passes required CI and review.
 
-## Phase F — Accounting / full Naive runtime
+## Historical PVN task reconciliation
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-045 | P0 | TODO | Exact per-credential accounting feasibility PoC | 029 | measured runtime source, accuracy/error bounds documented; no estimated billing claim |
-| PVN-046 | P0 | TODO | Restart/reconnect/double-count protection PoC | 045 | boot/sequence/reset handling proves no double count across restart/reconnect |
-| PVN-047 | P0 | TODO | H2 multiplex + concurrent credential behavior PoC | 045 | client/runtime behavior measured and accounting implications recorded |
-| PVN-048 | P0 | TODO | Usage delta collector + append-only ledger/reconciliation | 045-047 | idempotent deltas and rebuildable aggregates with reconciliation tests |
-| PVN-049 | P0 | TODO | Quota/reset enforcement | 048 | local enforcement, calendar/interval reset, race/failure tests |
-| PVN-050 | P1 | TODO | Concurrency/device limit capability proof | 047 | implement only proven controls; otherwise capability flags remain false |
-| PVN-051 | P1 | TODO | Full Naive Runtime adapter/status/revisions integration | 023,048-050 | adapter reports honest capabilities, health, last-good revision and usage state |
+The old 72-task ledger is preserved in git history and still provides useful stable IDs. Its status descriptions were stale after later workstreams merged. Current crosswalk:
 
-## Phase G — Subscription / Notification
+### Historical work now definitely completed/integrated
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-052 | P0 | TODO | Subscription token lifecycle + renderer | 040,051 | hashed token, revoke/expire, correct Naive config rendering |
-| PVN-053 | P1 | TODO | Subscription info/usage page/API | 048,052 | purchase/expiry/remaining/usage data comes from verified state |
-| PVN-054 | P0 | TODO | Client compatibility matrix | 052 | Windows/Android Karing/iOS/macOS representative clients tested and recorded |
-| PVN-055 | P2 | TODO | QR/templates/update compatibility | 052-054 | useful formats/templates validated; no unsupported format claims |
-| PVN-056 | P1 | TODO | Notification rules/outbox/delivery | 048,053 | volume/expiry events, idempotency/retry/audit tests |
-| PVN-057 | P2 | TODO | Telegram/operational alert channel | 056 | optional channel cannot block data plane/bootstrap; retry and secret hygiene verified |
+- `PVN-001..027`: foundation/auth/Runtime credential development chain — DONE.
+- `PVN-028/029`: old S04R preflight/rollout milestones are superseded by later live Production state (schema 11, active Runtime credentials/services); do not rerun the old stage blindly.
+- `PVN-037`: user/customer CRUD/lifecycle — DONE in newer main.
+- `PVN-038`: plan/quota/reset **model** lifecycle — PARTIAL overall because reset execution remains.
+- `PVN-040`: user-bound Naive credential lifecycle — DONE.
+- `PVN-041`: bulk operations with dry-run — DONE for supported current action set; Reset Usage bulk remains new backlog.
+- `PVN-042`: search/filter/sort/pagination + computed status — PARTIAL overall because accounting/presence wiring is incomplete in some projections.
+- `PVN-043`: tenant/RBAC foundations — PARTIAL; full route-wide matrix remains.
+- `PVN-044`: customer/product UI — PARTIAL; current daily UI exists, final product polish/status wiring remains.
+- `PVN-045..048`: exact direct accounting / restart-safe event path — DONE by integrated WS1.
+- `PVN-049`: hard quota/reset enforcement — PARTIAL; quota core integrated, reset execution + Production quota proof remain.
+- `PVN-052`: Subscription lifecycle/renderer — DONE.
+- `PVN-053`: human account page — PARTIAL only because full accounting/presence projection remains.
+- `PVN-055`: local QR/delivery UX — DONE baseline.
 
-## Phase H — Installer / Operations / Release
+### Historical items still open and mapped directly
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-058 | P0 | TODO | Fresh standalone installer | 036,051-056 | non-destructive preflight, pinned artifacts/checksums, one-command fresh install + smoke |
-| PVN-059 | P0 | TODO | Upgrade/migration workflow | 058 | pre-backup, idempotent versioned upgrade, migration validation and rollback path |
-| PVN-060 | P1 | TODO | Conservative rollback/uninstall | 058,059 | preserve user data by default, explicit destructive confirmation, restore path |
-| PVN-061 | P1 | TODO | OS/dependency/systemd support matrix | 058 | supported Ubuntu versions, unit hardening, dependency/version gates tested |
-| PVN-062 | P0 | TODO | Scheduled DB/config backup + disaster restore | 051,058 | encrypted scheduled backups, config backup, isolated restore drill and runbook |
-| PVN-063 | P1 | TODO | Logs/rotation/metrics/diagnostics/support bundle | 051 | redacted logs/metrics, request IDs, diagnostics bundle with secret preview/expiry |
-| PVN-064 | P1 | TODO | Certificate/domain rotation | 051,058 | validate/stage/reload/rollback with data-plane and panel preservation |
-| PVN-065 | P0 | TODO | Supply-chain/release security gates | 058 | dependency audit, SAST, secret scan, SBOM, pinned actions/artifacts, release signing/provenance |
-| PVN-066 | P0 | TODO | Pilot load/benchmark and capacity gate | 045-065 | staged tests through target concurrency/throughput with CPU/RAM/reconnect/accounting error evidence |
-| PVN-067 | P0 | TODO | Release Candidate → final Production release | 066 | clean install/upgrade/restore/security/integration/pilot gates all green; no P0/P1 known release blockers |
+- `PVN-030` → Master #35 BUG-001 refresh reuse-family.
+- `PVN-031` → Master #35 BUG-002 commit-before-success.
+- `PVN-032` → Master #35 BUG-003 DB readiness.
+- `PVN-033` → Master #35/#36 recovery-code login policy.
+- `PVN-034/035` → Master #36 auth abuse/security exposure.
+- `PVN-039` → Master #19-23 reseller/wallet/ledger/restrictions.
+- `PVN-050` → Master #14-18 session/device/speed capability.
+- `PVN-051` → Master #28 runtime status integration.
+- `PVN-054` → Master #43 real client compatibility.
+- `PVN-056/057` → Master #26-27 notifications/Telegram.
+- `PVN-058..062` → Master #31-32, #40-42 installer/upgrade/rollback/backup/restore.
+- `PVN-063` → Master #28-30 observability/logs/diagnostics.
+- `PVN-065` → Master #37 supply-chain security.
+- `PVN-066` → Master #44 capacity.
+- `PVN-067` → Master #48-50 final release gates.
+- `PVN-069` → Master #47 documentation truth.
+- `PVN-071` → Master #36 API/web authorization/fuzz quality gates.
+- `PVN-072` → Master #37 license/source policy.
 
-## Phase I — Project governance / quality
+`PVN-070` old branch-divergence wording is superseded by the current PR classification/integration process; never force-reset old branches.
 
-| ID | P | Status | Title | Depends | Done gate |
-|---|---|---|---|---|---|
-| PVN-068 | P0 | IN_PROGRESS | Canonical repository audit + PM documents | — | PROJECT_STATUS/ROADMAP/FEATURE_MATRIX/AGENT_TASKS/WORKLOG/HANDOFF/KNOWN_ISSUES + AGENTS links committed and internally consistent |
-| PVN-069 | P1 | TODO | Documentation truth reconciliation | 068 | README/SECURITY/API/product gaps/old roadmap clearly match actual vs planned behavior |
-| PVN-070 | P0 | TODO | Reconcile `s04-auth` ↔ `main` divergence | 020,068 | deliberate non-force integration; production evidence retained; CI green; PR diff reviewed |
-| PVN-071 | P1 | TODO | Full API/web E2E + authorization/fuzz quality gates | 036,043,052 | route readiness, IDOR/RBAC, strict JSON, parser/fuzz/failure-path coverage in CI |
-| PVN-072 | P1 | TODO | Project license + third-party attribution policy | 068 | explicit license decision; NOTICE/attribution; no incompatible copied code |
+## Definition of Done
 
-## Progress snapshot
-
-- Total: 72
-- DONE: 27
-- IN_PROGRESS: 2 (`PVN-028`, `PVN-068`)
-- BLOCKED: 0
-- TODO: 43
-- Completion: **37.5%** (`27 / 72`)
-
-## Dependency-critical execution order from current state
-
-The S04R implementation and disposable rehearsal chain is complete through `PVN-027`. The next production-safe sequence is:
-
-`PVN-028 live read-only preflight → PVN-029 guarded pilot rollout/postflight → PVN-030/031/032/033/034/035 → PVN-036 formal S04 closure → PVN-037...`
-
-For the immediate Pilot, use `docs/PILOT_INSTALL_FA.md`. Customers receive only their Naive credential/link; they do not receive Owner panel credentials.
-
-`PVN-070` branch reconciliation must happen only at a controlled green point; never reset/force-push away production evidence or active feature work.
+A feature is never `DONE` merely because code exists. Apply the Owner's 20-point DoD: real backend/schema/auth/UI where applicable, no secret leaks, idempotency/failure tests, unit/integration/web tests, vet/build, exact-head CI, rollback if Runtime-affecting, live verification if Production-facing, docs/evidence and no regressions.
