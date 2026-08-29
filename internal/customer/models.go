@@ -67,6 +67,14 @@ type CustomerView struct {
 	SubscriptionAvailable   bool             `json:"subscription_available"`
 	SubscriptionRetrievable bool             `json:"subscription_retrievable"`
 	UsageCapability         UsageCapability  `json:"usage_capability"`
+	UploadBytes             int64            `json:"upload_bytes"`
+	DownloadBytes           int64            `json:"download_bytes"`
+	UsedBytes               int64            `json:"used_bytes"`
+	RemainingBytes          *int64           `json:"remaining_bytes"`
+	AccountingComplete      bool             `json:"accounting_complete"`
+	Online                  bool             `json:"online"`
+	OnlineSessions          int64            `json:"online_sessions"`
+	LastOnline              *time.Time       `json:"last_online,omitempty"`
 	Note                    string           `json:"note,omitempty"`
 	Group                   *CustomerGroup   `json:"group,omitempty"`
 	Tags                    []CustomerTag    `json:"tags,omitempty"`
