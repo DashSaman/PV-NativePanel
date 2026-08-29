@@ -128,6 +128,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Prove pinned forwardproxy CONNECT accounting boundary
+        run: bash tests/accounting/pinned_forwardproxy_boundary_test.sh
       - name: Prove pinned Naive Caddy supports multiple basic_auth directives
         run: |
           set -Eeuo pipefail
