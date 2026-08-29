@@ -8,7 +8,7 @@ func (s *server) customerExtraHandler(name string) http.Handler {
 	}
 	switch name {
 	case "customers.index", "users.index":
-		return http.HandlerFunc(s.listProductCustomers)
+		return http.HandlerFunc(s.listProductCustomersAccounting)
 	case "customers.create", "users.create":
 		return http.HandlerFunc(s.createProductCustomer)
 	case "users.update":
