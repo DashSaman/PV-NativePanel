@@ -138,7 +138,7 @@ func RenderCredentials(input []byte, credentials []runtimecred.DesiredCredential
 		return nil, errors.New("naiveruntime: at least one active credential is required")
 	}
 	if equivalentActiveCredentials(active, inspection.credentials) {
-		return append([]byte(nil), input...), nil
+		return syncPVNaiveAccountingMappings(append([]byte(nil), input...), active)
 	}
 
 	var replacement strings.Builder
@@ -159,7 +159,115 @@ func RenderCredentials(input []byte, credentials []runtimecred.DesiredCredential
 	output = append(output, input[:inspection.credentialStart]...)
 	output = append(output, replacement.String()...)
 	output = append(output, input[inspection.credentialEnd:]...)
+	return syncPVNaiveAccountingMappings(output, active)
+}
+
+type byteRange struct {
+	start int
+	end   int
+}
+
+func syncPVNaiveAccountingMappings(input []byte, active []runtimecred.DesiredCredential) ([]byte, error) {
+	tokens, err := lexCaddyfile(input)
+	if err != nil {
+		return nil, err
+	}
+	openIndex, closeIndex, err := findForwardProxyBlock(tokens)
+	if err != nil {
+		return nil, err
+	}
+	directDepth := tokens[openIndex].depth + 1
+	socketCount := 0
+	nodeCount := 0
+	mappingRanges := make([]byteRange, 0)
+
+	for i := openIndex + 1; i < closeIndex; i++ {
+		tok := tokens[i]
+		if tok.kind != tokenWord {
+			continue
+		}
+		if tok.value != "pvnaive_accounting_socket" && tok.value != "pvnaive_node_id" && tok.value != "pvnaive_runtime_credential" {
+			continue
+		}
+		if tok.depth != directDepth || !tok.firstOnLine {
+			return nil, fmt.Errorf("naiveruntime: ambiguous %s directive", tok.value)
+		}
+		switch tok.value {
+		case "pvnaive_accounting_socket":
+			socketCount++
+		case "pvnaive_node_id":
+			nodeCount++
+		case "pvnaive_runtime_credential":
+			start, end, _ := lineBounds(input, tok.start)
+			if start < 0 || end <= start || end > len(input) {
+				return nil, errors.New("naiveruntime: invalid accounting mapping line bounds")
+			}
+			mappingRanges = append(mappingRanges, byteRange{start: start, end: end})
+		}
+	}
+
+	if socketCount == 0 && nodeCount == 0 && len(mappingRanges) == 0 {
+		return input, nil
+	}
+	if socketCount != 1 || nodeCount != 1 {
+		return nil, fmt.Errorf("naiveruntime: accounting metadata requires exactly one socket and node directive (socket=%d node=%d)", socketCount, nodeCount)
+	}
+	for _, credential := range active {
+		if !validRuntimeUUID(credential.ID) {
+			return nil, fmt.Errorf("naiveruntime: invalid accounting runtime UUID for %q", credential.Username)
+		}
+	}
+
+	cleaned := make([]byte, 0, len(input))
+	last := 0
+	for _, r := range mappingRanges {
+		if r.start < last || r.end < r.start {
+			return nil, errors.New("naiveruntime: overlapping accounting mapping lines")
+		}
+		cleaned = append(cleaned, input[last:r.start]...)
+		last = r.end
+	}
+	cleaned = append(cleaned, input[last:]...)
+
+	inspection, err := InspectCaddyfile(cleaned)
+	if err != nil {
+		return nil, err
+	}
+	var mappings strings.Builder
+	for _, credential := range active {
+		mappings.WriteString(inspection.indent)
+		mappings.WriteString("pvnaive_runtime_credential ")
+		mappings.WriteString(credential.Username)
+		mappings.WriteByte(' ')
+		mappings.WriteString(credential.ID)
+		mappings.WriteString(inspection.newline)
+	}
+
+	output := make([]byte, 0, len(cleaned)+mappings.Len())
+	output = append(output, cleaned[:inspection.credentialStart]...)
+	output = append(output, mappings.String()...)
+	output = append(output, cleaned[inspection.credentialStart:]...)
 	return output, nil
+}
+
+func validRuntimeUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		switch i {
+		case 8, 13, 18, 23:
+			if value[i] != '-' {
+				return false
+			}
+		default:
+			b := value[i]
+			if !((b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F')) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func equivalentActiveCredentials(active []runtimecred.DesiredCredential, live []parsedCredential) bool {

@@ -24,7 +24,7 @@ func roleAllowed(access Access, role string) bool {
 	case Auditor:
 		return role == "owner" || role == "auditor"
 	case Reseller:
-		return role == "owner" || role == "reseller"
+		return role == "owner" || role == "admin" || role == "reseller"
 	default:
 		return false
 	}

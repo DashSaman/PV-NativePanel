@@ -231,3 +231,48 @@ func stripBasicAuthLines(input []byte) []byte {
 	}
 	return []byte(out.String())
 }
+
+func TestRenderCredentialsKeepsPVNaiveAccountingMappingsInSync(t *testing.T) {
+	input := []byte(`example.test {
+    forward_proxy {
+        pvnaive_accounting_socket /run/pvnaive/accounting.sock
+        pvnaive_node_id testAmir5-3
+        pvnaive_runtime_credential old.user 99999999-9999-9999-9999-999999999999
+        basic_auth old.user "old-password-123"
+        hide_ip
+    }
+}
+`)
+	first, err := runtimecred.NewDesiredCredential("11111111-1111-1111-1111-111111111111", "new.user", "new-password-123", runtimecred.CredentialActive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := runtimecred.NewDesiredCredential("22222222-2222-2222-2222-222222222222", "second.user", "second-password-123", runtimecred.CredentialActive)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := RenderCredentials(input, []runtimecred.DesiredCredential{first, second})
+	if err != nil {
+		t.Fatalf("RenderCredentials() error = %v", err)
+	}
+	text := string(output)
+	for _, want := range []string{
+		"pvnaive_accounting_socket /run/pvnaive/accounting.sock",
+		"pvnaive_node_id testAmir5-3",
+		"pvnaive_runtime_credential new.user 11111111-1111-1111-1111-111111111111",
+		"pvnaive_runtime_credential second.user 22222222-2222-2222-2222-222222222222",
+		"basic_auth new.user",
+		"basic_auth second.user",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("rendered Caddyfile missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "pvnaive_runtime_credential old.user ") {
+		t.Fatalf("stale accounting mapping survived credential render:\n%s", text)
+	}
+	if strings.Count(text, "pvnaive_accounting_socket ") != 1 || strings.Count(text, "pvnaive_node_id ") != 1 {
+		t.Fatalf("accounting metadata duplicated:\n%s", text)
+	}
+}

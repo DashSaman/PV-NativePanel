@@ -7,6 +7,7 @@ type UserAdminState string
 const (
 	UserDraft     UserAdminState = "draft"
 	UserActive    UserAdminState = "active"
+	UserDisabled  UserAdminState = "disabled"
 	UserSuspended UserAdminState = "suspended"
 	UserRevoked   UserAdminState = "revoked"
 )
@@ -36,6 +37,7 @@ const (
 	AccessDraft         AccessState = "draft"
 	AccessPending       AccessState = "pending"
 	AccessActive        AccessState = "active"
+	AccessDisabled      AccessState = "disabled"
 	AccessSuspended     AccessState = "suspended"
 	AccessExpired       AccessState = "expired"
 	AccessQuotaDepleted AccessState = "quota_depleted"

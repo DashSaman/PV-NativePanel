@@ -28,8 +28,8 @@ func TestRBACMatrix(t *testing.T) {
 		{Auditor, "auditor", true},
 		{Auditor, "operator", false},
 		{Reseller, "owner", true},
+		{Reseller, "admin", true},
 		{Reseller, "reseller", true},
-		{Reseller, "admin", false},
 	}
 	for _, tt := range tests {
 		if got := roleAllowed(tt.access, tt.role); got != tt.want {

@@ -14,36 +14,78 @@ type User struct {
 }
 
 type ServiceTerm struct {
-	ID               string      `json:"id"`
-	TenantID         string      `json:"-"`
-	UserID           string      `json:"user_id"`
-	QuotaBytes       *int64      `json:"quota_bytes"`
-	DurationSeconds  int64       `json:"duration_seconds"`
-	StartPolicy      StartPolicy `json:"start_policy"`
-	PurchasedAt      time.Time   `json:"purchased_at"`
-	StartsAt         *time.Time  `json:"starts_at,omitempty"`
-	FirstConnectedAt *time.Time  `json:"first_connected_at,omitempty"`
-	ExpiresAt        *time.Time  `json:"expires_at,omitempty"`
-	State            TermState   `json:"state"`
-	Revision         int64       `json:"revision"`
+	ID                string      `json:"id"`
+	TenantID          string      `json:"-"`
+	UserID            string      `json:"user_id"`
+	PlanID            string      `json:"plan_id,omitempty"`
+	QuotaBytes        *int64      `json:"quota_bytes"`
+	DurationSeconds   int64       `json:"duration_seconds"`
+	NoExpiry          bool        `json:"no_expiry"`
+	StartPolicy       StartPolicy `json:"start_policy"`
+	PurchasedAt       time.Time   `json:"purchased_at"`
+	StartsAt          *time.Time  `json:"starts_at,omitempty"`
+	FirstConnectedAt  *time.Time  `json:"first_connected_at,omitempty"`
+	ExpiresAt         *time.Time  `json:"expires_at,omitempty"`
+	State             TermState   `json:"state"`
+	RenewalKind       string      `json:"renewal_kind,omitempty"`
+	RenewedFromTermID string      `json:"renewed_from_term_id,omitempty"`
+	Revision          int64       `json:"revision"`
+}
+
+type CustomerGroup struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Enabled   bool   `json:"enabled"`
+	SortOrder int    `json:"sort_order"`
+}
+
+type CustomerTag struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Enabled   bool   `json:"enabled"`
+	SortOrder int    `json:"sort_order"`
 }
 
 type CustomerView struct {
-	UserID                  string          `json:"id"`
-	Username                string          `json:"username"`
-	Status                  UserAdminState  `json:"status"`
-	ServiceTermID           string          `json:"service_term_id"`
-	ServiceState            TermState       `json:"service_state"`
-	QuotaBytes              *int64          `json:"quota_bytes"`
-	DurationSeconds         int64           `json:"duration_seconds"`
-	StartPolicy             StartPolicy     `json:"start_policy"`
-	StartsAt                *time.Time      `json:"starts_at,omitempty"`
-	FirstConnectedAt        *time.Time      `json:"first_connected_at,omitempty"`
-	ExpiresAt               *time.Time      `json:"expires_at,omitempty"`
-	RuntimeCredentialID     string          `json:"runtime_credential_id"`
-	SubscriptionAvailable   bool            `json:"subscription_available"`
-	SubscriptionRetrievable bool            `json:"subscription_retrievable"`
-	UsageCapability         UsageCapability `json:"usage_capability"`
+	UserID                  string           `json:"id"`
+	Username                string           `json:"username"`
+	DisplayName             string           `json:"display_name,omitempty"`
+	Status                  UserAdminState   `json:"status"`
+	StatusDimensions        StatusDimensions `json:"status_dimensions"`
+	ServiceTermID           string           `json:"service_term_id"`
+	ServiceState            TermState        `json:"service_state"`
+	PlanID                  string           `json:"plan_id,omitempty"`
+	PlanName                string           `json:"plan_name,omitempty"`
+	QuotaBytes              *int64           `json:"quota_bytes"`
+	DurationSeconds         int64            `json:"duration_seconds"`
+	NoExpiry                bool             `json:"no_expiry"`
+	StartPolicy             StartPolicy      `json:"start_policy"`
+	StartsAt                *time.Time       `json:"starts_at,omitempty"`
+	FirstConnectedAt        *time.Time       `json:"first_connected_at,omitempty"`
+	ExpiresAt               *time.Time       `json:"expires_at,omitempty"`
+	RuntimeCredentialID     string           `json:"runtime_credential_id"`
+	SubscriptionAvailable   bool             `json:"subscription_available"`
+	SubscriptionRetrievable bool             `json:"subscription_retrievable"`
+	UsageCapability         UsageCapability  `json:"usage_capability"`
+	Note                    string           `json:"note,omitempty"`
+	Group                   *CustomerGroup   `json:"group,omitempty"`
+	Tags                    []CustomerTag    `json:"tags,omitempty"`
+	AssignedActorID         string           `json:"assigned_actor_id,omitempty"`
+	CreatedByActorID        string           `json:"created_by_actor_id,omitempty"`
+	ResellerID              string           `json:"reseller_id,omitempty"`
+	CreatedAt               time.Time        `json:"created_at,omitempty"`
+	UpdatedAt               time.Time        `json:"updated_at,omitempty"`
+	LastRenewalAt           *time.Time       `json:"last_renewal_at,omitempty"`
+	OnHold                  bool             `json:"on_hold"`
+	NextPlanID              string           `json:"next_plan_id,omitempty"`
+	NextPlanName            string           `json:"next_plan_name,omitempty"`
+}
+
+type CustomerPage struct {
+	Customers []CustomerView `json:"customers"`
+	Page      int            `json:"page"`
+	PageSize  int            `json:"page_size"`
+	Total     int64          `json:"total"`
 }
 
 type SubscriptionTarget struct {
@@ -69,15 +111,19 @@ type CreateUserRecord struct {
 }
 
 type CreateServiceTermRecord struct {
-	TenantID        string
-	UserID          string
-	QuotaBytes      *int64
-	DurationSeconds int64
-	StartPolicy     StartPolicy
-	PurchasedAt     time.Time
-	StartsAt        *time.Time
-	ExpiresAt       *time.Time
-	State           TermState
+	TenantID          string
+	UserID            string
+	PlanID            string
+	QuotaBytes        *int64
+	DurationSeconds   int64
+	NoExpiry          bool
+	StartPolicy       StartPolicy
+	PurchasedAt       time.Time
+	StartsAt          *time.Time
+	ExpiresAt         *time.Time
+	State             TermState
+	RenewalKind       string
+	RenewedFromTermID string
 }
 
 type CreateSubscriptionTokenRecord struct {
