@@ -4,14 +4,27 @@ umask 077
 
 version="${1:-}"
 env_file="${PVNAIVE_DB_ENV_FILE:-/etc/pvnaive/db.env}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+migrations_dir="${PVNAIVE_MIGRATIONS_DIR:-${script_dir}/../../db/migrations}"
 
-case "${version}" in
-  1|2|3|4|5|6|7|8) ;;
-  *)
-    echo "ERROR: expected schema version must be between 1 and 8" >&2
-    exit 1
-    ;;
-esac
+[[ "${version}" =~ ^[1-9][0-9]*$ ]] || {
+  echo "ERROR: expected schema version must be a positive integer" >&2
+  exit 1
+}
+[[ -d "${migrations_dir}" ]] || {
+  echo "ERROR: migrations directory is missing: ${migrations_dir}" >&2
+  exit 1
+}
+latest_file="$(find "${migrations_dir}" -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]_*.up.sql' -printf '%f\n' | LC_ALL=C sort | tail -n1)"
+[[ "${latest_file}" =~ ^([0-9]{4})_ ]] || {
+  echo "ERROR: no valid migrations found in ${migrations_dir}" >&2
+  exit 1
+}
+latest_version=$((10#${BASH_REMATCH[1]}))
+(( version >= 1 && version <= latest_version )) || {
+  echo "ERROR: expected schema version must be between 1 and ${latest_version}" >&2
+  exit 1
+}
 
 [[ -f "${env_file}" ]] || {
   echo "ERROR: database environment file is missing: ${env_file}" >&2
