@@ -1,53 +1,139 @@
 # PVNaive — Worklog
 
-This log records significant verified work. Fine-grained historical live evidence remains under `ops/evidence/`; this file prevents future agents from repeating already-verified work.
+Last updated: 2026-08-30
 
-| Date (UTC) | Agent / provenance | Task | Description | Files / evidence | Tests / verification | Commit / state | Result |
-|---|---|---|---|---|---|---|---|
-| 2026-08-27 | prior PVNaive workflow | PVN-001 | Product naming fixed to PVNaive / NaiveProxy while preserving repository name | docs/handoff history | review | historical | DONE |
-| 2026-08-27 | prior PVNaive workflow | PVN-002 | Read-only production preflight of target host/domain/Caddy/network | `ops/evidence/*S03*preflight*` | live invariants | evidence | DONE |
-| 2026-08-27 | prior PVNaive workflow | PVN-003 | S02 filesystem/service foundation deployed | `ops/DEPLOYMENT_PROGRESS.md` history | stage + postflight | historical | DONE |
-| 2026-08-27 | prior PVNaive workflow | PVN-004 | PostgreSQL 18 v1 schema, roles, RLS, security context | `db/migrations/0001_*`, db tests | PG18 CI + live S03 | main lineage | DONE |
-| 2026-08-27 | prior PVNaive workflow | PVN-005 | encrypted age backup/restore/health gates | `scripts/db/*`, `tests/db/*` | backup SHA, restore drill, timer | S03 evidence | DONE |
-| 2026-08-27 | prior PVNaive workflow | PVN-006 | S03 production and independent postflight | S03 production evidence | live postflight | evidence | DONE |
-| 2026-08-27/28 | prior PVNaive workflow | PVN-007 | S04 auth architecture/spec/plan | `docs/superpowers/specs/2026-08-28-s04-auth-design.md`, plan | review + later implementation proof | branch history | DONE |
-| 2026-08-28 | prior PVNaive workflow | PVN-008..013 | Auth migration, crypto/session/TOTP/store/HTTP/bootstrap, CI rehearsal and bundle | auth/db/http/web files | Go/Web/PG18/rehearsal/bundle | verified lineage | DONE |
-| 2026-08-28 | prior PVNaive workflow | PVN-014 | Live localhost deployment/recovery; fixed dependency/backup/DB/service failures | S04 live evidence/history | safe recovery + rollback invariants | evidence | DONE |
-| 2026-08-28 | prior PVNaive workflow | PVN-015 | localhost independent postflight | main evidence | service/listener/schema/Caddy/SSH/firewall | main docs | DONE |
-| 2026-08-28 | prior PVNaive workflow | PVN-016 | real Owner bootstrap and auth lifecycle | main evidence | login/me/CSRF logout/revocation | main docs | DONE |
-| 2026-08-28 | prior PVNaive workflow | PVN-017 | public `/panel/` and `/api/` exposure | main S04 Caddy evidence | validate, reload-only, PID/NRestarts, panel/API/assets/camouflage/forward_proxy | `b98ffbfb...` production-doc head | DONE |
-| 2026-08-28 | Lead Engineer | PVN-018 | Owner-approved S04R Naive credential-management design and detailed TDD plan | S04R spec + plan | spec review | branch commits | DONE |
-| 2026-08-28 | Lead Engineer | PVN-019 | migration 0003; owner-only runtime credential table + runtime revision idempotency; rollback/version-aware tests | migration + DB tests | full CI `33133931739` | `6178ab97...` | DONE |
-| 2026-08-28 | Lead Engineer | PVN-020 | Runtime AES-GCM secret envelope, SHA fingerprint, CSPRNG generator and conservative username/password policy completed from prior RED tests | `internal/runtimecred/*` | Go tests + later full S04R CI | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-021 | Byte-preserving Naive Caddy `forward_proxy` parser/renderer with fail-closed ambiguity/injection handling | runtime Caddy transform code/tests | parser tests; pinned exact-Caddy proof later green | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-022/023 | Fixed-capability root Runtime Agent on AF_UNIX and expected-SHA Caddy operator with exact backup, validate-before-write, reload-only, postflight and rollback | `cmd/pvnaive-runtime-agent`, `internal/runtimeagent`, systemd/tests | unit/failure rehearsal | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-024 | Runtime DB store + desired/apply/applied saga; added compensation when DB commit fails after Runtime apply | runtime store/service tests | failure injection + full rehearsal | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-024/025 | Found missing double-failure distinction: DB finalization failure plus Runtime rollback failure initially returned generic consistency/runtime error | CI RED `33188928527`, HTTP RED `33189300005` | sentinel + HTTP mapping regression then green | follow-up commits | FIXED |
-| 2026-08-28 | Lead Engineer | PVN-025 | Owner-only `/api/v1/runtime/naive` endpoints completed with CSRF, idempotency, optimistic revision and secret redaction | `internal/httpapi/*`, runtime service | Go/API tests + full rehearsal | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-026 | Runtime UI completed for secure import/create/rename/rotate/enable/disable/revoke and one-time generated secret | `web/src/RuntimeNaive.tsx`, `runtime.ts`, CSS | Web tests/build; runtime client CSRF/If-Match/idempotency tests | S04R branch | DONE |
-| 2026-08-28 | Lead Engineer | PVN-027 | Wired full S04R disposable rehearsal into CI. First run exposed missing rehearsal helper binary | `.github/workflows/ci.yml`, `tests/stages/S04R_full_rehearsal.sh` | RED `33188524298`; helper build added; later green | branch commits | DONE |
-| 2026-08-28 | Lead Engineer | PVN-027 | Proved multiple `basic_auth` directives using exact pinned Naive Caddy `v2.11.2-naive` asset + fixed archive SHA; expanded full path with rename/stale-revision/envelope checks | `S04R_caddy_multi_auth_proof.sh`, full rehearsal, CI | exact `caddy validate/adapt` + full rehearsal | branch commits | DONE |
-| 2026-08-28 | Lead Engineer | PVN-027/Pilot bundle | Added S04R production bundle contract. Old S04 artifact failed because Runtime Agent/layout were missing | release tests/workflow | RED `33189668543` (`bundle missing bin/pvnaive`) | `40b139cc...` test checkpoint | FIXED |
-| 2026-08-28 | Lead Engineer | PVN-028/029 preparation | Added read-only live preflight contract and guarded existing-install upgrade path; first RED proved scripts were absent | `S04R-preflight.sh`, `S04R-upgrade.sh`, contract tests | RED `33189915241`; contract tests then green | branch commits | READY_FOR_LIVE_PREFLIGHT |
-| 2026-08-28 | Lead Engineer | PVN-028/029 preparation | Upgrade safety: exact preflight Caddy SHA lock, encrypted DB backup before migration, runtime key preservation, schema v3, runtime/API units, no installer Caddy mutation, rollback | stage scripts/systemd/release builder | DB safety contracts | branch commits | READY_FOR_LIVE_PREFLIGHT |
-| 2026-08-28 | Lead Engineer | QA | Web Runtime tests all passed but TypeScript production build caught test typing errors; DB contract also found a false-positive line-order check | web/db contract tests | RED `33190197374`; both test defects corrected | `068ab3f8...`, `a41fd84c...` lineage | FIXED |
-| 2026-08-28 | Lead Engineer / REVIEW | PVN-020..027 | Fresh whole-system checkpoint: Go, Web, PostgreSQL 18, exact pinned Caddy proof, S04 auth rehearsal, full S04R rehearsal, bundle contract, checksum and artifact upload all passed | CI run + artifact | CI `33190295766` all jobs PASS | `a41fd84c2f17076a3b190eafad3539c47b430503` | VERIFIED GREEN |
-| 2026-08-28 | Lead Engineer / REVIEW | Release QA | Downloaded CI artifact, verified outer `.tar.gz.sha256`, unpacked artifact and verified every entry in internal `SHA256SUMS`; release metadata reports stage `S04R-RUNTIME-CREDENTIALS`, schema 3, Caddy installer mutation false | artifact `PVNaive-S04-a41fd84...` | independent checksum/unpack verification | artifact id `9693505842` | VERIFIED |
-| 2026-08-28 | Lead Engineer | PVN-026 | TDD customer handoff convenience: required URI builder before implementation | `web/src/runtime.test.ts` | RED `33190665847`: only new `buildNaiveURI` test failed; 17 prior tests passed | `e6cd67b3...` | EXPECTED RED |
-| 2026-08-28 | Lead Engineer | PVN-026 | Added percent-encoded `naive+https://user:pass@host:443` builder and one-click Karing/Naive link in one-time secret dialog | `web/src/runtime.ts`, `RuntimeNaive.tsx` | Web job `33190796760`: tests + production build PASS | `69259a2e...` | DONE |
-| 2026-08-28 | Lead Engineer / PM | PVN-028 | Added Persian guarded Pilot install/customer-handoff runbook; explicitly scopes current Pilot vs future quota/customer portal/release work | `docs/PILOT_INSTALL_FA.md` | documentation review; final HEAD CI still required | docs commits | IN_PROGRESS |
-| 2026-08-28 | Lead Engineer / PM | PVN-068 | Canonical repository audit/PM documents updated from obsolete PVN-020 RED state toward S04R Pilot truth | ROADMAP/PROJECT_STATUS/AGENT_TASKS/FEATURE_MATRIX/KNOWN_ISSUES/WORKLOG/HANDOFF | cross-document review + final CI required | docs sync | IN_PROGRESS |
-| 2026-08-29 | Lead Engineer / QA | S05 customer flow CI | PostgreSQL 18 direct-subscription contract failed because the test expression parsed `NOT (...) ||` with the wrong precedence; fixed the regression test without changing migration semantics | `tests/db/direct_subscription_migration_test.sh` | RED CI `33222459957`; DB passes on later run | `a686bc6b4c5117a52b4c711c91e05608a385f877` | FIXED |
-| 2026-08-29 | Lead Engineer / QA | S05/S04R rehearsal compatibility | After DB became green, full S04R rehearsal exposed stale schema-v5 expectation; S05 also requires explicit Naive public host. Updated only the rehearsal harness to schema v6 and reserved `.invalid` test host | `tests/stages/S04R_full_rehearsal.sh` | RED CI `33222771113`; later full rehearsal PASS | `26873435d0460d0297900629ece6a7fc93553c0a` | FIXED |
-| 2026-08-29 | Lead Engineer / REVIEW | S05 final feature-code checkpoint | Fresh CI proved Go, Web, PostgreSQL 18/S05 migrations, pinned Naive Caddy proof, S04 auth rehearsal, full S04R rehearsal, production bundle contract/checksum and artifact upload | CI run `33222914088`, artifact `9705854213` | all jobs PASS; bundle SHA `646b911394d1a373c70c6cca6d6c12816bd76f2afff1d6f8fa70b3988be5ccd7` | `26873435d0460d0297900629ece6a7fc93553c0a` | VERIFIED GREEN |
+This log records significant verified transitions so future agents do not repeat completed work. Fine-grained historical evidence remains in git history, PR discussions and `ops/evidence/`; this file keeps the current durable milestone chain.
 
-## Current exact continuation
+## Historical foundation milestones
 
-- S05 customer/service feature code is green at checkpoint `26873435d0460d0297900629ece6a7fc93553c0a`, CI `33222914088`; any later documentation head still requires its own fresh CI before final completion is claimed.
-- Exact accounting remains blocked (`usage_capability.available=false`, `exact_accounting_not_proven`); do not fabricate used/remaining traffic or enable hard byte quota.
-- Trusted first-successful-CONNECT producer instrumentation is not yet proven end-to-end; keep first-use terms pending in production unless/until that producer proof exists.
-- Production has not been upgraded by this S05 branch. Before any live mutation, re-read `main:CONTINUE_HERE.md`, `main:ops/S04_LIVE_STATE.md`, newest `main:ops/evidence/*`, then perform the guarded read-only production preflight.
+| Date | Work | Evidence / result |
+|---|---|---|
+| 2026-08-27 | PVNaive naming, filesystem/service foundation, PostgreSQL 18/RLS, encrypted DB backup/restore, S03 deployment | historical S00-S03 evidence; DONE |
+| 2026-08-28 | S04 auth foundation, Owner bootstrap/lifecycle, protected public panel/API | auth/web/DB/rehearsal evidence; DONE |
+| 2026-08-28 | S04R Runtime credential management | AES-GCM Runtime secret, pinned Caddy parser/renderer, Runtime Agent, expected-SHA validate/backup/reload/rollback, revision saga, Owner API/UI; DONE |
+| 2026-08-28 | S04R exact pinned Caddy multi-auth proof + bundle/rehearsal | CI `33190295766` checkpoint and artifact checksum evidence; DONE |
+| 2026-08-29 | S05/S06 customer operations and read-only delivery | customer create/adopt/edit/lifecycle, quota/validity, read-only Subscription/QR; Production schema advanced through later release line; DONE baseline |
 
-## Logging rule going forward
+## 2026-08-29 — Parallel workstream integration
 
-Every verified task transition adds one row containing: date, agent/workstream, task ID, exact change, files, tests/CI run, commit, and result. Failed attempts that reveal a real defect also remain recorded; do not erase them from history.
+| Work / PR | What changed | Verification / current truth | Result |
+|---|---|---|---|
+| WS3 PR #15 | deterministic `/sub/<token>` machine output, `/s/<token>` human Account Page, local QR, security headers, explicit Subscription/password separation | tested WS3 head; real Karing app smoke intentionally still external follow-up | MERGED / CLIENT ACCEPTANCE PARTIAL |
+| WS1 PR #17 | exact direct-Naive accounting, schema 9, first-successful-CONNECT semantics, session/presence projection, hard-quota primitives, dedicated telemetry boundary, pinned forwardproxy patch | source head documented CI #913 + pinned-forwardproxy success | MERGED |
+| WS1 PR #18 | pending-reservation accounting completeness edge | exact-accounting/finalization CI follow-up | MERGED |
+| WS1 PR #19 | shared runtime directory/accounting socket permission fix | production preflight exposed real permission issue; regression/fix followed | MERGED |
+| WS1 PR #20 | bit-reproducible pinned accounting Caddy | two independent absolute workspaces required identical binary/SHA provenance | MERGED |
+| WS1 PR #21 | preserve telemetry socket across Runtime Agent restart | production restart rehearsal exposed socket lifecycle bug; preservation fix | MERGED |
+| WS1 PR #23 | replace shared RuntimeDirectory ownership with tmpfiles namespace | production CONNECT smoke exposed re-ownership of `accounting.sock`; durable tmpfiles fix proven live | MERGED |
+| WS2 PR #22 | schema 11 customer product management | plans/renewal/search/bulk/groups/tags/reseller/RBAC foundations + Runtime UUID mapping synchronization | MERGED |
+| PR #24 | encrypted backup validation SIGPIPE fix | real production backup validation moved to private temp file + `pg_restore --list FILE`; cleanup regression | MERGED |
+| PR #25 | activate merged customer product features in protected panel | customer/product UI + exact-accounting read-model integration work | MERGED |
+| PR #26 | fix customer list and polish customer/subscription UI | restored existing Production users in customer directory, compact operations UI, `/s` vs `/sub` UX cleanup, Persian account-page default; Go/Web/Production service evidence in PR | MERGED as `a021aa4b62c35b775fb521d042b2f8e6dbde10b0` |
+
+## Current Production read-only audit — 2026-08-30
+
+Lead audit against `testAmir5-3` / `namir.softarg.ir` recorded only non-secret state:
+
+- `pvnaive-api.service`: active;
+- `pvnaive-runtime-agent.service`: active;
+- `pvnaive-telemetry-agent.service`: active;
+- `caddy-naive.service`: active;
+- current observed service restart counters: 0;
+- API listener: loopback `127.0.0.1:8080`;
+- local readiness: HTTP 200;
+- public panel: HTTP 200;
+- public readiness: HTTP 200;
+- PostgreSQL schema version: 11;
+- active users: 6;
+- active Runtime credentials: 6;
+- ServiceTerms: 6;
+- active direct Subscription tokens: 6;
+- direct accounting term projections: 6 complete / 0 incomplete at audit instant;
+- append-only direct-accounting events: tens of thousands and actively growing;
+- direct-accounting session history present with active/open rows;
+- legacy `usage_ledger`: not the active direct-Naive accounting path;
+- backup files exist under `/var/backups/pvnaive`;
+- no PVNaive scheduled-backup systemd timer observed;
+- root filesystem: 79% used at audit instant;
+- Runtime/accounting Unix sockets remain distinct permission boundaries;
+- Production deploy marker files lag newer binary/web mtimes, so release provenance is not authoritative yet.
+
+No raw credential, password, Subscription token, encryption key or secret-bearing Caddy content was printed or committed.
+
+## Current competitor audit — 2026-08-30
+
+Official current snapshots re-checked beyond README:
+
+- 3x-ui `f727d04f6522bb94a8fb52e8352fdcafb51c11e1` / v3.7.0;
+- PasarGuard `aebf7256927710329d380d67ce96224f287ae5f6` / v5.3.0;
+- Hiddify Manager default `dev@a99c811aa63fe908f1e06607b81f475b502ebf07`; stable v12.3.3;
+- OV-PvNetwork `5b6a578bfe7733ebc67c08d9c431da6e32ac7ced` / public v1.0.0-rc1.
+
+Result: new 120-feature matrix added at `docs/PANEL_PARITY_MASTER_2026-08-30.md`. GPL/AGPL source remains reference-only.
+
+## Current PR / CI reconciliation — PR #27
+
+Branch: `lead/parity-truth-2026-08-30`
+
+Starting main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
+
+Reason:
+
+- PR #26 final bot head `317ad74a5f7402bfff7de0716b5c1a4b246a6e5a` recorded failures for normal CI + WS1 workflows;
+- immediately preceding human commit `06c3c697bd4a7a988dab634b24a7dbef7614e947` passed all three;
+- prior bot commit `a51b8797c13745bdcff19b20a032fceea86de84a` also passed all three;
+- therefore Lead created a clean current-main PR to reproduce instead of calling it a code regression or bypassing tests.
+
+PR #27 milestone commits so far:
+
+| Commit | Change |
+|---|---|
+| `154799745918471b761b8b561c08b408ca44d26a` | Lead reconciliation execution plan |
+| `d4fefa45cfdcd99263ba5eff0394af3943f63106` | refreshed 120-feature current competitor parity matrix |
+| `6904efbe85489c5528f8a187b9b3829d54ad7c01` | short canonical feature matrix reconciled |
+| `7fe62fdc936ecadee81983ae560cc174d5b862ee` | canonical project status reconciled |
+| `293f999208ba4976c8cafde247541a90c20a7513` | handoff replaced with current schema 11/Production truth |
+| `b951c8bc2b441962f95c24a6e313ef6aee9f8b56` | continuation pointer replaced |
+| `8f8b08c1d7dfe4a2590216b636bd3fedc2dfa946` | known issues reconciled; obsolete accounting blocker closed; real P0 bugs retained |
+| `9be0f3bb2d0929fbfa930d12c1ca56c9641b7ce3` | Agent board aligned to Owner 50-step sequence |
+| `21f3b5a03ddfdef0251158ce3155687dfa96edc0` | roadmap realigned + legacy PVN crosswalk |
+
+CI observation during this reconciliation:
+
+- normal PR workflows are triggering on PR #27;
+- WS1 Exact Accounting completed successfully on parity-matrix head `d4fefa45cfdcd99263ba5eff0394af3943f63106`;
+- pinned-forwardproxy and normal CI were still running at the time of this log update;
+- no final claim is allowed until all required workflows are green on the final exact documentation head.
+
+## Re-audited current P0 defects — 2026-08-30
+
+Lead source inspection confirmed these are still real:
+
+1. refresh-token reuse-family bug: `refresh` → `BeginAuthenticated`, and `BeginAuthenticated` requires `revoked_at IS NULL` before rotation reuse detection;
+2. generic commit-before-success bug: authenticated middleware runs handler before commit and ignores final `Tx.Commit()` error;
+3. readiness remains configuration-based rather than bounded DB/schema-backed.
+
+See `KNOWN_ISSUES.md` for exact done gates.
+
+## Old PR classification
+
+| PR | Classification | Evidence / action |
+|---:|---|---|
+| #4 | STILL USEFUL — small extract only | old branch adds `buildKaringSingBoxProfile` and explicit Copy Karing config UX not present on main; reconsider during client lane, do not merge wholesale |
+| #5 | SUPERSEDED / MERGED ELSEWHERE | newer customer lifecycle exists on main |
+| #6 | SUPERSEDED / MERGED ELSEWHERE | newer customer/product/subscription flow exists on main |
+| #8 | SUPERSEDED / ARCHIVE | replaced by integrated WS1 accounting implementation |
+| #16 | STILL USEFUL — manual extraction | 38 files include metrics, request middleware, OpenAPI, observability, Doctor, scheduled backup/restore drill, deploy/rollback, load rehearsal, notifications, fleet and system dashboard; old branch must never be blind-merged |
+
+## Exact continuation
+
+1. finish canonical docs update on PR #27;
+2. trigger/check all workflows on exact final head;
+3. review PR #27 and merge only when green;
+4. create fresh PR #16 integration branch from latest main;
+5. inspect/extract useful units one-by-one with TDD/full CI;
+6. then continue Owner order: legacy accounting baseline → `/s` accounting → Manual Reset Usage → Bulk Reset Usage → periodic reset → hard-quota proof → first-CONNECT proof → sessions/limits → remaining roadmap.
+
+## Logging rule
+
+Every verified transition adds date, task, exact source/commit, change, tests/CI, Production evidence if applicable, result and exact next step. Real failures that reveal a defect remain in history; never erase them merely to make the log look green.
