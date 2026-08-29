@@ -39,13 +39,16 @@ func run() error {
 		return fmt.Errorf("invalid pvnaive group id: %w", err)
 	}
 
-	if err := os.MkdirAll(runtimeDir, 0750); err != nil {
+	// The telemetry agent runs unprivileged with supplementary group pvnaive and
+	// must be able to create accounting.sock here. Other local users receive
+	// traverse-only access; socket modes remain the authorization boundary.
+	if err := os.MkdirAll(runtimeDir, 0771); err != nil {
 		return fmt.Errorf("create runtime directory: %w", err)
 	}
 	if err := os.Chown(runtimeDir, 0, gid); err != nil {
 		return fmt.Errorf("chown runtime directory: %w", err)
 	}
-	if err := os.Chmod(runtimeDir, 0750); err != nil {
+	if err := os.Chmod(runtimeDir, 0771); err != nil {
 		return fmt.Errorf("chmod runtime directory: %w", err)
 	}
 	if filepath.Dir(runtimeagent.DefaultSocketPath) != runtimeDir {
