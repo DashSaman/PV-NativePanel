@@ -46,6 +46,18 @@ type CustomerTag struct {
 	SortOrder int    `json:"sort_order"`
 }
 
+type CustomerUsage struct {
+	Available          bool       `json:"available"`
+	AccountingComplete bool       `json:"accounting_complete"`
+	UploadBytes        int64      `json:"upload_bytes"`
+	DownloadBytes      int64      `json:"download_bytes"`
+	UsedBytes          int64      `json:"used_bytes"`
+	RemainingBytes     *int64     `json:"remaining_bytes"`
+	LastOnline         *time.Time `json:"last_online,omitempty"`
+	Online             bool       `json:"online"`
+	SessionCount       int        `json:"session_count"`
+}
+
 type CustomerView struct {
 	UserID                  string           `json:"id"`
 	Username                string           `json:"username"`
@@ -67,6 +79,7 @@ type CustomerView struct {
 	SubscriptionAvailable   bool             `json:"subscription_available"`
 	SubscriptionRetrievable bool             `json:"subscription_retrievable"`
 	UsageCapability         UsageCapability  `json:"usage_capability"`
+	Usage                   *CustomerUsage   `json:"usage,omitempty"`
 	Note                    string           `json:"note,omitempty"`
 	Group                   *CustomerGroup   `json:"group,omitempty"`
 	Tags                    []CustomerTag    `json:"tags,omitempty"`
