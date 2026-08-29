@@ -17,6 +17,7 @@ func WithOperationalMiddleware(next http.Handler) http.Handler {
 	if next == nil {
 		next = http.NotFoundHandler()
 	}
+	next = withOpenAPI(next)
 	limiter := newRequestRateLimiter()
 	return requestInstrumentation(securityHeaders(limiter.middleware(next)))
 }
