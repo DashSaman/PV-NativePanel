@@ -39,23 +39,26 @@ for section in news videos audio gallery; do
   }
 done
 
-# The site must navigate internally instead of sending every interaction off-site.
 internal_link_count="$(grep -RhoE 'href="/(news|videos|audio|gallery|downloads|sources|about)/[^"#]*"' "${site_root}" --include='*.html' | wc -l | tr -d ' ')"
 [[ "${internal_link_count}" -ge 12 ]] || {
   echo "ERROR: public portal needs richer internal navigation (found ${internal_link_count})" >&2
   exit 1
 }
 
-# The management surface stays intentionally undiscoverable from all public files.
 if grep -RIq --include='*.html' --include='*.json' 'href="/panel\|href='"'"'/panel\|/panel/' "${site_root}"; then
   echo 'ERROR: public portal advertises the management panel' >&2
   exit 1
 fi
 
-# External href/src values must be HTTPS; local absolute paths are allowed.
 if grep -RhoE '(href|src)="http://[^" ]+"' "${site_root}" --include='*.html' --include='*.js' | grep -q .; then
   echo 'ERROR: public portal contains non-HTTPS external asset/link' >&2
   exit 1
 fi
+
+python3 "${repo_root}/tests/site/public_media_manifest_test.py"
+python3 "${repo_root}/tests/site/public_media_density_test.py"
+python3 "${repo_root}/tests/site/public_media_retry_test.py"
+bash "${repo_root}/tests/site/public_media_pages_test.sh"
+bash "${repo_root}/tests/site/media_sync_test.sh"
 
 echo 'PUBLIC_PORTAL_ROUTES_CONTRACT=PASSED'
