@@ -132,6 +132,7 @@ func (s *Service) CreateCustomer(ctx context.Context, tx *sql.Tx, actorID, idemp
 	term, err := s.store.CreateServiceTermTx(ctx, tx, CreateServiceTermRecord{
 		TenantID: tenantID, UserID: user.ID, QuotaBytes: quotaBytes, DurationSeconds: durationSeconds,
 		StartPolicy: startPolicy, PurchasedAt: now, StartsAt: timing.StartsAt, ExpiresAt: timing.ExpiresAt, State: timing.State,
+		AccountingBaseline: FreshManagedAccountingBaseline(now),
 	})
 	if err != nil {
 		return CreateCustomerResult{}, fmt.Errorf("customer: create service term: %w", err)
