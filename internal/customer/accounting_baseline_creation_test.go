@@ -102,7 +102,7 @@ func TestProductCreateTermStartsKnownZeroAccountingEpoch(t *testing.T) {
 	quota := int64(25)
 	service := &Service{}
 	record, _, _, err := service.productCreateTerm(context.Background(), &sql.Tx{}, baselineProductStore{}, "tenant", "fresh-product", ProductCreateCustomerInput{
-		QuotaGB: &quota,
+		QuotaGB:  &quota,
 		Validity: ValidityInput{Mode: ValidityOnCreation, DurationDays: 30},
 	}, now)
 	if err != nil {
