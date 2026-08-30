@@ -114,6 +114,7 @@ func (s *Service) AdoptRuntimeCredential(ctx context.Context, tx *sql.Tx, actorI
 	term, err := s.store.CreateServiceTermTx(ctx, tx, CreateServiceTermRecord{
 		TenantID: tenantID, UserID: user.ID, QuotaBytes: quotaBytes, DurationSeconds: durationSeconds,
 		StartPolicy: startPolicy, PurchasedAt: now, StartsAt: timing.StartsAt, ExpiresAt: timing.ExpiresAt, State: timing.State,
+		AccountingBaseline: UnknownLegacyAccountingBaseline(now),
 	})
 	if err != nil {
 		return CreateCustomerResult{}, fmt.Errorf("customer: create adopted service term: %w", err)
