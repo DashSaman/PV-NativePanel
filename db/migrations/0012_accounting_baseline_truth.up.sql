@@ -16,12 +16,13 @@ ALTER TABLE pvnaive.service_terms
     ADD COLUMN accounting_baseline_upload_bytes bigint,
     ADD COLUMN accounting_baseline_download_bytes bigint;
 
--- service_terms uses FORCE ROW LEVEL SECURITY and its tenant policy is granted
--- to pvnaive_app rather than the owning migration role. The migration already
--- owns an ACCESS EXCLUSIVE table lock for ALTER TABLE, so disable RLS only for
--- this transactional owner-only backfill and restore the exact protection
--- before any constraint/trigger is committed.
+-- service_terms and user_runtime_credentials both use FORCE ROW LEVEL SECURITY
+-- with policies granted to pvnaive_app rather than the owning migration role.
+-- The migration already owns table locks through this transaction, so disable
+-- RLS only for the owner-only backfill and restore the exact protection before
+-- constraints/triggers are committed.
 ALTER TABLE pvnaive.service_terms DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pvnaive.user_runtime_credentials DISABLE ROW LEVEL SECURITY;
 
 -- Every pre-v12 ServiceTerm predates explicit baseline provenance. Do not infer
 -- historical bytes from empty legacy ledgers or from the direct accounting
@@ -41,6 +42,8 @@ SET accounting_baseline_state = 'unknown',
     accounting_baseline_upload_bytes = NULL,
     accounting_baseline_download_bytes = NULL;
 
+ALTER TABLE pvnaive.user_runtime_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pvnaive.user_runtime_credentials FORCE ROW LEVEL SECURITY;
 ALTER TABLE pvnaive.service_terms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pvnaive.service_terms FORCE ROW LEVEL SECURITY;
 
