@@ -131,6 +131,11 @@ SELECT
     st.starts_at,
     st.first_connected_at,
     st.expires_at,
+    st.accounting_baseline_state,
+    st.accounting_baseline_source,
+    st.accounting_baseline_cutoff_at,
+    st.accounting_baseline_upload_bytes,
+    st.accounting_baseline_download_bytes,
     urc.runtime_credential_id::text,
     EXISTS (
         SELECT 1
@@ -163,7 +168,8 @@ ORDER BY u.created_at DESC`)
 	out := make([]CustomerView, 0)
 	for rows.Next() {
 		var view CustomerView
-		var userState, termState, startPolicy string
+		var userState, termState, startPolicy, baselineState, baselineSource string
+		var baselineUpload, baselineDownload sql.NullInt64
 		if err := rows.Scan(
 			&view.UserID,
 			&view.Username,
@@ -176,6 +182,11 @@ ORDER BY u.created_at DESC`)
 			&view.StartsAt,
 			&view.FirstConnectedAt,
 			&view.ExpiresAt,
+			&baselineState,
+			&baselineSource,
+			&view.AccountingBaseline.CutoffAt,
+			&baselineUpload,
+			&baselineDownload,
 			&view.RuntimeCredentialID,
 			&view.SubscriptionAvailable,
 		); err != nil {
@@ -184,6 +195,10 @@ ORDER BY u.created_at DESC`)
 		view.Status = UserAdminState(userState)
 		view.ServiceState = TermState(termState)
 		view.StartPolicy = StartPolicy(startPolicy)
+		view.AccountingBaseline.State = AccountingBaselineState(baselineState)
+		view.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+		view.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+		view.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 		view.UsageCapability = DefaultUsageCapability()
 		out = append(out, view)
 	}

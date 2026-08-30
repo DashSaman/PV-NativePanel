@@ -15,12 +15,15 @@ func (s *PostgresStore) CurrentRenewalContextTx(ctx context.Context, tx *sql.Tx,
 	var out RenewalContext
 	var planID sql.NullString
 	var renewedFrom sql.NullString
-	var startPolicy, state string
+	var startPolicy, state, baselineState, baselineSource string
+	var baselineUpload, baselineDownload sql.NullInt64
 	err := tx.QueryRowContext(ctx, `
 SELECT u.tenant_id::text, u.id::text,
        st.id::text, st.plan_id::text, st.quota_bytes, st.duration_seconds, st.no_expiry,
        st.start_policy, st.purchased_at, st.starts_at, st.first_connected_at, st.expires_at,
-       st.state, st.renewal_kind, st.renewed_from_term_id::text, st.revision,
+       st.state, st.renewal_kind, st.renewed_from_term_id::text,
+       st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
+       st.accounting_baseline_upload_bytes, st.accounting_baseline_download_bytes, st.revision,
        urc.runtime_credential_id::text
 FROM pvnaive.users u
 JOIN LATERAL (
@@ -37,8 +40,9 @@ LIMIT 1`, userID).Scan(
 		&out.TenantID, &out.UserID,
 		&out.Current.ID, &planID, &out.Current.QuotaBytes, &out.Current.DurationSeconds, &out.Current.NoExpiry,
 		&startPolicy, &out.Current.PurchasedAt, &out.Current.StartsAt, &out.Current.FirstConnectedAt,
-		&out.Current.ExpiresAt, &state, &out.Current.RenewalKind, &renewedFrom, &out.Current.Revision,
-		&out.RuntimeCredentialID,
+		&out.Current.ExpiresAt, &state, &out.Current.RenewalKind, &renewedFrom,
+		&baselineState, &baselineSource, &out.Current.AccountingBaseline.CutoffAt, &baselineUpload, &baselineDownload,
+		&out.Current.Revision, &out.RuntimeCredentialID,
 	)
 	if err != nil {
 		return RenewalContext{}, fmt.Errorf("customer: resolve renewal context: %w", err)
@@ -47,6 +51,10 @@ LIMIT 1`, userID).Scan(
 	out.Current.UserID = out.UserID
 	out.Current.StartPolicy = StartPolicy(startPolicy)
 	out.Current.State = TermState(state)
+	out.Current.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	out.Current.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	out.Current.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	out.Current.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	if planID.Valid {
 		out.Current.PlanID = planID.String
 	}
@@ -275,7 +283,7 @@ SET next_plan_id=NULL,next_plan_source_term_id=NULL,next_plan_scheduled_at=NULL,
     updated_by_actor_id=$2::uuid,revision=revision+1,updated_at=clock_timestamp()
 WHERE user_id=$1::uuid`, userID, actorID)
 	if err != nil {
-		return fmt.Errorf("customer: clear next plan: %w", err)
+		return fmt.Errorf("customer: clear next plan : %w", err)
 	}
 	if affected, _ := result.RowsAffected(); affected == 0 {
 		return ErrNextPlanMissing
