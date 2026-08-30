@@ -3,6 +3,7 @@ import type { Principal } from "./auth";
 import { DEFAULT_PRODUCT_FILTERS, listProductCustomers, listProductPlans } from "./productApi";
 import { getRuntimeStatus } from "./runtime";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
+import { SystemDashboard } from "./SystemDashboard";
 
 type Props = { role: Principal["role"] };
 type Snapshot = {
@@ -110,6 +111,8 @@ export function Dashboard({ role }: Props) {
         </div>
       </article>
     </section>
+
+    {canUseRawRuntime(role) && <SystemDashboard/>}
 
     <section className="quick-actions dashboard-card">
       <div><p className="eyebrow">دسترسی سریع</p><h2>مدیریت روزمره</h2></div>
