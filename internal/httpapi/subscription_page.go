@@ -6,7 +6,9 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
@@ -17,11 +19,15 @@ type accountMessages struct {
 	Status           map[string]string
 	TotalQuota       string
 	Used             string
+	Upload           string
+	Download         string
 	RemainingTraffic string
 	Expiry           string
 	RemainingDays    string
 	StartPolicy      string
 	Online           string
+	OnlineValue      string
+	OfflineValue     string
 	LastOnline       string
 	UsageUnavailable string
 	Unavailable      string
@@ -62,6 +68,8 @@ type accountPageData struct {
 	StatusClass        string
 	QuotaLabel         string
 	UsageLabel         string
+	UploadLabel        string
+	DownloadLabel      string
 	RemainingTraffic   string
 	ExpiryLabel        string
 	RemainingDaysLabel string
@@ -99,6 +107,8 @@ var accountPageTemplate = template.Must(template.New("pvnaive-account").Parse(`<
 <section class="service-grid">
 <article class="service-card primary"><span>{{.M.TotalQuota}}</span><strong>{{.QuotaLabel}}</strong></article>
 <article class="service-card"><span>{{.M.Used}}</span><strong>{{.UsageLabel}}</strong></article>
+<article class="service-card"><span>{{.M.Upload}}</span><strong>{{.UploadLabel}}</strong></article>
+<article class="service-card"><span>{{.M.Download}}</span><strong>{{.DownloadLabel}}</strong></article>
 <article class="service-card"><span>{{.M.RemainingTraffic}}</span><strong>{{.RemainingTraffic}}</strong></article>
 <article class="service-card"><span>{{.M.Expiry}}</span><strong>{{.ExpiryLabel}}</strong></article>
 </section>
@@ -145,13 +155,42 @@ func (s *server) renderAccountPage(w http.ResponseWriter, r *http.Request, token
 		directQR, _ = localQRDataURI(profile.DirectURI)
 	}
 	usageLabel := messages.UsageUnavailable
+	uploadLabel := messages.UsageUnavailable
+	downloadLabel := messages.UsageUnavailable
 	remainingTraffic := messages.UsageUnavailable
-	if profile.UsageAvailable && profile.UsedBytes != nil {
-		usageLabel = subscriptionByteLabel(*profile.UsedBytes)
-		if profile.RemainingBytes != nil {
-			remainingTraffic = subscriptionByteLabel(*profile.RemainingBytes)
-		} else if profile.QuotaBytes == nil {
-			remainingTraffic = messages.Unlimited
+	onlineLabel := messages.Unavailable
+	lastOnlineLabel := messages.Unavailable
+	if s.config.AccountingStore != nil && profile.ServiceTermID != "" {
+		now := time.Now().UTC()
+		model, readErr := s.config.AccountingStore.Read(r.Context(), profile.ServiceTermID, now, customerAccountingStaleAfter)
+		if readErr == nil {
+			if model.LastOnline != nil {
+				lastOnlineLabel = model.LastOnline.UTC().Format("2006-01-02 15:04 UTC")
+			}
+			if model.AccountingComplete {
+				onlineLabel = messages.OfflineValue
+				if model.Online {
+					onlineLabel = messages.OnlineValue
+				}
+			}
+			baseline := customer.AccountingBaseline{
+				State:         customer.AccountingBaselineState(profile.AccountingBaseline.State),
+				Source:        customer.AccountingBaselineSource(profile.AccountingBaseline.Source),
+				CutoffAt:      profile.AccountingBaseline.CutoffAt,
+				UploadBytes:   profile.AccountingBaseline.UploadBytes,
+				DownloadBytes: profile.AccountingBaseline.DownloadBytes,
+			}
+			usage, capability, composeErr := customer.ComposeCustomerUsage(baseline, model.UploadBytes, model.DownloadBytes, profile.QuotaBytes, model.AccountingComplete)
+			if composeErr == nil && capability.Available && usage.UsedBytes != nil && usage.UploadBytes != nil && usage.DownloadBytes != nil {
+				usageLabel = subscriptionByteLabel(*usage.UsedBytes)
+				uploadLabel = subscriptionByteLabel(*usage.UploadBytes)
+				downloadLabel = subscriptionByteLabel(*usage.DownloadBytes)
+				if usage.RemainingBytes != nil {
+					remainingTraffic = subscriptionByteLabel(*usage.RemainingBytes)
+				} else if profile.QuotaBytes == nil {
+					remainingTraffic = messages.Unlimited
+				}
+			}
 		}
 	}
 	data := accountPageData{
@@ -163,12 +202,14 @@ func (s *server) renderAccountPage(w http.ResponseWriter, r *http.Request, token
 		StatusClass:        subscriptionStatusClass(profile),
 		QuotaLabel:         accountQuotaLabel(profile.QuotaBytes, messages),
 		UsageLabel:         usageLabel,
+		UploadLabel:        uploadLabel,
+		DownloadLabel:      downloadLabel,
 		RemainingTraffic:   remainingTraffic,
 		ExpiryLabel:        accountExpiryLabel(profile, messages),
 		RemainingDaysLabel: accountRemainingDays(profile, messages),
 		StartLabel:         accountStartLabel(profile.StartPolicy, messages),
-		OnlineLabel:        messages.Unavailable,
-		LastOnlineLabel:    messages.Unavailable,
+		OnlineLabel:        onlineLabel,
+		LastOnlineLabel:    lastOnlineLabel,
 		SubscriptionURL:    subscriptionURL,
 		DirectURI:          profile.DirectURI,
 		SubscriptionQR:     template.URL(subscriptionQR),
@@ -194,7 +235,7 @@ func messagesForLanguage(lang string) accountMessages {
 		return accountMessages{
 			Title: "Account status", Subtitle: "NaiveProxy account", ReadOnlyNotice: "This page is read-only. Opening or copying it never changes your token, password, quota, expiry, first-use state, or Runtime credential.",
 			Status:     map[string]string{"active": "Active", "pending": "Pending first connection", "suspended": "Suspended", "expired": "Expired", "depleted": "Quota depleted", "revoked": "Revoked", "inactive": "Inactive"},
-			TotalQuota: "Total quota", Used: "Used", RemainingTraffic: "Remaining", Expiry: "Expiry", RemainingDays: "Remaining days", StartPolicy: "Start policy", Online: "Online", LastOnline: "Last online",
+			TotalQuota: "Total quota", Used: "Used", Upload: "Upload", Download: "Download", RemainingTraffic: "Remaining", Expiry: "Expiry", RemainingDays: "Remaining days", StartPolicy: "Start policy", Online: "Online", OnlineValue: "Online", OfflineValue: "Offline", LastOnline: "Last online",
 			UsageUnavailable: "Usage unavailable", Unavailable: "Unavailable", Unlimited: "Unlimited", NoExpiry: "No expiry", Expired: "Expired", DaysSuffix: "days",
 			FromCreation: "From creation", FromFirstConnect: "From first successful connection", FixedTimestamp: "Fixed expiry",
 			Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "Subscription QR", DirectNaiveQR: "Direct Naive QR", CopySubscription: "Copy Subscription", CopyDirect: "Copy Direct Naive", Copied: "Copied ✓",
@@ -207,7 +248,7 @@ func messagesForLanguage(lang string) accountMessages {
 	return accountMessages{
 		Title: "وضعیت حساب", Subtitle: "سرویس NaiveProxy", ReadOnlyNotice: "این صفحه فقط خواندنی است؛ باز کردن یا کپی کردن آن توکن، رمز، حجم، انقضا، اولین اتصال یا اطلاعات Runtime را تغییر نمی‌دهد.",
 		Status:     map[string]string{"active": "فعال", "pending": "منتظر اولین اتصال", "suspended": "تعلیق", "expired": "منقضی", "depleted": "حجم تمام", "revoked": "لغوشده", "inactive": "غیرفعال"},
-		TotalQuota: "حجم کل", Used: "مصرف", RemainingTraffic: "حجم باقی‌مانده", Expiry: "انقضا", RemainingDays: "روز باقی‌مانده", StartPolicy: "شروع اعتبار", Online: "آنلاین", LastOnline: "آخرین آنلاین",
+		TotalQuota: "حجم کل", Used: "مصرف", Upload: "آپلود", Download: "دانلود", RemainingTraffic: "حجم باقی‌مانده", Expiry: "انقضا", RemainingDays: "روز باقی‌مانده", StartPolicy: "شروع اعتبار", Online: "آنلاین", OnlineValue: "آنلاین", OfflineValue: "آفلاین", LastOnline: "آخرین آنلاین",
 		UsageUnavailable: "در دسترس نیست", Unavailable: "در دسترس نیست", Unlimited: "نامحدود", NoExpiry: "بدون انقضا", Expired: "منقضی", DaysSuffix: "روز",
 		FromCreation: "از زمان ثبت", FromFirstConnect: "از اولین اتصال موفق", FixedTimestamp: "تاریخ دستی",
 		Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "QR اشتراک", DirectNaiveQR: "QR مستقیم Naive", CopySubscription: "کپی لینک ساب", CopyDirect: "کپی Direct Naive", Copied: "کپی شد ✓",

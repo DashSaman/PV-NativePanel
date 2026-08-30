@@ -99,8 +99,11 @@ grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=6' "${setter_env}" || {
   echo 'ERROR: expected schema setter did not persist schema version 6' >&2
   exit 1
 }
-if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" 13 >/dev/null 2>&1; then
-  echo 'ERROR: expected schema setter accepted unsupported schema version 13' >&2
+latest_schema="$(find db/migrations -maxdepth 1 -type f -name '????_*.up.sql' -printf '%f\n' | cut -c1-4 | sort -n | tail -n1)"
+[[ "${latest_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not resolve latest schema for setter contract' >&2; exit 1; }
+unsupported_schema=$((10#${latest_schema} + 1))
+if PVNAIVE_DB_ENV_FILE="${setter_env}" bash "${expected_schema_setter}" "${unsupported_schema}" >/dev/null 2>&1; then
+  echo "ERROR: expected schema setter accepted unsupported schema version ${unsupported_schema}" >&2
   exit 1
 fi
 trap - EXIT HUP INT TERM

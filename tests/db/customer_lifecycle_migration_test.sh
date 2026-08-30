@@ -44,7 +44,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${version}" == "12" ]] || { echo "ERROR: schema version=${version}, want=12" >&2; exit 1; }
+[[ "${version}" == "13" ]] || { echo "ERROR: schema version=${version}, want=13" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT
@@ -130,8 +130,8 @@ second_primary_rc=$?
 set -e
 [[ "${second_primary_rc}" -ne 0 ]] || { echo 'ERROR: second active primary binding was accepted' >&2; exit 1; }
 
-# Exercise each destructive rollback in order: v12 -> v11 -> ... -> v3.
-for want in 11 10 9 8 7 6 5 4 3; do
+# Exercise each destructive rollback in order: v13 -> v12 -> ... -> v3.
+for want in 12 11 10 9 8 7 6 5 4 3; do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
   got="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${got}" == "${want}" ]] || { echo "ERROR: rollback schema=${got}, want=${want}" >&2; exit 1; }

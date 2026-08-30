@@ -72,16 +72,19 @@ func (r *subscriptionRows) Next(dest []driver.Value) error {
 func TestPostgresStoreResolveTokenUsesSecurityDefinerResolver(t *testing.T) {
 	expires := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
 	conn := &subscriptionScriptConn{
-		queryContains: "pvnaive.resolve_direct_subscription_profile",
+		queryContains: "pvnaive.resolve_direct_subscription_account_profile",
 		columns: []string{
-			"runtime_credential_id", "runtime_username", "user_state", "service_state",
+			"service_term_id", "runtime_credential_id", "runtime_username", "user_state", "service_state",
 			"secret_ciphertext", "secret_nonce", "encryption_key_id", "quota_bytes",
 			"duration_seconds", "start_policy", "starts_at", "first_connected_at", "expires_at",
+			"accounting_baseline_state", "accounting_baseline_source", "accounting_baseline_cutoff_at",
+			"accounting_baseline_upload_bytes", "accounting_baseline_download_bytes",
 		},
 		values: []driver.Value{
-			"runtime-1", "customer1", "active", "pending",
+			"term-1", "runtime-1", "customer1", "active", "pending",
 			[]byte("ciphertext-0123456789"), []byte("123456789012"), "runtime-v1", int64(53687091200),
 			int64(2592000), "on_first_successful_connection", nil, nil, expires,
+			"known", "fresh_managed_term", time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC), int64(0), int64(0),
 		},
 	}
 	registerSubscriptionDriver.Do(func() { sql.Register("pvnaive-subscription-script", subscriptionDriverState) })

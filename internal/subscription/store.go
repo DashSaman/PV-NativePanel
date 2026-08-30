@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type PostgresStore struct {
@@ -21,11 +22,14 @@ func (s *PostgresStore) ResolveToken(ctx context.Context, hash [32]byte) (Record
 	}
 
 	var record Record
-	var quota, duration sql.NullInt64
+	var quota, duration, baselineUpload, baselineDownload sql.NullInt64
 	var startPolicy sql.NullString
 	var startsAt, firstConnectedAt, expiresAt sql.NullTime
+	var baselineState, baselineSource string
+	var baselineCutoff time.Time
 	err := s.db.QueryRowContext(ctx, `
 SELECT
+    service_term_id::text,
     runtime_credential_id::text,
     runtime_username,
     user_state,
@@ -38,8 +42,14 @@ SELECT
     start_policy,
     starts_at,
     first_connected_at,
-    expires_at
-FROM pvnaive.resolve_direct_subscription_profile($1)`, hash[:]).Scan(
+    expires_at,
+    accounting_baseline_state,
+    accounting_baseline_source,
+    accounting_baseline_cutoff_at,
+    accounting_baseline_upload_bytes,
+    accounting_baseline_download_bytes
+FROM pvnaive.resolve_direct_subscription_account_profile($1)`, hash[:]).Scan(
+		&record.ServiceTermID,
 		&record.RuntimeCredentialID,
 		&record.Username,
 		&record.UserState,
@@ -53,6 +63,11 @@ FROM pvnaive.resolve_direct_subscription_profile($1)`, hash[:]).Scan(
 		&startsAt,
 		&firstConnectedAt,
 		&expiresAt,
+		&baselineState,
+		&baselineSource,
+		&baselineCutoff,
+		&baselineUpload,
+		&baselineDownload,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -82,5 +97,17 @@ FROM pvnaive.resolve_direct_subscription_profile($1)`, hash[:]).Scan(
 		value := expiresAt.Time
 		record.ExpiresAt = &value
 	}
+	record.AccountingBaseline = AccountingBaseline{
+		State: baselineState, Source: baselineSource, CutoffAt: baselineCutoff.UTC(),
+		UploadBytes: nullableInt64Value(baselineUpload), DownloadBytes: nullableInt64Value(baselineDownload),
+	}
 	return record, nil
+}
+
+func nullableInt64Value(value sql.NullInt64) *int64 {
+	if !value.Valid {
+		return nil
+	}
+	v := value.Int64
+	return &v
 }

@@ -167,3 +167,22 @@ func TestPostgresStoreCreatesDirectUserAndServiceTerm(t *testing.T) {
 		t.Fatalf("unconsumed store script: queries=%d execs=%d", len(conn.queries), len(conn.execs))
 	}
 }
+
+func TestCreateSubscriptionTokenProjectionCopiesAccountingBaselineTruth(t *testing.T) {
+	conn := &customerScriptConn{execs: []string{"accounting_baseline_state"}}
+	tx := newCustomerStoreTx(t, conn)
+	store := NewPostgresStore()
+	hash := make([]byte, 32)
+	for i := range hash {
+		hash[i] = byte(i + 1)
+	}
+	if err := store.CreateSubscriptionTokenTx(context.Background(), tx, CreateSubscriptionTokenRecord{
+		TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1", RuntimeCredentialID: "runtime-1",
+		TokenHash: hash, TokenPrefix: "abcdef12",
+	}); err != nil {
+		t.Fatalf("CreateSubscriptionTokenTx() error = %v", err)
+	}
+	if len(conn.execs) != 0 {
+		t.Fatalf("unconsumed exec expectations = %d", len(conn.execs))
+	}
+}

@@ -279,13 +279,17 @@ INSERT INTO pvnaive.direct_subscription_tokens (
     tenant_id, user_id, service_term_id, runtime_credential_id,
     token_hash, token_prefix, status, user_state, service_state,
     runtime_username, secret_ciphertext, secret_nonce, encryption_key_id, expires_at,
-    quota_bytes, duration_seconds, start_policy, starts_at, first_connected_at
+    quota_bytes, duration_seconds, start_policy, starts_at, first_connected_at,
+    accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+    accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 )
 SELECT
     u.tenant_id, u.id, st.id, rc.id,
     $5, $6, 'active', u.status, st.state,
     rc.username, rc.secret_ciphertext, rc.secret_nonce, rc.encryption_key_id, $7,
-    st.quota_bytes, st.duration_seconds, st.start_policy, st.starts_at, st.first_connected_at
+    st.quota_bytes, st.duration_seconds, st.start_policy, st.starts_at, st.first_connected_at,
+    st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
+    st.accounting_baseline_upload_bytes, st.accounting_baseline_download_bytes
 FROM pvnaive.users AS u
 JOIN pvnaive.service_terms AS st
   ON st.id = $3::uuid

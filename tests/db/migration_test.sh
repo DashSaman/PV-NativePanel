@@ -41,10 +41,10 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
 export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 reapply_output="$("${repo_root}/scripts/db/migrate.sh")"
-for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012; do
+for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013; do
   grep -Fqx "MIGRATION ${version}=ALREADY_APPLIED" <<< "${reapply_output}"
 done
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=12' <<< "${reapply_output}"
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=13' <<< "${reapply_output}"
 grep -Fqx 'PVNAIVE_MIGRATION_RESULT=PASSED' <<< "${reapply_output}"
 
 psql_admin --dbname "${test_db}" <<'SQL' >/dev/null
@@ -154,20 +154,20 @@ if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.
 fi
 rm -rf -- "${temp_migrations}"
 
-# A version gap from 12 to 14 must fail before executing SQL.
+# A version gap from 13 to 15 must fail before executing SQL.
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0014' \
+  '-- pvnaive:migration-version 0015' \
   '-- pvnaive:migration-name version_gap' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'SELECT 1;' > "${temp_migrations}/0014_version_gap.up.sql"
+  'SELECT 1;' > "${temp_migrations}/0015_version_gap.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0014' \
+  '-- pvnaive:migration-version 0015' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0014_version_gap.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0015_version_gap.down.sql"
 (
   cd "${temp_migrations}"
   sha256sum *.sql > SHA256SUMS
@@ -179,17 +179,17 @@ fi
 rm -rf -- "${temp_migrations}"
 
 # Applied migration immutability includes the newest released migration.
-expected_checksum="$(sha256sum "${repo_root}/db/migrations/0012_accounting_baseline_truth.up.sql" | awk '{print $1}')"
+expected_checksum="$(sha256sum "${repo_root}/db/migrations/0013_subscription_account_projection.up.sql" | awk '{print $1}')"
 psql_admin --dbname "${test_db}" --command \
-  "UPDATE pvnaive.schema_migrations SET checksum_sha256=repeat('0',64) WHERE version=12" >/dev/null
+  "UPDATE pvnaive.schema_migrations SET checksum_sha256=repeat('0',64) WHERE version=13" >/dev/null
 if "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo 'ERROR: changed applied migration checksum was accepted' >&2
   exit 1
 fi
 psql_admin --dbname "${test_db}" --command \
-  "UPDATE pvnaive.schema_migrations SET checksum_sha256='${expected_checksum}' WHERE version=12" >/dev/null
+  "UPDATE pvnaive.schema_migrations SET checksum_sha256='${expected_checksum}' WHERE version=13" >/dev/null
 
-for expected in 11 10 9 8 7 6 5 4 3 2 1; do
+for expected in 12 11 10 9 8 7 6 5 4 3 2 1; do
   PVNAIVE_DISPOSABLE_DB=1 "${repo_root}/scripts/db/rollback.sh" >/dev/null
   actual="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${actual}" == "${expected}" ]] || {

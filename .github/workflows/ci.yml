@@ -109,6 +109,7 @@ jobs:
               bash tests/db/direct_naive_accounting_migration_test.sh
               bash tests/db/customer_idempotency_migration_test.sh
               bash tests/db/accounting_baseline_migration_test.sh
+              bash tests/db/subscription_account_projection_migration_test.sh
               bash tests/db/run_schema_fixture_test.sh 6 tests/db/direct_subscription_migration_test.sh
               bash tests/db/subscription_token_recovery_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
