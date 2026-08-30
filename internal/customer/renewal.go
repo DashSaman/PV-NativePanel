@@ -136,10 +136,11 @@ func (s *Service) RenewCustomer(ctx context.Context, tx *sql.Tx, actorID, userID
 
 func (s *Service) resolveRenewalRecord(ctx context.Context, tx *sql.Tx, store renewalStore, current RenewalContext, input RenewalInput, now time.Time) (CreateRenewalTermRecord, bool, error) {
 	base := CreateRenewalTermRecord{
-		TenantID:          current.TenantID,
-		UserID:            current.UserID,
-		PurchasedAt:       now,
-		RenewedFromTermID: current.Current.ID,
+		TenantID:           current.TenantID,
+		UserID:             current.UserID,
+		PurchasedAt:        now,
+		RenewedFromTermID:  current.Current.ID,
+		AccountingBaseline: FreshManagedAccountingBaseline(now),
 	}
 	switch input.Mode {
 	case RenewalCurrent:
