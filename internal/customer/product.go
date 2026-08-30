@@ -210,7 +210,7 @@ func DeriveStatusDimensions(in StatusInput) StatusDimensions {
 			out.Quota = QuotaHealthy
 		}
 	}
-	if in.AccountingAvailable && in.Presence != nil {
+	if in.Presence != nil {
 		out.Presence = *in.Presence
 	}
 	if in.RuntimeHealthAvailable {
