@@ -89,26 +89,39 @@ func (s *PostgresStore) CreateRenewalTermTx(ctx context.Context, tx *sql.Tx, rec
 	if tx == nil {
 		return ServiceTerm{}, errors.New("customer: transaction is required")
 	}
+	if err := validateAccountingBaseline(record.AccountingBaseline); err != nil {
+		return ServiceTerm{}, err
+	}
 	var out ServiceTerm
 	var planID, renewedFrom sql.NullString
-	var startPolicy, state string
+	var startPolicy, state, baselineState, baselineSource string
+	var baselineUpload, baselineDownload sql.NullInt64
 	err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
     tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry,
-    start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id
+    start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id,
+    accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+    accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::uuid
+    $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::uuid,
+    $14,$15,$16,$17,$18
 )
 RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
           duration_seconds, no_expiry, start_policy, purchased_at, starts_at,
-          first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text, revision`,
+          first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text,
+          accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+          accounting_baseline_upload_bytes, accounting_baseline_download_bytes, revision`,
 		record.TenantID, record.UserID, record.PlanID, record.QuotaBytes, record.DurationSeconds,
 		record.NoExpiry, string(record.StartPolicy), record.PurchasedAt, record.StartsAt, record.ExpiresAt,
 		string(record.State), record.RenewalKind, record.RenewedFromTermID,
+		string(record.AccountingBaseline.State), string(record.AccountingBaseline.Source), record.AccountingBaseline.CutoffAt.UTC(),
+		record.AccountingBaseline.UploadBytes, record.AccountingBaseline.DownloadBytes,
 	).Scan(
 		&out.ID, &out.TenantID, &out.UserID, &planID, &out.QuotaBytes,
 		&out.DurationSeconds, &out.NoExpiry, &startPolicy, &out.PurchasedAt, &out.StartsAt,
-		&out.FirstConnectedAt, &out.ExpiresAt, &state, &out.RenewalKind, &renewedFrom, &out.Revision,
+		&out.FirstConnectedAt, &out.ExpiresAt, &state, &out.RenewalKind, &renewedFrom,
+		&baselineState, &baselineSource, &out.AccountingBaseline.CutoffAt,
+		&baselineUpload, &baselineDownload, &out.Revision,
 	)
 	if err != nil {
 		return ServiceTerm{}, fmt.Errorf("customer: create renewal service term: %w", err)
@@ -121,6 +134,10 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 	}
 	out.StartPolicy = StartPolicy(startPolicy)
 	out.State = TermState(state)
+	out.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	out.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	out.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	out.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	return out, nil
 }
 
@@ -230,7 +247,8 @@ func (s *PostgresStore) ScheduleNextPlanTx(ctx context.Context, tx *sql.Tx, tena
 	if _, err := tx.ExecContext(ctx, `
 INSERT INTO pvnaive.customer_profiles (
     tenant_id,user_id,next_plan_id,next_plan_source_term_id,next_plan_scheduled_at,updated_at
-) VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,clock_timestamp())
+) VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,clock_timestamp()
+)
 ON CONFLICT (user_id) DO UPDATE SET
     next_plan_id=EXCLUDED.next_plan_id,
     next_plan_source_term_id=EXCLUDED.next_plan_source_term_id,
