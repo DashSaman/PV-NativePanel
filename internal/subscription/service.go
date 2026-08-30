@@ -21,7 +21,16 @@ var (
 	ErrUnavailable  = errors.New("subscription: unavailable")
 )
 
+type AccountingBaseline struct {
+	State         string
+	Source        string
+	CutoffAt      time.Time
+	UploadBytes   *int64
+	DownloadBytes *int64
+}
+
 type Record struct {
+	ServiceTermID       string
 	RuntimeCredentialID string
 	Username            string
 	SecretCiphertext    []byte
@@ -35,9 +44,11 @@ type Record struct {
 	StartsAt            *time.Time
 	FirstConnectedAt    *time.Time
 	ExpiresAt           *time.Time
+	AccountingBaseline  AccountingBaseline
 }
 
 type Profile struct {
+	ServiceTermID       string
 	RuntimeCredentialID string
 	Username            string
 	UserState           string
@@ -53,6 +64,7 @@ type Profile struct {
 	UsageAvailable      bool
 	UsedBytes           *int64
 	RemainingBytes      *int64
+	AccountingBaseline  AccountingBaseline
 }
 
 type Store interface {
@@ -127,6 +139,7 @@ func (s *Service) ResolveProfile(ctx context.Context, rawToken, host string) (Pr
 	}
 
 	profile := Profile{
+		ServiceTermID:       record.ServiceTermID,
 		RuntimeCredentialID: record.RuntimeCredentialID,
 		Username:            record.Username,
 		UserState:           record.UserState,
@@ -137,6 +150,7 @@ func (s *Service) ResolveProfile(ctx context.Context, rawToken, host string) (Pr
 		StartsAt:            record.StartsAt,
 		FirstConnectedAt:    record.FirstConnectedAt,
 		ExpiresAt:           record.ExpiresAt,
+		AccountingBaseline:  cloneAccountingBaseline(record.AccountingBaseline),
 		UsageAvailable:      false,
 	}
 	profile.Available = record.UserState == "active" &&
@@ -161,6 +175,19 @@ func (s *Service) ResolveProfile(ctx context.Context, rawToken, host string) (Pr
 	}
 	profile.DirectURI = uri
 	return profile, nil
+}
+
+func cloneAccountingBaseline(value AccountingBaseline) AccountingBaseline {
+	value.CutoffAt = value.CutoffAt.UTC()
+	if value.UploadBytes != nil {
+		v := *value.UploadBytes
+		value.UploadBytes = &v
+	}
+	if value.DownloadBytes != nil {
+		v := *value.DownloadBytes
+		value.DownloadBytes = &v
+	}
+	return value
 }
 
 func BuildNaiveURI(username, password, host string) (string, error) {
