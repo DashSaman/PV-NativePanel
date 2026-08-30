@@ -116,3 +116,24 @@ func TestApplyCustomerAccountingKeepsIncompleteProjectionCapabilityGated(t *test
 		t.Fatalf("incomplete accounting must keep presence unknown, got %s", view.StatusDimensions.Presence)
 	}
 }
+
+func TestApplyCustomerAccountingMakesLegacyCurrentPeriodExactAfterReset(t *testing.T) {
+	quota := int64(1000)
+	resetAt := time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC)
+	view := customer.CustomerView{
+		UserID: "legacy-reset", QuotaBytes: &quota, Status: customer.UserActive,
+		ServiceState: customer.TermActive, StartPolicy: customer.StartOnCreation,
+		AccountingBaseline: unknownLegacyBaseline(time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)),
+	}
+	model := telemetry.ReadModel{ServiceTermID: "term-1", UploadBytes: 120, DownloadBytes: 230, UsedBytes: 350, QuotaBytes: &quota, AccountingComplete: true, LastResetAt: &resetAt}
+	applyCustomerAccounting(&view, model, resetAt.Add(time.Minute))
+	if !view.UsageCapability.Available || view.Usage == nil || view.Usage.UsedBytes == nil || *view.Usage.UsedBytes != 350 {
+		t.Fatalf("reset-period legacy usage not exact: view=%#v", view)
+	}
+	if !view.Usage.UsageResetApplied || view.Usage.UsagePeriodStartedAt == nil || !view.Usage.UsagePeriodStartedAt.Equal(resetAt) {
+		t.Fatalf("reset metadata missing: %#v", view.Usage)
+	}
+	if view.AccountingBaseline.State != customer.AccountingBaselineUnknown {
+		t.Fatalf("immutable baseline changed: %#v", view.AccountingBaseline)
+	}
+}

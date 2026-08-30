@@ -7,6 +7,7 @@ import {
   previewProductBulk,
   reissueProductSubscription,
   renewProductCustomer,
+  resetProductUsage,
   revokeProductCustomer,
   rotateProductPassword,
   suspendProductCustomer,
@@ -71,6 +72,19 @@ describe("WS2 product API client", () => {
     expect(url.searchParams.get("page_size")).toBe("25");
     expect(url.searchParams.get("sort")).toBe("expiry");
     expect(url.searchParams.get("dir")).toBe("asc");
+  });
+
+  it("resets one customer usage only with explicit confirmation and idempotency", async () => {
+    installCSRF();
+    const fetcher = vi.fn(async () => jsonResponse({ reset_event: { id: "r1", previous_used_bytes: 300 }, idempotent_replay: false }));
+    await resetProductUsage("user 1", fetcher as typeof fetch);
+    const [path, init] = callsOf(fetcher)[0];
+    expect(path).toBe("/api/v1/users/user%201/reset-usage");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({ confirm: true });
+    const headers = init?.headers as Record<string, string>;
+    expect(headers["X-CSRF-Token"]).toBe("csrf-product-test");
+    expect(headers["Idempotency-Key"]).toMatch(/^product-reset-usage-/);
   });
 
   it("loads plans from the ready product catalog endpoint", async () => {

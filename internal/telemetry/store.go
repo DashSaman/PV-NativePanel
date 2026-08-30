@@ -166,18 +166,18 @@ func (s *PostgresStore) Read(ctx context.Context, serviceTermID string, observed
 		seconds = 1
 	}
 	var quota, remaining sql.NullInt64
-	var firstConnected, lastOnline sql.NullTime
+	var firstConnected, lastOnline, lastReset sql.NullTime
 	var sessionCount int64
 	var state string
 	var out ReadModel
 	err := s.db.QueryRowContext(ctx, `
 SELECT service_term_id::text, upload_bytes, download_bytes, used_bytes,
        quota_bytes, remaining_bytes, quota_state, first_connected_at,
-       last_online, online, session_count, accounting_complete
+       last_online, online, session_count, accounting_complete, last_reset_at
 FROM pvnaive.direct_naive_accounting_read($1::uuid, $2, $3)`, serviceTermID, observedAt.UTC(), seconds).Scan(
 		&out.ServiceTermID, &out.UploadBytes, &out.DownloadBytes, &out.UsedBytes,
 		&quota, &remaining, &state, &firstConnected, &lastOnline, &out.Online,
-		&sessionCount, &out.AccountingComplete,
+		&sessionCount, &out.AccountingComplete, &lastReset,
 	)
 	if err != nil {
 		return ReadModel{}, fmt.Errorf("telemetry: read accounting: %w", err)
@@ -190,6 +190,7 @@ FROM pvnaive.direct_naive_accounting_read($1::uuid, $2, $3)`, serviceTermID, obs
 	out.RemainingBytes = nullableInt64(remaining)
 	out.FirstConnectedAt = nullableTime(firstConnected)
 	out.LastOnline = nullableTime(lastOnline)
+	out.LastResetAt = nullableTime(lastReset)
 	out.QuotaState = QuotaState(state)
 	return out, nil
 }

@@ -180,7 +180,7 @@ func (s *server) renderAccountPage(w http.ResponseWriter, r *http.Request, token
 				UploadBytes:   profile.AccountingBaseline.UploadBytes,
 				DownloadBytes: profile.AccountingBaseline.DownloadBytes,
 			}
-			usage, capability, composeErr := customer.ComposeCustomerUsage(baseline, model.UploadBytes, model.DownloadBytes, profile.QuotaBytes, model.AccountingComplete)
+			usage, capability, composeErr := customer.ComposeCustomerUsageForPeriod(baseline, model.LastResetAt, model.UploadBytes, model.DownloadBytes, profile.QuotaBytes, model.AccountingComplete)
 			if composeErr == nil && capability.Available && usage.UsedBytes != nil && usage.UploadBytes != nil && usage.DownloadBytes != nil {
 				usageLabel = subscriptionByteLabel(*usage.UsedBytes)
 				uploadLabel = subscriptionByteLabel(*usage.UploadBytes)

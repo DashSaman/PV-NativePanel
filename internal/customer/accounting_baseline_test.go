@@ -97,3 +97,43 @@ func TestComposeCustomerUsageRejectsInvalidOrOverflowingBaseline(t *testing.T) {
 		}
 	}
 }
+
+func TestComposeCustomerUsageForPeriodMakesLegacyUsageExactAfterManualReset(t *testing.T) {
+	cutoff := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
+	resetAt := time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC)
+	quota := int64(1000)
+	baseline := AccountingBaseline{State: AccountingBaselineUnknown, Source: AccountingBaselineLegacyUnavailable, CutoffAt: cutoff}
+
+	usage, capability, err := ComposeCustomerUsageForPeriod(baseline, &resetAt, 120, 230, &quota, true)
+	if err != nil {
+		t.Fatalf("ComposeCustomerUsageForPeriod() error = %v", err)
+	}
+	if !capability.Available || capability.Reason != "usage_reset_epoch" {
+		t.Fatalf("capability = %#v", capability)
+	}
+	if usage.UsedBytes == nil || *usage.UsedBytes != 350 || usage.RemainingBytes == nil || *usage.RemainingBytes != 650 {
+		t.Fatalf("reset-period totals = %#v", usage)
+	}
+	if usage.UploadBytes == nil || *usage.UploadBytes != 120 || usage.DownloadBytes == nil || *usage.DownloadBytes != 230 {
+		t.Fatalf("reset-period directional totals = %#v", usage)
+	}
+	if !usage.UsageResetApplied || usage.UsagePeriodStartedAt == nil || !usage.UsagePeriodStartedAt.Equal(resetAt) {
+		t.Fatalf("reset epoch metadata = %#v", usage)
+	}
+	if usage.Baseline.State != AccountingBaselineUnknown || usage.Baseline.Source != AccountingBaselineLegacyUnavailable {
+		t.Fatalf("immutable adoption baseline was rewritten: %#v", usage.Baseline)
+	}
+}
+
+func TestComposeCustomerUsageForPeriodStillGatesIncompleteResetEpoch(t *testing.T) {
+	cutoff := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
+	resetAt := time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC)
+	baseline := AccountingBaseline{State: AccountingBaselineUnknown, Source: AccountingBaselineLegacyUnavailable, CutoffAt: cutoff}
+	usage, capability, err := ComposeCustomerUsageForPeriod(baseline, &resetAt, 4, 6, nil, false)
+	if err != nil {
+		t.Fatalf("ComposeCustomerUsageForPeriod() error = %v", err)
+	}
+	if capability.Available || capability.Reason != "accounting_incomplete" || usage.UsedBytes != nil {
+		t.Fatalf("incomplete reset epoch leaked totals: usage=%#v capability=%#v", usage, capability)
+	}
+}

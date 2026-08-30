@@ -145,6 +145,25 @@ export type ProductSubscriptionDelivery = {
   delivery_notice?: string;
 };
 
+
+export type ProductUsageResetResult = {
+  reset_event: {
+    id: string;
+    user_id: string;
+    service_term_id: string;
+    reason: "manual" | "bulk" | "scheduled";
+    reset_at: string;
+    previous_upload_bytes: number;
+    previous_download_bytes: number;
+    previous_used_bytes: number;
+  };
+  idempotent_replay: boolean;
+  runtime_mutated: false;
+  password_rotated: false;
+  subscription_reissued: false;
+  message?: string;
+};
+
 export type ProductPasswordRotationInput = {
   password: string;
   generate_password: boolean;
@@ -299,6 +318,14 @@ export async function reissueProductSubscription(id: string, fetcher: Fetcher = 
     method: "POST", headers: csrfHeaders(newProductKey("product-subscription")), body: "{}",
   }, fetcher);
   return body as unknown as ProductSubscriptionDelivery;
+}
+
+
+export async function resetProductUsage(id: string, fetcher: Fetcher = fetch): Promise<ProductUsageResetResult> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/reset-usage`, {
+    method: "POST", headers: csrfHeaders(newProductKey("product-reset-usage")), body: JSON.stringify({ confirm: true }),
+  }, fetcher);
+  return body as unknown as ProductUsageResetResult;
 }
 
 export async function rotateProductPassword(id: string, input: ProductPasswordRotationInput, fetcher: Fetcher = fetch): Promise<ProductPasswordRotationResult> {

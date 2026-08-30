@@ -36,9 +36,13 @@ SQL
 createdb --host "$PVNAIVE_DB_HOST" --port "$PVNAIVE_DB_PORT" --username "$PVNAIVE_DB_USER" --owner pvnaive_owner --encoding UTF8 --template template0 "$test_db"
 export PVNAIVE_DB_NAME="$test_db"
 
-v12="$(mktemp -d)"; trap 'rm -rf -- "$v12"; cleanup' EXIT HUP INT TERM
+v12="$(mktemp -d)"
+v13="$(mktemp -d)"
+trap 'rm -rf -- "$v12" "$v13"; cleanup' EXIT HUP INT TERM
 for version in $(seq -w 1 12); do cp "${repo_root}/db/migrations/00${version}_"* "$v12/"; done
+for version in $(seq -w 1 13); do cp "${repo_root}/db/migrations/00${version}_"* "$v13/"; done
 ( cd "$v12"; sha256sum *.sql > SHA256SUMS )
+( cd "$v13"; sha256sum *.sql > SHA256SUMS )
 PVNAIVE_MIGRATIONS_DIR="$v12" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 [[ "$(psql_admin --dbname "$test_db" --tuples-only --no-align --command 'SELECT max(version) FROM pvnaive.schema_migrations')" == 12 ]]
 
@@ -64,12 +68,12 @@ FROM pvnaive.users u JOIN pvnaive.service_terms st ON st.user_id=u.id JOIN pvnai
 WHERE u.id='b6130000-0000-0000-0000-000000000001';
 SQL
 
-PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
+PVNAIVE_MIGRATIONS_DIR="$v13" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 [[ "$(psql_admin --dbname "$test_db" --tuples-only --no-align --command 'SELECT max(version) FROM pvnaive.schema_migrations')" == 13 ]]
 contract="$(PGPASSWORD='subscription-account-ci-only' psql --no-psqlrc --set ON_ERROR_STOP=1 --host "$PVNAIVE_DB_HOST" --port "$PVNAIVE_DB_PORT" --username pvnaive_app --dbname "$test_db" --tuples-only --no-align --command "SELECT service_term_id::text||'|'||accounting_baseline_state||'|'||accounting_baseline_source||'|'||accounting_baseline_upload_bytes||'|'||accounting_baseline_download_bytes FROM pvnaive.resolve_direct_subscription_account_profile(decode(repeat('44',32),'hex'))")"
 [[ "$contract" == 'd6130000-0000-0000-0000-000000000001|known|fresh_managed_term|0|0' ]] || { echo "ERROR: schema13 resolver contract=$contract" >&2; exit 1; }
 
-PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
+PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$v13" "${repo_root}/scripts/db/rollback.sh" >/dev/null
 [[ "$(psql_admin --dbname "$test_db" --tuples-only --no-align --command 'SELECT max(version) FROM pvnaive.schema_migrations')" == 12 ]]
 columns_after="$(psql_admin --dbname "$test_db" --tuples-only --no-align --command "SELECT count(*) FROM information_schema.columns WHERE table_schema='pvnaive' AND table_name='direct_subscription_tokens' AND column_name LIKE 'accounting_baseline_%'")"
 [[ "$columns_after" == 0 ]] || { echo "ERROR: schema13 columns survived rollback=$columns_after" >&2; exit 1; }

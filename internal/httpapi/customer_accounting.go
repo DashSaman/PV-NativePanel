@@ -52,8 +52,9 @@ func applyCustomerAccounting(view *customer.CustomerView, model telemetry.ReadMo
 	if view == nil {
 		return
 	}
-	usage, capability, err := customer.ComposeCustomerUsage(
+	usage, capability, err := customer.ComposeCustomerUsageForPeriod(
 		view.AccountingBaseline,
+		model.LastResetAt,
 		model.UploadBytes,
 		model.DownloadBytes,
 		view.QuotaBytes,

@@ -33,6 +33,8 @@ func (s *server) customerExtraHandler(name string) http.Handler {
 		return http.HandlerFunc(s.addCustomerVolume)
 	case "users.validity.extend", "customers.validity.extend":
 		return http.HandlerFunc(s.extendCustomerTime)
+	case "users.usage.reset", "customers.usage.reset":
+		return http.HandlerFunc(s.resetCustomerUsage)
 	case "plans.index":
 		return http.HandlerFunc(s.listProductPlans)
 	case "plans.create":
