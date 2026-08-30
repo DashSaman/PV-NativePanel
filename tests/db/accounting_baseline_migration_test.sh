@@ -5,8 +5,7 @@ umask 077
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 up="${repo_root}/db/migrations/0012_accounting_baseline_truth.up.sql"
 down="${repo_root}/db/migrations/0012_accounting_baseline_truth.down.sql"
-[[ -f "${up}" ]] || { echo 'ERROR: missing schema-12 accounting baseline migration' >&2; exit 1; }
-[[ -f "${down}" ]] || { echo 'ERROR: missing schema-12 accounting baseline rollback' >&2; exit 1; }
+[[ -f "${up}" && -f "${down}" ]] || { echo 'ERROR: missing schema-12 accounting baseline migration pair' >&2; exit 1; }
 grep -Fqx -- '-- pvnaive:migration-version 0012' "${up}"
 grep -Fqx -- '-- pvnaive:transactional true' "${up}"
 grep -Fqx -- '-- pvnaive:destructive false' "${up}"
@@ -26,14 +25,11 @@ psql_admin() {
   psql --no-psqlrc --set ON_ERROR_STOP=1 --host "${PVNAIVE_DB_HOST}" \
     --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" "$@"
 }
-
 cleanup() {
   rm -rf -- "${fixture}" 2>/dev/null || true
   psql_admin --dbname postgres --command \
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${test_db}' AND pid <> pg_backend_pid()" \
-    >/dev/null 2>&1 || true
-  dropdb --if-exists --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
-    --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${test_db}' AND pid <> pg_backend_pid()" >/dev/null 2>&1 || true
+  dropdb --if-exists --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${PVNAIVE_DB_USER}" "${test_db}" >/dev/null 2>&1 || true
   psql_admin --dbname postgres --command 'DROP ROLE IF EXISTS pvnaive_app; DROP ROLE IF EXISTS pvnaive_owner;' >/dev/null 2>&1 || true
 }
 trap cleanup EXIT HUP INT TERM
@@ -47,156 +43,119 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
   --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 export PVNAIVE_DB_NAME="${test_db}"
 
-# Build a schema-11 fixture first so the test can prove the upgrade/backfill.
+# Build schema 11 first; migration 12 must prove upgrade/backfill rather than a fresh-only install.
 mkdir -p "${fixture}/migrations"
 for version in $(seq 1 11); do
   prefix="$(printf '%04d' "${version}")"
   cp -- "${repo_root}/db/migrations/${prefix}_"*.up.sql "${fixture}/migrations/"
   cp -- "${repo_root}/db/migrations/${prefix}_"*.down.sql "${fixture}/migrations/"
 done
-(
-  cd "${fixture}/migrations"
-  sha256sum *.sql > SHA256SUMS
-)
+( cd "${fixture}/migrations" && sha256sum *.sql > SHA256SUMS )
 PVNAIVE_MIGRATIONS_DIR="${fixture}/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
-schema11="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema11}" == 11 ]] || { echo "ERROR: fixture schema=${schema11}, want=11" >&2; exit 1; }
+[[ "$(psql_admin --dbname "${test_db}" -Atc 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')" == 11 ]]
 
-# Existing managed row: Runtime credential existed before business binding, so
-# no pre-binding byte total is provable. Migration must preserve that as Unknown
-# and use the real binding instant as the non-overlapping direct-epoch cutoff.
+# Fixture setup deliberately runs as the disposable PostgreSQL superuser. This test is
+# about schema/backfill truth; application RLS behavior is covered by separate suites.
 psql_admin --dbname "${test_db}" >/dev/null <<'SQL'
-SET ROLE pvnaive_owner;
 INSERT INTO pvnaive.actors (id, tenant_id, actor_role, email, display_name, status)
 VALUES ('a5120000-0000-0000-0000-000000000001', NULL, 'owner', 'baseline-owner@example.invalid', 'Baseline Owner', 'active');
-
 INSERT INTO pvnaive.users (id, tenant_id, username, display_name, status, created_by_actor_id)
 SELECT 'b5120000-0000-0000-0000-000000000001', id, 'legacy-baseline', 'Legacy Baseline', 'active',
        'a5120000-0000-0000-0000-000000000001'
 FROM pvnaive.tenants WHERE slug='direct' AND tenant_type='system';
-
 INSERT INTO pvnaive.naive_runtime_credentials (
   id, username, secret_hash, secret_ciphertext, secret_nonce, encryption_key_id,
   status, origin, created_by_actor_id, updated_by_actor_id, created_at
 ) VALUES (
   'c5120000-0000-0000-0000-000000000001', 'legacy-baseline', decode(repeat('11',32),'hex'),
-  decode(repeat('12',32),'hex'), decode(repeat('13',12),'hex'), 'runtime-v1',
-  'active', 'imported', 'a5120000-0000-0000-0000-000000000001',
-  'a5120000-0000-0000-0000-000000000001', '2026-08-29T10:00:00Z'
+  decode(repeat('12',32),'hex'), decode(repeat('13',12),'hex'), 'runtime-v1', 'active', 'imported',
+  'a5120000-0000-0000-0000-000000000001','a5120000-0000-0000-0000-000000000001','2026-08-29T10:00:00Z'
 );
-
 INSERT INTO pvnaive.service_terms (
-  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
-  purchased_at, state, renewal_kind
+  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy, purchased_at, state, renewal_kind
 )
 SELECT 'd5120000-0000-0000-0000-000000000001', tenant_id, id, 1000000, 2592000,
        'on_creation', '2026-08-29T12:00:00Z', 'active', 'initial'
 FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000001';
-
 INSERT INTO pvnaive.user_runtime_credentials (
   id, tenant_id, user_id, service_term_id, runtime_credential_id, role, bound_at
 )
 SELECT 'e5120000-0000-0000-0000-000000000001', tenant_id, id,
-       'd5120000-0000-0000-0000-000000000001', 'c5120000-0000-0000-0000-000000000001',
-       'primary', '2026-08-29T12:34:56Z'
+       'd5120000-0000-0000-0000-000000000001','c5120000-0000-0000-0000-000000000001',
+       'primary','2026-08-29T12:34:56Z'
 FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000001';
 SQL
 
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
-schema12="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema12}" == 12 ]] || { echo "ERROR: upgraded schema=${schema12}, want=12" >&2; exit 1; }
-
-legacy="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
-SELECT concat_ws('|', accounting_baseline_state, accounting_baseline_source,
+[[ "$(psql_admin --dbname "${test_db}" -Atc 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')" == 12 ]]
+legacy="$(psql_admin --dbname "${test_db}" -Atc "
+SELECT concat_ws('|',accounting_baseline_state,accounting_baseline_source,
   to_char(accounting_baseline_cutoff_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI:SS'),
-  (accounting_baseline_upload_bytes IS NULL)::text,
-  (accounting_baseline_download_bytes IS NULL)::text)
+  (accounting_baseline_upload_bytes IS NULL)::text,(accounting_baseline_download_bytes IS NULL)::text)
 FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000001';")"
 [[ "${legacy}" == 'unknown|legacy_unavailable|2026-08-29 12:34:56|true|true' || "${legacy}" == 'unknown|legacy_unavailable|2026-08-29 12:34:56|t|t' ]] || {
-  echo "ERROR: legacy backfill fabricated or lost baseline truth: ${legacy}" >&2; exit 1;
+  echo "ERROR: legacy backfill truth mismatch: ${legacy}" >&2; exit 1;
 }
 
-# A newly managed term may explicitly prove a zero baseline.
 psql_admin --dbname "${test_db}" >/dev/null <<'SQL'
-SET ROLE pvnaive_owner;
 INSERT INTO pvnaive.users (id, tenant_id, username, display_name, status, created_by_actor_id)
 SELECT 'b5120000-0000-0000-0000-000000000002', id, 'fresh-baseline', 'Fresh Baseline', 'active',
-       'a5120000-0000-0000-0000-000000000001'
-FROM pvnaive.tenants WHERE slug='direct' AND tenant_type='system';
+       'a5120000-0000-0000-0000-000000000001' FROM pvnaive.tenants WHERE slug='direct' AND tenant_type='system';
 INSERT INTO pvnaive.service_terms (
-  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
-  purchased_at, state, renewal_kind,
-  accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
-  accounting_baseline_upload_bytes, accounting_baseline_download_bytes
+  id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,renewal_kind,
+  accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,
+  accounting_baseline_upload_bytes,accounting_baseline_download_bytes
 )
-SELECT 'd5120000-0000-0000-0000-000000000002', tenant_id, id, 2000000, 2592000,
-       'on_creation', '2026-08-30T01:00:00Z', 'active', 'initial',
-       'known', 'fresh_managed_term', '2026-08-30T01:00:00Z', 0, 0
+SELECT 'd5120000-0000-0000-0000-000000000002',tenant_id,id,2000000,2592000,'on_creation',
+       '2026-08-30T01:00:00Z','active','initial','known','fresh_managed_term','2026-08-30T01:00:00Z',0,0
 FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000002';
+INSERT INTO pvnaive.users (id, tenant_id, username, display_name, status, created_by_actor_id)
+SELECT 'b5120000-0000-0000-0000-000000000003', id, 'authoritative-baseline', 'Authoritative', 'active',
+       'a5120000-0000-0000-0000-000000000001' FROM pvnaive.tenants WHERE slug='direct' AND tenant_type='system';
+INSERT INTO pvnaive.service_terms (
+  id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,renewal_kind,
+  accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,
+  accounting_baseline_upload_bytes,accounting_baseline_download_bytes
+)
+SELECT 'd5120000-0000-0000-0000-000000000003',tenant_id,id,5000000,2592000,'on_creation',
+       '2026-08-30T01:30:00Z','active','initial','known','authoritative_import','2026-08-30T01:30:00Z',100,200
+FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000003';
 SQL
 
-# Invalid Unknown+bytes and invalid fresh nonzero combinations must fail closed.
 set +e
 psql_admin --dbname "${test_db}" >/dev/null 2>&1 <<'SQL'
-SET ROLE pvnaive_owner;
 INSERT INTO pvnaive.service_terms (
   tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,
   accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,
   accounting_baseline_upload_bytes,accounting_baseline_download_bytes
 )
-SELECT tenant_id,id,1,60,'on_creation',clock_timestamp(),'active',
-       'unknown','legacy_unavailable',clock_timestamp(),1,NULL
+SELECT tenant_id,id,1,60,'on_creation',clock_timestamp(),'active','unknown','legacy_unavailable',clock_timestamp(),1,NULL
 FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000002';
 SQL
 invalid_unknown_rc=$?
 psql_admin --dbname "${test_db}" >/dev/null 2>&1 <<'SQL'
-SET ROLE pvnaive_owner;
 INSERT INTO pvnaive.service_terms (
   tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,
   accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,
   accounting_baseline_upload_bytes,accounting_baseline_download_bytes
 )
-SELECT tenant_id,id,1,60,'on_creation',clock_timestamp(),'active',
-       'known','fresh_managed_term',clock_timestamp(),1,0
+SELECT tenant_id,id,1,60,'on_creation',clock_timestamp(),'active','known','fresh_managed_term',clock_timestamp(),1,0
 FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000002';
 SQL
 invalid_fresh_rc=$?
-set -e
-(( invalid_unknown_rc != 0 && invalid_fresh_rc != 0 )) || { echo 'ERROR: invalid baseline combination was accepted' >&2; exit 1; }
-
-# Authoritative imported totals are representable but cannot overlap the direct epoch.
-psql_admin --dbname "${test_db}" >/dev/null <<'SQL'
-SET ROLE pvnaive_owner;
-INSERT INTO pvnaive.users (id, tenant_id, username, display_name, status, created_by_actor_id)
-SELECT 'b5120000-0000-0000-0000-000000000003', id, 'authoritative-baseline', 'Authoritative', 'active',
-       'a5120000-0000-0000-0000-000000000001'
-FROM pvnaive.tenants WHERE slug='direct' AND tenant_type='system';
-INSERT INTO pvnaive.service_terms (
-  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
-  purchased_at, state, renewal_kind,
-  accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
-  accounting_baseline_upload_bytes, accounting_baseline_download_bytes
-)
-SELECT 'd5120000-0000-0000-0000-000000000003', tenant_id, id, 5000000, 2592000,
-       'on_creation', '2026-08-30T01:30:00Z', 'active', 'initial',
-       'known', 'authoritative_import', '2026-08-30T01:30:00Z', 100, 200
-FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000003';
-SQL
-
-# Baseline provenance is immutable under ordinary service edits.
-set +e
-psql_admin --dbname "${test_db}" --command "SET ROLE pvnaive_owner; UPDATE pvnaive.service_terms SET accounting_baseline_upload_bytes=999 WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null 2>&1
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.service_terms SET accounting_baseline_upload_bytes=999 WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null 2>&1
 baseline_update_rc=$?
 set -e
-(( baseline_update_rc != 0 )) || { echo 'ERROR: accounting baseline mutation was accepted' >&2; exit 1; }
+(( invalid_unknown_rc != 0 && invalid_fresh_rc != 0 && baseline_update_rc != 0 )) || {
+  echo 'ERROR: invalid or mutable accounting baseline was accepted' >&2; exit 1;
+}
 
-psql_admin --dbname "${test_db}" --command "SET ROLE pvnaive_owner; UPDATE pvnaive.service_terms SET quota_bytes=6000000, expires_at='2026-09-30T01:30:00Z' WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null
-unchanged="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT concat_ws('|',quota_bytes::text,accounting_baseline_state,accounting_baseline_source,accounting_baseline_upload_bytes::text,accounting_baseline_download_bytes::text) FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000003';")"
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.service_terms SET quota_bytes=6000000, expires_at='2026-09-30T01:30:00Z' WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null
+unchanged="$(psql_admin --dbname "${test_db}" -Atc "SELECT concat_ws('|',quota_bytes::text,accounting_baseline_state,accounting_baseline_source,accounting_baseline_upload_bytes::text,accounting_baseline_download_bytes::text) FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000003';")"
 [[ "${unchanged}" == '6000000|known|authoritative_import|100|200' ]] || { echo "ERROR: ordinary edit changed baseline: ${unchanged}" >&2; exit 1; }
 
-# The schema-12 rollback must remove only Task #5 baseline metadata.
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
-rolled="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT COALESCE(MAX(version),0) || '|' || (SELECT count(*)=0 FROM information_schema.columns WHERE table_schema='pvnaive' AND table_name='service_terms' AND column_name LIKE 'accounting_baseline_%')")"
+rolled="$(psql_admin --dbname "${test_db}" -Atc "SELECT COALESCE(MAX(version),0) || '|' || (SELECT count(*)=0 FROM information_schema.columns WHERE table_schema='pvnaive' AND table_name='service_terms' AND column_name LIKE 'accounting_baseline_%')")"
 [[ "${rolled}" == '11|true' || "${rolled}" == '11|t' ]] || { echo "ERROR: schema-12 rollback mismatch: ${rolled}" >&2; exit 1; }
 
 echo 'PVNAIVE_ACCOUNTING_BASELINE_MIGRATION_TEST=PASSED'
