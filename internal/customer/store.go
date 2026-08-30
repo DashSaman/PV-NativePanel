@@ -55,31 +55,47 @@ func (s *PostgresStore) CreateServiceTermTx(ctx context.Context, tx *sql.Tx, rec
 	if tx == nil {
 		return ServiceTerm{}, errors.New("customer: transaction is required")
 	}
+	if err := validateAccountingBaseline(record.AccountingBaseline); err != nil {
+		return ServiceTerm{}, err
+	}
 	var term ServiceTerm
-	var startPolicy string
-	var state string
+	var startPolicy, state, baselineState, baselineSource string
+	var baselineUpload, baselineDownload sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
     tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
-    purchased_at, starts_at, expires_at, state
+    purchased_at, starts_at, expires_at, state,
+    accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+    accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9
+    $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9,
+    $10, $11, $12, $13, $14
 )
 RETURNING id::text, tenant_id::text, user_id::text, quota_bytes,
           duration_seconds, start_policy, purchased_at, starts_at,
-          first_connected_at, expires_at, state, revision`,
+          first_connected_at, expires_at, state,
+          accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+          accounting_baseline_upload_bytes, accounting_baseline_download_bytes,
+          revision`,
 		record.TenantID, record.UserID, record.QuotaBytes, record.DurationSeconds,
 		string(record.StartPolicy), record.PurchasedAt, record.StartsAt, record.ExpiresAt,
-		string(record.State),
+		string(record.State), string(record.AccountingBaseline.State), string(record.AccountingBaseline.Source),
+		record.AccountingBaseline.CutoffAt.UTC(), record.AccountingBaseline.UploadBytes, record.AccountingBaseline.DownloadBytes,
 	).Scan(
 		&term.ID, &term.TenantID, &term.UserID, &term.QuotaBytes,
 		&term.DurationSeconds, &startPolicy, &term.PurchasedAt, &term.StartsAt,
-		&term.FirstConnectedAt, &term.ExpiresAt, &state, &term.Revision,
+		&term.FirstConnectedAt, &term.ExpiresAt, &state,
+		&baselineState, &baselineSource, &term.AccountingBaseline.CutoffAt,
+		&baselineUpload, &baselineDownload, &term.Revision,
 	); err != nil {
 		return ServiceTerm{}, fmt.Errorf("customer: insert service term: %w", err)
 	}
 	term.StartPolicy = StartPolicy(startPolicy)
 	term.State = TermState(state)
+	term.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	term.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	term.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	term.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	return term, nil
 }
 
@@ -283,4 +299,12 @@ WHERE u.id = $2::uuid
 		return errors.New("customer: subscription token projection scope not found")
 	}
 	return nil
+}
+
+func nullableInt64Value(value sql.NullInt64) *int64 {
+	if !value.Valid {
+		return nil
+	}
+	copy := value.Int64
+	return &copy
 }
