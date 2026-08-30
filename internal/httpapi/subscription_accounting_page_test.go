@@ -177,3 +177,29 @@ func TestAccountPageDoesNotFabricateOfflineWhenAccountingIsIncomplete(t *testing
 		t.Fatal("incomplete accounting fabricated presence state")
 	}
 }
+
+func TestAccountPageShowsExactCurrentPeriodAfterLegacyUsageReset(t *testing.T) {
+	quota := int64(10 * 1024 * 1024 * 1024)
+	resetAt := time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC)
+	handler, token, _ := accountPageAccountingFixture(t, subscription.AccountingBaseline{
+		State: "unknown", Source: "legacy_unavailable",
+		CutoffAt: time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC),
+	}, quota, telemetry.ReadModel{
+		ServiceTermID: "11111111-1111-4111-8111-111111111111",
+		UploadBytes:   1 * 1024 * 1024 * 1024, DownloadBytes: 2 * 1024 * 1024 * 1024, UsedBytes: 3 * 1024 * 1024 * 1024, QuotaBytes: &quota,
+		AccountingComplete: true, LastResetAt: &resetAt,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/s/"+token+"?lang=en", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+	body := rr.Body.String()
+	for _, want := range []string{">3 GB<", ">1 GB<", ">2 GB<", ">7 GB<"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("reset-period account page missing %q: %s", want, body)
+		}
+	}
+}

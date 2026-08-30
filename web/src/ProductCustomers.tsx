@@ -11,6 +11,7 @@ import {
   previewProductBulk,
   reissueProductSubscription,
   renewProductCustomer,
+  resetProductUsage,
   resumeProductCustomer,
   revokeProductCustomer,
   rotateProductPassword,
@@ -358,6 +359,17 @@ export function ProductCustomers({ role: _role }: Props) {
     finally { setBusyID(""); }
   }
 
+  async function resetUsage(customer: ProductCustomer) {
+    if (!window.confirm(`مصرف فعلی ${customer.username} صفر شود؟ Password و Subscription تغییر نمی‌کنند.`)) return;
+    setBusyID(customer.id); setMessage("");
+    try {
+      const result = await resetProductUsage(customer.id);
+      await refresh();
+      setMessage(result.idempotent_replay ? `Reset مصرف ${customer.username} قبلاً با همین درخواست ثبت شده بود.` : `مصرف ${customer.username} صفر شد؛ Password و Subscription تغییر نکردند.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Reset مصرف انجام نشد."); }
+    finally { setBusyID(""); }
+  }
+
   async function lifecycle(customer: ProductCustomer, action: "suspend" | "resume" | "revoke") {
     if (action === "revoke" && !window.confirm(`اکانت ${customer.username} لغو شود؟`)) return;
     setBusyID(customer.id); setMessage("");
@@ -417,7 +429,7 @@ export function ProductCustomers({ role: _role }: Props) {
             <td><div className="presence-cell"><i className={usage.presence === "آنلاین" ? "online" : "offline"}/><div><strong>{usage.exact ? usage.presence : "—"}</strong><small>{usage.exact ? `${usage.sessions} نشست` : ""}</small></div></div></td>
             <td><div className="stack-cell"><strong>{customer.no_expiry ? "بدون انقضا" : formatPanelDate(customer.expires_at)}</strong><small>{customer.start_policy === "on_first_successful_connection" ? "از اولین اتصال" : "از زمان ثبت"}</small></div></td>
             <td><label className="toggle-switch" data-disabled={revoked ? "true" : "false"} title={suspended ? "فعال‌سازی" : "تعلیق"}><input type="checkbox" checked={!suspended && !revoked} disabled={busy || revoked} onChange={() => void lifecycle(customer, suspended ? "resume" : "suspend")} /><span/></label></td>
-            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
+            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button disabled={busy || revoked} onClick={() => void resetUsage(customer)}>Reset مصرف</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
           </tr>;
         })}
       </tbody></table></div>

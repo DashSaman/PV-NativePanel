@@ -104,6 +104,57 @@ func ComposeCustomerUsage(
 	return usage, UsageCapability{Available: true}, nil
 }
 
+func ComposeCustomerUsageForPeriod(
+	baseline AccountingBaseline,
+	lastResetAt *time.Time,
+	directUploadBytes, directDownloadBytes int64,
+	quotaBytes *int64,
+	accountingComplete bool,
+) (CustomerUsage, UsageCapability, error) {
+	if lastResetAt == nil {
+		return ComposeCustomerUsage(baseline, directUploadBytes, directDownloadBytes, quotaBytes, accountingComplete)
+	}
+	if err := validateAccountingBaseline(baseline); err != nil {
+		return CustomerUsage{}, UsageCapability{}, err
+	}
+	resetAt := lastResetAt.UTC()
+	if resetAt.IsZero() || resetAt.Before(baseline.CutoffAt.UTC()) || directUploadBytes < 0 || directDownloadBytes < 0 || directUploadBytes > math.MaxInt64-directDownloadBytes {
+		return CustomerUsage{}, UsageCapability{}, ErrInvalidAccountingBaseline
+	}
+	directUsed := directUploadBytes + directDownloadBytes
+	usage := CustomerUsage{
+		Available:            false,
+		AccountingComplete:   accountingComplete,
+		Baseline:             cloneAccountingBaseline(baseline),
+		DirectUploadBytes:    directUploadBytes,
+		DirectDownloadBytes:  directDownloadBytes,
+		DirectUsedBytes:      directUsed,
+		UsagePeriodStartedAt: &resetAt,
+		UsageResetApplied:    true,
+	}
+	if !accountingComplete {
+		return usage, UsageCapability{Available: false, Reason: "accounting_incomplete"}, nil
+	}
+	upload := directUploadBytes
+	download := directDownloadBytes
+	used := directUsed
+	usage.UploadBytes = &upload
+	usage.DownloadBytes = &download
+	usage.UsedBytes = &used
+	if quotaBytes != nil {
+		if *quotaBytes <= 0 {
+			return CustomerUsage{}, UsageCapability{}, ErrInvalidAccountingBaseline
+		}
+		remaining := *quotaBytes - used
+		if remaining < 0 {
+			remaining = 0
+		}
+		usage.RemainingBytes = &remaining
+	}
+	usage.Available = true
+	return usage, UsageCapability{Available: true, Reason: "usage_reset_epoch"}, nil
+}
+
 func validateAccountingBaseline(baseline AccountingBaseline) error {
 	if baseline.CutoffAt.IsZero() {
 		return ErrInvalidAccountingBaseline

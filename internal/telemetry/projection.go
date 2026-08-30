@@ -47,6 +47,7 @@ type ReadModel struct {
 	QuotaState         QuotaState `json:"quota_state"`
 	FirstConnectedAt   *time.Time `json:"first_connected_at"`
 	LastOnline         *time.Time `json:"last_online"`
+	LastResetAt        *time.Time `json:"last_reset_at,omitempty"`
 	Online             bool       `json:"online"`
 	SessionCount       int        `json:"session_count"`
 	AccountingComplete bool       `json:"accounting_complete"`
