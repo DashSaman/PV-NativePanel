@@ -31,6 +31,26 @@ type AccountingBaseline struct {
 	DownloadBytes *int64                   `json:"download_bytes"`
 }
 
+func FreshManagedAccountingBaseline(cutoff time.Time) AccountingBaseline {
+	zeroUpload := int64(0)
+	zeroDownload := int64(0)
+	return AccountingBaseline{
+		State:         AccountingBaselineKnown,
+		Source:        AccountingBaselineFreshManagedTerm,
+		CutoffAt:      cutoff.UTC(),
+		UploadBytes:   &zeroUpload,
+		DownloadBytes: &zeroDownload,
+	}
+}
+
+func UnknownLegacyAccountingBaseline(cutoff time.Time) AccountingBaseline {
+	return AccountingBaseline{
+		State:    AccountingBaselineUnknown,
+		Source:   AccountingBaselineLegacyUnavailable,
+		CutoffAt: cutoff.UTC(),
+	}
+}
+
 func ComposeCustomerUsage(
 	baseline AccountingBaseline,
 	directUploadBytes, directDownloadBytes int64,
