@@ -61,6 +61,23 @@ func TestCustomerStatusDimensionsNeverFabricateAccounting(t *testing.T) {
 	}
 }
 
+func TestCustomerStatusDimensionsKeepsProvenPresenceWhenHistoricalQuotaIsUnavailable(t *testing.T) {
+	presence := PresenceOnline
+	status := DeriveStatusDimensions(StatusInput{
+		UserState:           UserActive,
+		TermState:           TermActive,
+		QuotaBytes:          ptrInt64(50 * 1073741824),
+		AccountingAvailable: false,
+		Presence:            &presence,
+	})
+	if status.Presence != PresenceOnline {
+		t.Fatalf("proven presence was coupled to quota accounting: %#v", status)
+	}
+	if status.Quota != QuotaUnavailable {
+		t.Fatalf("unknown historical total must keep quota unavailable: %#v", status)
+	}
+}
+
 func TestPendingFirstUseAndOnHoldAreDistinct(t *testing.T) {
 	pending := DeriveStatusDimensions(StatusInput{
 		UserState:   UserActive,
