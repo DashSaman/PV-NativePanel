@@ -33,7 +33,7 @@ func TestApplyCustomerAccountingPublishesExactKnownTotalAndPresence(t *testing.T
 	}
 	model := telemetry.ReadModel{
 		ServiceTermID: "11111111-1111-4111-8111-111111111111",
-		UploadBytes: 300, DownloadBytes: 550, UsedBytes: 850, QuotaBytes: &quota,
+		UploadBytes:   300, DownloadBytes: 550, UsedBytes: 850, QuotaBytes: &quota,
 		RemainingBytes: &remaining, QuotaState: telemetry.QuotaActive, LastOnline: &lastOnline,
 		Online: true, SessionCount: 2, AccountingComplete: true,
 	}
@@ -67,7 +67,7 @@ func TestApplyCustomerAccountingKeepsLegacyHistoricalTotalUnknown(t *testing.T) 
 	}
 	model := telemetry.ReadModel{
 		ServiceTermID: "11111111-1111-4111-8111-111111111111",
-		UploadBytes: 300, DownloadBytes: 550, UsedBytes: 850, QuotaBytes: &quota,
+		UploadBytes:   300, DownloadBytes: 550, UsedBytes: 850, QuotaBytes: &quota,
 		LastOnline: &lastOnline, Online: true, SessionCount: 1, AccountingComplete: true,
 	}
 
