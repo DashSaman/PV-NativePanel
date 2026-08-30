@@ -152,9 +152,10 @@ func (s *Service) productCreateTerm(
 	now time.Time,
 ) (CreateServiceTermRecord, string, []string, error) {
 	record := CreateServiceTermRecord{
-		TenantID:    tenantID,
-		PurchasedAt: now,
-		RenewalKind: "initial",
+		TenantID:           tenantID,
+		PurchasedAt:        now,
+		RenewalKind:        "initial",
+		AccountingBaseline: FreshManagedAccountingBaseline(now),
 	}
 	if strings.TrimSpace(input.PlanID) != "" {
 		plan, err := store.PlanByIDTx(ctx, tx, input.PlanID)

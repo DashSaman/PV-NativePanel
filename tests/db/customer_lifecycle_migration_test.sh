@@ -44,7 +44,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${version}" == "11" ]] || { echo "ERROR: schema version=${version}, want=11" >&2; exit 1; }
+[[ "${version}" == "12" ]] || { echo "ERROR: schema version=${version}, want=12" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT
@@ -90,9 +90,12 @@ INSERT INTO pvnaive.naive_runtime_credentials (
 ('f4100000-0000-0000-0000-000000000002','test1-runtime-b',decode(repeat('45',32),'hex'),decode(repeat('55',16),'hex'),decode(repeat('65',12),'hex'),'runtime-v1','active','panel','a4100000-0000-0000-0000-000000000001','a4100000-0000-0000-0000-000000000001');
 
 INSERT INTO pvnaive.service_terms (
-  id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state
+  id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,
+  accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,
+  accounting_baseline_upload_bytes,accounting_baseline_download_bytes
 )
-SELECT '14100000-0000-0000-0000-000000000001',tenant_id,id,50000000000,2592000,'on_first_successful_connection',clock_timestamp(),'pending'
+SELECT '14100000-0000-0000-0000-000000000001',tenant_id,id,50000000000,2592000,'on_first_successful_connection',clock_timestamp(),'pending',
+       'known','fresh_managed_term',clock_timestamp(),0,0
 FROM pvnaive.users WHERE username='test1';
 
 INSERT INTO pvnaive.user_runtime_credentials (tenant_id,user_id,service_term_id,runtime_credential_id,role)
@@ -127,8 +130,8 @@ second_primary_rc=$?
 set -e
 [[ "${second_primary_rc}" -ne 0 ]] || { echo 'ERROR: second active primary binding was accepted' >&2; exit 1; }
 
-# Exercise each destructive rollback in order: v11 -> v10 -> ... -> v3.
-for want in 10 9 8 7 6 5 4 3; do
+# Exercise each destructive rollback in order: v12 -> v11 -> ... -> v3.
+for want in 11 10 9 8 7 6 5 4 3; do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
   got="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${got}" == "${want}" ]] || { echo "ERROR: rollback schema=${got}, want=${want}" >&2; exit 1; }

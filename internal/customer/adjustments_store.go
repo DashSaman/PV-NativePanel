@@ -10,16 +10,23 @@ import (
 
 func scanAdjustedServiceTerm(row *sql.Row) (ServiceTerm, error) {
 	var term ServiceTerm
-	var startPolicy, state string
+	var startPolicy, state, baselineState, baselineSource string
+	var baselineUpload, baselineDownload sql.NullInt64
 	if err := row.Scan(
 		&term.ID, &term.TenantID, &term.UserID, &term.QuotaBytes,
 		&term.DurationSeconds, &startPolicy, &term.PurchasedAt, &term.StartsAt,
-		&term.FirstConnectedAt, &term.ExpiresAt, &state, &term.Revision,
+		&term.FirstConnectedAt, &term.ExpiresAt, &state,
+		&baselineState, &baselineSource, &term.AccountingBaseline.CutoffAt,
+		&baselineUpload, &baselineDownload, &term.Revision,
 	); err != nil {
 		return ServiceTerm{}, err
 	}
 	term.StartPolicy = StartPolicy(startPolicy)
 	term.State = TermState(state)
+	term.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	term.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	term.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	term.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	return term, nil
 }
 
@@ -42,7 +49,10 @@ WHERE st.id = (
   AND st.quota_bytes IS NOT NULL
 RETURNING st.id::text, st.tenant_id::text, st.user_id::text, st.quota_bytes,
           st.duration_seconds, st.start_policy, st.purchased_at, st.starts_at,
-          st.first_connected_at, st.expires_at, st.state, st.revision`, userID, deltaBytes))
+          st.first_connected_at, st.expires_at, st.state,
+          st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
+          st.accounting_baseline_upload_bytes, st.accounting_baseline_download_bytes,
+          st.revision`, userID, deltaBytes))
 	if errors.Is(err, sql.ErrNoRows) {
 		var unlimited bool
 		checkErr := tx.QueryRowContext(ctx, `
@@ -90,7 +100,10 @@ WHERE st.id = (
   AND st.state NOT IN ('ended', 'revoked')
 RETURNING st.id::text, st.tenant_id::text, st.user_id::text, st.quota_bytes,
           st.duration_seconds, st.start_policy, st.purchased_at, st.starts_at,
-          st.first_connected_at, st.expires_at, st.state, st.revision`, userID, seconds, now))
+          st.first_connected_at, st.expires_at, st.state,
+          st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
+          st.accounting_baseline_upload_bytes, st.accounting_baseline_download_bytes,
+          st.revision`, userID, seconds, now))
 	if errors.Is(err, sql.ErrNoRows) {
 		return ServiceTerm{}, ErrCustomerServiceNotFound
 	}

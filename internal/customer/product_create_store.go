@@ -18,22 +18,30 @@ func (s *PostgresStore) CreateProductServiceTermTx(ctx context.Context, tx *sql.
 	if tx == nil {
 		return ServiceTerm{}, errors.New("customer: transaction is required")
 	}
+	if err := validateAccountingBaseline(record.AccountingBaseline); err != nil {
+		return ServiceTerm{}, err
+	}
 	var term ServiceTerm
 	var planID sql.NullString
-	var startPolicy string
-	var state string
+	var startPolicy, state, baselineState, baselineSource string
 	var renewedFrom sql.NullString
+	var baselineUpload, baselineDownload sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
     tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry,
-    start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id
+    start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id,
+    accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+    accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
     $1::uuid, $2::uuid, NULLIF($3,'')::uuid, $4, $5, $6,
-    $7, $8, $9, $10, $11, COALESCE(NULLIF($12,''),'initial'), NULLIF($13,'')::uuid
+    $7, $8, $9, $10, $11, COALESCE(NULLIF($12,''),'initial'), NULLIF($13,'')::uuid,
+    $14, $15, $16, $17, $18
 )
 RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
           duration_seconds, no_expiry, start_policy, purchased_at, starts_at,
-          first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text, revision`,
+          first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text,
+          accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+          accounting_baseline_upload_bytes, accounting_baseline_download_bytes, revision`,
 		record.TenantID,
 		record.UserID,
 		record.PlanID,
@@ -47,6 +55,11 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		string(record.State),
 		record.RenewalKind,
 		record.RenewedFromTermID,
+		string(record.AccountingBaseline.State),
+		string(record.AccountingBaseline.Source),
+		record.AccountingBaseline.CutoffAt.UTC(),
+		record.AccountingBaseline.UploadBytes,
+		record.AccountingBaseline.DownloadBytes,
 	).Scan(
 		&term.ID,
 		&term.TenantID,
@@ -63,6 +76,11 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		&state,
 		&term.RenewalKind,
 		&renewedFrom,
+		&baselineState,
+		&baselineSource,
+		&term.AccountingBaseline.CutoffAt,
+		&baselineUpload,
+		&baselineDownload,
 		&term.Revision,
 	); err != nil {
 		return ServiceTerm{}, fmt.Errorf("customer: insert product service term: %w", err)
@@ -75,6 +93,10 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 	}
 	term.StartPolicy = StartPolicy(startPolicy)
 	term.State = TermState(state)
+	term.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	term.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	term.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	term.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	return term, nil
 }
 

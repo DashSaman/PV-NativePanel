@@ -52,30 +52,36 @@ func applyCustomerAccounting(view *customer.CustomerView, model telemetry.ReadMo
 	if view == nil {
 		return
 	}
-	complete := model.AccountingComplete
-	view.Usage = &customer.CustomerUsage{
-		Available:          complete,
-		AccountingComplete: complete,
-		UploadBytes:        model.UploadBytes,
-		DownloadBytes:      model.DownloadBytes,
-		UsedBytes:          model.UsedBytes,
-		RemainingBytes:     model.RemainingBytes,
-		LastOnline:         model.LastOnline,
-		Online:             model.Online,
-		SessionCount:       model.SessionCount,
+	usage, capability, err := customer.ComposeCustomerUsage(
+		view.AccountingBaseline,
+		model.UploadBytes,
+		model.DownloadBytes,
+		view.QuotaBytes,
+		model.AccountingComplete,
+	)
+	if err != nil {
+		view.Usage = nil
+		view.UsageCapability = customer.UsageCapability{Available: false, Reason: "accounting_baseline_invalid"}
+		view.StatusDimensions = customer.DeriveStatusDimensions(customer.StatusInput{
+			UserState: view.Status, TermState: view.ServiceState, StartPolicy: view.StartPolicy,
+			QuotaBytes: view.QuotaBytes, ExpiresAt: view.ExpiresAt, OnHold: view.OnHold,
+			AccountingAvailable: false, RuntimeHealthAvailable: false, Now: now,
+		})
+		return
 	}
-	if complete {
-		view.UsageCapability = customer.UsageCapability{Available: true}
-	} else {
-		view.UsageCapability = customer.UsageCapability{Available: false, Reason: "accounting_incomplete"}
+	usage.LastOnline = model.LastOnline
+	if model.AccountingComplete {
+		usage.Online = model.Online
+		usage.SessionCount = model.SessionCount
 	}
+	view.Usage = &usage
+	view.UsageCapability = capability
 	if view.FirstConnectedAt == nil && model.FirstConnectedAt != nil {
 		view.FirstConnectedAt = model.FirstConnectedAt
 	}
 
-	used := model.UsedBytes
 	var presence *customer.PresenceStatus
-	if complete {
+	if model.AccountingComplete {
 		value := customer.PresenceOffline
 		if model.Online {
 			value = customer.PresenceOnline
@@ -89,8 +95,8 @@ func applyCustomerAccounting(view *customer.CustomerView, model telemetry.ReadMo
 		QuotaBytes:             view.QuotaBytes,
 		ExpiresAt:              view.ExpiresAt,
 		OnHold:                 view.OnHold,
-		AccountingAvailable:    complete,
-		UsedBytes:              &used,
+		AccountingAvailable:    capability.Available,
+		UsedBytes:              usage.UsedBytes,
 		Presence:               presence,
 		RuntimeHealthAvailable: false,
 		Now:                    now,

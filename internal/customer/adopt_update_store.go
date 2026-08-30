@@ -71,7 +71,8 @@ func (s *PostgresStore) UpdateCurrentServiceTermTx(ctx context.Context, tx *sql.
 		return ServiceTerm{}, errors.New("customer: transaction is required")
 	}
 	var term ServiceTerm
-	var startPolicy, state string
+	var startPolicy, state, baselineState, baselineSource string
+	var baselineUpload, baselineDownload sql.NullInt64
 	err := tx.QueryRowContext(ctx, `
 UPDATE pvnaive.service_terms AS st
 SET quota_bytes = $2,
@@ -93,7 +94,10 @@ WHERE st.id = (
 )
 RETURNING st.id::text, st.tenant_id::text, st.user_id::text, st.quota_bytes,
           st.duration_seconds, st.start_policy, st.purchased_at, st.starts_at,
-          st.first_connected_at, st.expires_at, st.state, st.revision`,
+          st.first_connected_at, st.expires_at, st.state,
+          st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
+          st.accounting_baseline_upload_bytes, st.accounting_baseline_download_bytes,
+          st.revision`,
 		userID,
 		record.QuotaBytes,
 		record.DurationSeconds,
@@ -114,6 +118,11 @@ RETURNING st.id::text, st.tenant_id::text, st.user_id::text, st.quota_bytes,
 		&term.FirstConnectedAt,
 		&term.ExpiresAt,
 		&state,
+		&baselineState,
+		&baselineSource,
+		&term.AccountingBaseline.CutoffAt,
+		&baselineUpload,
+		&baselineDownload,
 		&term.Revision,
 	)
 	if err != nil {
@@ -124,5 +133,9 @@ RETURNING st.id::text, st.tenant_id::text, st.user_id::text, st.quota_bytes,
 	}
 	term.StartPolicy = StartPolicy(startPolicy)
 	term.State = TermState(state)
+	term.AccountingBaseline.State = AccountingBaselineState(baselineState)
+	term.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+	term.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+	term.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 	return term, nil
 }

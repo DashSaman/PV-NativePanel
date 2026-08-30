@@ -47,19 +47,20 @@ type ScheduledNextPlan struct {
 }
 
 type CreateRenewalTermRecord struct {
-	TenantID          string
-	UserID            string
-	PlanID            string
-	QuotaBytes        *int64
-	DurationSeconds   int64
-	NoExpiry          bool
-	StartPolicy       StartPolicy
-	PurchasedAt       time.Time
-	StartsAt          *time.Time
-	ExpiresAt         *time.Time
-	State             TermState
-	RenewalKind       string
-	RenewedFromTermID string
+	TenantID           string
+	UserID             string
+	PlanID             string
+	QuotaBytes         *int64
+	DurationSeconds    int64
+	NoExpiry           bool
+	StartPolicy        StartPolicy
+	PurchasedAt        time.Time
+	StartsAt           *time.Time
+	ExpiresAt          *time.Time
+	State              TermState
+	RenewalKind        string
+	RenewedFromTermID  string
+	AccountingBaseline AccountingBaseline
 }
 
 type RenewalResult struct {
@@ -135,10 +136,11 @@ func (s *Service) RenewCustomer(ctx context.Context, tx *sql.Tx, actorID, userID
 
 func (s *Service) resolveRenewalRecord(ctx context.Context, tx *sql.Tx, store renewalStore, current RenewalContext, input RenewalInput, now time.Time) (CreateRenewalTermRecord, bool, error) {
 	base := CreateRenewalTermRecord{
-		TenantID:          current.TenantID,
-		UserID:            current.UserID,
-		PurchasedAt:       now,
-		RenewedFromTermID: current.Current.ID,
+		TenantID:           current.TenantID,
+		UserID:             current.UserID,
+		PurchasedAt:        now,
+		RenewedFromTermID:  current.Current.ID,
+		AccountingBaseline: FreshManagedAccountingBaseline(now),
 	}
 	switch input.Mode {
 	case RenewalCurrent:
