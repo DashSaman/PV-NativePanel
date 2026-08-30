@@ -21,25 +21,23 @@ Do not rotate Runtime credentials or Subscription tokens when merely editing quo
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current main before WS4 merge: `1ced722f9ee46fc4fb1a005ae8653f52339786b0`
-- Active branch: `lead/ws4-safe-extract-2026-08-30`
-- Active PR: `#29` — WS4 safe extraction of useful stale PR #16 units
+- Current implementation / Production release: `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`
 - Current schema head: `0011_customer_product_management` / schema 11
 - Parity reference: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
+- Master Tasks #1-#4: **DONE**
+- Next task: **#5 Legacy/adopted accounting baseline truth**
 
-Tasks #1-#3 truth/parity reconciliation are merged. Task #4 is code-complete on PR #29 but is **not Production-complete until PR merge + backed-up Production deployment + smoke verification**.
-
-## Current Production truth — read-only audit 2026-08-30
+## Current Production truth — verified 2026-08-30
 
 No secret-bearing values were printed.
 
 - host: `testAmir5-3`
 - public panel: `https://namir.softarg.ir/panel/`
-- `pvnaive-api.service`: active
-- `pvnaive-runtime-agent.service`: active
-- `pvnaive-telemetry-agent.service`: active
-- `caddy-naive.service`: active
-- observed restart counters: 0
+- `pvnaive-api.service`: active, observed restart count 0
+- `pvnaive-runtime-agent.service`: active, observed restart count 0
+- `pvnaive-telemetry-agent.service`: active, observed restart count 0
+- `caddy-naive.service`: active, observed restart count 0
+- PostgreSQL: active
 - API listener: loopback `127.0.0.1:8080`
 - local readiness: healthy
 - Runtime health: healthy
@@ -47,18 +45,21 @@ No secret-bearing values were printed.
 - PostgreSQL schema: **11**
 - six active users
 - six active Naive Runtime credentials
-- six ServiceTerms
+- six active ServiceTerms
 - six active direct Subscription tokens
-- direct accounting events/sessions are live
-- root filesystem observed at about 79% used
-- backup age recipient/private key exist with restricted permissions
-- Caddy serves the panel from `/var/www/pvnaive-preview/current`
-- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` also exist as release symlinks
-- scheduled PVNaive backup/restore timers were not active at the pre-WS4 audit
+- backup and restore-drill timers: active/enabled
+- public panel HTTP 200
+- public readiness HTTP 200
+- `pvnaive doctor`: 14 PASS / 1 disk WARN / 0 FAIL
+- real systemd restore drill: schema/ownership/ACL/signing-key checks PASS
+- bounded loopback rehearsal: 100/100 success, 0 failures; this is not a capacity proof
+- Caddy config SHA/PID/restart count unchanged through WS4 deployment
+- `/opt/pvnaive/release/CURRENT` and legacy deployment marker point to `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`
+- Caddy serves the current panel release from `/var/www/pvnaive-preview/current`
+- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` point to the same final release generation
+- root filesystem is around 79% used and intentionally remains a Doctor warning
 
-### Production provenance gap before WS4 deployment
-
-Legacy `/opt/pvnaive/DEPLOYED_COMMIT` and `/opt/pvnaive/DEPLOYED_WEB_RELEASE` lag the newest running binary/web state. WS4 release tooling now backs up, updates and rollback-restores these markers together with `/opt/pvnaive/release/CURRENT`, but Production remains unchanged until the final PR #29 merge is deployed.
+Fresh encrypted config/database snapshots and release rollback directories were created before each Production mutation.
 
 ## Already integrated on main
 
@@ -85,47 +86,54 @@ Legacy `/opt/pvnaive/DEPLOYED_COMMIT` and `/opt/pvnaive/DEPLOYED_WEB_RELEASE` la
 - session/presence projection;
 - finite-quota reservation/settlement core.
 
-Do not rewrite this core. Remaining P0 work starts with legacy/adopted baseline truth.
+Do not rewrite this core. Remaining P0 accounting work starts with legacy/adopted baseline truth.
 
-## Task #4 — WS4 safe extraction on PR #29
+### Operations / observability / release foundations — Task #4 DONE
 
-PR #16 was **not** merged/cherry-picked wholesale. Useful units were manually reimplemented/reconciled against current main with RED→GREEN tests.
-
-Implemented on `lead/ws4-safe-extract-2026-08-30`:
+Task #4 manually reconciled useful stale PR #16 ideas against the newer code and deployed them to Production:
 
 - Linux CPU/RAM/disk/load/uptime/network metrics with server-side counter-delta rates;
-- structured application logging + sensitive-key/text redaction;
+- structured redacted logging;
 - request IDs, bounded per-IP rate limiting and trusted-proxy handling;
 - ready-route OpenAPI endpoint;
 - `/api/v1/system/status` with API/DB/Runtime/Telemetry dependencies;
 - `pvnaive doctor` and redacted diagnostic support bundle;
-- encrypted scheduled backup + isolated restore-drill scripts and systemd timers;
-- release builder with dynamic schema discovery, checksums/SBOM/source provenance;
+- encrypted scheduled backup + isolated restore drill + active systemd timers;
+- release builder with dynamic schema discovery, checksums/basic SBOM/source provenance;
 - same-schema guarded deploy + telemetry-aware rollback;
-- Production-layout-aware dual web symlink handling for `/opt/pvnaive/web/current` and `/var/www/pvnaive-preview/current`;
-- legacy/new deployment marker backup/update/restore;
-- bounded loopback control-plane load rehearsal (explicitly not a capacity ceiling);
-- notification retry/dedupe/redaction foundation;
-- Telegram transport foundation without token leakage;
-- fleet model/drift/delete-guard foundation only — no fake multi-node readiness;
-- live owner System Dashboard using real server metrics/dependencies;
-- safe React ErrorBoundary that never renders raw exceptions.
+- Production-layout-aware web/DB symlink handling and deployment markers;
+- bounded loopback control-plane rehearsal;
+- notification retry/dedupe/redaction and secure Telegram transport foundations;
+- standalone-safe fleet model/drift/delete-guard foundation;
+- live owner System Dashboard;
+- safe React ErrorBoundary.
 
-The notification/fleet packages are foundations only and are not wired as fake completed product surfaces.
+Final WS4 evidence:
 
-### Exact-head verification before final docs
+- PR #30 exact head `09b085a877e52fa02c095799359b6b9e89bb3492`: CI #1065, Exact Accounting #181, Pinned Forwardproxy #165 — SUCCESS;
+- merge `c717d162a7e9b2e31fb5822b6b16c27ad048cbbd` deployed with fresh encrypted backups and rollback state;
+- postflight exposed Doctor key-mode and restore-validation false negatives while customer service/accounting remained healthy;
+- PR #31 exact head `b740352012fd9646c25d4c70c83f64f2f86ce029`: CI #1070, Exact Accounting #185, Pinned Forwardproxy #169 — SUCCESS;
+- final hotfix merge `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb` rebuilt, backed up, deployed and independently postflight-verified.
 
-Unit #7 implementation head `6a61512449884432477b1c107de6ac80e9e0d69c` passed:
+## Task #5 target — legacy/adopted accounting baseline truth
 
-- CI #1060 — SUCCESS, including Web tests/build, Go vet/tests, PostgreSQL gates, full S04R rehearsal and production bundle;
-- WS1 Exact Accounting #176 — SUCCESS;
-- WS1 Pinned Forwardproxy #160 — SUCCESS.
+The six existing Production accounts and all future adopted accounts must not be assigned fabricated historical usage.
 
-After this documentation update, all required workflows must pass again on the **final exact PR head** before merge.
+Required rules:
 
-## Important incomplete work
+- numeric historical baseline only when authoritative pre-adoption usage can be proven;
+- otherwise explicit Unknown/unavailable state, never implicit zero;
+- exact post-adoption direct Naive usage stays separate and trustworthy;
+- baseline + direct usage may be combined only when epoch/provenance proves the periods do not overlap;
+- adoption must preserve enough provenance and boundary information to prevent double-counting;
+- reads, quota/expiry edits, QR, Subscription view/reissue and password rotation cannot silently rewrite baseline history;
+- existing Production users are classified from real server/database evidence only.
 
-- legacy/adopted accounting baseline truth;
+Task #5 requires RED→GREEN unit/integration/database tests, exact-head CI/Exact Accounting/Pinned Forwardproxy, and a backed-up Production rollout if schema/runtime semantics change.
+
+## Important incomplete work after Task #5
+
 - complete `/s` accounting/presence projection;
 - Manual Reset Usage / Bulk Reset Usage / periodic restart-safe reset scheduler;
 - controlled Production hard-quota race/restart proof;
@@ -135,13 +143,13 @@ After this documentation update, all required workflows must pass again on the *
 - real per-user speed-limit PoC/enforcement;
 - full reseller CRUD/wallet/ledger/restrictions;
 - customer history + Audit Explorer;
-- notification preferences/history/rule builder and actual configured Telegram product workflow;
+- notification preferences/history/rule builder and configured Telegram workflow;
 - historical metrics/log UIs beyond the live System Dashboard;
 - fleet controller/multi-node operations/failover/smart selection;
 - clean-server installer/upgrade/uninstall lifecycle;
 - Karing multi-OS compatibility campaign;
 - 50/100/200/400+ capacity campaign;
-- supply-chain SAST/dependency scan/signing policy beyond the current release checksum/SBOM foundation.
+- supply-chain SAST/dependency scan/signing policy beyond current checksum/SBOM foundation.
 
 ## Confirmed P0 security defects still open
 
@@ -153,14 +161,11 @@ Do not remove these until their Owner-mandated security stage has tests and Prod
 
 ## Current execution order
 
-1. finish Task #4 final docs/exact-head CI/review;
-2. merge PR #29;
-3. take fresh Production backups, deploy exact merged commit using the tested release tooling, verify API/Runtime/Telemetry/panel/Caddy invariants/timers/markers and rollback readiness;
-4. then Task #5: legacy/adopted accounting baseline truth;
-5. `/s` accounting/presence;
-6. reset semantics;
-7. hard-quota and first-CONNECT controlled Production proofs;
-8. remaining session/reseller/security/fleet/installer/client/capacity/release gates in `ROADMAP.md` order.
+1. Task #5 — legacy/adopted accounting baseline truth;
+2. Task #6 — `/s` accounting/presence completion;
+3. Tasks #7-#9 — reset semantics;
+4. Tasks #10-#11 — hard-quota and first-CONNECT controlled Production proofs;
+5. remaining session/reseller/security/fleet/installer/client/capacity/release gates in `ROADMAP.md` order.
 
 ## Read next
 

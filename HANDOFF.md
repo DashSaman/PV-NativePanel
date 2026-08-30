@@ -2,43 +2,80 @@
 
 Last updated: 2026-08-30
 
-This handoff supersedes old S04/S05/S06 branch notes. Do not resume from stale PR branches wholesale.
+This handoff supersedes old S04/S05/S06 and stale PR #16/#29 notes. Resume only from current `main` and live Production truth.
 
 ## Repository
 
 - Repo: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current main before Task #4 merge: `1ced722f9ee46fc4fb1a005ae8653f52339786b0`
-- Active branch: `lead/ws4-safe-extract-2026-08-30`
-- Active PR: `#29`
+- Current Production release / main implementation baseline: `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`
 - Schema head: 11 / `0011_customer_product_management`
 - Parity reference: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
+- Tasks #1-#4: **DONE**
+- Next mandated task: **#5 Legacy/adopted accounting baseline truth**
 
-Tasks #1-#3 are merged. Task #4 is at final-documentation/exact-head verification and must not be called Production-complete until the merged commit is deployed and smoke-tested.
-
-## Production — latest pre-deploy audit
+## Production — verified final Task #4 state
 
 Production: `https://namir.softarg.ir/panel/`
 
-Observed without printing secrets:
+Verified on 2026-08-30 without printing secret-bearing values:
 
-- `pvnaive-api.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`, `caddy-naive.service`: active;
-- restart counters observed at 0;
-- API loopback `127.0.0.1:8080` healthy;
+- `pvnaive-api.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`, `caddy-naive.service`, PostgreSQL: active;
+- observed restart counters: 0;
+- API loopback readiness healthy;
 - Runtime Unix health healthy;
 - Telemetry `/run/pvnaive/accounting.sock` health healthy;
 - PostgreSQL schema 11;
-- six active users, six active Naive Runtime credentials, six ServiceTerms, six active direct Subscription tokens;
-- direct accounting events/sessions are live;
-- root filesystem about 79% used;
-- Caddy panel docroot is `/var/www/pvnaive-preview/current`;
-- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` are also release symlinks;
-- backup age recipient/key exist with restricted permissions;
-- pre-WS4 scheduled PVNaive backup/restore timers were not active;
-- legacy deploy markers lagged running artifacts.
+- six active users;
+- six active Naive Runtime credentials;
+- six active ServiceTerms;
+- six active direct Subscription tokens;
+- backup and restore-drill timers active/enabled;
+- public panel and public readiness HTTP 200;
+- `pvnaive doctor`: 14 PASS / 1 disk WARN / 0 FAIL;
+- real automated restore drill: schema/ownership/ACL/signing-key checks PASS;
+- bounded loopback HTTP rehearsal: 100/100 success, 0 failures — explicitly not a capacity ceiling;
+- release markers point to `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`;
+- Caddy config SHA, PID and restart count remained unchanged across WS4 deploy/hotfix redeploy;
+- root filesystem is around 79% used and remains a Doctor warning rather than a failure.
 
-Before mutation, re-check live state and take fresh DB/config/Caddy/web/binary/unit/tmpfiles/marker rollback state.
+Fresh encrypted config/database backups and complete release rollback snapshots were taken before each Production mutation.
+
+## Task #4 — completed
+
+The useful parts of stale PR #16 were manually reconciled rather than merged wholesale. The final Production result includes:
+
+1. real Linux CPU/RAM/disk/load/uptime/network metrics;
+2. server-side network rates from monotonic counter deltas, with no invented first-sample rate;
+3. structured redacted logging;
+4. request IDs + bounded rate limits + loopback-only forwarded-IP trust;
+5. ready-route OpenAPI;
+6. real `/api/v1/system/status` for API/DB/Runtime/Telemetry dependencies;
+7. `pvnaive doctor`;
+8. redacted diagnostic bundle;
+9. encrypted scheduled backup;
+10. automated isolated restore drill;
+11. backup/restore systemd timers;
+12. dynamic-schema release builder + checksums/basic SBOM/source provenance;
+13. same-schema guarded deploy and telemetry-aware rollback;
+14. Production-aware dual web symlinks and DB-script release symlink;
+15. deployment marker backup/update/restore;
+16. bounded loopback load rehearsal;
+17. notification retry/dedupe/redaction foundation;
+18. secure Telegram transport foundation;
+19. standalone-safe Fleet model/drift/delete-guard foundation;
+20. live owner System Dashboard;
+21. safe React ErrorBoundary.
+
+Final verification history:
+
+- PR #30 exact head `09b085a877e52fa02c095799359b6b9e89bb3492`: CI #1065, Exact Accounting #181, Pinned Forwardproxy #165 — SUCCESS;
+- initial WS4 merge: `c717d162a7e9b2e31fb5822b6b16c27ad048cbbd`;
+- Production postflight discovered two operational false negatives: Doctor key-mode expectation and restore validation SIGPIPE/141;
+- PR #31 exact head `b740352012fd9646c25d4c70c83f64f2f86ce029`: CI #1070, Exact Accounting #185, Pinned Forwardproxy #169 — SUCCESS;
+- final WS4 merge/release: `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`;
+- final Production postflight: PASS.
 
 ## Durable integrated core — do not rewrite
 
@@ -67,55 +104,30 @@ Before mutation, re-check live state and take fresh DB/config/Caddy/web/binary/u
 - explicit Subscription reissue;
 - explicit password rotation.
 
-## Task #4 — manually extracted from stale PR #16
+## Next task — #5 Legacy/adopted accounting baseline truth
 
-Never merge PR #16 wholesale. PR #29 manually reconciles the still-useful ideas against current main.
+Goal: legacy/adopted accounts must never display an invented zero and must never double-count pre-adoption plus direct Naive telemetry.
 
-Completed on the Task #4 branch:
+Required semantics:
 
-1. real Linux CPU/RAM/disk/load/uptime/network metrics;
-2. server-side network rates from monotonic counter deltas, with no invented first-sample rate;
-3. structured redacted logging;
-4. request ID + bounded rate-limit middleware + loopback-only forwarded-IP trust;
-5. ready-route OpenAPI;
-6. real `/api/v1/system/status` with API/DB/Runtime/Telemetry dependency state;
-7. `pvnaive doctor`;
-8. redacted diagnostic bundle;
-9. encrypted scheduled backup;
-10. isolated restore drill;
-11. backup/restore systemd timers;
-12. dynamic-schema release builder + checksums/SBOM/source provenance;
-13. same-schema guarded deploy and telemetry-aware rollback;
-14. Production-aware dual web release symlinks (`/opt/pvnaive/web/current` + `/var/www/pvnaive-preview/current`);
-15. deploy-marker backup/update/restore;
-16. bounded loopback load rehearsal, explicitly not capacity proof;
-17. notification retry/dedupe/redaction foundation;
-18. Telegram transport foundation with token-leak prevention;
-19. fleet model/drift/delete-guard foundation only;
-20. live owner System Dashboard with API/DB/Runtime/Telemetry badges and real metrics;
-21. safe React ErrorBoundary without raw exception rendering.
+- a baseline is numeric only when the pre-adoption usage is provable from an authoritative source;
+- otherwise baseline state is explicit `Unknown`/unavailable, not zero;
+- direct post-adoption accounting remains exact and restart-safe;
+- total usage may combine baseline + direct usage only when the baseline is known and the epochs cannot overlap;
+- adoption must record enough provenance/epoch information to prevent double-counting;
+- read-only actions, quota/expiry edits, Subscription reissue and QR rendering must not mutate baseline or rotate Runtime/Subscription secrets;
+- existing six Production accounts must be classified from real evidence rather than guessed.
 
-Notification/fleet foundations are not equivalent to a finished notification product or multi-node controller.
+Implement with RED→GREEN tests, migration only if necessary, exact-head CI/Exact Accounting/Pinned Forwardproxy, backed-up Production rollout if schema/runtime changes, and live verification.
 
-## Verification
+## Still open after Task #5
 
-Unit #7 implementation head `6a61512449884432477b1c107de6ac80e9e0d69c` passed:
-
-- CI #1060, including Web tests/build, Go vet/tests, PostgreSQL checks, full S04R rehearsal and production bundle;
-- Exact Accounting #176;
-- Pinned Forwardproxy #160.
-
-Documentation commits follow that head. **Require all three workflows again on the final exact PR head before merge.**
-
-## Still open
-
-- legacy/adopted accounting baseline truth;
-- full `/s` accounting/presence;
+- full `/s` accounting/presence projection;
 - Manual/Bulk/Periodic reset usage semantics;
 - controlled hard-quota and first-CONNECT Production proofs;
 - session list/kill/concurrent/unique-IP limits/history;
 - HWID and speed-limit PoCs;
-- reseller wallet/ledger/restrictions;
+- reseller CRUD/wallet/ledger/restrictions;
 - customer history/Audit Explorer;
 - full notification preferences/history/rule UI and configured Telegram workflow;
 - historical metrics/log UI beyond current live monitor;
@@ -125,16 +137,6 @@ Documentation commits follow that head. **Require all three workflows again on t
 - Karing multi-OS acceptance;
 - 50/100/200/400+ capacity campaign;
 - final supply-chain/release signing and RC gates.
-
-## Exact continuation
-
-1. finish Task #4 canonical docs;
-2. verify CI + Exact Accounting + Pinned Forwardproxy on the final exact PR #29 head;
-3. final diff/secret/rollback review;
-4. merge PR #29 only with expected head SHA;
-5. on Production: re-audit → fresh backups → build artifact from exact merged commit → guarded same-schema deploy → verify API/Runtime/Telemetry/panel/timers/markers/Caddy unchanged → run Doctor and bounded smoke;
-6. if any postflight fails, use the generated release backup with `rollback-r1.sh` and re-verify;
-7. only after Production success start Task #5: legacy/adopted accounting baseline truth.
 
 ## Safety invariants
 
