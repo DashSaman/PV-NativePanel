@@ -70,10 +70,13 @@ INSERT INTO pvnaive.naive_runtime_credentials (
 );
 
 INSERT INTO pvnaive.service_terms (
-  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy, purchased_at, state
+  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy, purchased_at, state,
+  accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
+  accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 )
 SELECT 'cccccccc-cccc-cccc-cccc-cccccccccccc', tenant_id, id, 100, 3600,
-       'on_first_successful_connection', '2026-08-29T17:00:00Z', 'pending'
+       'on_first_successful_connection', '2026-08-29T17:00:00Z', 'pending',
+       'known', 'fresh_managed_term', '2026-08-29T17:00:00Z', 0, 0
 FROM pvnaive.users WHERE id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
 INSERT INTO pvnaive.user_runtime_credentials (
