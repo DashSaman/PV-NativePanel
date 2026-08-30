@@ -30,7 +30,7 @@ func TestCreateServiceTermPersistsAndReturnsAccountingBaseline(t *testing.T) {
 	tx := newCustomerStoreTx(t, conn)
 	term, err := NewPostgresStore().CreateServiceTermTx(context.Background(), tx, CreateServiceTermRecord{
 		TenantID: "tenant-1", UserID: "user-1", QuotaBytes: &quota, DurationSeconds: 3600,
-		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: ptrTime(now.Add(time.Hour)),
+		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: baselinePtrTime(now.Add(time.Hour)),
 		State: TermActive, AccountingBaseline: baseline,
 	})
 	if err != nil {
@@ -50,7 +50,7 @@ func TestCreateProductServiceTermPersistsAndReturnsAccountingBaseline(t *testing
 	tx := newCustomerStoreTx(t, conn)
 	term, err := NewPostgresStore().CreateProductServiceTermTx(context.Background(), tx, CreateServiceTermRecord{
 		TenantID: "tenant-1", UserID: "user-1", QuotaBytes: &quota, DurationSeconds: 3600,
-		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: ptrTime(now.Add(time.Hour)),
+		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: baselinePtrTime(now.Add(time.Hour)),
 		State: TermActive, RenewalKind: "initial", AccountingBaseline: baseline,
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func TestCreateRenewalTermPersistsAndReturnsAccountingBaseline(t *testing.T) {
 	tx := newCustomerStoreTx(t, conn)
 	term, err := NewPostgresStore().CreateRenewalTermTx(context.Background(), tx, CreateRenewalTermRecord{
 		TenantID: "tenant-1", UserID: "user-1", QuotaBytes: &quota, DurationSeconds: 3600,
-		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: ptrTime(now.Add(time.Hour)),
+		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: baselinePtrTime(now.Add(time.Hour)),
 		State: TermActive, RenewalKind: "renew_current", RenewedFromTermID: "old-term", AccountingBaseline: baseline,
 	})
 	if err != nil {
@@ -79,4 +79,4 @@ func TestCreateRenewalTermPersistsAndReturnsAccountingBaseline(t *testing.T) {
 	assertKnownZeroBaseline(t, term.AccountingBaseline, now)
 }
 
-func ptrTime(value time.Time) *time.Time { return &value }
+func baselinePtrTime(value time.Time) *time.Time { return &value }
