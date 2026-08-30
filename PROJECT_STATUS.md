@@ -2,184 +2,165 @@
 
 Last updated: 2026-08-30
 
-This file describes current repository + Production truth. Historical S04/S05 branch snapshots must not override this file.
+This file describes current repository + Production truth. Historical S04/S05 snapshots and stale PR branches must not override it.
 
-## Product
+## Product / architecture invariants
 
-PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. The current architecture deliberately separates:
+PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. Keep these boundaries separate:
 
-1. commercial customer/service state (`User`, immutable `ServiceTerm`, plan/group/tag metadata),
-2. Runtime Naive credential identity and secrets,
-3. opaque Subscription/account-page delivery,
+1. commercial customer/service state (`User`, immutable `ServiceTerm`, plans/groups/tags),
+2. Runtime Naive credentials/secrets,
+3. `/sub/<opaque-token>` machine delivery and `/s/<opaque-token>` human account page,
 4. exact direct-Naive accounting/session telemetry,
-5. privileged Runtime mutation through a narrow local agent.
+5. privileged Runtime mutation through the narrow local Runtime Agent.
 
-Do not collapse these boundaries for UI convenience.
+Do not rotate Runtime credentials or Subscription tokens when merely editing quota/expiry or viewing Subscription/QR.
 
 ## Repository state
 
 - Repository: `DashSaman/PV-NativePanel`
+- Product: **PVNaive**
 - Default branch: `main`
-- Audited main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
-- Current Lead reconciliation branch: `lead/parity-truth-2026-08-30`
-- Current Lead PR: `#27` — truth/parity reconciliation
-- Current schema head in main: `0011_customer_product_management`
-- Full current parity matrix: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
+- Current main before WS4 merge: `1ced722f9ee46fc4fb1a005ae8653f52339786b0`
+- Active branch: `lead/ws4-safe-extract-2026-08-30`
+- Active PR: `#29` — WS4 safe extraction of useful stale PR #16 units
+- Current schema head: `0011_customer_product_management` / schema 11
+- Parity reference: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
+
+Tasks #1-#3 truth/parity reconciliation are merged. Task #4 is code-complete on PR #29 but is **not Production-complete until PR merge + backed-up Production deployment + smoke verification**.
 
 ## Current Production truth — read-only audit 2026-08-30
 
-Host/domain state was inspected without printing secrets.
+No secret-bearing values were printed.
 
+- host: `testAmir5-3`
+- public panel: `https://namir.softarg.ir/panel/`
 - `pvnaive-api.service`: active
 - `pvnaive-runtime-agent.service`: active
 - `pvnaive-telemetry-agent.service`: active
 - `caddy-naive.service`: active
-- service restart counters observed at 0 for the current service lifetimes
+- observed restart counters: 0
 - API listener: loopback `127.0.0.1:8080`
-- local readiness: HTTP 200
-- public `https://namir.softarg.ir/panel/`: HTTP 200
-- public readiness: HTTP 200
-- PostgreSQL database present, schema version **11**
+- local readiness: healthy
+- Runtime health: healthy
+- Telemetry accounting socket health: healthy
+- PostgreSQL schema: **11**
 - six active users
-- six active Runtime credentials
+- six active Naive Runtime credentials
 - six ServiceTerms
 - six active direct Subscription tokens
-- six direct-accounting term projections; all six reported accounting complete at audit time
-- live direct-accounting event/session data is present
-- legacy `usage_ledger` is not the active direct-Naive billing path
-- Caddy accounting socket and Runtime Agent socket permissions remain separated
-- root filesystem was **79% used** at audit time
-- backup files exist under the PVNaive backup root, but no PVNaive scheduled-backup systemd timer was observed
+- direct accounting events/sessions are live
+- root filesystem observed at about 79% used
+- backup age recipient/private key exist with restricted permissions
+- Caddy serves the panel from `/var/www/pvnaive-preview/current`
+- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` also exist as release symlinks
+- scheduled PVNaive backup/restore timers were not active at the pre-WS4 audit
 
-### Production provenance warning
+### Production provenance gap before WS4 deployment
 
-`/opt/pvnaive/DEPLOYED_COMMIT` and the web release marker do not reliably identify the newest running binary/web state: marker SHAs/timestamps lag newer binary/web mtimes. Current behavior is healthy, but deployment provenance is not trustworthy enough for a Release Candidate. This must be fixed before final release signing/provenance work.
+Legacy `/opt/pvnaive/DEPLOYED_COMMIT` and `/opt/pvnaive/DEPLOYED_WEB_RELEASE` lag the newest running binary/web state. WS4 release tooling now backs up, updates and rollback-restores these markers together with `/opt/pvnaive/release/CURRENT`, but Production remains unchanged until the final PR #29 merge is deployed.
 
-## Implemented and integrated capability
+## Already integrated on main
 
-### Runtime credential management
+### Runtime / customer / delivery
 
-- AES-GCM Runtime secret envelope and fingerprinting;
-- stable Runtime credential UUIDs;
-- import/create/update/password rotation/enable-disable/revoke lifecycle;
-- fixed-capability Unix-socket Runtime Agent;
-- expected-SHA Caddy mutation;
-- validate → exact backup → apply → reload → postflight → rollback safety;
-- desired/applied Runtime revision saga and reconciliation-required failure state;
-- no arbitrary root shell/path/service API.
+- AES-GCM Runtime secret envelope and stable Runtime UUID identity;
+- safe Runtime Agent validate → backup → apply → verify → rollback path;
+- customer create/adopt/edit/suspend/resume/revoke-safe-delete;
+- quota/unlimited/add/set volume;
+- creation/first-CONNECT/manual validity, no-expiry and extend-days;
+- plans/groups/tags/notes/renewal/new immutable ServiceTerm;
+- search/filter/sort/pagination and supported idempotent bulk operations;
+- `/sub` machine endpoint, `/s` human account page, local QR;
+- Subscription reissue and password rotation remain separate explicit actions.
 
-### Customer product management
+### Exact accounting core
 
-Current main contains real customer/product implementations rather than route-only declarations:
-
-- customer create and Runtime adoption;
-- customer edit/service update;
-- suspend/resume/revoke-safe-delete;
-- quota and unlimited quota;
-- add volume and set total volume;
-- validity from creation, first successful connection and manual expiry;
-- no-expiry and extend-days semantics;
-- plan presets;
-- renewal with new/immutable ServiceTerm semantics;
-- Next Plan / On Hold foundations;
-- groups, tags and notes;
-- server-side search/filter/sort/pagination;
-- bulk preview + idempotent execute for supported product/lifecycle actions;
-- reseller/tenant-safe product data foundations.
-
-### Subscription / customer delivery
-
-- `/sub/<opaque-token>` is the machine/client endpoint;
-- `/s/<opaque-token>` is the human Account Page;
-- legacy API compatibility path remains machine-oriented;
-- local QR generation;
-- read-only Subscription view/copy does not rotate password/token;
-- Subscription reissue and password rotation are separate explicit mutations;
-- account/subscription paths are stable and token material is not listed in customer rows.
-
-### Exact accounting / hard-quota core
-
-The old `exact_accounting_not_proven` project status is obsolete.
-
-Merged WS1 plus Production evidence provides:
-
-- pinned forwardproxy instrumentation at the successful authenticated Naive CONNECT write boundary;
-- Runtime credential UUID billing identity;
-- dedicated telemetry Unix socket;
-- append-only/idempotent event ingest;
-- boot/session/sequence/cumulative counter semantics;
+- successful authenticated Naive CONNECT accounting boundary;
+- dedicated Telemetry Agent/accounting Unix socket;
+- append-only idempotent boot/session/sequence/cumulative events;
 - duplicate/conflict/gap/counter-regression handling;
-- restart-safe accounting projection;
-- ServiceTerm-isolated usage;
-- trusted first-CONNECT activation producer;
+- restart-safe ServiceTerm-isolated usage projection;
+- trusted first-successful-CONNECT activation producer;
 - session/presence projection;
-- shared finite-quota reservation/settlement core.
+- finite-quota reservation/settlement core.
 
-What remains is not another accounting rewrite. Remaining P0 work is legacy/adopted baseline truth, UI/read-model completion, reset semantics, and controlled Production acceptance tests for hard quota and first-CONNECT race/restart behavior.
+Do not rewrite this core. Remaining P0 work starts with legacy/adopted baseline truth.
 
-## Important features that are NOT complete
+## Task #4 — WS4 safe extraction on PR #29
 
-Do not infer completion from `Routes` or schema tables.
+PR #16 was **not** merged/cherry-picked wholesale. Useful units were manually reimplemented/reconciled against current main with RED→GREEN tests.
 
-- Manual Reset Usage: not implemented as a ready customer capability.
-- Bulk Reset Usage: not implemented.
-- Periodic reset execution: plan model exists; restart-safe scheduler/cursor/exactly-once execution does not.
-- Operator-facing active session list / kill session: not ready.
-- Concurrent session/IP limits: not implemented/enforced.
-- trustworthy HWID limit: no proven identity source; no fake HWID is allowed.
-- per-user speed limit: no proven enforcement path; no fake control is allowed.
-- reseller CRUD/wallet/ledger/plan restrictions: foundations exist, product workflow incomplete.
-- customer history + Audit Explorer UI: incomplete.
-- notification engine/Telegram/preferences/history/rule UI: incomplete in current main.
-- real CPU/RAM/disk/network historical dashboard/log UI/doctor/support bundle: not integrated into current main; useful candidates exist in stale PR #16.
-- scheduled encrypted backup: not active on Production.
-- OpenAPI/Swagger: not in current main; PR #16 candidate.
-- multi-node/fleet/failover/smart node: future after standalone correctness.
-- generic clean-server one-line installer/upgrade/uninstall lifecycle: incomplete.
-- real Karing client compatibility matrix: pending.
-- 50/100/200/400+ concurrent capacity campaign: pending.
-- SBOM/SAST/secret/dependency scanning/release signing/provenance: pending.
+Implemented on `lead/ws4-safe-extract-2026-08-30`:
 
-## Current confirmed P0 security defects
+- Linux CPU/RAM/disk/load/uptime/network metrics with server-side counter-delta rates;
+- structured application logging + sensitive-key/text redaction;
+- request IDs, bounded per-IP rate limiting and trusted-proxy handling;
+- ready-route OpenAPI endpoint;
+- `/api/v1/system/status` with API/DB/Runtime/Telemetry dependencies;
+- `pvnaive doctor` and redacted diagnostic support bundle;
+- encrypted scheduled backup + isolated restore-drill scripts and systemd timers;
+- release builder with dynamic schema discovery, checksums/SBOM/source provenance;
+- same-schema guarded deploy + telemetry-aware rollback;
+- Production-layout-aware dual web symlink handling for `/opt/pvnaive/web/current` and `/var/www/pvnaive-preview/current`;
+- legacy/new deployment marker backup/update/restore;
+- bounded loopback control-plane load rehearsal (explicitly not a capacity ceiling);
+- notification retry/dedupe/redaction foundation;
+- Telegram transport foundation without token leakage;
+- fleet model/drift/delete-guard foundation only — no fake multi-node readiness;
+- live owner System Dashboard using real server metrics/dependencies;
+- safe React ErrorBoundary that never renders raw exceptions.
 
-These were re-checked against current main on 2026-08-30 and remain open:
+The notification/fleet packages are foundations only and are not wired as fake completed product surfaces.
 
-1. **Refresh-token reuse-family path** — `refresh` calls `BeginAuthenticated`, while `BeginAuthenticated` requires `s.revoked_at IS NULL`; a reused already-rotated token can fail before `auth_rotate_session` reaches its intended reuse-family handling.
-2. **Commit-before-success integrity** — authenticated middleware executes the handler and may write the HTTP response before calling `bound.Tx.Commit()`, and the commit result is currently ignored for generic authenticated handlers.
-3. **DB-backed readiness** — `/health/ready` currently checks configured auth/MFA dependencies but does not perform the required bounded ongoing DB/schema readiness probe.
+### Exact-head verification before final docs
 
-Fix these in the Owner-mandated security stage after the earlier accounting/session/reseller/ops sequence, unless a technical dependency requires an earlier minimal fix.
+Unit #7 implementation head `6a61512449884432477b1c107de6ac80e9e0d69c` passed:
 
-## CI state
+- CI #1060 — SUCCESS, including Web tests/build, Go vet/tests, PostgreSQL gates, full S04R rehearsal and production bundle;
+- WS1 Exact Accounting #176 — SUCCESS;
+- WS1 Pinned Forwardproxy #160 — SUCCESS.
 
-PR #26's final bot-authored head recorded failed CI/WS1 workflow runs, but its immediately preceding human commit and prior bot commit passed all three workflows. A clean Lead PR #27 was opened from exact current main to reproduce the baseline rather than guessing.
+After this documentation update, all required workflows must pass again on the **final exact PR head** before merge.
 
-At the time this status was written:
+## Important incomplete work
 
-- PR #27 WS1 Exact Accounting run for the refreshed parity head had completed successfully;
-- CI and pinned-forwardproxy runs were still in progress and must complete before the reconciliation head is called green;
-- after the final documentation head, CI must be triggered again for that exact SHA.
+- legacy/adopted accounting baseline truth;
+- complete `/s` accounting/presence projection;
+- Manual Reset Usage / Bulk Reset Usage / periodic restart-safe reset scheduler;
+- controlled Production hard-quota race/restart proof;
+- controlled first-successful-CONNECT Production proof;
+- operator session list/kill/concurrent/unique-IP limits/history;
+- trustworthy HWID/device identity PoC;
+- real per-user speed-limit PoC/enforcement;
+- full reseller CRUD/wallet/ledger/restrictions;
+- customer history + Audit Explorer;
+- notification preferences/history/rule builder and actual configured Telegram product workflow;
+- historical metrics/log UIs beyond the live System Dashboard;
+- fleet controller/multi-node operations/failover/smart selection;
+- clean-server installer/upgrade/uninstall lifecycle;
+- Karing multi-OS compatibility campaign;
+- 50/100/200/400+ capacity campaign;
+- supply-chain SAST/dependency scan/signing policy beyond the current release checksum/SBOM foundation.
+
+## Confirmed P0 security defects still open
+
+1. refresh-token reuse-family path is blocked too early by `BeginAuthenticated`'s `revoked_at IS NULL` selection;
+2. generic authenticated handlers can write success before final transaction commit is known and commit errors are ignored;
+3. `/health/ready` still lacks the required bounded DB/schema readiness probe.
+
+Do not remove these until their Owner-mandated security stage has tests and Production-safe proof.
 
 ## Current execution order
 
-Follow the Owner master prompt without skipping numbered correctness gates:
-
-1. finish audit + current competitor parity + documentation truth;
-2. safely reconcile useful PR #16 units;
-3. legacy accounting baseline;
-4. `/s` accounting/presence;
-5. Manual Reset Usage, Bulk Reset Usage, periodic resets;
-6. hard quota Production proof;
-7. first successful CONNECT Production proof;
-8. sessions/kill/concurrent/IP/history;
-9. HWID/speed PoCs;
-10. reseller/RBAC/wallet/ledger/restrictions;
-11. history/audit, notifications/Telegram, monitoring/logs/doctor, backup/restore, API/security;
-12. fleet/multi-node;
-13. installer/upgrade/rollback;
-14. client compatibility;
-15. load/capacity;
-16. final bulk/search/UI/docs/clean-install/Production smoke/RC.
+1. finish Task #4 final docs/exact-head CI/review;
+2. merge PR #29;
+3. take fresh Production backups, deploy exact merged commit using the tested release tooling, verify API/Runtime/Telemetry/panel/Caddy invariants/timers/markers and rollback readiness;
+4. then Task #5: legacy/adopted accounting baseline truth;
+5. `/s` accounting/presence;
+6. reset semantics;
+7. hard-quota and first-CONNECT controlled Production proofs;
+8. remaining session/reseller/security/fleet/installer/client/capacity/release gates in `ROADMAP.md` order.
 
 ## Read next
 
@@ -190,4 +171,4 @@ Follow the Owner master prompt without skipping numbered correctness gates:
 5. `ROADMAP.md`
 6. `AGENT_TASKS.md`
 7. `WORKLOG.md`
-8. before any Production mutation: current `ops/evidence/*`, live service state, current backups and rollback plan.
+8. before any Production mutation, re-check live state and fresh backup/rollback evidence.

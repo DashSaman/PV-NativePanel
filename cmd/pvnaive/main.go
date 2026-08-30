@@ -33,6 +33,13 @@ const (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "doctor" {
+		if err := runDoctor(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "PVNaive doctor: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		log.Printf("PVNaive API stopped: %v", err)
 		os.Exit(1)
@@ -106,6 +113,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	systemStatus := buildSystemStatusProvider(db, os.Getenv)
 
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
@@ -116,7 +124,9 @@ func run() error {
 		AccountingStore:       accountingStore,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
+		SystemStatus:          systemStatus,
 	})
+	handler = httpapi.WithOperationalMiddleware(handler)
 	server := &http.Server{
 		Addr:              listen,
 		Handler:           handler,
@@ -156,8 +166,7 @@ func run() error {
 func buildRuntimeService(db *sql.DB, getenv func(string) string) (*runtimecred.Service, []byte, error) {
 	keyFile := getenv("PVNAIVE_RUNTIME_KEY_FILE")
 	if keyFile == "" {
-		// S04 auth rehearsal is intentionally frozen at schema v2. Runtime
-		// management is enabled only by the S04R deployment contract.
+		// Runtime management remains optional for isolated auth rehearsals.
 		return nil, nil, nil
 	}
 	key, err := os.ReadFile(keyFile)

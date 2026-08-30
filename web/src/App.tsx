@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
 import { Dashboard } from "./Dashboard";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { ProductCatalog } from "./ProductCatalog";
 import { ProductCustomers } from "./ProductCustomers";
 import { RuntimeAdoption } from "./RuntimeAdoption";
@@ -73,5 +74,5 @@ export function App() {
   else if (view === "catalog" && product) content = <ProductCatalog role={principal.role}/>;
   else if (view === "runtime-adoption" && runtime) content = <RuntimeAdoption/>;
   else if (view === "runtime-naive" && runtime) content = <RuntimeNaive/>;
-  return <Shell principal={principal} view={view} signOut={signOut}>{content}</Shell>;
+  return <ErrorBoundary><Shell principal={principal} view={view} signOut={signOut}>{content}</Shell></ErrorBoundary>;
 }

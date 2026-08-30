@@ -1,0 +1,11 @@
+[Unit]
+Description=Run PVNaive encrypted-backup restore drill weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 04:43:00 UTC
+RandomizedDelaySec=1200
+Persistent=true
+Unit=pvnaive-restore-drill.service
+
+[Install]
+WantedBy=timers.target

@@ -2,138 +2,184 @@
 
 Last updated: 2026-08-30
 
-This log records significant verified transitions so future agents do not repeat completed work. Fine-grained historical evidence remains in git history, PR discussions and `ops/evidence/`; this file keeps the current durable milestone chain.
+This log records significant verified transitions so future agents do not repeat completed work. Fine-grained RED/GREEN evidence remains in git history and GitHub Actions.
 
-## Historical foundation milestones
+## Durable historical milestones
 
-| Date | Work | Evidence / result |
+| Date | Work | Result |
 |---|---|---|
-| 2026-08-27 | PVNaive naming, filesystem/service foundation, PostgreSQL 18/RLS, encrypted DB backup/restore, S03 deployment | historical S00-S03 evidence; DONE |
-| 2026-08-28 | S04 auth foundation, Owner bootstrap/lifecycle, protected public panel/API | auth/web/DB/rehearsal evidence; DONE |
-| 2026-08-28 | S04R Runtime credential management | AES-GCM Runtime secret, pinned Caddy parser/renderer, Runtime Agent, expected-SHA validate/backup/reload/rollback, revision saga, Owner API/UI; DONE |
-| 2026-08-28 | S04R exact pinned Caddy multi-auth proof + bundle/rehearsal | CI `33190295766` checkpoint and artifact checksum evidence; DONE |
-| 2026-08-29 | S05/S06 customer operations and read-only delivery | customer create/adopt/edit/lifecycle, quota/validity, read-only Subscription/QR; Production schema advanced through later release line; DONE baseline |
+| 2026-08-27 | naming/filesystem/PostgreSQL 18/RLS/encrypted DB backup-restore/S03 foundation | DONE |
+| 2026-08-28 | S04 auth + protected panel/API | DONE |
+| 2026-08-28 | S04R Runtime credential lifecycle + safe Runtime Agent/Caddy mutation | DONE |
+| 2026-08-29 | customer lifecycle/quota/validity/subscription/QR baseline | DONE baseline |
+| 2026-08-29 | WS1 exact direct-Naive accounting/first-CONNECT/session/quota core | MERGED |
+| 2026-08-29 | WS2 schema 11 customer product management | MERGED |
+| 2026-08-29 | WS3 `/sub` machine + `/s` human delivery separation | MERGED |
+| 2026-08-30 | Tasks #1-#3 current truth/parity/docs reconciliation | MERGED via replacement PR #28, main `1ced722f9ee46fc4fb1a005ae8653f52339786b0` |
 
-## 2026-08-29 — Parallel workstream integration
+## Task #4 — stale PR #16 safe extraction
 
-| Work / PR | What changed | Verification / current truth | Result |
-|---|---|---|---|
-| WS3 PR #15 | deterministic `/sub/<token>` machine output, `/s/<token>` human Account Page, local QR, security headers, explicit Subscription/password separation | tested WS3 head; real Karing app smoke intentionally still external follow-up | MERGED / CLIENT ACCEPTANCE PARTIAL |
-| WS1 PR #17 | exact direct-Naive accounting, schema 9, first-successful-CONNECT semantics, session/presence projection, hard-quota primitives, dedicated telemetry boundary, pinned forwardproxy patch | source head documented CI #913 + pinned-forwardproxy success | MERGED |
-| WS1 PR #18 | pending-reservation accounting completeness edge | exact-accounting/finalization CI follow-up | MERGED |
-| WS1 PR #19 | shared runtime directory/accounting socket permission fix | production preflight exposed real permission issue; regression/fix followed | MERGED |
-| WS1 PR #20 | bit-reproducible pinned accounting Caddy | two independent absolute workspaces required identical binary/SHA provenance | MERGED |
-| WS1 PR #21 | preserve telemetry socket across Runtime Agent restart | production restart rehearsal exposed socket lifecycle bug; preservation fix | MERGED |
-| WS1 PR #23 | replace shared RuntimeDirectory ownership with tmpfiles namespace | production CONNECT smoke exposed re-ownership of `accounting.sock`; durable tmpfiles fix proven live | MERGED |
-| WS2 PR #22 | schema 11 customer product management | plans/renewal/search/bulk/groups/tags/reseller/RBAC foundations + Runtime UUID mapping synchronization | MERGED |
-| PR #24 | encrypted backup validation SIGPIPE fix | real production backup validation moved to private temp file + `pg_restore --list FILE`; cleanup regression | MERGED |
-| PR #25 | activate merged customer product features in protected panel | customer/product UI + exact-accounting read-model integration work | MERGED |
-| PR #26 | fix customer list and polish customer/subscription UI | restored existing Production users in customer directory, compact operations UI, `/s` vs `/sub` UX cleanup, Persian account-page default; Go/Web/Production service evidence in PR | MERGED as `a021aa4b62c35b775fb521d042b2f8e6dbde10b0` |
+Branch: `lead/ws4-safe-extract-2026-08-30`
 
-## Current Production read-only audit — 2026-08-30
+PR: #29
 
-Lead audit against `testAmir5-3` / `namir.softarg.ir` recorded only non-secret state:
+Base main: `1ced722f9ee46fc4fb1a005ae8653f52339786b0`
 
-- `pvnaive-api.service`: active;
-- `pvnaive-runtime-agent.service`: active;
-- `pvnaive-telemetry-agent.service`: active;
-- `caddy-naive.service`: active;
-- current observed service restart counters: 0;
-- API listener: loopback `127.0.0.1:8080`;
-- local readiness: HTTP 200;
-- public panel: HTTP 200;
-- public readiness: HTTP 200;
-- PostgreSQL schema version: 11;
-- active users: 6;
-- active Runtime credentials: 6;
-- ServiceTerms: 6;
-- active direct Subscription tokens: 6;
-- direct accounting term projections: 6 complete / 0 incomplete at audit instant;
-- append-only direct-accounting events: tens of thousands and actively growing;
-- direct-accounting session history present with active/open rows;
-- legacy `usage_ledger`: not the active direct-Naive accounting path;
-- backup files exist under `/var/backups/pvnaive`;
-- no PVNaive scheduled-backup systemd timer observed;
-- root filesystem: 79% used at audit instant;
-- Runtime/accounting Unix sockets remain distinct permission boundaries;
-- Production deploy marker files lag newer binary/web mtimes, so release provenance is not authoritative yet.
+Rule: no blind merge/cherry-pick from stale PR #16. Newer WS1 accounting, WS2 product and WS3 delivery behavior must win.
 
-No raw credential, password, Subscription token, encryption key or secret-bearing Caddy content was printed or committed.
+### Unit 1 — observability
 
-## Current competitor audit — 2026-08-30
+Implemented:
 
-Official current snapshots re-checked beyond README:
+- Linux CPU/RAM/disk/load/uptime/network metrics;
+- server-side RX/TX rate only from monotonic counter + time deltas;
+- no fabricated first sample and no negative rate after counter rollback;
+- structured event logging and sensitive key/text redaction.
 
-- 3x-ui `f727d04f6522bb94a8fb52e8352fdcafb51c11e1` / v3.7.0;
-- PasarGuard `aebf7256927710329d380d67ce96224f287ae5f6` / v5.3.0;
-- Hiddify Manager default `dev@a99c811aa63fe908f1e06607b81f475b502ebf07`; stable v12.3.3;
-- OV-PvNetwork `5b6a578bfe7733ebc67c08d9c431da6e32ac7ced` / public v1.0.0-rc1.
+TDD: initial undefined-symbol RED followed by GREEN.
 
-Result: new 120-feature matrix added at `docs/PANEL_PARITY_MASTER_2026-08-30.md`. GPL/AGPL source remains reference-only.
+### Unit 2 — HTTP ops/OpenAPI/system status
 
-## Current PR / CI reconciliation — PR #27
+Implemented:
 
-Branch: `lead/parity-truth-2026-08-30`
+- request IDs;
+- redacted structured request completion logs;
+- bounded per-IP rate limiting;
+- forwarded IP trusted only from loopback reverse proxy;
+- OpenAPI generated from current ready routes;
+- `/api/v1/system/status` provider with real API/DB/Runtime/Telemetry dependency state.
 
-Starting main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
+Preserved current customer routes instead of stale PR #16 assumptions.
 
-Reason:
+### Unit 3 — Doctor/diagnostics
 
-- PR #26 final bot head `317ad74a5f7402bfff7de0716b5c1a4b246a6e5a` recorded failures for normal CI + WS1 workflows;
-- immediately preceding human commit `06c3c697bd4a7a988dab634b24a7dbef7614e947` passed all three;
-- prior bot commit `a51b8797c13745bdcff19b20a032fceea86de84a` also passed all three;
-- therefore Lead created a clean current-main PR to reproduce instead of calling it a code regression or bypassing tests.
+Implemented:
 
-PR #27 milestone commits so far:
+- `pvnaive doctor` text/JSON checks;
+- current API/Runtime/Telemetry/Caddy/PostgreSQL services/sockets;
+- disk and backup freshness checks;
+- strict redaction;
+- root diagnostic bundle with bounded journals, listeners/disk/memory and environment variable names only.
 
-| Commit | Change |
-|---|---|
-| `154799745918471b761b8b561c08b408ca44d26a` | Lead reconciliation execution plan |
-| `d4fefa45cfdcd99263ba5eff0394af3943f63106` | refreshed 120-feature current competitor parity matrix |
-| `6904efbe85489c5528f8a187b9b3829d54ad7c01` | short canonical feature matrix reconciled |
-| `7fe62fdc936ecadee81983ae560cc174d5b862ee` | canonical project status reconciled |
-| `293f999208ba4976c8cafde247541a90c20a7513` | handoff replaced with current schema 11/Production truth |
-| `b951c8bc2b441962f95c24a6e313ef6aee9f8b56` | continuation pointer replaced |
-| `8f8b08c1d7dfe4a2590216b636bd3fedc2dfa946` | known issues reconciled; obsolete accounting blocker closed; real P0 bugs retained |
-| `9be0f3bb2d0929fbfa930d12c1ca56c9641b7ce3` | Agent board aligned to Owner 50-step sequence |
-| `21f3b5a03ddfdef0251158ce3155687dfa96edc0` | roadmap realigned + legacy PVN crosswalk |
+### Unit 4 — scheduled backup/restore drill
 
-CI observation during this reconciliation:
+Implemented:
 
-- normal PR workflows are triggering on PR #27;
-- WS1 Exact Accounting completed successfully on parity-matrix head `d4fefa45cfdcd99263ba5eff0394af3943f63106`;
-- pinned-forwardproxy and normal CI were still running at the time of this log update;
-- no final claim is allowed until all required workflows are green on the final exact documentation head.
+- encrypted config snapshot;
+- PostgreSQL backup via existing DB scripts;
+- no DB password copied into backup tree;
+- daily backup systemd timer;
+- isolated weekly restore drill into strictly generated disposable DB;
+- no automatic root-level retention/delete logic added during this extraction.
 
-## Re-audited current P0 defects — 2026-08-30
+RED contract was observed before scripts/units existed; implementation then passed CI.
 
-Lead source inspection confirmed these are still real:
+### Unit 5 — release/deploy/rollback/load tooling
 
-1. refresh-token reuse-family bug: `refresh` → `BeginAuthenticated`, and `BeginAuthenticated` requires `revoked_at IS NULL` before rotation reuse detection;
-2. generic commit-before-success bug: authenticated middleware runs handler before commit and ignores final `Tx.Commit()` error;
-3. readiness remains configuration-based rather than bounded DB/schema-backed.
+Implemented:
 
-See `KNOWN_ISSUES.md` for exact done gates.
+- dynamic latest schema from migration filenames; obsolete schema 8 hard-code removed;
+- API/password/runtime/telemetry static binaries;
+- checksums, basic SBOM and source commit provenance;
+- same-schema guarded deployment only — no hidden auto-migration;
+- mandatory encrypted pre-deploy backup;
+- telemetry-aware rollback;
+- no Caddy restart/change: hash/PID/NRestarts checked before/after;
+- bounded loopback control-plane rehearsal (`5000` requests / `100` concurrency hard max), explicitly not a capacity ceiling.
 
-## Old PR classification
+Exact head `e7eca858…` passed CI/Exact Accounting/Pinned Forwardproxy before later hardening.
 
-| PR | Classification | Evidence / action |
-|---:|---|---|
-| #4 | STILL USEFUL — small extract only | old branch adds `buildKaringSingBoxProfile` and explicit Copy Karing config UX not present on main; reconsider during client lane, do not merge wholesale |
-| #5 | SUPERSEDED / MERGED ELSEWHERE | newer customer lifecycle exists on main |
-| #6 | SUPERSEDED / MERGED ELSEWHERE | newer customer/product/subscription flow exists on main |
-| #8 | SUPERSEDED / ARCHIVE | replaced by integrated WS1 accounting implementation |
-| #16 | STILL USEFUL — manual extraction | 38 files include metrics, request middleware, OpenAPI, observability, Doctor, scheduled backup/restore drill, deploy/rollback, load rehearsal, notifications, fleet and system dashboard; old branch must never be blind-merged |
+### Unit 5.1 — real Production web layout hardening
 
-## Exact continuation
+Read-only Production audit found Caddy's live panel root is `/var/www/pvnaive-preview/current`, while `/opt/pvnaive/web/current` also exists. A test was added and failed exactly because deploy did not know the preview path.
 
-1. finish canonical docs update on PR #27;
-2. trigger/check all workflows on exact final head;
-3. review PR #27 and merge only when green;
-4. create fresh PR #16 integration branch from latest main;
-5. inspect/extract useful units one-by-one with TDD/full CI;
-6. then continue Owner order: legacy accounting baseline → `/s` accounting → Manual Reset Usage → Bulk Reset Usage → periodic reset → hard-quota proof → first-CONNECT proof → sessions/limits → remaining roadmap.
+Implementation now:
+
+- backs up both web symlink targets;
+- creates root:caddy preview release with restricted modes;
+- switches both web symlinks;
+- rollback restores both;
+- still does not restart Caddy.
+
+Exact head `ec6bedf…`: CI #1048 + Exact Accounting #164 + Pinned Forwardproxy #148 SUCCESS.
+
+### Unit 5.2 — deployment provenance markers
+
+Read-only Production audit showed stale:
+
+- `/opt/pvnaive/DEPLOYED_COMMIT`
+- `/opt/pvnaive/DEPLOYED_WEB_RELEASE`
+
+A RED contract proved deploy lacked them. Implementation now backs up, updates and rollback-restores both markers alongside `/opt/pvnaive/release/CURRENT`/`RELEASE.json`.
+
+Exact head `6f0ec5ec…`: CI #1051 + Exact Accounting #167 + Pinned Forwardproxy #151 SUCCESS.
+
+### Unit 6 — Notification/Fleet foundations
+
+Implemented additively:
+
+- notification message model;
+- retry/dedupe/redaction engine foundation;
+- Telegram HTTP transport with non-2xx failure and token-leak prevention tests;
+- in-app channel interface;
+- standalone-safe Fleet model, drift classification and delete guard.
+
+No real Telegram configuration/controller/fake multi-node health was wired into Production.
+
+Exact head `d436185…`: CI #1045 + Exact Accounting #161 + Pinned Forwardproxy #145 SUCCESS.
+
+### Unit 7 — System Dashboard/ErrorBoundary
+
+RED #1: CI #1052 failed only because `./systemStatus` did not exist; Go/DB and both WS1 gates stayed healthy.
+
+Implementation:
+
+- real `/api/v1/system/status` adapter;
+- owner-only live System Dashboard integrated into current customer dashboard;
+- CPU/RAM/disk/load/uptime/RX/TX from backend samples;
+- API/DB/Runtime/Telemetry dependency badges;
+- network rate shown only when `rate_available=true`;
+- no invented Accounting/Online card;
+- safe ErrorBoundary that does not render raw exception details.
+
+GREEN attempt exposed only an over-specific ASCII-digit test; the test was corrected to be locale-safe without weakening uptime validity semantics.
+
+Implementation head `6a61512449884432477b1c107de6ac80e9e0d69c` passed:
+
+- CI #1060 — Web tests/build, Go vet/tests, PostgreSQL gates, full S04R, production bundle;
+- WS1 Exact Accounting #176;
+- WS1 Pinned Forwardproxy #160.
+
+## Current Production pre-deploy truth
+
+Last read-only pre-Task-4 deployment audit:
+
+- API/Runtime/Telemetry/Caddy active and healthy;
+- restart counters observed at 0;
+- schema 11;
+- six active users/Runtime credentials/ServiceTerms/direct Subscription tokens;
+- direct accounting live;
+- root filesystem about 79% used;
+- Caddy panel root `/var/www/pvnaive-preview/current`;
+- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` release symlinks present;
+- backup age recipient/private key present with restricted permissions;
+- scheduled PVNaive timers not active before Task #4 deployment;
+- deployment marker drift present before new release tooling is deployed.
+
+No Production mutation was performed during extraction/code verification.
+
+## Final Task #4 gate now
+
+1. canonical docs updated on PR #29;
+2. run CI + Exact Accounting + Pinned Forwardproxy on final exact documentation head;
+3. final diff/secret/rollback review;
+4. merge with expected head SHA;
+5. Production re-audit + fresh backups;
+6. build from exact merged commit;
+7. guarded same-schema deploy;
+8. verify panel/API/Runtime/Telemetry/Caddy invariants/timers/provenance/Doctor;
+9. only then mark Task #4 Production-complete and begin Task #5 legacy/adopted accounting baseline truth.
 
 ## Logging rule
 
-Every verified transition adds date, task, exact source/commit, change, tests/CI, Production evidence if applicable, result and exact next step. Real failures that reveal a defect remain in history; never erase them merely to make the log look green.
+Every transition records date, exact commit/source, what changed, tests/CI, Production evidence when applicable, result and exact next step. Real failures that revealed defects remain part of the evidence chain.
