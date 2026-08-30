@@ -16,9 +16,9 @@ const (
 type AccountingBaselineSource string
 
 const (
-	AccountingBaselineFreshManagedTerm     AccountingBaselineSource = "fresh_managed_term"
-	AccountingBaselineLegacyUnavailable    AccountingBaselineSource = "legacy_unavailable"
-	AccountingBaselineAuthoritativeImport  AccountingBaselineSource = "authoritative_import"
+	AccountingBaselineFreshManagedTerm    AccountingBaselineSource = "fresh_managed_term"
+	AccountingBaselineLegacyUnavailable   AccountingBaselineSource = "legacy_unavailable"
+	AccountingBaselineAuthoritativeImport AccountingBaselineSource = "authoritative_import"
 )
 
 var ErrInvalidAccountingBaseline = errors.New("customer: invalid accounting baseline")
