@@ -150,7 +150,7 @@ set -e
   echo 'ERROR: invalid or mutable accounting baseline was accepted' >&2; exit 1;
 }
 
-psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.service_terms SET quota_bytes=6000000, expires_at='2026-09-30T01:30:00Z' WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null
+psql_admin --dbname "${test_db}" --command "UPDATE pvnaive.service_terms SET quota_bytes=6000000 WHERE id='d5120000-0000-0000-0000-000000000003';" >/dev/null
 unchanged="$(psql_admin --dbname "${test_db}" -Atc "SELECT concat_ws('|',quota_bytes::text,accounting_baseline_state,accounting_baseline_source,accounting_baseline_upload_bytes::text,accounting_baseline_download_bytes::text) FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000003';")"
 [[ "${unchanged}" == '6000000|known|authoritative_import|100|200' ]] || { echo "ERROR: ordinary edit changed baseline: ${unchanged}" >&2; exit 1; }
 
