@@ -23,3 +23,16 @@ func TestDoctorCheckSetIncludesCurrentTelemetryBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestDoctorKeyModesMatchProductionServiceAccess(t *testing.T) {
+	modes := doctorKeyModes()
+	if got := modes["auth-key-mode"]; got != 0o640 {
+		t.Fatalf("auth key mode = %#o, want 0640 so root:pvnaive is readable by the API service", got)
+	}
+	if got := modes["runtime-key-mode"]; got != 0o640 {
+		t.Fatalf("runtime key mode = %#o, want 0640 so root:pvnaive is readable by the API service", got)
+	}
+	if got := modes["backup-key-mode"]; got != 0o600 {
+		t.Fatalf("backup identity mode = %#o, want root-only 0600", got)
+	}
+}

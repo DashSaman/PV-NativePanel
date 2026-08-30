@@ -56,13 +56,19 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-age --decrypt --identity "${identity_file}" "${backup_file}" |
-  pg_restore --list >/dev/null || pvnaive_die "restore archive parse failed"
+# Use the shared seek-safe validator. A direct `age | pg_restore --list`
+# pipeline can make age receive SIGPIPE after pg_restore has read enough of the
+# custom archive list; with `set -o pipefail` that healthy archive is then
+# falsely reported as corrupt. The helper decrypts to a 0600 temporary file,
+# validates it with pg_restore, and removes it on every exit path.
+pvnaive_validate_encrypted_archive "${backup_file}" "${identity_file}" ||
+  pvnaive_die "restore archive parse failed"
+
 target_created=1
 pvnaive_admin_tool createdb --owner pvnaive_owner --encoding UTF8 --template template0 "${target_db}"
 # Decrypt directly to pg_restore. No plaintext database archive is written to
-# disk. The superuser connection intentionally preserves archive ownership and
-# ACL entries and bypasses FORCE RLS while loading backed-up table data.
+# disk for the actual restore. The superuser connection intentionally preserves
+# archive ownership and ACL entries and bypasses FORCE RLS while loading backed-up table data.
 age --decrypt --identity "${identity_file}" "${backup_file}" |
   pvnaive_db_tool pg_restore --dbname "${target_db}" --exit-on-error --single-transaction >/dev/null ||
   pvnaive_die "restore execution failed"

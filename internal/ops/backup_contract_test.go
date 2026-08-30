@@ -24,6 +24,10 @@ func TestScheduledBackupAndRestoreContracts(t *testing.T) {
 			"dropdb --if-exists --force",
 			"PVNAIVE_RESTORE_DRILL_RESULT=PASSED",
 		},
+		filepath.Join(root, "scripts", "db", "restore.sh"): {
+			"pvnaive_validate_encrypted_archive",
+			"PVNAIVE_RESTORE_RESULT=PASSED",
+		},
 		filepath.Join(root, "ops", "systemd", "pvnaive-backup.timer"): {
 			"OnCalendar=",
 			"Persistent=true",

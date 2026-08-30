@@ -33,11 +33,24 @@ func doctorCheckNames() []string {
 	}
 }
 
+func doctorKeyModes() map[string]os.FileMode {
+	return map[string]os.FileMode{
+		// The API runs as pvnaive and must be able to read these root-owned
+		// encryption keys through the pvnaive group. Root-only 0600 would make
+		// a healthy Production API unreadable after restart.
+		"auth-key-mode":    0o640,
+		"runtime-key-mode": 0o640,
+		// The age identity is used only by privileged backup/restore tooling.
+		"backup-key-mode": 0o600,
+	}
+}
+
 func doctorChecks() []ops.Check {
 	runtimeSocket := os.Getenv("PVNAIVE_RUNTIME_AGENT_SOCKET")
 	if runtimeSocket == "" {
 		runtimeSocket = runtimeagent.DefaultSocketPath
 	}
+	keyModes := doctorKeyModes()
 	return []ops.Check{
 		ops.ServiceCheck("pvnaive-api.service"),
 		ops.ServiceCheck("pvnaive-runtime-agent.service"),
@@ -51,9 +64,9 @@ func doctorChecks() []ops.Check {
 		ops.PortCheck("api-loopback", "127.0.0.1:8080", true),
 		ops.DiskCheck("/", 80, 90),
 		ops.BackupCheck("/var/backups/pvnaive/database", 26*time.Hour),
-		ops.FileModeCheck("auth-key-mode", "/etc/pvnaive/auth.key", 0o600),
-		ops.FileModeCheck("runtime-key-mode", "/etc/pvnaive/runtime.key", 0o600),
-		ops.FileModeCheck("backup-key-mode", "/etc/pvnaive/backup.agekey", 0o600),
+		ops.FileModeCheck("auth-key-mode", "/etc/pvnaive/auth.key", keyModes["auth-key-mode"]),
+		ops.FileModeCheck("runtime-key-mode", "/etc/pvnaive/runtime.key", keyModes["runtime-key-mode"]),
+		ops.FileModeCheck("backup-key-mode", "/etc/pvnaive/backup.agekey", keyModes["backup-key-mode"]),
 	}
 }
 
