@@ -47,19 +47,20 @@ type ScheduledNextPlan struct {
 }
 
 type CreateRenewalTermRecord struct {
-	TenantID          string
-	UserID            string
-	PlanID            string
-	QuotaBytes        *int64
-	DurationSeconds   int64
-	NoExpiry          bool
-	StartPolicy       StartPolicy
-	PurchasedAt       time.Time
-	StartsAt          *time.Time
-	ExpiresAt         *time.Time
-	State             TermState
-	RenewalKind       string
-	RenewedFromTermID string
+	TenantID           string
+	UserID             string
+	PlanID             string
+	QuotaBytes         *int64
+	DurationSeconds    int64
+	NoExpiry           bool
+	StartPolicy        StartPolicy
+	PurchasedAt        time.Time
+	StartsAt           *time.Time
+	ExpiresAt          *time.Time
+	State              TermState
+	RenewalKind        string
+	RenewedFromTermID  string
+	AccountingBaseline AccountingBaseline
 }
 
 type RenewalResult struct {
