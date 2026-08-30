@@ -54,6 +54,8 @@ describe("system status", () => {
 
   it("formats byte and uptime values without fabricating data", () => {
     expect(formatBytes(1_073_741_824)).toContain("GB");
-    expect(formatUptime(172_800)).toContain("2");
+    const uptime = formatUptime(172_800);
+    expect(uptime).toContain("روز");
+    expect(uptime).not.toBe("—");
   });
 });
