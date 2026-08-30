@@ -2,15 +2,15 @@
 
 Last updated: 2026-08-30
 
-This roadmap follows the Owner's Production/parity master prompt. Historical `PVN-*` IDs remain valid audit references; they are not reused for unrelated work. The current execution ledger below is the controlling order for Production-Ready completion.
+This roadmap follows the Owner's Production/parity master prompt. Historical `PVN-*` IDs remain audit references; they are not reused for unrelated work.
 
 Status vocabulary: `DONE`, `IN_PROGRESS`, `TODO`, `BLOCKED`, `PARTIAL`, `SUPERSEDED`.
 
 ## Current baseline
 
-Audited start main: `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`
+Current main before Task #4 merge: `1ced722f9ee46fc4fb1a005ae8653f52339786b0`
 
-Already integrated and therefore **not** future TODOs:
+Already integrated on main and not to be rewritten:
 
 - secure Runtime Naive credential lifecycle + privileged Runtime Agent;
 - customer create/adopt/edit/suspend/resume/revoke-safe-delete;
@@ -20,23 +20,25 @@ Already integrated and therefore **not** future TODOs:
 - renewal/new ServiceTerm, Next Plan/On Hold foundations;
 - server-side search/filter/sort/pagination;
 - supported bulk preview/idempotent execution;
-- `/sub`, `/s`, local QR, Subscription reissue, password rotation separation;
+- `/sub`, `/s`, local QR, Subscription reissue/password-rotation separation;
 - exact direct-Naive accounting and restart-safe telemetry core;
 - trusted first-CONNECT producer core;
 - session/presence projection core;
 - shared hard-quota reservation/settlement core;
 - tenant/RLS product foundations.
 
+Task #4 branch/PR #29 additionally contains tested ops/observability/release foundations, but Task #4 remains `IN_PROGRESS` until merge + backed-up Production deployment + smoke verification.
+
 ## Production-Ready master execution ledger
 
-Do not reorder unless a real technical dependency is documented in `WORKLOG.md`.
+Do not reorder unless a real technical dependency is recorded in `WORKLOG.md`.
 
 | # | Status | Priority | Task | Done gate |
 |---:|---|---|---|---|
-| 1 | IN_PROGRESS | P0 | Audit latest main / PR / CI / Production | repository and live truth captured read-only, no secret leak, provenance risks recorded |
-| 2 | IN_PROGRESS | P0 | Compare current 3x-ui / PasarGuard / Hiddify / OV-PvNetwork | current official refs + 120-feature matrix + licensing guard |
-| 3 | IN_PROGRESS | P0 | Fix stale canonical project docs | canonical files match code + Production evidence; no implemented feature left “missing” |
-| 4 | TODO | P0 | Reconcile useful PR #16 work | fresh branch; commit/file extraction only; newer main preserved; full CI |
+| 1 | DONE | P0 | Audit latest main / PR / CI / Production | repository and live truth captured read-only, no secret leak, provenance risks recorded |
+| 2 | DONE | P0 | Compare current 3x-ui / PasarGuard / Hiddify / OV-PvNetwork | current official refs + 120-feature matrix + licensing guard |
+| 3 | DONE | P0 | Fix stale canonical project docs | canonical files reconciled to current code/Production truth |
+| 4 | IN_PROGRESS | P0 | Reconcile useful PR #16 work | manual extraction complete/tested on PR #29; final docs, merge and Production gate remain |
 | 5 | TODO | P0 | Legacy/adopted accounting baseline truth | no fake zero; baseline provable or Unknown; no double-count |
 | 6 | TODO | P0 | `/s` accounting/presence completion | real Used/Remaining/Upload/Download/Last Online/Online/Expiry/Quota or explicit unavailable |
 | 7 | TODO | P0 | Manual Reset Usage | confirmation + audit + accounting reset/baseline + idempotency; no token/password rotation |
@@ -58,88 +60,77 @@ Do not reorder unless a real technical dependency is documented in `WORKLOG.md`.
 | 23 | TODO | P1 | Reseller plan/user restrictions | allowed plans/max users/max active users/credit/Owner oversight |
 | 24 | TODO | P1 | Customer history | create/renew/volume/expiry/plan/group/tag/suspend/resume/revoke/rotate/reissue/reset events |
 | 25 | TODO | P1 | Audit Explorer | actor/user/action/date/IP/result filters; strict redaction |
-| 26 | TODO | P1 | Notification engine/preferences/history | quota/expiry/customer/runtime/node/backup/security/disk/cert events + outbox/retry |
-| 27 | TODO | P1 | Telegram + rule builder | secure token handling; rules such as traffic<10%, expiry<3d, runtime down>60s |
-| 28 | TODO | P1 | Dashboard / monitoring / historical charts | real users/traffic/CPU/RAM/disk/network/runtime/online/history, no fake values |
-| 29 | TODO | P1 | Application/runtime/security logs + request diagnostics/support bundle | bounded/redacted/request-ID linked |
-| 30 | TODO | P1 | Doctor command/page | actionable dependency/runtime/DB/disk/TLS checks |
-| 31 | TODO | P1 | Scheduled encrypted backup + retention | DB/config/runtime state/important files + failure alerts |
-| 32 | TODO | P1 | Restore / verification / automated drill / UI | isolated proof + strong safeguards |
-| 33 | TODO | P1 | Stabilize REST API + OpenAPI/Swagger | only ready handlers documented; auth policy explicit |
-| 34 | TODO | P1 | API rate limit / mutation idempotency / stable webhooks | stable event contracts; no premature webhook surface |
+| 26 | PARTIAL | P1 | Notification engine/preferences/history | PR #29 has retry/dedupe/redaction + channel foundations; persistence/preferences/history/product wiring remain |
+| 27 | PARTIAL | P1 | Telegram + rule builder | secure Telegram transport foundation tested; configuration/rules/history/product workflow remain |
+| 28 | PARTIAL | P1 | Dashboard / monitoring / historical charts | live real CPU/RAM/disk/load/network/runtime dependency dashboard added; historical charts/online aggregates remain |
+| 29 | PARTIAL | P1 | Application/runtime/security logs + request diagnostics/support bundle | structured redacted logging/request IDs + support bundle added; product log explorer remains |
+| 30 | PARTIAL | P1 | Doctor command/page | `pvnaive doctor` command implemented/tested; product page and Production activation remain |
+| 31 | PARTIAL | P1 | Scheduled encrypted backup + retention | encrypted scheduled backup/timer implemented; Production activation/retention product policy remain |
+| 32 | PARTIAL | P1 | Restore / verification / automated drill / UI | isolated automated restore drill implemented; UI/full operator workflow remain |
+| 33 | PARTIAL | P1 | Stabilize REST API + OpenAPI/Swagger | ready-route OpenAPI endpoint added; broader stabilization/version policy remains |
+| 34 | PARTIAL | P1 | API rate limit / mutation idempotency / stable webhooks | request-ID/rate-limit middleware added; full mutation/webhook contract remains |
 | 35 | TODO | P0 | Fix auth/security BUG-001/002/003 | refresh reuse-family, commit-before-success, DB-backed readiness regression tests green |
 | 36 | TODO | P0 | Full authorization/IDOR/CSRF/redaction/fuzz gates | complete Route × Owner/Admin/Reseller/Operator/Auditor matrix |
-| 37 | TODO | P1 | Supply-chain security + license policy | dependency scan/secret scan/SAST/SBOM/signing/provenance/NOTICE |
-| 38 | TODO | P1 | Multi-node model/auth/health/metrics/capacity/assignment/deployment | standalone remains safe; desired/applied state modeled |
+| 37 | PARTIAL | P1 | Supply-chain security + license policy | release checksums/basic SBOM/source provenance foundation added; SAST/dependency scan/signing/NOTICE remain |
+| 38 | PARTIAL | P1 | Multi-node model/auth/health/metrics/capacity/assignment/deployment | safe standalone fleet model/drift/delete guard foundation only; controller/network operations remain |
 | 39 | TODO | P1 | Drain/maintenance/canary/node upgrade/rollback/failover/smart selection/fleet dashboard | reconciliation-safe fleet operations |
 | 40 | TODO | P0 | Fresh secure Ubuntu installer | version-pinned dependencies/Postgres/Caddy/API/agents/systemd/firewall/TLS/migrations/web + Doctor |
-| 41 | TODO | P0 | Versioned upgrade | automatic pre-upgrade backup + migration safety |
-| 42 | TODO | P0 | Rollback + conservative uninstall | restore path proven; data preserved by default |
+| 41 | PARTIAL | P0 | Versioned upgrade | same-schema release deploy + pre-deploy backup foundation exists; generic migration upgrade remains |
+| 42 | PARTIAL | P0 | Rollback + conservative uninstall | release rollback foundation exists; generic version rollback/uninstall/data policy remain |
 | 43 | TODO | P0 | Client compatibility | Karing Windows/Android/iOS/macOS/Linux first; then only clients with verified Naive support |
-| 44 | TODO | P0 | Load / capacity campaign | 50/100/200/400+ plus accounting/quota/session/restart/reconnect correctness |
+| 44 | TODO | P0 | Load / capacity campaign | bounded local control-plane rehearsal is not capacity proof; 50/100/200/400+ campaign remains |
 | 45 | TODO | P1 | Bulk/search completion | reset/delete/unlimited/no-expiry/change-expiry/next-plan + advanced filters/sorts/columns/URL state |
-| 46 | TODO | P1 | Final UI polish | professional customer/dashboard/account page + mobile/desktop/accessibility/theme |
+| 46 | PARTIAL | P1 | Final UI polish | customer dashboard exists and live system monitor/error boundary added; final accessibility/product polish remains |
 | 47 | TODO | P0 | Final documentation reconciliation | every feature DONE/PARTIAL/BLOCKED/OPTIONAL/N/A with evidence; no stale contradictions |
 | 48 | TODO | P0 | Final clean-server installation proof | clean supported Ubuntu VM reaches healthy fully configured panel/runtime |
 | 49 | TODO | P0 | Final Production smoke | backed-up RC deploy, customer/sub/accounting/runtime smoke, rollback ready |
 | 50 | TODO | P0 | Release Candidate | all logical P0/P1 release blockers closed; CI exact HEAD green; provenance/evidence recorded |
 
-## Current task #1-3 evidence
+## Task #4 evidence before Production deployment
 
-The Lead reconciliation branch `lead/parity-truth-2026-08-30` / PR #27 records:
+Branch `lead/ws4-safe-extract-2026-08-30` / PR #29 manually extracted the useful stale PR #16 ideas without blind merge/cherry-pick.
 
-- current main + PR/CI audit;
-- read-only Production schema/service/accounting/disk/backup/provenance audit;
-- current competitor snapshots;
-- `docs/PANEL_PARITY_MASTER_2026-08-30.md`;
-- canonical documentation reconciliation.
+Unit #7 implementation head `6a61512449884432477b1c107de6ac80e9e0d69c` passed:
 
-Task #1-3 cannot become `DONE` until exact final PR #27 head passes required CI and review.
+- CI #1060: Web tests/build, Go vet/tests, PostgreSQL checks, full S04R rehearsal and production bundle;
+- WS1 Exact Accounting #176;
+- WS1 Pinned Forwardproxy #160.
+
+Documentation commits follow that implementation head. Required workflows must pass again on the final exact documentation head.
 
 ## Historical PVN task reconciliation
 
-The old 72-task ledger is preserved in git history and still provides useful stable IDs. Its status descriptions were stale after later workstreams merged. Current crosswalk:
+The old 72-task ledger remains in git history. Useful crosswalk:
 
-### Historical work now definitely completed/integrated
-
-- `PVN-001..027`: foundation/auth/Runtime credential development chain — DONE.
-- `PVN-028/029`: old S04R preflight/rollout milestones are superseded by later live Production state (schema 11, active Runtime credentials/services); do not rerun the old stage blindly.
-- `PVN-037`: user/customer CRUD/lifecycle — DONE in newer main.
-- `PVN-038`: plan/quota/reset **model** lifecycle — PARTIAL overall because reset execution remains.
+- `PVN-001..027`: foundation/auth/Runtime credential chain — DONE.
+- `PVN-028/029`: old S04R rollout milestones — SUPERSEDED by later live schema-11 Production state.
+- `PVN-030..035`: map to Master #35/#36 security gates.
+- `PVN-037`: customer CRUD/lifecycle — DONE.
+- `PVN-038`: quota/reset model — PARTIAL because reset execution remains.
+- `PVN-039`: maps to Master #19-23 reseller/wallet/ledger/restrictions.
 - `PVN-040`: user-bound Naive credential lifecycle — DONE.
-- `PVN-041`: bulk operations with dry-run — DONE for supported current action set; Reset Usage bulk remains new backlog.
-- `PVN-042`: search/filter/sort/pagination + computed status — PARTIAL overall because accounting/presence wiring is incomplete in some projections.
-- `PVN-043`: tenant/RBAC foundations — PARTIAL; full route-wide matrix remains.
-- `PVN-044`: customer/product UI — PARTIAL; current daily UI exists, final product polish/status wiring remains.
-- `PVN-045..048`: exact direct accounting / restart-safe event path — DONE by integrated WS1.
-- `PVN-049`: hard quota/reset enforcement — PARTIAL; quota core integrated, reset execution + Production quota proof remain.
+- `PVN-041`: current supported bulk actions — DONE baseline; reset bulk remains Master #8.
+- `PVN-042`: search/filter/sort/pagination — DONE baseline; accounting projection completion remains.
+- `PVN-043`: tenant/RBAC foundation — PARTIAL.
+- `PVN-044`: customer/product UI — PARTIAL.
+- `PVN-045..048`: exact direct accounting/restart-safe event path — DONE.
+- `PVN-049`: hard quota/reset enforcement — PARTIAL.
+- `PVN-050`: maps to session/device/speed #14-18.
+- `PVN-051`: runtime/system monitoring — PARTIAL with PR #29 live system status.
 - `PVN-052`: Subscription lifecycle/renderer — DONE.
-- `PVN-053`: human account page — PARTIAL only because full accounting/presence projection remains.
+- `PVN-053`: human account page — PARTIAL because accounting/presence completion remains.
+- `PVN-054`: maps to real client compatibility #43.
 - `PVN-055`: local QR/delivery UX — DONE baseline.
-
-### Historical items still open and mapped directly
-
-- `PVN-030` → Master #35 BUG-001 refresh reuse-family.
-- `PVN-031` → Master #35 BUG-002 commit-before-success.
-- `PVN-032` → Master #35 BUG-003 DB readiness.
-- `PVN-033` → Master #35/#36 recovery-code login policy.
-- `PVN-034/035` → Master #36 auth abuse/security exposure.
-- `PVN-039` → Master #19-23 reseller/wallet/ledger/restrictions.
-- `PVN-050` → Master #14-18 session/device/speed capability.
-- `PVN-051` → Master #28 runtime status integration.
-- `PVN-054` → Master #43 real client compatibility.
-- `PVN-056/057` → Master #26-27 notifications/Telegram.
-- `PVN-058..062` → Master #31-32, #40-42 installer/upgrade/rollback/backup/restore.
-- `PVN-063` → Master #28-30 observability/logs/diagnostics.
-- `PVN-065` → Master #37 supply-chain security.
-- `PVN-066` → Master #44 capacity.
-- `PVN-067` → Master #48-50 final release gates.
-- `PVN-069` → Master #47 documentation truth.
-- `PVN-071` → Master #36 API/web authorization/fuzz quality gates.
-- `PVN-072` → Master #37 license/source policy.
-
-`PVN-070` old branch-divergence wording is superseded by the current PR classification/integration process; never force-reset old branches.
+- `PVN-056/057`: notification/Telegram — PARTIAL via PR #29 foundations.
+- `PVN-058..062`: backup/restore/installer/upgrade/rollback — PARTIAL foundations; installer remains.
+- `PVN-063`: observability/diagnostics — PARTIAL via PR #29 live metrics/Doctor/support bundle.
+- `PVN-065`: supply-chain security — PARTIAL.
+- `PVN-066`: capacity — TODO.
+- `PVN-067`: final release gates — TODO.
+- `PVN-069`: final documentation truth — TODO.
+- `PVN-071`: auth/API/web fuzz quality gates — TODO.
+- `PVN-072`: license/source policy — TODO.
 
 ## Definition of Done
 
-A feature is never `DONE` merely because code exists. Apply the Owner's 20-point DoD: real backend/schema/auth/UI where applicable, no secret leaks, idempotency/failure tests, unit/integration/web tests, vet/build, exact-head CI, rollback if Runtime-affecting, live verification if Production-facing, docs/evidence and no regressions.
+A feature is never `DONE` merely because code exists. Apply the Owner DoD: real backend/schema/auth/UI where applicable, no secret leaks, idempotency/failure tests, unit/integration/web tests, vet/build, exact-head CI, rollback if Runtime-affecting, live verification if Production-facing, docs/evidence and no regressions.
