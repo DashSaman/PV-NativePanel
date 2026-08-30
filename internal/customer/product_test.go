@@ -50,6 +50,7 @@ func TestCustomerStatusDimensionsNeverFabricateAccounting(t *testing.T) {
 		TermState:              TermActive,
 		QuotaBytes:             ptrInt64(50 * 1073741824),
 		ExpiresAt:              ptrTime(now.Add(24 * time.Hour)),
+		Now:                    now,
 		AccountingAvailable:    false,
 		RuntimeHealthAvailable: false,
 	})
