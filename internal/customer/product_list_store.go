@@ -60,6 +60,11 @@ SELECT
     st.starts_at,
     st.first_connected_at,
     st.expires_at,
+    st.accounting_baseline_state,
+    st.accounting_baseline_source,
+    st.accounting_baseline_cutoff_at,
+    st.accounting_baseline_upload_bytes,
+    st.accounting_baseline_download_bytes,
     COALESCE(st.plan_id::text,''),
     COALESCE(p.name,''),
     COALESCE(urc.runtime_credential_id::text,''),
@@ -157,7 +162,8 @@ LIMIT $11 OFFSET $12`, sortColumn, direction)
 	page := CustomerPage{Customers: make([]CustomerView, 0), Page: query.Page, PageSize: query.PageSize}
 	for rows.Next() {
 		var view CustomerView
-		var userState, termState, startPolicy string
+		var userState, termState, startPolicy, baselineState, baselineSource string
+		var baselineUpload, baselineDownload sql.NullInt64
 		var groupID, groupName string
 		var groupEnabled bool
 		var groupSort int
@@ -167,7 +173,9 @@ LIMIT $11 OFFSET $12`, sortColumn, direction)
 			&view.UserID, &view.Username, &view.DisplayName, &userState,
 			&view.ServiceTermID, &termState, &view.QuotaBytes, &view.DurationSeconds,
 			&view.NoExpiry, &startPolicy, &view.StartsAt, &view.FirstConnectedAt,
-			&view.ExpiresAt, &view.PlanID, &view.PlanName, &view.RuntimeCredentialID,
+			&view.ExpiresAt, &baselineState, &baselineSource, &view.AccountingBaseline.CutoffAt,
+			&baselineUpload, &baselineDownload,
+			&view.PlanID, &view.PlanName, &view.RuntimeCredentialID,
 			&view.SubscriptionAvailable, &view.SubscriptionRetrievable, &view.Note,
 			&groupID, &groupName, &groupEnabled, &groupSort, &tagsJSON,
 			&view.AssignedActorID, &view.CreatedByActorID, &view.ResellerID,
@@ -179,6 +187,10 @@ LIMIT $11 OFFSET $12`, sortColumn, direction)
 		view.Status = UserAdminState(userState)
 		view.ServiceState = TermState(termState)
 		view.StartPolicy = StartPolicy(startPolicy)
+		view.AccountingBaseline.State = AccountingBaselineState(baselineState)
+		view.AccountingBaseline.Source = AccountingBaselineSource(baselineSource)
+		view.AccountingBaseline.UploadBytes = nullableInt64Value(baselineUpload)
+		view.AccountingBaseline.DownloadBytes = nullableInt64Value(baselineDownload)
 		view.UsageCapability = DefaultUsageCapability()
 		view.StatusDimensions = DeriveStatusDimensions(StatusInput{
 			UserState: view.Status, TermState: view.ServiceState, StartPolicy: view.StartPolicy,
