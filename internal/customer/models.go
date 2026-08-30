@@ -58,7 +58,7 @@ type CustomerUsage struct {
 	DownloadBytes       *int64             `json:"download_bytes"`
 	UsedBytes           *int64             `json:"used_bytes"`
 	RemainingBytes      *int64             `json:"remaining_bytes"`
-	LastOnline          *time.Time          `json:"last_online,omitempty"`
+	LastOnline          *time.Time         `json:"last_online,omitempty"`
 	Online              bool               `json:"online"`
 	SessionCount        int                `json:"session_count"`
 }
