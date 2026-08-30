@@ -35,7 +35,9 @@ INSERT INTO pvnaive.naive_runtime_credentials(id,username,secret_hash,secret_cip
 INSERT INTO pvnaive.service_terms(id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,state,renewal_kind) SELECT 'd5120000-0000-0000-0000-000000000001',tenant_id,id,1000000,2592000,'on_creation','2026-08-29T12:00:00Z','active','initial' FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000001';
 INSERT INTO pvnaive.user_runtime_credentials(id,tenant_id,user_id,service_term_id,runtime_credential_id,role,bound_at) SELECT 'e5120000-0000-0000-0000-000000000001',tenant_id,id,'d5120000-0000-0000-0000-000000000001','c5120000-0000-0000-0000-000000000001','primary','2026-08-29T12:34:56Z' FROM pvnaive.users WHERE id='b5120000-0000-0000-0000-000000000001';
 SQL
-"${repo_root}/scripts/db/migrate.sh" >/dev/null
+cp "${repo_root}/db/migrations/0012_"*.sql "${fixture}/migrations/"
+( cd "${fixture}/migrations" && sha256sum *.sql > SHA256SUMS )
+PVNAIVE_MIGRATIONS_DIR="${fixture}/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
 [[ "$(psql_admin -d "${test_db}" -Atc 'SELECT MAX(version) FROM pvnaive.schema_migrations')" == 12 ]]
 legacy="$(psql_admin -d "${test_db}" -Atc "SELECT concat_ws('|',accounting_baseline_state,accounting_baseline_source,to_char(accounting_baseline_cutoff_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI:SS'),(accounting_baseline_upload_bytes IS NULL)::text,(accounting_baseline_download_bytes IS NULL)::text) FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000001'")"
 [[ "${legacy}" == 'unknown|legacy_unavailable|2026-08-29 12:34:56|true|true' || "${legacy}" == 'unknown|legacy_unavailable|2026-08-29 12:34:56|t|t' ]] || { echo "ERROR: backfill mismatch ${legacy}" >&2; exit 1; }
@@ -53,7 +55,7 @@ set -e
 (( immutable_rc != 0 && invalid_rc != 0 )) || { echo 'ERROR: baseline mutability/truth constraint failed' >&2; exit 1; }
 psql_admin -d "${test_db}" -c "UPDATE pvnaive.service_terms SET quota_bytes=6000000 WHERE id='d5120000-0000-0000-0000-000000000003'" >/dev/null
 [[ "$(psql_admin -d "${test_db}" -Atc "SELECT concat_ws('|',quota_bytes::text,accounting_baseline_state,accounting_baseline_source,accounting_baseline_upload_bytes::text,accounting_baseline_download_bytes::text) FROM pvnaive.service_terms WHERE id='d5120000-0000-0000-0000-000000000003'")" == '6000000|known|authoritative_import|100|200' ]]
-PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
+PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="${fixture}/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
 rolled="$(psql_admin -d "${test_db}" -Atc "SELECT COALESCE(MAX(version),0) || '|' || ((SELECT count(*) FROM information_schema.columns WHERE table_schema='pvnaive' AND table_name='service_terms' AND column_name LIKE 'accounting_baseline_%')=0)::text FROM pvnaive.schema_migrations")"
 [[ "${rolled}" == '11|true' || "${rolled}" == '11|t' ]] || { echo "ERROR: rollback mismatch ${rolled}" >&2; exit 1; }
 echo 'PVNAIVE_ACCOUNTING_BASELINE_MIGRATION_TEST=PASSED'
