@@ -26,7 +26,10 @@ WHERE st.id=(
   AND st.state NOT IN ('ended','revoked')
 RETURNING st.id::text,st.tenant_id::text,st.user_id::text,st.quota_bytes,
           st.duration_seconds,st.start_policy,st.purchased_at,st.starts_at,
-          st.first_connected_at,st.expires_at,st.state,st.revision`, userID, quotaBytes))
+          st.first_connected_at,st.expires_at,st.state,
+          st.accounting_baseline_state,st.accounting_baseline_source,st.accounting_baseline_cutoff_at,
+          st.accounting_baseline_upload_bytes,st.accounting_baseline_download_bytes,
+          st.revision`, userID, quotaBytes))
 	if errors.Is(err, sql.ErrNoRows) {
 		return ServiceTerm{}, ErrCustomerServiceNotFound
 	}
