@@ -29,7 +29,7 @@ mkdir -p "$tmp/migrations"
 cp "${repo_root}/db/migrations/"[0-9][0-9][0-9][0-9]_*.sql "$tmp/migrations/"
 ( cd "$tmp/migrations" && sha256sum *.sql > SHA256SUMS )
 PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
-[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 17 ]]
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 18 ]]
 
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 INSERT INTO pvnaive.actors(id,tenant_id,actor_role,email,display_name,status)
@@ -92,14 +92,12 @@ success_projection="$(psql_admin -d "$test_db" -At -F'|' -c "SELECT upload_bytes
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.scheduled_usage_reset_attempts WHERE service_term_id='d9260000-0000-0000-0000-000000000001' AND outcome='success' AND reset_event_id IS NOT NULL")" == 1 ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT (next_due_at-anchor_at)=interval '1 day' FROM pvnaive.service_term_reset_schedules WHERE service_term_id='d9260000-0000-0000-0000-000000000001'")" =~ ^(t|true)$ ]]
 
-# Deferred target is untouched and receives bounded retry state/history.
 defer_projection="$(psql_admin -d "$test_db" -At -F'|' -c "SELECT upload_bytes,download_bytes,reserved_bytes FROM pvnaive.direct_naive_accounting_terms WHERE service_term_id='d9260000-0000-0000-0000-000000000002'")"
 [[ "$defer_projection" == '10|20|5' ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.direct_naive_accounting_reset_events WHERE service_term_id='d9260000-0000-0000-0000-000000000002' AND reason='scheduled'")" == 0 ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.scheduled_usage_reset_attempts WHERE service_term_id='d9260000-0000-0000-0000-000000000002' AND outcome='deferred' AND reason='reservation_pending'")" == 1 ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT retry_after_at > last_attempt_at AND consecutive_failures=1 FROM pvnaive.service_term_reset_schedules WHERE service_term_id='d9260000-0000-0000-0000-000000000002'")" =~ ^(t|true)$ ]]
 
-# Immediate restart/re-run cannot duplicate success or bypass retry_after.
 second="$(psql_admin -d "$test_db" -At -F'|' <<'SQL'
 SET ROLE pvnaive_app;
 SELECT processed,succeeded,deferred,skipped FROM pvnaive.execute_due_scheduled_usage_resets(10);
@@ -110,8 +108,6 @@ second="$(printf '%s\n' "$second" | grep -E '^[0-9]+\|' | tail -n1)"
 [[ "$second" == '0|0|0|0' ]] || { echo "ERROR: replay scheduler batch=$second" >&2; exit 1; }
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.direct_naive_accounting_reset_events WHERE reason='scheduled'")" == 1 ]]
 
-# A proven explicit reset newer than the missed due boundary satisfies that
-# occurrence without a second reset. The next cadence starts from that epoch.
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 UPDATE pvnaive.direct_naive_accounting_terms
    SET upload_bytes=0,download_bytes=0,reserved_bytes=0,last_reset_at=clock_timestamp(),updated_at=clock_timestamp()
@@ -132,9 +128,11 @@ third="$(printf '%s\n' "$third" | grep -E '^[0-9]+\|' | tail -n1)"
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT next_due_at-anchor_at=interval '1 day' AND retry_after_at IS NULL AND consecutive_failures=0 FROM pvnaive.service_term_reset_schedules WHERE service_term_id='d9260000-0000-0000-0000-000000000002'")" =~ ^(t|true)$ ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.direct_naive_accounting_reset_events WHERE reason='scheduled'")" == 1 ]]
 
-# Schema17 is additive and has no peer rows in this fixture, so first step back
-# to schema16. Then prove the immutable scheduler history still prevents the
-# destructive schema16 rollback exactly as this regression test originally intended.
+# Schema18 is additive, and schema17 is additive with no peer rows in this fixture.
+# Step back 18 -> 17 -> 16, then prove immutable scheduler history still prevents
+# the destructive schema16 rollback exactly as this regression test originally intended.
+PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 17 ]]
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
 [[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 16 ]]
 set +e
