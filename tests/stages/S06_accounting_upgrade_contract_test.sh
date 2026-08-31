@@ -78,6 +78,16 @@ if grep -Eq '(cat|xxd|base64|od)[[:space:]].*/etc/pvnaive/runtime\.key' "${upgra
   exit 1
 fi
 
+# PVNaive accounting is patched into http.handlers.forward_proxy; it is not a
+# separately registered Caddy module. Release safety must prove the exact live
+# Caddyfile accounting directive validates with the candidate/installed binary.
+if grep -Fq "list-modules | grep -Fq 'pvnaive_accounting'" "${upgrade}"; then
+  echo 'ERROR: S06 accounting upgrade must not require a nonexistent standalone pvnaive_accounting module' >&2
+  exit 1
+fi
+grep -Fq "grep -Fq 'pvnaive_accounting_socket'" "${upgrade}" || { echo 'ERROR: S06 upgrade must require the live accounting directive' >&2; exit 1; }
+grep -Fq "failed exact live accounting config validation" "${upgrade}" || { echo 'ERROR: S06 upgrade must functionally validate the exact live accounting Caddyfile' >&2; exit 1; }
+
 echo 'S06_ACCOUNTING_UPGRADE_CONTRACT=PASSED'
 # Rollback must restore every runtime artifact/symlink changed before postflight.
 grep -Fq 'pvnaive-telemetry-agent.before' "${upgrade}" || { echo 'ERROR: telemetry agent backup/rollback missing' >&2; exit 1; }
