@@ -114,6 +114,11 @@ func run() error {
 		return err
 	}
 	systemStatus := buildSystemStatusProvider(db, os.Getenv)
+	expectedSchema, err := expectedSchemaVersion(os.Getenv)
+	if err != nil {
+		return err
+	}
+	readinessProbe := httpapi.NewDBReadinessProbe(db, expectedSchema)
 
 	var periodicResetConfig *periodicUsageResetConfig
 	if customerService != nil {
@@ -134,6 +139,7 @@ func run() error {
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
 		SystemStatus:          systemStatus,
+		ReadinessProbe:        readinessProbe,
 	})
 	handler = httpapi.WithOperationalMiddleware(handler)
 	server := &http.Server{
@@ -270,6 +276,15 @@ func subscriptionProxyHost(getenv func(string) string, enabled bool) (string, er
 		return "", fmt.Errorf("invalid PVNAIVE_NAIVE_PUBLIC_HOST: %w", err)
 	}
 	return host, nil
+}
+
+func expectedSchemaVersion(getenv func(string) string) (int, error) {
+	raw := strings.TrimSpace(getenv("PVNAIVE_EXPECTED_SCHEMA_VERSION"))
+	version, err := strconv.Atoi(raw)
+	if err != nil || version <= 0 {
+		return 0, fmt.Errorf("PVNAIVE_EXPECTED_SCHEMA_VERSION must be a positive integer")
+	}
+	return version, nil
 }
 
 func databaseDSN(getenv func(string) string) (string, error) {

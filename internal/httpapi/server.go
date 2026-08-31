@@ -1,9 +1,11 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
@@ -11,6 +13,8 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
 )
+
+const defaultReadyTimeout = 2 * time.Second
 
 type envelope map[string]any
 
@@ -24,6 +28,8 @@ type ServerConfig struct {
 	CustomerService       *customer.Service
 	AccountingStore       telemetry.AccountingStore
 	SystemStatus          func(*http.Request) (any, error)
+	ReadinessProbe        ReadinessProbeFunc
+	ReadyTimeout          time.Duration
 }
 
 type server struct {
@@ -171,13 +177,27 @@ func live(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, envelope{"status": "ok", "service": "pvnaive-api"})
 }
 
-func (s *server) ready(w http.ResponseWriter, _ *http.Request) {
-	ready := s.config.AuthService != nil && s.config.AuthStore != nil && len(s.config.MFAKey) == 32
-	status := "scaffold"
-	if ready {
-		status = "ready"
+func (s *server) ready(w http.ResponseWriter, r *http.Request) {
+	configured := s.config.AuthService != nil && s.config.AuthStore != nil && len(s.config.MFAKey) == 32
+	if !configured {
+		writeJSON(w, http.StatusOK, envelope{"status": "scaffold", "ready": false})
+		return
 	}
-	writeJSON(w, http.StatusOK, envelope{"status": status, "ready": ready})
+	if s.config.ReadinessProbe == nil {
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"status": "not_ready", "ready": false, "db": "error", "schema": "error"})
+		return
+	}
+	timeout := s.config.ReadyTimeout
+	if timeout <= 0 {
+		timeout = defaultReadyTimeout
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), timeout)
+	defer cancel()
+	if err := s.config.ReadinessProbe(ctx); err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, envelope{"status": "not_ready", "ready": false, "db": "error", "schema": "error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{"status": "ready", "ready": true, "db": "ok", "schema": "ok"})
 }
 
 func notImplemented(w http.ResponseWriter, _ *http.Request) {
