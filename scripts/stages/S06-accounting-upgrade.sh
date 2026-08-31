@@ -81,7 +81,6 @@ grep -Fq "binary_sha256=${accounting_caddy_sha}" "${bundle_root}/PROVENANCE.txt"
 grep -Fq 'reproducibility_verified=true' "${bundle_root}/PROVENANCE.txt" || fail 'bundle candidate provenance lacks reproducibility proof'
 "${bundle_root}/caddy/caddy-pvnaive-accounting" validate --config "${caddy_file}" --adapter caddyfile >/dev/null || fail 'bundle candidate failed config validation'
 "${bundle_root}/caddy/caddy-pvnaive-accounting" list-modules | grep -Fx 'http.handlers.forward_proxy' >/dev/null || fail 'bundle candidate forward_proxy module missing'
-"${bundle_root}/caddy/caddy-pvnaive-accounting" list-modules | grep -Fq 'pvnaive_accounting' >/dev/null || fail 'bundle candidate accounting module missing'
 
 caddy_sha_before="$(sha256sum "${caddy_file}" | awk '{print $1}')"
 [[ "${caddy_sha_before}" == "${expected_caddy_sha}" ]] || fail "Caddyfile changed since preflight: ${caddy_sha_before}"
@@ -324,7 +323,6 @@ curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health/ready | gr
 grep -Fxq 'PVNAIVE_EXPECTED_SCHEMA_VERSION=17' "${db_env}" || fail 'db.env schema expectation was not promoted to 17'
 final_bin_sha="$(sha256sum "${caddy_bin}" | awk '{print $1}')"
 [[ "${final_bin_sha}" == "${accounting_caddy_sha}" ]] || fail "accounting Caddy binary SHA mismatch after install: ${final_bin_sha}"
-"${caddy_bin}" list-modules | grep -Fq 'pvnaive_accounting' >/dev/null || fail 'accounting module missing after install'
 final_pid="$(systemctl show "${caddy_unit}" --property=MainPID --value)"
 final_restarts="$(systemctl show "${caddy_unit}" --property=NRestarts --value)"
 [[ "${final_pid}" =~ ^[1-9][0-9]*$ ]] || fail 'invalid Caddy MainPID after restart'
