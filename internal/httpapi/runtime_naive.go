@@ -297,8 +297,11 @@ func commitRuntimeMutation(r *http.Request, mutation *runtimecred.Mutation) erro
 		return errors.New("authenticated transaction missing")
 	}
 	err := mutation.CommitAndFinalize(r.Context(), authenticated.Bound.Tx)
+	if err != nil {
+		return err
+	}
 	authenticated.TransactionFinalized = true
-	return err
+	return nil
 }
 
 func finishRuntimeTransaction(r *http.Request) {

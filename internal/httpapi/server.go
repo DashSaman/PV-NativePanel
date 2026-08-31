@@ -265,11 +265,15 @@ func (s *server) requireAuthentication(route Route, next http.Handler) http.Hand
 			return
 		}
 		r = withAuthenticatedRequest(r, bound, cookie.Value)
-		next.ServeHTTP(w, r)
+		buf := &responseBuffer{w: w}
+		next.ServeHTTP(buf, r)
 		if authenticated, ok := authenticatedFromRequest(r); ok && authenticated.TransactionFinalized {
+			buf.commitToClient()
 			return
 		}
-		_ = bound.Tx.Commit()
+		if err := finalize(bound.Tx, buf, w); err != nil {
+			return
+		}
 	})
 }
 
@@ -297,4 +301,75 @@ func writeJSON(w http.ResponseWriter, status int, payload envelope) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+type responseBuffer struct {
+	w          http.ResponseWriter
+	statusCode int
+	body       []byte
+	header     http.Header
+	wrote      bool
+}
+
+func (buf *responseBuffer) Header() http.Header {
+	if buf.header == nil {
+		buf.header = http.Header{}
+	}
+	return buf.header
+}
+
+func (buf *responseBuffer) WriteHeader(status int) {
+	if !buf.wrote {
+		buf.statusCode = status
+		buf.wrote = true
+	}
+}
+
+func (buf *responseBuffer) Write(b []byte) (int, error) {
+	if !buf.wrote {
+		buf.statusCode = http.StatusOK
+		buf.wrote = true
+	}
+	buf.body = append(buf.body, b...)
+	return len(b), nil
+}
+
+func (buf *responseBuffer) commitToClient() {
+	dst := buf.w.Header()
+	for k, vv := range buf.header {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
+	if buf.statusCode != 0 {
+		buf.w.WriteHeader(buf.statusCode)
+	}
+	if len(buf.body) > 0 {
+		buf.w.Write(buf.body)
+	}
+}
+
+// transactionCommit is the minimal interface required by finalize to
+// commit a database transaction. This allows tests to inject a fake
+// whose Commit returns a controlled error.
+type transactionCommit interface {
+	Commit() error
+}
+
+// finalize commits tx through the minimal transactionCommit interface.
+// On success it flushes the buffered response to the underlying writer.
+// On failure it discards the buffer and writes a 500 commit-failed
+// response directly to the underlying writer so the client never
+// observes the buffered success body or headers.
+func finalize(tx transactionCommit, buf *responseBuffer, w http.ResponseWriter) error {
+	if err := tx.Commit(); err != nil {
+		buf.Discard()
+		writeJSON(w, http.StatusInternalServerError, envelope{"code": "transaction_commit_failed", "message": "The operation could not be completed because the database transaction did not commit."})
+		return err
+	}
+	buf.commitToClient()
+	return nil
+}
+
+func (buf *responseBuffer) Discard() {
 }
