@@ -19,7 +19,7 @@ CREATE ROLE pvnaive_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NO
 SQL
 createdb -h "$PVNAIVE_DB_HOST" -p "$PVNAIVE_DB_PORT" -U "$PVNAIVE_DB_USER" --owner pvnaive_owner --encoding UTF8 --template template0 "$test_db"
 "$repo_root/scripts/db/migrate.sh" >/dev/null
-[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 18 ]]
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 19 ]]
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 INSERT INTO pvnaive.tenants(id,tenant_type,slug,display_name) VALUES ('18180000-0000-0000-0000-000000000001','reseller','reuse','Reuse');
 INSERT INTO pvnaive.actors(id,tenant_id,actor_role,email,display_name,status) VALUES ('18180000-0000-0000-0000-000000000002','18180000-0000-0000-0000-000000000001','reseller','reuse@example.invalid','Reuse','active');
