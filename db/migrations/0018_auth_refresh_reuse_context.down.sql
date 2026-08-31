@@ -1,6 +1,6 @@
 -- pvnaive:migration-version 0018
 -- pvnaive:transactional true
--- pvnaive:destructive false
+-- pvnaive:destructive true
 
 SET LOCAL lock_timeout = '10s';
 SET LOCAL statement_timeout = '120s';
