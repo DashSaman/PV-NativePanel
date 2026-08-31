@@ -68,8 +68,9 @@ Handlerهای فعلی:
 | POST | `/api/v1/customers/{id}/rotate-password` | owner | Runtime password rotation؛ مستقل از Subscription reissue |
 | POST | `/api/v1/customers/{id}/volume/add` | owner | add quota volume |
 | POST | `/api/v1/customers/{id}/validity/extend` | owner | extend validity |
+| POST | `/api/v1/customers/{id}/reset-usage` | owner | reset دقیق usage با idempotency/audit؛ credential/token ثابت می‌ماند |
 
-Manual Reset Usage هنوز current ready customer capability نیست.
+Manual Reset Usage روی هر دو surface آماده است: `/api/v1/customers/{id}/reset-usage` و `/api/v1/users/{id}/reset-usage`. Bulk `reset_usage` نیز فقط برای Owner از Preview → Execute استفاده می‌کند.
 
 ## Customer-product / reseller-scoped API
 
@@ -88,6 +89,7 @@ Current `customerExtraHandler` پیاده‌سازی واقعی برای این 
 - `PATCH /api/v1/users/{id}/service`
 - `POST /api/v1/users/{id}/volume/add`
 - `POST /api/v1/users/{id}/validity/extend`
+- `POST /api/v1/users/{id}/reset-usage` (Owner-only)
 - `GET/POST /api/v1/plans`
 - `GET/POST /api/v1/customer-groups`
 - `GET/POST /api/v1/customer-tags`
@@ -129,11 +131,10 @@ Exact direct-Naive accounting دیگر یک future-only concept نیست. Curren
 
 اما این به معنی آماده‌بودن همه future accounting API route declarations نیست.
 
+Periodic reset execution نیز current capability است: policy `none/daily/weekly/monthly/yearly/custom` هنگام ساخت ServiceTerm فریز می‌شود؛ scheduler با cursor پایدار، UTC policy، `FOR UPDATE SKIP LOCKED`، idempotent reset event، audit/history و retry/defer روی accounting unsafe state اجرا می‌شود. تغییر بعدی Plan قرارداد ServiceTerm فعال را بازنویسی نمی‌کند. `renew_current` policy فریز‌شده را حفظ می‌کند.
+
 Current missing product actions:
 
-- Manual Reset Usage؛
-- Bulk Reset Usage؛
-- periodic reset scheduler/execution؛
 - operator session kill/limits؛
 - کامل‌شدن accounting/presence projection در تمام UI/APIهای customer؛
 - controlled Production acceptance proof برای hard quota و first-CONNECT races/restarts.
@@ -142,7 +143,6 @@ Current missing product actions:
 
 تا زمان پیاده‌سازی و test، این دسته‌ها را current API capability حساب نکن:
 
-- user Reset Usage route؛
 - operator customer sessions/kill؛
 - full reseller CRUD/credit/ledger handlers؛
 - notification preferences/rules/delivery surface؛
@@ -153,6 +153,15 @@ Current missing product actions:
 - webhooks.
 
 بخش‌هایی از ops/OpenAPI/notifications/fleet در PR قدیمی #16 وجود دارد ولی تا استخراج روی latest main و CI مجدد current محسوب نمی‌شود.
+
+## Periodic reset scheduler operational contract
+
+- `PVNAIVE_PERIODIC_RESET_INTERVAL_SECONDS`: default `30`، بازه مجاز `5..3600` ثانیه.
+- `PVNAIVE_PERIODIC_RESET_BATCH_LIMIT`: default `50`، بازه مجاز `1..100` ServiceTerm در هر batch.
+- API فقط تابع محدود `pvnaive.execute_due_scheduled_usage_resets(limit)` را صدا می‌زند؛ caller نمی‌تواند user یا timestamp دلخواه برای reset بدهد.
+- هر batch از `clock_timestamp()` سرور DB استفاده می‌کند و timezone policy فریز‌شده `UTC` است.
+- success، deferred و skipped در `scheduled_usage_reset_attempts` append-only ثبت می‌شوند؛ success به `direct_naive_accounting_reset_events` با reason=`scheduled` لینک می‌شود.
+- اگر Manual/Bulk reset جدیدتری از boundary زمان‌بندی‌شده وجود داشته باشد، scheduler double-reset نمی‌کند و cadence را از epoch اثبات‌شده جدید ادامه می‌دهد.
 
 ## Security invariants
 

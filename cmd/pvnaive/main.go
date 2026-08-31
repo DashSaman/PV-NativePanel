@@ -115,6 +115,15 @@ func run() error {
 	}
 	systemStatus := buildSystemStatusProvider(db, os.Getenv)
 
+	var periodicResetConfig *periodicUsageResetConfig
+	if customerService != nil {
+		cfg, err := periodicUsageResetConfigFromEnv(os.Getenv)
+		if err != nil {
+			return fmt.Errorf("periodic usage reset scheduler configuration: %w", err)
+		}
+		periodicResetConfig = &cfg
+	}
+
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -139,6 +148,14 @@ func run() error {
 
 	runCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if periodicResetConfig != nil {
+		go runPeriodicUsageResetScheduler(
+			runCtx,
+			periodicUsageResetDBExecutor{db: db},
+			*periodicResetConfig,
+			log.Printf,
+		)
+	}
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Printf("PVNaive API listening on %s", listen)

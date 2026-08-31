@@ -51,7 +51,7 @@ ORDER BY enabled DESC, sort_order ASC, name ASC`)
 		}
 		plan.StartPolicy = StartPolicy(startPolicy)
 		plan.ResetStrategy = ResetStrategy(resetStrategy)
-		plan.ResetEnforcement = false
+		plan.ResetEnforcement = PeriodicResetEnforcementAvailable
 		out = append(out, plan)
 	}
 	if err := rows.Err(); err != nil {
@@ -106,7 +106,7 @@ RETURNING id::text, name, quota_bytes,
 	}
 	out.StartPolicy = StartPolicy(startPolicy)
 	out.ResetStrategy = ResetStrategy(resetStrategy)
-	out.ResetEnforcement = false
+	out.ResetEnforcement = PeriodicResetEnforcementAvailable
 	if groupID.Valid {
 		out.DefaultGroupID = groupID.String
 	}

@@ -69,6 +69,8 @@ INSERT INTO pvnaive.naive_runtime_credentials (
   'active', 'panel', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 );
 
+BEGIN;
+SELECT pvnaive.direct_naive_accounting_enter_context();
 INSERT INTO pvnaive.service_terms (
   id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy, purchased_at, state,
   accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
@@ -86,6 +88,8 @@ SELECT 'dddddddd-dddd-dddd-dddd-dddddddddddd', tenant_id, id,
        'cccccccc-cccc-cccc-cccc-cccccccccccc', '11111111-1111-1111-1111-111111111111',
        'primary', '2026-08-29T17:00:00Z'
 FROM pvnaive.users WHERE id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+SELECT pvnaive.direct_naive_accounting_leave_context();
+COMMIT;
 SQL
 
 # Authorization is read/check only: it must never activate first-use.

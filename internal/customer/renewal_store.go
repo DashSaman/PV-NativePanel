@@ -86,7 +86,7 @@ WHERE id=$1::uuid AND status <> 'archived'`, planID).Scan(
 	}
 	out.StartPolicy = StartPolicy(startPolicy)
 	out.ResetStrategy = ResetStrategy(resetStrategy)
-	out.ResetEnforcement = false
+	out.ResetEnforcement = PeriodicResetEnforcementAvailable
 	if groupID.Valid {
 		out.DefaultGroupID = groupID.String
 	}

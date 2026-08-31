@@ -171,3 +171,9 @@ func TestBulkResetUsagePreviewIsPerItemAndDoesNotRequireRuntimeCoordinator(t *te
 
 func ptrInt64(v int64) *int64        { return &v }
 func ptrTime(v time.Time) *time.Time { return &v }
+
+func TestPeriodicResetEnforcementCapabilityIsEnabled(t *testing.T) {
+	if !PeriodicResetEnforcementAvailable {
+		t.Fatal("periodic reset scheduler is implemented but product capability remains disabled")
+	}
+}

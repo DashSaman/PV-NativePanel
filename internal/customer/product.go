@@ -11,6 +11,8 @@ const gibibyte int64 = 1073741824
 
 type ResetStrategy string
 
+const PeriodicResetEnforcementAvailable = true
+
 const (
 	ResetNone    ResetStrategy = "none"
 	ResetDaily   ResetStrategy = "daily"
