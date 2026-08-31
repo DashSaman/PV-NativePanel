@@ -2,156 +2,98 @@
 
 Last updated: 2026-08-31
 
-`OWNER_REQUIREMENTS.md` plus the Owner's Production/parity master prompt define product behavior and execution order. This board records current ownership and prevents duplicate work.
+This is the active execution board. `OWNER_REQUIREMENTS.md` and `ROADMAP.md` define product intent and ordering; repository/CI/Production evidence decides status.
 
 ## Shared rules
 
-- start from latest `main`, never from a chat snapshot;
-- preserve already-working Runtime/accounting/customer/subscription behavior;
-- use isolated branches/PRs; never force-push/reset main;
-- TDD/fail-first where practical;
-- route/schema presence is not implementation evidence;
-- no fake usage/online/HWID/speed;
-- no secret/password/token/key in Git/chat/CI/evidence;
-- Production mutation requires DB/config/Caddy/web/binary backups + rollback;
-- GPL/AGPL competitors are behavior/architecture references unless explicit source-license compatibility is approved;
-- update a unique workstream report during parallel work; Lead owns canonical reconciliation.
+- always start from latest `main`, never a chat snapshot;
+- preserve working Runtime/accounting/customer/subscription behavior;
+- use isolated branches/PRs and never force-push/reset `main`;
+- TDD/fail-first for behavior changes;
+- route/schema presence is not delivery evidence;
+- never fabricate usage, online state, IP/HWID, speed or Production proof;
+- never expose password/token/key/secret values in Git/chat/CI/evidence;
+- Production mutation requires fresh backup, rollback state, exact-head CI and postflight;
+- GPL/AGPL competitor code remains reference-only unless license compatibility is explicitly approved.
 
-## Current Lead lane
+## Current verified baseline
 
-| Field | Value |
-|---|---|
-| Agent | Lead Engineer / PM / Integration |
-| Branch | `lead/parity-truth-2026-08-30` |
-| PR | `#27` |
-| Start main | `a021aa4b62c35b775fb521d042b2f8e6dbde10b0` |
-| Plan | `docs/superpowers/plans/2026-08-30-production-parity-reconciliation.md` |
-| Goal | Current repo/Production truth → current competitor parity → canonical docs → exact-head CI → safe PR #16 integration plan |
-| Production mutation | none in this lane |
-
-## Work already integrated — do not recreate
-
-### WS1 Runtime / Accounting
-
-Integrated main + Production contains:
-
-- pinned forwardproxy exact successful-write accounting;
-- Runtime UUID identity;
-- dedicated accounting socket + Telemetry Agent;
-- append-only/idempotent direct accounting;
-- boot/session/sequence/cumulative semantics;
-- ServiceTerm usage isolation;
-- trusted first-successful-CONNECT activation producer;
-- session/presence projection;
-- shared finite-quota reservation/settlement core.
-
-Remaining WS1-style work is acceptance/completion, not a rewrite: legacy baseline truth, read-model wiring, reset semantics, hard-quota/first-CONNECT controlled Production proof, sessions/limits.
-
-### WS2 Customer Product
-
-Integrated main contains:
-
-- customer create/adopt/edit/suspend/resume/revoke-safe-delete;
-- plans, renewal/new ServiceTerm, Next Plan/On Hold foundations;
-- quota/unlimited/add/set volume;
-- validity/expiry/no-expiry/extend days;
-- groups/tags/notes;
-- search/filter/sort/pagination;
-- bulk preview/idempotent execution for supported actions;
-- tenant/RLS product foundations.
-
-### WS3 Subscription / Client Delivery
-
-Integrated main contains:
-
-- `/sub/<token>` machine endpoint;
-- `/s/<token>` human account page;
-- local QR;
-- read-only current Subscription;
-- explicit Subscription reissue;
-- explicit password rotation;
-- token/password mutation separation.
-
-Real Karing acceptance matrix remains.
+- GitHub `main`: `fce39283c6449b0d1836757ee7caddb31fab9def` — PR #47 BUG-002 merge.
+- Exact-main CI run `33426149726`: **SUCCESS**.
+- Latest independently recorded Production release: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`, schema **19**, from Task14 rollout evidence.
+- Task12 active-session management is deployed at schema17.
+- Task14 concurrent-session limit is deployed at schema19 with PostgreSQL race/reconnect proof.
+- BUG-001 refresh reuse-family, BUG-002 commit-before-success and BUG-003 DB/schema readiness are closed; Task35 is DONE.
+- A fresh live Production audit/deploy after the BUG-002 merge is currently blocked by SentinelX host-plan access to `pv-primary`; do not claim `fce39283...` is deployed until that gate is available and verified.
 
 ## Current ordered task queue
 
-Do not reorder unless a real technical dependency is documented.
+Do not call a task DONE merely because code exists. `PARTIAL` means implementation/history exists but the exact current acceptance/Production evidence still needs reconciliation.
 
-| Order | Workstream | Status | Outcome / gate |
+| # | Workstream | Status | Current gate / next action |
 |---:|---|---|---|
-| 1 | Lead audit latest repo/Production | IN_PROGRESS | repo/PR/CI/prod truth recorded, no secret leak |
-| 2 | Lead competitor parity | IN_PROGRESS | 120-feature current matrix at `docs/PANEL_PARITY_MASTER_2026-08-30.md` |
-| 3 | Lead canonical docs truth | IN_PROGRESS | FEATURE_MATRIX/PROJECT_STATUS/HANDOFF/ROADMAP/KNOWN_ISSUES/AGENT_TASKS/WORKLOG/CONTINUE_HERE current |
-| 4 | WS4 integration / PR #16 | WAITING_ON_1_3 | extract useful ops units onto fresh branch; no blind merge |
-| 5 | Accounting legacy baseline | TODO | no fake zero, provable baseline or Unknown |
-| 6 | `/s` accounting projection | TODO | Used/Remaining/Upload/Download/Last Online/Online/Expiry/Quota real or explicit unavailable |
-| 7 | Manual Reset Usage | TODO | confirm + audit + accounting event + idempotency; no token/password rotation |
-| 8 | Bulk Reset Usage | TODO | Preview → Execute with same idempotency key |
-| 9 | Periodic reset execution | TODO | persisted cursor/scheduler/timezone/exactly-once/audit/history |
-| 10 | Hard quota Production proof | TODO | concurrency/race/exhaustion/reload/restart/reconnect/no bypass |
-| 11 | First successful CONNECT proof | TODO | only successful authenticated CONNECT activates |
-| 12 | Customer sessions | DONE | trusted peer IP + active timestamps + exact per-session bytes; PR #40 merged, release blockers #41/#43 fixed, Production rollout completed at schema17 |
-| 13 | Kill session | IN_PROGRESS | real disconnect + confirmation/audit; next ordered implementation lane |
-| 14 | Concurrent session limit | TODO | Unlimited/N enforced under race |
-| 15 | Unique IP limit | TODO | simultaneous unique-IP semantics/enforcement |
-| 16 | IP/session history | TODO | bounded privacy-aware retention |
-| 17 | HWID PoC | TODO | implement only if identity is trustworthy |
-| 18 | Speed-limit PoC | TODO | implement only if data plane can enforce |
+| 1 | Latest repo/PR/CI/Production audit | IN_PROGRESS | GitHub/CI reconciled; fresh `pv-primary` read-only audit blocked by current SentinelX active-host limit |
+| 2 | Competitor parity | DONE | current 120-feature matrix exists; re-check only when product surface changes materially |
+| 3 | Canonical docs truth | IN_PROGRESS | this reconciliation branch removes stale Task14/BUG-002/session-limit claims |
+| 4 | WS4 safe operations extraction | DONE | observability/Doctor/backup/restore/release foundations deployed previously |
+| 5 | Legacy/adopted accounting baseline | PARTIAL | implementation merged historically; re-confirm exact Production evidence before promoting canonical DONE |
+| 6 | `/s` accounting/presence projection | PARTIAL | implementation merged historically; re-confirm acceptance evidence |
+| 7 | Manual Reset Usage | PARTIAL | implementation merged historically; re-confirm acceptance/evidence |
+| 8 | Bulk Reset Usage | PARTIAL | implementation merged historically; re-confirm acceptance/evidence |
+| 9 | Periodic reset execution | PARTIAL | merged restart-safe implementation exists; re-confirm acceptance/evidence |
+| 10 | Hard quota controlled Production proof | TODO | prove race/exhaustion/reload/restart/reconnect/no bypass on controlled Production canary |
+| 11 | First-successful-CONNECT Production proof | TODO | prove reads/failed-auth/reload inert and successful CONNECT only activation path |
+| 12 | Customer active sessions | DONE | trusted Caddy peer IP, active timestamps and exact per-session bytes deployed at schema17 |
+| 13 | Exact kill/disconnect session | IN_PROGRESS | rebase/review existing candidate on latest main; must kill one live CONNECT without credential revoke or Caddy reload/restart |
+| 14 | Concurrent session limit | DONE | schema19 Unlimited/N enforcement deployed; race/reconnect proof and Production evidence recorded |
+| 15 | Simultaneous unique-IP limit | BLOCKED | current schema20 candidate rejected: it counted the wrong session IP source and did not wire trusted RemoteAddr into the enforcement boundary; redesign required |
+| 16 | Bounded IP/session history | TODO | privacy-aware retention using trusted peer/session facts; reconcile migration numbering after Task15 design |
+| 17 | HWID/device identity PoC | TODO | implement only if a trustworthy standard Naive/Karing identity exists |
+| 18 | Per-user speed-limit PoC | TODO | expose only if a real data-plane enforcement boundary is proven |
 | 19 | Reseller CRUD | TODO | create/edit/disable/revoke/list/search |
-| 20 | Tenant isolation full audit | TODO | cross-reseller read/edit/renew/delete/subscription IDOR negatives |
-| 21 | Reseller wallet/credit | TODO | correct balance mutation semantics |
-| 22 | Financial ledger | TODO | immutable credit/debit/create/renew/refund/adjustment history |
+| 20 | Full tenant isolation / IDOR audit | TODO | negative Route × role matrix and cross-reseller mutations/reads |
+| 21 | Reseller wallet/credit | TODO | correct audited balance mutation semantics |
+| 22 | Immutable financial ledger | TODO | credit/debit/create/renew/refund/adjustment history |
 | 23 | Reseller plan/restriction quotas | TODO | allowed plans/max users/max active/credit |
-| 24 | Customer history | TODO | all sensitive service actions projected |
-| 25 | Audit Explorer | TODO | actor/user/action/date/IP/result filters; redacted |
-| 26 | Notification engine/preferences/history | TODO | quota/expiry/runtime/node/backup/security/disk/cert events |
-| 27 | Telegram + rules | TODO | secure secret handling + retry/outbox/rule builder |
-| 28 | Dashboard/monitoring/history | TODO | CPU/RAM/disk/network/traffic/online/runtime real data |
-| 29 | Logs/request diagnostics/support bundle | TODO | application/runtime/security, request ID, redaction |
-| 30 | Doctor | TODO | command/page health checks |
-| 31 | Scheduled encrypted backup | TODO | retention/DB/config/runtime state/important files |
-| 32 | Restore/verification/drill/UI | TODO | strong safeguards + recurring restore proof |
-| 33 | API/OpenAPI | TODO | actual ready contracts only |
-| 34 | API rate limit/idempotency/webhooks | TODO | stable policy/event contracts |
-| 35 | Security BUG-001/002/003 | IN_PROGRESS | BUG-001 DONE, BUG-003 DONE; BUG-002 commit-before-success remains |
-| 36 | Authorization/IDOR/CSRF/redaction/fuzz | TODO | complete route × role matrix |
-| 37 | Supply-chain security | TODO | dependency scan, secret scan, SAST, SBOM, signing/provenance/license |
-| 38 | Multi-node/fleet | TODO | node model/auth/health/metrics/capacity/assignment/deploy |
-| 39 | Drain/maintenance/canary/upgrade/rollback/failover/smart node | TODO | desired/applied + reconciliation loops |
+| 24 | Customer history | TODO | project all sensitive customer/service actions |
+| 25 | Audit Explorer | TODO | actor/user/action/date/IP/result filters with redaction |
+| 26 | Notification engine/preferences/history | PARTIAL | transport/foundation exists; product persistence/preferences/event wiring/history remain |
+| 27 | Telegram + rules | PARTIAL | secure transport foundation exists; configuration/rules/history/product UX remain |
+| 28 | Dashboard/monitoring/history | PARTIAL | live system monitoring exists; historical charts/online aggregates remain |
+| 29 | Logs/request diagnostics/support bundle | PARTIAL | request IDs/redaction/support bundle exist; product log explorer remains |
+| 30 | Doctor | PARTIAL | CLI deployed previously; product page/workflow remains |
+| 31 | Scheduled encrypted backup + retention | PARTIAL | timer/backup foundation deployed; retention product policy remains |
+| 32 | Restore/verification/drill/UI | PARTIAL | automated drill foundation deployed; operator UI/full workflow remains |
+| 33 | API/OpenAPI | PARTIAL | ready-route OpenAPI exists; broader stabilization/version policy remains |
+| 34 | API rate limit/idempotency/webhooks | PARTIAL | request/rate-limit foundation exists; stable mutation/webhook contracts remain |
+| 35 | Security BUG-001/002/003 | DONE | all three fixes merged; exact-main CI through BUG-002 merge is green |
+| 36 | Authorization/IDOR/CSRF/redaction/fuzz | TODO | complete full route × role quality gate |
+| 37 | Supply-chain security | PARTIAL | checksums/basic SBOM/provenance foundation exists; SAST/dependency/secret scan/signing/NOTICE remain |
+| 38 | Multi-node/fleet | PARTIAL | standalone-safe model/drift foundations exist; controller/network operations remain |
+| 39 | Drain/maintenance/canary/failover/smart node | TODO | reconciliation-safe fleet operations |
 | 40 | Fresh installer | TODO | secure version-pinned clean Ubuntu install + Doctor |
-| 41 | Upgrade | TODO | pre-backup + safe migrations |
-| 42 | Rollback/uninstall | TODO | conservative data-preserving lifecycle |
-| 43 | Client compatibility | TODO | Karing Windows/Android/iOS/macOS/Linux first |
-| 44 | Load/capacity | TODO | 50/100/200/400+ + correctness under load |
-| 45 | Bulk/search completion | TODO | reset/delete/unlimited/no-expiry/change-expiry/next-plan, advanced filters/sorts/columns/URL state |
-| 46 | Final UI polish | TODO | professional customer/dashboard/account page + responsive/accessibility/theme |
-| 47 | Final docs reconciliation | TODO | no stale TODO for implemented features |
-| 48 | Clean-server installation | TODO | fresh VM proof |
-| 49 | Final Production smoke | TODO | exact RC deploy smoke + rollback readiness |
-| 50 | Release Candidate | TODO | no logical P0/P1 release blocker |
+| 41 | Upgrade | PARTIAL | same-schema guarded release deploy exists; generic migration upgrade remains |
+| 42 | Rollback/uninstall | PARTIAL | release rollback exists; generic version rollback/uninstall/data-retention policy remain |
+| 43 | Client compatibility | TODO | Karing Windows/Android/iOS/macOS/Linux acceptance first |
+| 44 | Load/capacity | TODO | 50/100/200/400+ correctness and resource campaign |
+| 45 | Bulk/search completion | TODO | remaining bulk actions + advanced filters/sorts/columns/URL state |
+| 46 | Final UI polish | PARTIAL | current product UI exists; accessibility/responsive/theme/final polish remain |
+| 47 | Final docs reconciliation | IN_PROGRESS | remove remaining stale historical-as-current statements |
+| 48 | Clean-server installation proof | TODO | fresh supported Ubuntu VM reaches healthy full stack |
+| 49 | Final Production smoke | TODO | exact RC backed-up deploy + customer/sub/accounting/runtime smoke + rollback readiness |
+| 50 | Release Candidate | TODO | no logical P0/P1 blocker, exact-head CI green, provenance/evidence complete |
 
-## Old PR classification
+## Parallel work allocation
 
-| PR | Classification | Action |
-|---:|---|---|
-| #4 | STILL USEFUL, small extract | re-evaluate only explicit Karing sing-box profile/export during client lane |
-| #5 | SUPERSEDED / MERGED ELSEWHERE | do not merge; newer customer lifecycle exists on main |
-| #6 | SUPERSEDED / MERGED ELSEWHERE | do not merge; newer customer/product/subscription flow exists on main |
-| #8 | SUPERSEDED / ARCHIVE | do not merge; replaced by integrated WS1 accounting |
-| #16 | STILL USEFUL, manual extraction required | fresh integration branch; inspect candidate units one-by-one |
+While only `pv-worker-main` is accessible through the current SentinelX host plan, keep independent lanes isolated in worktrees and use GitHub CI for full toolchain proof:
 
-## File ownership / conflict rules for next integration
+- Lead: integration, CI, canonical truth and safe release gating;
+- Task13 lane: exact one-session disconnect, rebase existing candidate after BUG-002;
+- Task15 lane: redesign unique-IP enforcement around trusted Caddy `RemoteAddr` and PostgreSQL race-safe admission;
+- Task16 lane: bounded privacy-aware history after Task15 identity/enforcement boundary stabilizes;
+- independent security/release lane: Task36 authorization/IDOR/fuzz preparation that does not depend on Production access.
 
-During PR #16 extraction:
-
-- preserve current `internal/httpapi/server.go` customer/subscription/accounting changes;
-- preserve current schema 11; append migrations only if required;
-- metrics/observability/ops should avoid modifying customer semantics;
-- notification/fleet foundations are not automatically product-complete;
-- systemd backup/restore units require safe path/permission/retention review before Production;
-- web System Dashboard/error boundary must not regress current customer/product UI;
-- no Production deployment until the extracted branch has full green CI and required backups/rollback plan.
+When additional SentinelX hosts become active again, redistribute these lanes immediately and keep total CPU/RAM pressure around the Owner-requested 70% ceiling, backing off when other services raise host load.
 
 ## Mandatory work-unit report
 
@@ -168,4 +110,4 @@ REMAINING:
 NEXT TASK:
 ```
 
-Lead updates canonical documents only after evidence, then automatically proceeds to the next ordered task.
+Lead reconciles canonical documents only from evidence, then immediately advances the next independent task.
