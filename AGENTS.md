@@ -1,6 +1,6 @@
 # AGENTS.md — PVNaive mandatory agent instructions
 
-Last reconciled: 2026-08-30
+Last reconciled: 2026-08-31
 
 ## Mission
 
@@ -21,11 +21,12 @@ Before any change, read in this order:
 5. `docs/PANEL_PARITY_MASTER_2026-08-30.md` — current 120-feature competitor/gap matrix.
 6. `KNOWN_ISSUES.md` — current bugs/security/debt/ops risks.
 7. `AGENT_TASKS.md` — workstream ownership and conflict rules.
-8. `WORKLOG.md` — significant completed/failed work; do not repeat it.
-9. `FEATURE_MATRIX.md` — short-form actual-vs-target capability truth.
-10. `CONTINUE_HERE.md` — interruption recovery pointer.
-11. relevant design/spec/plan under `docs/superpowers/`.
-12. before **any Production mutation**, independently re-read newest `main`, current `ops/evidence/*`, live service/database/Caddy state, current backups and rollback plan.
+8. `docs/DEVELOPMENT_WORKER_POOL.md` — canonical five-server development inventory, resource policy and continuity rules.
+9. `WORKLOG.md` — significant completed/failed work; do not repeat it.
+10. `FEATURE_MATRIX.md` — short-form actual-vs-target capability truth.
+11. `CONTINUE_HERE.md` — interruption recovery pointer.
+12. relevant design/spec/plan under `docs/superpowers/`.
+13. before **any Production mutation**, independently re-read newest `main`, current `ops/evidence/*`, live service/database/Caddy state, current backups and rollback plan.
 
 Historical stage files such as `docs/PILOT_INSTALL_FA.md` and `docs/PANEL_PARITY_MASTER_2026-08-29.md` are explicitly archived/superseded and must not drive current Production actions.
 
@@ -60,6 +61,24 @@ Do not recreate from old branches:
 - exact direct accounting and restart-safe telemetry core.
 
 Before implementing any requested feature, verify handler/store/schema/UI/tests on **latest main** rather than trusting route names or old docs.
+
+## Mandatory five-server development pool
+
+The Owner has made five servers available for PVNaive development. Their canonical identities, SSH aliases, host-specific safety notes and resource limits are in `docs/DEVELOPMENT_WORKER_POOL.md`.
+
+Agents must actively use safe free capacity across the pool rather than unnecessarily serializing independent work on Primary. The normal target ceiling is approximately 70% total host pressure; unrelated Production workload always has priority. Heavy worker jobs should be resource-bounded where practical.
+
+Parallelism does not waive dependency or verification rules:
+
+- one writer per worktree;
+- separate branch/workspace per coding task;
+- independent verification preferably on a different worker;
+- no important result may remain only on a temporary worker;
+- do not manufacture parallel work that conflicts with an earlier required task;
+- when a worker becomes free and a non-conflicting roadmap task is ready, dispatch it rather than leaving capacity idle;
+- failed/exited agents must leave their workspace/report intact for diagnosis and safe restart/reassignment.
+
+Development workers are not automatically product Fleet nodes.
 
 ## Current ordered execution chain
 
@@ -196,7 +215,7 @@ Agents must not silently erase these until regression tests prove closure:
 - generic authenticated HTTP response can be written before durable DB commit and commit error is ignored;
 - readiness is not yet bounded DB/schema-backed.
 
-See `KNOWN_ISSUES.md` for exact evidence and Done gates.
+See `KNOWN_ISSUES.md` for exact evidence and Done gates. Always verify latest main before assuming a listed defect remains open; canonical docs may lag a newly merged fix.
 
 ## Stale PR handling
 
