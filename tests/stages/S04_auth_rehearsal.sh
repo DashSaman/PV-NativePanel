@@ -95,6 +95,7 @@ PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" \
 PVNAIVE_DB_NAME="${test_db}" \
 PVNAIVE_DB_USER=pvnaive_app \
 PVNAIVE_DB_CONNECT_TIMEOUT=5 \
+PVNAIVE_EXPECTED_SCHEMA_VERSION="${schema_version}" \
 PGPASSWORD=pvnaive-s04-ci-only \
 PGSSLMODE=disable \
 PVNAIVE_AUTH_KEY_FILE="${tmpdir}/auth.key" \

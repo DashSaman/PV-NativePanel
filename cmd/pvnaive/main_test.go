@@ -68,3 +68,22 @@ func TestSubscriptionProxyHostMayBeUnsetWhenCustomerRuntimeIsDisabled(t *testing
 		t.Fatalf("disabled subscription host=%q err=%v", got, err)
 	}
 }
+
+func TestExpectedSchemaVersion(t *testing.T) {
+	for _, tc := range []struct {
+		value string
+		want  int
+		ok    bool
+	}{
+		{"16", 16, true}, {"1", 1, true}, {"", 0, false}, {"0", 0, false}, {"-1", 0, false}, {"abc", 0, false}, {"16x", 0, false},
+	} {
+		got, err := expectedSchemaVersion(func(string) string { return tc.value })
+		if tc.ok {
+			if err != nil || got != tc.want {
+				t.Fatalf("value=%q got=%d err=%v", tc.value, got, err)
+			}
+		} else if err == nil {
+			t.Fatalf("value=%q unexpectedly accepted as %d", tc.value, got)
+		}
+	}
+}
