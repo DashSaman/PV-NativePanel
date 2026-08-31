@@ -78,7 +78,13 @@ DECLARE
     v_old pvnaive.auth_sessions%ROWTYPE;
     v_now timestamptz := clock_timestamp();
 BEGIN
-    IF p_old_token_hash IS NULL OR octet_length(p_old_token_hash) <> 32 THEN
+    IF p_old_token_hash IS NULL
+       OR p_new_token_hash IS NULL
+       OR p_new_csrf_token_hash IS NULL
+       OR octet_length(p_old_token_hash) <> 32
+       OR octet_length(p_new_token_hash) <> 32
+       OR octet_length(p_new_csrf_token_hash) <> 32
+       OR (p_new_user_agent_hash IS NOT NULL AND octet_length(p_new_user_agent_hash) <> 32) THEN
         RAISE EXCEPTION 'invalid session hash material' USING ERRCODE = '22023';
     END IF;
 
