@@ -64,7 +64,7 @@ WITH required(name) AS (
          ('service_terms'), ('user_runtime_credentials'), ('customer_mutation_keys'),
          ('direct_subscription_tokens'), ('customer_groups'), ('customer_tags'),
          ('customer_profiles'), ('customer_tag_assignments'), ('plan_tag_assignments'),
-         ('customer_bulk_operations')
+         ('customer_bulk_operations'), ('customer_bulk_operation_keys'), ('customer_bulk_reset_operations')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -77,7 +77,9 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 10)); then
+if ((expected_version >= 15)); then
+  [[ "${required_tables}" == "41" ]] || pvnaive_die "required table check failed: ${required_tables}/41"
+elif ((expected_version >= 10)); then
   [[ "${required_tables}" == "39" ]] || pvnaive_die "required table check failed: ${required_tables}/39"
 elif ((expected_version >= 6)); then
   [[ "${required_tables}" == "33" ]] || pvnaive_die "required table check failed: ${required_tables}/33"
@@ -92,7 +94,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 14)); then
+if ((expected_version >= 15)); then
+  [[ "${rls_tables}" == "39" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/39"
+elif ((expected_version >= 14)); then
   [[ "${rls_tables}" == "37" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/37"
 elif ((expected_version >= 10)); then
   [[ "${rls_tables}" == "36" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/36"

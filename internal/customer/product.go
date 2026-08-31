@@ -335,6 +335,7 @@ const (
 	BulkAddTag              BulkAction = "add_tag"
 	BulkRemoveTag           BulkAction = "remove_tag"
 	BulkReissueSubscription BulkAction = "reissue_subscription"
+	BulkResetUsage          BulkAction = "reset_usage"
 )
 
 type BulkCustomer struct {

@@ -189,7 +189,7 @@ export type ProductRenewalInput =
 
 export type ProductBulkAction =
   | "enable" | "suspend" | "revoke" | "safe_delete" | "extend_days" | "add_volume"
-  | "set_volume" | "apply_plan" | "assign_group" | "add_tag" | "remove_tag" | "reissue_subscription";
+  | "set_volume" | "apply_plan" | "assign_group" | "add_tag" | "remove_tag" | "reissue_subscription" | "reset_usage";
 
 export type ProductBulkRequest = {
   action: ProductBulkAction;

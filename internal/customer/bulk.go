@@ -56,8 +56,8 @@ type bulkStore interface {
 	OperationTenantIDTx(context.Context, *sql.Tx) (string, error)
 	BulkCustomersTx(context.Context, *sql.Tx, []string) ([]BulkCustomer, error)
 	ClaimBulkPreviewTx(context.Context, *sql.Tx, string, string, string, []byte, BulkRequest, BulkPreview) (BulkOperation, []byte, error)
-	BulkOperationTx(context.Context, *sql.Tx, string, string) (BulkOperation, []byte, error)
-	MarkBulkExecutedTx(context.Context, *sql.Tx, string, string, BulkExecutionResult) (BulkOperation, error)
+	BulkOperationTx(context.Context, *sql.Tx, string, string, BulkAction) (BulkOperation, []byte, error)
+	MarkBulkExecutedTx(context.Context, *sql.Tx, string, string, BulkAction, BulkExecutionResult) (BulkOperation, error)
 }
 
 func (r BulkRequest) Normalize() (BulkRequest, error) {
@@ -69,7 +69,7 @@ func (r BulkRequest) Normalize() (BulkRequest, error) {
 		return BulkRequest{}, ErrInvalidBulkRequest
 	}
 	switch r.Action {
-	case BulkEnable, BulkSuspend, BulkRevoke, BulkSafeDelete, BulkReissueSubscription:
+	case BulkEnable, BulkSuspend, BulkRevoke, BulkSafeDelete, BulkReissueSubscription, BulkResetUsage:
 	case BulkExtendDays:
 		if r.Days <= 0 {
 			return BulkRequest{}, ErrInvalidBulkRequest
@@ -109,6 +109,10 @@ func IsRuntimeBulkAction(action BulkAction) bool {
 	default:
 		return false
 	}
+}
+
+func IsPerItemBulkAction(action BulkAction) bool {
+	return IsRuntimeBulkAction(action) || action == BulkResetUsage
 }
 
 func bulkRequestHash(request BulkRequest) ([]byte, error) {
@@ -182,7 +186,7 @@ func (s *Service) LoadBulk(ctx context.Context, tx *sql.Tx, actorID, idempotency
 	if err != nil {
 		return BulkOperation{}, err
 	}
-	operation, storedHash, err := store.BulkOperationTx(ctx, tx, actorID, idempotencyKey)
+	operation, storedHash, err := store.BulkOperationTx(ctx, tx, actorID, idempotencyKey, request.Action)
 	if err != nil {
 		return BulkOperation{}, ErrBulkNotPreviewed
 	}
@@ -203,7 +207,7 @@ func excludedBulkIDs(preview BulkPreview) map[string]bool {
 }
 
 func (s *Service) ExecuteDatabaseBulk(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, operation BulkOperation) (BulkOperation, error) {
-	if IsRuntimeBulkAction(operation.Action) {
+	if IsPerItemBulkAction(operation.Action) {
 		return BulkOperation{}, ErrInvalidBulkRequest
 	}
 	store, ok := s.store.(bulkStore)
@@ -254,13 +258,13 @@ func (s *Service) ExecuteDatabaseBulk(ctx context.Context, tx *sql.Tx, actorID, 
 		result.Succeeded++
 		result.Items = append(result.Items, BulkItemResult{ID: userID, Status: "succeeded"})
 	}
-	return store.MarkBulkExecutedTx(ctx, tx, actorID, idempotencyKey, result)
+	return store.MarkBulkExecutedTx(ctx, tx, actorID, idempotencyKey, operation.Action, result)
 }
 
-func (s *Service) MarkRuntimeBulkExecuted(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, result BulkExecutionResult) (BulkOperation, error) {
+func (s *Service) MarkRuntimeBulkExecuted(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey string, action BulkAction, result BulkExecutionResult) (BulkOperation, error) {
 	store, ok := s.store.(bulkStore)
 	if !ok || tx == nil {
 		return BulkOperation{}, errors.New("customer: bulk capability is unavailable")
 	}
-	return store.MarkBulkExecutedTx(ctx, tx, actorID, idempotencyKey, result)
+	return store.MarkBulkExecutedTx(ctx, tx, actorID, idempotencyKey, action, result)
 }

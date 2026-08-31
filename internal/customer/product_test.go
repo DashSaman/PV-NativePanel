@@ -141,5 +141,33 @@ func TestBulkPreviewSeparatesInvalidSkippedAndRuntimeConflicts(t *testing.T) {
 	}
 }
 
+func TestBulkResetUsagePreviewIsPerItemAndDoesNotRequireRuntimeCoordinator(t *testing.T) {
+	request, err := (BulkRequest{Action: BulkResetUsage, CustomerIDs: []string{"active", "revoked", "active"}}).Normalize()
+	if err != nil {
+		t.Fatalf("Normalize() error = %v", err)
+	}
+	if len(request.CustomerIDs) != 2 || request.Action != BulkResetUsage {
+		t.Fatalf("normalized reset request = %#v", request)
+	}
+	preview := BuildBulkPreview(BulkPreviewInput{
+		Action:                      BulkResetUsage,
+		RequestedIDs:                request.CustomerIDs,
+		Customers:                   []BulkCustomer{{ID: "active", Lifecycle: LifecycleActive}, {ID: "revoked", Lifecycle: LifecycleRevoked}},
+		RuntimeCoordinatorAvailable: false,
+	})
+	if preview.Affected != 1 || len(preview.Conflicts) != 0 || len(preview.Skipped) != 1 || len(preview.Invalid) != 0 {
+		t.Fatalf("bulk reset preview = %#v", preview)
+	}
+	if len(preview.Changes) != 1 || preview.Changes[0] != string(BulkResetUsage) {
+		t.Fatalf("bulk reset changes = %#v", preview.Changes)
+	}
+	if IsRuntimeBulkAction(BulkResetUsage) || !IsPerItemBulkAction(BulkResetUsage) {
+		t.Fatal("bulk reset must be per-item without being classified as a runtime mutation")
+	}
+	if bulkOperationTable(BulkResetUsage) != bulkResetOperationsTable || bulkOperationTable(BulkSuspend) != bulkOperationsTable {
+		t.Fatal("bulk ledger routing is incorrect")
+	}
+}
+
 func ptrInt64(v int64) *int64        { return &v }
 func ptrTime(v time.Time) *time.Time { return &v }

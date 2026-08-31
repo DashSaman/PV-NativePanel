@@ -96,14 +96,14 @@ health_output="$(
     PVNAIVE_DB_NAME="${test_db}" \
     PVNAIVE_DB_USER=pvnaive_app \
     PVNAIVE_DB_CONNECT_TIMEOUT=5 \
-    PVNAIVE_EXPECTED_SCHEMA_VERSION=14 \
+    PVNAIVE_EXPECTED_SCHEMA_VERSION=15 \
     PVNAIVE_EXPECTED_DB_USER=pvnaive_app \
     PGPASSFILE="${pgpass}" \
     "${repo_root}/scripts/db/health.sh"
 )"
 
 grep -Fqx 'PVNAIVE_DB_HEALTH=OK' <<< "${health_output}"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=14' <<< "${health_output}"
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=15' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_USER=pvnaive_app' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_SERVER_ADDRESS=127.0.0.1' <<< "${health_output}"
 grep -Fqx "PVNAIVE_DB_SERVER_PORT=${PVNAIVE_DB_PORT}" <<< "${health_output}"
