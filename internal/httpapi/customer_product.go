@@ -246,18 +246,19 @@ func (s *server) createProductPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var payload struct {
-		Name            string                 `json:"name"`
-		QuotaGB         *int64                 `json:"quota_gb,omitempty"`
-		UnlimitedQuota  bool                   `json:"unlimited_quota,omitempty"`
-		ValidityDays    int64                  `json:"validity_days,omitempty"`
-		NoExpiry        bool                   `json:"no_expiry,omitempty"`
-		StartPolicy     customer.StartPolicy   `json:"start_policy"`
-		ResetStrategy   customer.ResetStrategy `json:"reset_strategy"`
-		ResetCustomDays int                    `json:"reset_custom_days,omitempty"`
-		DefaultGroupID  string                 `json:"default_group_id,omitempty"`
-		TagIDs          []string               `json:"tag_ids,omitempty"`
-		Enabled         *bool                  `json:"enabled,omitempty"`
-		SortOrder       int                    `json:"sort_order,omitempty"`
+		Name             string                 `json:"name"`
+		QuotaGB          *int64                 `json:"quota_gb,omitempty"`
+		UnlimitedQuota   bool                   `json:"unlimited_quota,omitempty"`
+		ValidityDays     int64                  `json:"validity_days,omitempty"`
+		NoExpiry         bool                   `json:"no_expiry,omitempty"`
+		StartPolicy      customer.StartPolicy   `json:"start_policy"`
+		ResetStrategy    customer.ResetStrategy `json:"reset_strategy"`
+		ResetCustomDays  int                    `json:"reset_custom_days,omitempty"`
+		ConcurrencyLimit *int                   `json:"concurrency_limit"`
+		DefaultGroupID   string                 `json:"default_group_id,omitempty"`
+		TagIDs           []string               `json:"tag_ids,omitempty"`
+		Enabled          *bool                  `json:"enabled,omitempty"`
+		SortOrder        int                    `json:"sort_order,omitempty"`
 	}
 	if decodeRuntimeJSON(r, &payload) != nil {
 		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_plan", "message": "Invalid Plan request."})
@@ -293,7 +294,7 @@ func (s *server) createProductPlan(w http.ResponseWriter, r *http.Request) {
 	plan, err := s.config.CustomerService.CreatePlan(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, customer.PlanPreset{
 		Name: payload.Name, QuotaBytes: quotaBytes, ValiditySeconds: validitySeconds,
 		NoExpiry: payload.NoExpiry, StartPolicy: payload.StartPolicy, ResetStrategy: payload.ResetStrategy,
-		ResetCustomDays: payload.ResetCustomDays, DefaultGroupID: payload.DefaultGroupID,
+		ResetCustomDays: payload.ResetCustomDays, ConcurrencyLimit: payload.ConcurrencyLimit, DefaultGroupID: payload.DefaultGroupID,
 		TagIDs: payload.TagIDs, Enabled: enabled, SortOrder: payload.SortOrder,
 	})
 	if err != nil {

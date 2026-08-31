@@ -28,17 +28,17 @@ func (s *PostgresStore) CreateProductServiceTermTx(ctx context.Context, tx *sql.
 	var baselineUpload, baselineDownload sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
-    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry,
+    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry, concurrency_limit,
     start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id,
     accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
     accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid, $2::uuid, NULLIF($3,'')::uuid, $4, $5, $6,
-    $7, $8, $9, $10, $11, COALESCE(NULLIF($12,''),'initial'), NULLIF($13,'')::uuid,
-    $14, $15, $16, $17, $18
+    $1::uuid, $2::uuid, NULLIF($3,'')::uuid, $4, $5, $6, $7,
+    $8, $9, $10, $11, $12, COALESCE(NULLIF($13,''),'initial'), NULLIF($14,'')::uuid,
+    $15, $16, $17, $18, $19
 )
 RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
-          duration_seconds, no_expiry, start_policy, purchased_at, starts_at,
+          duration_seconds, no_expiry, concurrency_limit, start_policy, purchased_at, starts_at,
           first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text,
           accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
           accounting_baseline_upload_bytes, accounting_baseline_download_bytes, revision`,
@@ -48,6 +48,7 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		record.QuotaBytes,
 		record.DurationSeconds,
 		record.NoExpiry,
+		record.ConcurrencyLimit,
 		string(record.StartPolicy),
 		record.PurchasedAt,
 		record.StartsAt,
@@ -68,6 +69,7 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		&term.QuotaBytes,
 		&term.DurationSeconds,
 		&term.NoExpiry,
+		&term.ConcurrencyLimit,
 		&startPolicy,
 		&term.PurchasedAt,
 		&term.StartsAt,

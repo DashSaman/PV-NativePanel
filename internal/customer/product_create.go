@@ -168,6 +168,7 @@ func (s *Service) productCreateTerm(
 		record.PlanID = plan.ID
 		record.QuotaBytes = cloneInt64(plan.QuotaBytes)
 		record.NoExpiry = plan.NoExpiry
+		record.ConcurrencyLimit = cloneInt(plan.ConcurrencyLimit)
 		record.StartPolicy = plan.StartPolicy
 		if plan.NoExpiry {
 			record.DurationSeconds = 86400

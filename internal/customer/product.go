@@ -31,6 +31,7 @@ type PlanPreset struct {
 	StartPolicy      StartPolicy   `json:"start_policy"`
 	ResetStrategy    ResetStrategy `json:"reset_strategy"`
 	ResetCustomDays  int           `json:"reset_custom_days,omitempty"`
+	ConcurrencyLimit *int          `json:"concurrency_limit"`
 	DefaultGroupID   string        `json:"default_group_id,omitempty"`
 	TagIDs           []string      `json:"tag_ids,omitempty"`
 	Enabled          bool          `json:"enabled"`
@@ -39,14 +40,15 @@ type PlanPreset struct {
 }
 
 type ServiceSnapshot struct {
-	PlanID          string
-	QuotaBytes      *int64
-	DurationSeconds int64
-	NoExpiry        bool
-	StartPolicy     StartPolicy
-	PurchasedAt     time.Time
-	ResetStrategy   ResetStrategy
-	ResetCustomDays int
+	PlanID           string
+	QuotaBytes       *int64
+	DurationSeconds  int64
+	NoExpiry         bool
+	StartPolicy      StartPolicy
+	PurchasedAt      time.Time
+	ResetStrategy    ResetStrategy
+	ResetCustomDays  int
+	ConcurrencyLimit *int
 }
 
 func (p PlanPreset) Validate() error {
@@ -71,6 +73,9 @@ func (p PlanPreset) Validate() error {
 	default:
 		return ErrInvalidValidityMode
 	}
+	if p.ConcurrencyLimit != nil && *p.ConcurrencyLimit <= 0 {
+		return errors.New("customer: concurrency limit must be positive or null for Unlimited")
+	}
 	switch p.ResetStrategy {
 	case ResetNone, ResetDaily, ResetWeekly, ResetMonthly, ResetYearly:
 		if p.ResetCustomDays != 0 {
@@ -92,15 +97,21 @@ func (p PlanPreset) ServiceSnapshot(now time.Time) ServiceSnapshot {
 		value := *quota
 		quota = &value
 	}
+	var concurrencyLimit *int
+	if p.ConcurrencyLimit != nil {
+		value := *p.ConcurrencyLimit
+		concurrencyLimit = &value
+	}
 	return ServiceSnapshot{
-		PlanID:          p.ID,
-		QuotaBytes:      quota,
-		DurationSeconds: p.ValiditySeconds,
-		NoExpiry:        p.NoExpiry,
-		StartPolicy:     p.StartPolicy,
-		PurchasedAt:     now.UTC(),
-		ResetStrategy:   p.ResetStrategy,
-		ResetCustomDays: p.ResetCustomDays,
+		PlanID:           p.ID,
+		QuotaBytes:       quota,
+		DurationSeconds:  p.ValiditySeconds,
+		NoExpiry:         p.NoExpiry,
+		StartPolicy:      p.StartPolicy,
+		PurchasedAt:      now.UTC(),
+		ResetStrategy:    p.ResetStrategy,
+		ResetCustomDays:  p.ResetCustomDays,
+		ConcurrencyLimit: concurrencyLimit,
 	}
 }
 

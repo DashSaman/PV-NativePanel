@@ -29,7 +29,7 @@ func (s *PostgresStore) ListPlansTx(ctx context.Context, tx *sql.Tx) ([]PlanPres
 	rows, err := tx.QueryContext(ctx, `
 SELECT id::text, name, quota_bytes,
        CASE WHEN no_expiry THEN 0 ELSE duration_seconds END,
-       no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0),
+       no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0), concurrency_limit,
        COALESCE(default_group_id::text,''), enabled, sort_order
 FROM pvnaive.plans
 WHERE status <> 'archived'
@@ -44,7 +44,7 @@ ORDER BY enabled DESC, sort_order ASC, name ASC`)
 		var startPolicy, resetStrategy string
 		if err := rows.Scan(
 			&plan.ID, &plan.Name, &plan.QuotaBytes, &plan.ValiditySeconds,
-			&plan.NoExpiry, &startPolicy, &resetStrategy, &plan.ResetCustomDays,
+			&plan.NoExpiry, &startPolicy, &resetStrategy, &plan.ResetCustomDays, &plan.ConcurrencyLimit,
 			&plan.DefaultGroupID, &plan.Enabled, &plan.SortOrder,
 		); err != nil {
 			return nil, fmt.Errorf("customer: scan plan: %w", err)
@@ -85,21 +85,21 @@ SELECT EXISTS(
 INSERT INTO pvnaive.plans (
     tenant_id, code, name, status, protocol_id, quota_bytes, duration_seconds,
     base_price_minor, currency, start_policy, no_expiry, reset_strategy,
-    reset_custom_days, enabled, sort_order, default_group_id
+    reset_custom_days, concurrency_limit, enabled, sort_order, default_group_id
 ) VALUES (
     $1::uuid, $2, $3, 'active', 'naive', $4, $5,
-    0, 'USD', $6, $7, $8, NULLIF($9,0), $10, $11, NULLIF($12,'')::uuid
+    0, 'USD', $6, $7, $8, NULLIF($9,0), $10, $11, $12, NULLIF($13,'')::uuid
 )
 RETURNING id::text, name, quota_bytes,
           CASE WHEN no_expiry THEN 0 ELSE duration_seconds END,
-          no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0),
+          no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0), concurrency_limit,
           default_group_id::text, enabled, sort_order`,
 		tenantID, code, plan.Name, plan.QuotaBytes, duration, string(plan.StartPolicy),
-		plan.NoExpiry, string(plan.ResetStrategy), plan.ResetCustomDays, plan.Enabled,
+		plan.NoExpiry, string(plan.ResetStrategy), plan.ResetCustomDays, plan.ConcurrencyLimit, plan.Enabled,
 		plan.SortOrder, plan.DefaultGroupID,
 	).Scan(
 		&out.ID, &out.Name, &out.QuotaBytes, &out.ValiditySeconds, &out.NoExpiry,
-		&startPolicy, &resetStrategy, &out.ResetCustomDays, &groupID, &out.Enabled, &out.SortOrder,
+		&startPolicy, &resetStrategy, &out.ResetCustomDays, &out.ConcurrencyLimit, &groupID, &out.Enabled, &out.SortOrder,
 	)
 	if err != nil {
 		return PlanPreset{}, fmt.Errorf("customer: create plan: %w", err)
