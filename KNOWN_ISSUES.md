@@ -12,29 +12,24 @@ This file contains only current gaps or intentionally retained historical closur
 - The revoked-token reuse path is now reachable without weakening refresh-hash validation, family revocation remains server-side, rollback restores the schema17 rotate function, and the auth regression/CI gates are green.
 - Main CI run `33406624501` completed successfully on 2026-08-31. Reopen only on a concrete regression.
 
-### BUG-002 — Generic authenticated HTTP success can precede durable DB commit
+### CLOSED — BUG-002 Generic authenticated HTTP success could precede durable DB commit
 
-- Area: HTTP / consistency
-- Re-verified against current `internal/httpapi/server.go`.
-- Evidence:
-  - `requireAuthentication` binds a transaction, then calls `next.ServeHTTP(w,r)`.
-  - generic handlers can call `writeJSON` before transaction outcome is known.
-  - middleware then calls `bound.Tx.Commit()` and currently ignores the commit error.
-- Risk: a mutation can return HTTP success even if final DB commit fails.
-- Note: dedicated Runtime mutation saga has stronger compensation; this issue is broader generic HTTP integrity.
-- Done gate: buffered/commit-aware response boundary or equivalent design; injected commit failure must never emit success.
+- Closed by PR #47, merged as `fce39283c6449b0d1836757ee7caddb31fab9def`.
+- `requireAuthentication` now buffers authenticated handler status/headers/body until the shared transaction commits.
+- A commit failure discards the buffered response and emits a redacted HTTP 500; the success body/headers are never exposed first.
+- The response buffer intentionally does not implement `http.Flusher`, preventing authenticated handlers from bypassing the commit boundary through streaming flushes.
+- Runtime mutation finalization marks `TransactionFinalized` only after `CommitAndFinalize` succeeds.
+- Injected commit-failure/no-leak tests, `go vet`, full Go tests and race tests passed on the PR head.
+- PR-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy all passed; merged-main CI run `33426149726` also passed.
+- Reopen only on a concrete response-before-commit regression.
 
 ### CLOSED — BUG-003 DB/schema-backed readiness
 
-- Area: Operations / readiness
-- Re-verified against current `server.ready`.
-- Evidence: readiness checks configured auth store/service/MFA-key presence and returns ready, but performs no bounded current DB/schema probe.
-- Risk: process may stay “ready” after a DB/schema dependency failure.
-- Done gate: bounded DB/schema readiness probe + timeout/failure tests; no secret leakage.
+- Main includes a bounded DB/schema-backed readiness probe and Production readiness evidence is green.
+- Failure paths are fail-closed and do not disclose database details or secrets.
+- Reopen only on a concrete readiness regression.
 
 ## P0 accounting / enforcement gaps
-
-Closed evidence: main includes DB/schema-backed readiness and Production `/api/v1/health/ready` currently reports `{db:ok,schema:ok,ready:true}`. Do not reopen without a real readiness regression.
 
 ### ACCOUNTING-001 — Legacy/adopted accounting baseline policy needs explicit truth
 
@@ -69,9 +64,11 @@ Closed evidence: main includes DB/schema-backed readiness and Production `/api/v
 
 Task12 active-session listing is integrated and deployed at schema17 with trusted Caddy `RemoteAddr`, exact session bytes/timestamps and tenant-scoped projection. Remaining gap is Task13: an exact one-session disconnect primitive plus confirmation/audit. Do not fake this by revoking the whole credential or restarting/reloading Caddy.
 
-### SESSION-002 — Concurrent-session and simultaneous unique-IP limits are not enforced
+### SESSION-002 — Simultaneous unique-IP limit remains
 
-Must use trustworthy active-session semantics and include race/reconnect tests.
+Task14 concurrent-session limit is deployed at schema19 with PostgreSQL race/reconnect proof and Production evidence in `ops/evidence/TASK14-20260831-concurrent-session-limit-production-pass.md`.
+
+Task15 remains open. A schema20 candidate was rejected before publication because it attempted to count `direct_naive_accounting_sessions.client_ip`, while the authoritative trusted peer IP delivered by Task12 is stored in `direct_naive_accounting_session_peers`, and the proposed new ingest IP parameter was not actually wired from the pinned forwardproxy/Telemetry boundary. The final design must enforce from trusted Caddy `RemoteAddr`, before payload forwarding, with PostgreSQL race proof and without fabricating identity from client headers.
 
 ### SESSION-003 — HWID identity is not proven
 
@@ -106,9 +103,7 @@ Done gate: fresh branch from latest main, inspect/extract unit-by-unit, preserve
 
 ### OPS-002 — Scheduled backup is not active on Production
 
-- backup files exist under the PVNaive backup root;
-- during 2026-08-30 read-only audit only the DB-health timer was observed; no PVNaive scheduled-backup timer.
-- Done gate: encrypted scheduled backup + retention + verification + restore drill + Production timer evidence.
+Historical note: this statement was true during the 2026-08-30 pre-Task4 audit. Later Task4 Production evidence records encrypted backup and restore-drill timers active. Retention/product-policy work remains separate and should not be confused with absence of the timer.
 
 ### OPS-003 — Production root filesystem was 79% used
 
@@ -116,13 +111,11 @@ Before large backup/load-test/artifact operations, re-check free space and set w
 
 ### OPS-004 — Deployment provenance markers are stale/inconsistent
 
-`DEPLOYED_COMMIT` / web marker information lags newer binary/web mtimes. Runtime behavior is currently healthy, but marker data is not sufficient for signed/reproducible release provenance.
+Historical pre-Task4 marker drift was repaired by guarded release tooling. Continue to verify exact deployed revision/build markers before each Production mutation; do not infer provenance only from mtimes.
 
-Done gate: one trustworthy deployed revision/build ID covering API/web/runtime artifacts and independently verifiable against the running installation.
+### OPS-005 — System monitoring/logs/Doctor product completion remains partial
 
-### OPS-005 — System monitoring/logs/Doctor are not in current main
-
-Customer dashboard exists, but real CPU/RAM/disk/network history, application/runtime/security log UI, request diagnostics/support bundle and Doctor remain to integrate/rebuild.
+Live system monitoring, Doctor and support-bundle foundations are deployed, but historical charts and full operator log explorer/product pages remain incomplete.
 
 ## Notification/API gaps
 
@@ -136,9 +129,9 @@ Schema/foundations do not equal delivery. Need event producers, preferences, out
 
 Rule: route declaration must never be used as parity evidence.
 
-### API-002 — OpenAPI/Swagger and webhooks are not current-main product capabilities
+### API-002 — OpenAPI/webhook product completion remains partial
 
-PR #16 has an OpenAPI candidate. Webhooks should wait for stable event contracts.
+A ready-route OpenAPI foundation exists from Task4. Broader API stabilization and webhooks should wait for stable event contracts.
 
 ## Security gaps
 
@@ -182,16 +175,9 @@ Need 50/100/200/400+ campaign measuring CPU/RAM/disk/PostgreSQL/connections/Cadd
 
 ## CI / governance gaps
 
-### CI-001 — PR #26 final-head workflow failures required reproduction
-
-- PR #26 final bot head recorded CI + WS1 workflow failures.
-- its immediately preceding human commit and prior bot commit passed all three.
-- Lead PR #27 was created from exact current main to reproduce the baseline rather than guessing.
-- exact final reconciliation head still requires all required workflows green before merge.
-
 ### DOCS-001 — Legacy documentation drift
 
-This reconciliation updates canonical files, but older stage/design/evidence documents remain historical snapshots. They should not be rewritten merely to look current; where needed they must be labeled historical/superseded.
+Canonical files are being reconciled to current evidence, but older stage/design/evidence documents remain historical snapshots. They should not be rewritten merely to look current; where needed they must be labeled historical/superseded.
 
 ## Closed / no longer open
 
