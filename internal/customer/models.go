@@ -21,6 +21,7 @@ type ServiceTerm struct {
 	QuotaBytes         *int64             `json:"quota_bytes"`
 	DurationSeconds    int64              `json:"duration_seconds"`
 	NoExpiry           bool               `json:"no_expiry"`
+	ConcurrencyLimit   *int               `json:"concurrency_limit"`
 	StartPolicy        StartPolicy        `json:"start_policy"`
 	PurchasedAt        time.Time          `json:"purchased_at"`
 	StartsAt           *time.Time         `json:"starts_at,omitempty"`
@@ -138,6 +139,7 @@ type CreateServiceTermRecord struct {
 	QuotaBytes         *int64
 	DurationSeconds    int64
 	NoExpiry           bool
+	ConcurrencyLimit   *int
 	StartPolicy        StartPolicy
 	PurchasedAt        time.Time
 	StartsAt           *time.Time

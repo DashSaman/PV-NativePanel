@@ -29,6 +29,11 @@ describe("operator UI cleanup contract", () => {
     expect(catalog).toContain("showPlanForm");
   });
 
+  it("exposes enforced concurrent-session Unlimited/N in the plan editor", () => {
+    expect(catalog).toContain("concurrency_limit");
+    expect(catalog).toContain("اتصال همزمان");
+  });
+
   it("separates the human account page from the machine subscription endpoint", () => {
     expect(customers).toContain("account_page_path");
     expect(customers).toContain("صفحه اشتراک کاربر");

@@ -130,6 +130,7 @@ func TestPostgresStoreCreatesDirectUserAndServiceTerm(t *testing.T) {
 	now := time.Date(2026, 8, 29, 12, 0, 0, 0, time.UTC)
 	expires := now.Add(30 * 24 * time.Hour)
 	quota := int64(50 * BytesPerCustomerGB)
+	concurrency := 2
 	zeroUpload, zeroDownload := int64(0), int64(0)
 	baseline := AccountingBaseline{
 		State: AccountingBaselineKnown, Source: AccountingBaselineFreshManagedTerm, CutoffAt: now,
@@ -138,7 +139,7 @@ func TestPostgresStoreCreatesDirectUserAndServiceTerm(t *testing.T) {
 	conn := &customerScriptConn{queries: []customerScriptQuery{
 		{contains: "FROM pvnaive.tenants", columns: []string{"id"}, values: []driver.Value{"tenant-direct"}},
 		{contains: "INSERT INTO pvnaive.users", columns: []string{"id", "tenant_id", "username", "display_name", "status", "revision", "created_at", "updated_at"}, values: []driver.Value{"user-1", "tenant-direct", "customer1", "Customer One", "active", int64(1), now, now}},
-		{contains: "INSERT INTO pvnaive.service_terms", columns: []string{"id", "tenant_id", "user_id", "quota_bytes", "duration_seconds", "start_policy", "purchased_at", "starts_at", "first_connected_at", "expires_at", "state", "accounting_baseline_state", "accounting_baseline_source", "accounting_baseline_cutoff_at", "accounting_baseline_upload_bytes", "accounting_baseline_download_bytes", "revision"}, values: []driver.Value{"term-1", "tenant-direct", "user-1", quota, int64(2592000), "on_creation", now, now, nil, expires, "active", "known", "fresh_managed_term", now, int64(0), int64(0), int64(1)}},
+		{contains: "INSERT INTO pvnaive.service_terms", columns: []string{"id", "tenant_id", "user_id", "quota_bytes", "concurrency_limit", "duration_seconds", "start_policy", "purchased_at", "starts_at", "first_connected_at", "expires_at", "state", "accounting_baseline_state", "accounting_baseline_source", "accounting_baseline_cutoff_at", "accounting_baseline_upload_bytes", "accounting_baseline_download_bytes", "revision"}, values: []driver.Value{"term-1", "tenant-direct", "user-1", quota, int64(concurrency), int64(2592000), "on_creation", now, now, nil, expires, "active", "known", "fresh_managed_term", now, int64(0), int64(0), int64(1)}},
 	}, execs: []string{"INSERT INTO pvnaive.user_runtime_credentials"}}
 	tx := newCustomerStoreTx(t, conn)
 	store := NewPostgresStore()
@@ -152,7 +153,7 @@ func TestPostgresStoreCreatesDirectUserAndServiceTerm(t *testing.T) {
 		t.Fatalf("CreateUserTx() = %#v, %v", user, err)
 	}
 	term, err := store.CreateServiceTermTx(context.Background(), tx, CreateServiceTermRecord{
-		TenantID: tenantID, UserID: user.ID, QuotaBytes: &quota, DurationSeconds: 2592000,
+		TenantID: tenantID, UserID: user.ID, QuotaBytes: &quota, ConcurrencyLimit: &concurrency, DurationSeconds: 2592000,
 		StartPolicy: StartOnCreation, PurchasedAt: now, StartsAt: &now, ExpiresAt: &expires, State: TermActive,
 		AccountingBaseline: baseline,
 	})
@@ -160,6 +161,9 @@ func TestPostgresStoreCreatesDirectUserAndServiceTerm(t *testing.T) {
 		t.Fatalf("CreateServiceTermTx() = %#v, %v", term, err)
 	}
 	assertKnownZeroBaseline(t, term.AccountingBaseline, now)
+	if term.ConcurrencyLimit == nil || *term.ConcurrencyLimit != concurrency {
+		t.Fatalf("ConcurrencyLimit = %v, want %d", term.ConcurrencyLimit, concurrency)
+	}
 	if err := store.BindRuntimeCredentialTx(context.Background(), tx, tenantID, user.ID, term.ID, "runtime-1"); err != nil {
 		t.Fatalf("BindRuntimeCredentialTx() error = %v", err)
 	}

@@ -68,6 +68,7 @@ export type ProductPlan = {
   start_policy: "on_creation" | "on_first_successful_connection";
   reset_strategy: "none" | "daily" | "weekly" | "monthly" | "yearly" | "custom";
   reset_custom_days?: number;
+  concurrency_limit: number | null;
   default_group_id?: string;
   tag_ids?: string[];
   enabled: boolean;
@@ -361,7 +362,7 @@ export async function listProductPlans(fetcher: Fetcher = fetch): Promise<Produc
 export async function createProductPlan(input: {
   name: string; quota_gb?: number; unlimited_quota?: boolean; validity_days?: number; no_expiry?: boolean;
   start_policy: "on_creation" | "on_first_successful_connection"; reset_strategy: ProductPlan["reset_strategy"];
-  reset_custom_days?: number; default_group_id?: string; tag_ids?: string[]; enabled?: boolean; sort_order?: number;
+  reset_custom_days?: number; concurrency_limit?: number | null; default_group_id?: string; tag_ids?: string[]; enabled?: boolean; sort_order?: number;
 }, fetcher: Fetcher = fetch): Promise<ProductPlan> {
   const body = await requestJSON("/api/v1/plans", {
     method: "POST", headers: csrfHeaders(), body: JSON.stringify(input),

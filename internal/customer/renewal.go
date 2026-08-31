@@ -53,6 +53,7 @@ type CreateRenewalTermRecord struct {
 	QuotaBytes         *int64
 	DurationSeconds    int64
 	NoExpiry           bool
+	ConcurrencyLimit   *int
 	StartPolicy        StartPolicy
 	PurchasedAt        time.Time
 	StartsAt           *time.Time
@@ -148,6 +149,7 @@ func (s *Service) resolveRenewalRecord(ctx context.Context, tx *sql.Tx, store re
 		base.QuotaBytes = cloneInt64(current.Current.QuotaBytes)
 		base.DurationSeconds = current.Current.DurationSeconds
 		base.NoExpiry = current.Current.NoExpiry
+		base.ConcurrencyLimit = cloneInt(current.Current.ConcurrencyLimit)
 		base.StartPolicy = current.Current.StartPolicy
 		base.RenewalKind = string(RenewalCurrent)
 		applyRenewalTiming(&base, now)
@@ -239,6 +241,7 @@ func applyPlanToRenewal(record *CreateRenewalTermRecord, plan PlanPreset) {
 	record.PlanID = plan.ID
 	record.QuotaBytes = cloneInt64(plan.QuotaBytes)
 	record.NoExpiry = plan.NoExpiry
+	record.ConcurrencyLimit = cloneInt(plan.ConcurrencyLimit)
 	record.StartPolicy = plan.StartPolicy
 	if plan.NoExpiry {
 		record.DurationSeconds = 86400
@@ -272,6 +275,14 @@ func nextPlanEligible(term ServiceTerm, now time.Time) bool {
 		return true
 	}
 	return term.ExpiresAt != nil && !term.ExpiresAt.After(now)
+}
+
+func cloneInt(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 func cloneInt64(value *int64) *int64 {
