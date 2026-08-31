@@ -100,6 +100,7 @@ jobs:
               bash tests/stages/S06_owner_upgrade_contract_test.sh
               bash tests/db/lib_test.sh
               bash tests/db/migration_test.sh
+              bash tests/db/auth_refresh_reuse_test.sh
               bash tests/db/health_test.sh
               bash tests/db/backup_restore_test.sh
               bash tests/db/backup_collision_test.sh
@@ -207,7 +208,7 @@ jobs:
           docker run --rm \
             --network host \
             --env PGPASSWORD=pvnaive-ci-only \
-            --env PVNAIVE_EXPECTED_SCHEMA_VERSION=17 \
+            --env PVNAIVE_EXPECTED_SCHEMA_VERSION=18 \
             --env PVNAIVE_DB_HOST=127.0.0.1 \
             --env PVNAIVE_DB_PORT=5432 \
             --env PVNAIVE_DB_USER=postgres \

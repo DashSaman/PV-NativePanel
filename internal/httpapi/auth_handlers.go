@@ -87,18 +87,16 @@ func (s *server) refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	oldHash := auth.HashOpaqueToken(cookie.Value)
-	bound, err := s.config.AuthStore.BeginAuthenticated(r.Context(), oldHash[:])
+	refreshMetadata, err := s.config.AuthStore.LoadRefreshSessionMetadata(r.Context(), oldHash[:])
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, envelope{"code": "authentication_failed", "message": "Authentication failed."})
 		return
 	}
-	if err := validateCSRF(r, bound.Session.CSRFTokenHash); err != nil {
-		_ = bound.Tx.Rollback()
+	if err := validateCSRF(r, refreshMetadata.CSRFTokenHash); err != nil {
 		writeJSON(w, http.StatusForbidden, envelope{"code": "csrf_failed", "message": "Request validation failed."})
 		return
 	}
-	absolute := bound.Session.AbsoluteExpiresAt
-	_ = bound.Tx.Rollback()
+	absolute := refreshMetadata.AbsoluteExpiresAt
 
 	newRaw, newHash, err := auth.NewOpaqueToken()
 	if err != nil {

@@ -26,14 +26,14 @@ PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-sch
 grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=3' "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
-PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 17 >/dev/null
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=17' "${env_file}"
+PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 18 >/dev/null
+grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=18' "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
-if PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 18 >/dev/null 2>&1; then
+if PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 19 >/dev/null 2>&1; then
   echo 'ERROR: unsupported schema version was accepted' >&2
   exit 1
 fi
 
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=17' "${env_file}"
+grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=18' "${env_file}"
 echo 'S04_DB_ENV_VERSION_TEST=PASSED'
