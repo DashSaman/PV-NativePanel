@@ -46,12 +46,15 @@ if [[ ! -f "${repo_root}/dist/ws1-accounting/caddy-pvnaive-accounting" ]]; then
   exit 1
 fi
 cp -a "${repo_root}/dist/ws1-accounting/caddy-pvnaive-accounting" "${bundle_root}/caddy/caddy-pvnaive-accounting"
-cp -a "${repo_root}/dist/ws1-accounting/caddy-pvnaive-accounting.sha256" "${bundle_root}/caddy/caddy-pvnaive-accounting.sha256"
 cp -a "${repo_root}/dist/ws1-accounting/PROVENANCE.txt" "${bundle_root}/PROVENANCE.txt"
 cp -a "${repo_root}/dist/ws1-accounting/caddy.version.txt" "${bundle_root}/caddy/caddy.version.txt"
 cp -a "${repo_root}/dist/ws1-accounting/caddy.buildinfo.txt" "${bundle_root}/caddy/caddy.buildinfo.txt"
 
 accounting_caddy_sha="$(sha256sum "${bundle_root}/caddy/caddy-pvnaive-accounting" | awk '{print $1}')"
+# Normalize the copied artifact manifest to the bundle-local basename. The build
+# workspace path is intentionally not part of release provenance and the upgrade
+# gate consumes this exact bundle-local form.
+printf '%s  %s\n' "${accounting_caddy_sha}" 'caddy-pvnaive-accounting' >"${bundle_root}/caddy/caddy-pvnaive-accounting.sha256"
 candidate_manifest_sha="$(awk '{print $1}' "${bundle_root}/caddy/caddy-pvnaive-accounting.sha256")"
 [[ "${accounting_caddy_sha}" == "${candidate_manifest_sha}" ]] || {
   echo "ERROR: accounting Caddy SHA ${accounting_caddy_sha} does not match manifest ${candidate_manifest_sha}" >&2
