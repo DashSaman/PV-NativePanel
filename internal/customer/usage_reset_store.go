@@ -129,27 +129,27 @@ FROM pvnaive.direct_naive_accounting_reset($1::uuid,$2,$3)`, serviceTermID, rese
 	return out, nil
 }
 
-func (s *PostgresStore) AppendUsageResetEventTx(ctx context.Context, tx *sql.Tx, target UsageResetTarget, actorID, mutationID string, reset AccountingResetResult) (UsageResetEvent, error) {
-	if tx == nil || !reset.Resettable {
+func (s *PostgresStore) AppendUsageResetEventTx(ctx context.Context, tx *sql.Tx, target UsageResetTarget, actorID, mutationID string, reason UsageResetReason, reset AccountingResetResult) (UsageResetEvent, error) {
+	if tx == nil || !reset.Resettable || (reason != UsageResetManual && reason != UsageResetBulk && reason != UsageResetScheduled) {
 		return UsageResetEvent{}, errors.New("customer: valid usage reset result is required")
 	}
 	var event UsageResetEvent
-	var reason string
+	var reasonText string
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.direct_naive_accounting_reset_events (
     tenant_id,user_id,service_term_id,actor_id,customer_mutation_key_id,reason,reset_at,
     previous_upload_bytes,previous_download_bytes,previous_used_bytes
-) VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'manual',$6,$7,$8,$9)
+) VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6,$7,$8,$9,$10)
 RETURNING id::text,tenant_id::text,user_id::text,service_term_id::text,actor_id::text,
           customer_mutation_key_id::text,reason,reset_at,previous_upload_bytes,previous_download_bytes,previous_used_bytes`,
-		target.TenantID, target.UserID, target.ServiceTermID, actorID, mutationID, reset.ResetAt.UTC(),
+		target.TenantID, target.UserID, target.ServiceTermID, actorID, mutationID, string(reason), reset.ResetAt.UTC(),
 		reset.PreviousUploadBytes, reset.PreviousDownloadBytes, reset.PreviousUsedBytes,
 	).Scan(&event.ID, &event.TenantID, &event.UserID, &event.ServiceTermID, &event.ActorID,
-		&event.MutationKeyID, &reason, &event.ResetAt, &event.PreviousUploadBytes,
+		&event.MutationKeyID, &reasonText, &event.ResetAt, &event.PreviousUploadBytes,
 		&event.PreviousDownloadBytes, &event.PreviousUsedBytes); err != nil {
 		return UsageResetEvent{}, fmt.Errorf("customer: append usage reset event: %w", err)
 	}
-	event.Reason = UsageResetReason(reason)
+	event.Reason = UsageResetReason(reasonText)
 	if _, err := tx.ExecContext(ctx, `
 UPDATE pvnaive.customer_mutation_keys
 SET completed_at=clock_timestamp()

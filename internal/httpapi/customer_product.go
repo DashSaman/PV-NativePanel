@@ -391,6 +391,10 @@ func (s *server) previewCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_bulk", "message": "Invalid bulk request."})
 		return
 	}
+	if !bulkActionAllowed(authenticated.Bound.Principal.Role, request.Action) {
+		writeJSON(w, http.StatusForbidden, envelope{"code": "forbidden", "message": "This bulk action requires owner access."})
+		return
+	}
 	operation, err := s.config.CustomerService.PreviewBulk(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, key, request, s.config.AuthStore != nil)
 	if err != nil {
 		status := http.StatusBadRequest
@@ -418,6 +422,13 @@ func bulkItemIdempotencyKey(parent string, action customer.BulkAction, userID st
 	return "bulk-item-" + hex.EncodeToString(sum[:])
 }
 
+func bulkActionAllowed(role string, action customer.BulkAction) bool {
+	if action == customer.BulkResetUsage {
+		return role == "owner"
+	}
+	return true
+}
+
 func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 	authenticated, ok := authenticatedFromRequest(r)
 	if !ok || s.config.CustomerService == nil {
@@ -434,6 +445,10 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, envelope{"code": "invalid_bulk", "message": "Invalid bulk request."})
 		return
 	}
+	if !bulkActionAllowed(authenticated.Bound.Principal.Role, request.Action) {
+		writeJSON(w, http.StatusForbidden, envelope{"code": "forbidden", "message": "This bulk action requires owner access."})
+		return
+	}
 	operation, err := s.config.CustomerService.LoadBulk(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, key, request)
 	if err != nil {
 		status := http.StatusBadRequest
@@ -447,7 +462,7 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, envelope{"bulk": operation})
 		return
 	}
-	if !customer.IsRuntimeBulkAction(operation.Action) {
+	if !customer.IsPerItemBulkAction(operation.Action) {
 		operation, err = s.config.CustomerService.ExecuteDatabaseBulk(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, key, operation)
 		if err != nil {
 			writeJSON(w, http.StatusConflict, envelope{"code": "bulk_execute_failed", "message": "Bulk operation could not be executed atomically."})
@@ -457,7 +472,7 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.config.AuthStore == nil || len(operation.Preview.Conflicts) > 0 {
-		writeJSON(w, http.StatusConflict, envelope{"code": "bulk_runtime_unavailable", "message": "Runtime bulk coordinator is unavailable."})
+		writeJSON(w, http.StatusConflict, envelope{"code": "bulk_item_coordinator_unavailable", "message": "Per-item bulk coordinator is unavailable."})
 		return
 	}
 
@@ -483,6 +498,7 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		}
 		itemKey := bulkItemIdempotencyKey(key, operation.Action, userID)
 		var itemErr error
+		itemReplay := false
 		switch operation.Action {
 		case customer.BulkEnable:
 			_, itemErr = s.config.CustomerService.ResumeCustomer(r.Context(), bound.Tx, bound.Principal.ActorID, itemKey, userID)
@@ -493,6 +509,13 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		case customer.BulkReissueSubscription:
 			_, itemErr = s.config.CustomerService.RotateSubscription(r.Context(), bound.Tx, bound.Principal.ActorID, itemKey, userID)
 			if itemErr == nil {
+				itemErr = bound.Tx.Commit()
+			}
+		case customer.BulkResetUsage:
+			var resetResult customer.UsageResetResult
+			resetResult, itemErr = s.config.CustomerService.ResetCustomerUsageForBulk(r.Context(), bound.Tx, bound.Principal.ActorID, itemKey, userID)
+			if itemErr == nil {
+				itemReplay = resetResult.IdempotentReplay
 				itemErr = bound.Tx.Commit()
 			}
 		default:
@@ -510,7 +533,11 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		result.Succeeded++
-		result.Items = append(result.Items, customer.BulkItemResult{ID: userID, Status: "succeeded"})
+		if itemReplay {
+			result.Items = append(result.Items, customer.BulkItemResult{ID: userID, Status: "succeeded", Reason: "idempotent_replay"})
+		} else {
+			result.Items = append(result.Items, customer.BulkItemResult{ID: userID, Status: "succeeded"})
+		}
 	}
 
 	finalBound, err := s.config.AuthStore.BeginAuthenticated(r.Context(), sessionHash[:])
@@ -518,7 +545,7 @@ func (s *server) executeCustomerBulk(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "bulk_finalize_failed", "message": "Bulk items ran but the execution ledger could not be finalized; retry with the same key."})
 		return
 	}
-	operation, err = s.config.CustomerService.MarkRuntimeBulkExecuted(r.Context(), finalBound.Tx, finalBound.Principal.ActorID, key, result)
+	operation, err = s.config.CustomerService.MarkRuntimeBulkExecuted(r.Context(), finalBound.Tx, finalBound.Principal.ActorID, key, operation.Action, result)
 	if err != nil {
 		_ = finalBound.Tx.Rollback()
 		writeJSON(w, http.StatusServiceUnavailable, envelope{"code": "bulk_finalize_failed", "message": "Bulk items ran but the execution ledger could not be finalized; retry with the same key."})

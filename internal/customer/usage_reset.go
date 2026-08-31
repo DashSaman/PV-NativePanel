@@ -72,16 +72,27 @@ type usageResetStore interface {
 	ClaimUsageResetTx(context.Context, *sql.Tx, UsageResetTarget, string, string, []byte) (string, bool, error)
 	UsageResetEventByMutationKeyTx(context.Context, *sql.Tx, string) (UsageResetEvent, error)
 	ResetDirectAccountingTx(context.Context, *sql.Tx, string, time.Time, time.Duration) (AccountingResetResult, error)
-	AppendUsageResetEventTx(context.Context, *sql.Tx, UsageResetTarget, string, string, AccountingResetResult) (UsageResetEvent, error)
+	AppendUsageResetEventTx(context.Context, *sql.Tx, UsageResetTarget, string, string, UsageResetReason, AccountingResetResult) (UsageResetEvent, error)
 	AppendUsageResetAuditTx(context.Context, *sql.Tx, UsageResetEvent) error
 }
 
 func (s *Service) ResetCustomerUsage(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey, userID string) (UsageResetResult, error) {
+	return s.resetCustomerUsage(ctx, tx, actorID, idempotencyKey, userID, UsageResetManual)
+}
+
+func (s *Service) ResetCustomerUsageForBulk(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey, userID string) (UsageResetResult, error) {
+	return s.resetCustomerUsage(ctx, tx, actorID, idempotencyKey, userID, UsageResetBulk)
+}
+
+func (s *Service) resetCustomerUsage(ctx context.Context, tx *sql.Tx, actorID, idempotencyKey, userID string, reason UsageResetReason) (UsageResetResult, error) {
 	if s == nil || s.store == nil || strings.TrimSpace(actorID) == "" || strings.TrimSpace(userID) == "" {
 		return UsageResetResult{}, ErrUsageResetUnavailable
 	}
 	if len(idempotencyKey) < 8 || len(idempotencyKey) > 160 || strings.TrimSpace(idempotencyKey) != idempotencyKey {
 		return UsageResetResult{}, errors.New("customer: invalid usage reset idempotency key")
+	}
+	if reason != UsageResetManual && reason != UsageResetBulk && reason != UsageResetScheduled {
+		return UsageResetResult{}, ErrUsageResetUnavailable
 	}
 	store, ok := s.store.(usageResetStore)
 	if !ok {
@@ -91,7 +102,11 @@ func (s *Service) ResetCustomerUsage(ctx context.Context, tx *sql.Tx, actorID, i
 	if err != nil {
 		return UsageResetResult{}, err
 	}
-	requestHash := sha256.Sum256([]byte("customer.usage.reset\n" + target.UserID + "\n" + target.ServiceTermID))
+	hashDomain := "customer.usage.reset"
+	if reason != UsageResetManual {
+		hashDomain += "." + string(reason)
+	}
+	requestHash := sha256.Sum256([]byte(hashDomain + "\n" + target.UserID + "\n" + target.ServiceTermID))
 	mutationID, claimed, err := store.ClaimUsageResetTx(ctx, tx, target, actorID, idempotencyKey, requestHash[:])
 	if err != nil {
 		return UsageResetResult{}, err
@@ -100,6 +115,9 @@ func (s *Service) ResetCustomerUsage(ctx context.Context, tx *sql.Tx, actorID, i
 		event, err := store.UsageResetEventByMutationKeyTx(ctx, tx, mutationID)
 		if err != nil {
 			return UsageResetResult{}, err
+		}
+		if event.Reason != reason {
+			return UsageResetResult{}, ErrCustomerIdempotencyConflict
 		}
 		return UsageResetResult{Event: event, IdempotentReplay: true}, nil
 	}
@@ -111,7 +129,7 @@ func (s *Service) ResetCustomerUsage(ctx context.Context, tx *sql.Tx, actorID, i
 	if !reset.Resettable {
 		return UsageResetResult{}, usageResetReasonError(reset.Reason)
 	}
-	event, err := store.AppendUsageResetEventTx(ctx, tx, target, actorID, mutationID, reset)
+	event, err := store.AppendUsageResetEventTx(ctx, tx, target, actorID, mutationID, reason, reset)
 	if err != nil {
 		return UsageResetResult{}, err
 	}

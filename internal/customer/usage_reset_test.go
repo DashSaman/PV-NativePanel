@@ -17,6 +17,7 @@ type resetTestStore struct {
 	eventCalls  int
 	auditCalls  int
 	lastHash    []byte
+	lastReason  UsageResetReason
 }
 
 func (s *resetTestStore) DirectTenantID(context.Context, *sql.Tx) (string, error) { return "", nil }
@@ -46,9 +47,12 @@ func (s *resetTestStore) ResetDirectAccountingTx(context.Context, *sql.Tx, strin
 	s.resetCalls++
 	return s.resetResult, nil
 }
-func (s *resetTestStore) AppendUsageResetEventTx(context.Context, *sql.Tx, UsageResetTarget, string, string, AccountingResetResult) (UsageResetEvent, error) {
+func (s *resetTestStore) AppendUsageResetEventTx(_ context.Context, _ *sql.Tx, _ UsageResetTarget, _ string, _ string, reason UsageResetReason, _ AccountingResetResult) (UsageResetEvent, error) {
 	s.eventCalls++
-	return s.event, nil
+	s.lastReason = reason
+	event := s.event
+	event.Reason = reason
+	return event, nil
 }
 func (s *resetTestStore) AppendUsageResetAuditTx(context.Context, *sql.Tx, UsageResetEvent) error {
 	s.auditCalls++
@@ -81,7 +85,7 @@ func TestResetCustomerUsageReplayReturnsStoredEventWithoutSecondReset(t *testing
 	store := &resetTestStore{
 		target:  UsageResetTarget{TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1"},
 		claimed: false, mutationID: "mutation-1",
-		event: UsageResetEvent{ID: "reset-1", MutationKeyID: "mutation-1", ResetAt: now},
+		event: UsageResetEvent{ID: "reset-1", MutationKeyID: "mutation-1", Reason: UsageResetManual, ResetAt: now},
 	}
 	service := NewService(store, nil, func() time.Time { return now.Add(time.Minute) })
 	result, err := service.ResetCustomerUsage(context.Background(), nil, "owner-1", "usage-reset-0001", "user-1")
@@ -106,5 +110,26 @@ func TestResetCustomerUsageRefusesUnsafeAccountingState(t *testing.T) {
 	}
 	if store.eventCalls != 0 || store.auditCalls != 0 {
 		t.Fatal("unsafe reset appended history/audit")
+	}
+}
+
+func TestResetCustomerUsageForBulkRecordsBulkReason(t *testing.T) {
+	now := time.Date(2026, 8, 31, 10, 0, 0, 0, time.UTC)
+	store := &resetTestStore{
+		target:  UsageResetTarget{TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1"},
+		claimed: true, mutationID: "mutation-bulk-1",
+		resetResult: AccountingResetResult{Resettable: true, Reason: "reset", ServiceTermID: "term-1", TenantID: "tenant-1", UserID: "user-1", PreviousUploadBytes: 12, PreviousDownloadBytes: 34, PreviousUsedBytes: 46, ResetAt: now, ServiceState: TermActive},
+		event:       UsageResetEvent{ID: "reset-bulk-1", TenantID: "tenant-1", UserID: "user-1", ServiceTermID: "term-1", ActorID: "owner-1", MutationKeyID: "mutation-bulk-1", Reason: UsageResetBulk, ResetAt: now, PreviousUploadBytes: 12, PreviousDownloadBytes: 34, PreviousUsedBytes: 46},
+	}
+	service := NewService(store, nil, func() time.Time { return now })
+	result, err := service.ResetCustomerUsageForBulk(context.Background(), nil, "owner-1", "bulk-item-reset-0001", "user-1")
+	if err != nil {
+		t.Fatalf("ResetCustomerUsageForBulk() error = %v", err)
+	}
+	if result.Event.Reason != UsageResetBulk {
+		t.Fatalf("bulk reset reason = %q", result.Event.Reason)
+	}
+	if store.lastReason != UsageResetBulk {
+		t.Fatalf("store reset reason = %q", store.lastReason)
 	}
 }

@@ -158,4 +158,20 @@ describe("WS2 product API client", () => {
     expect((calls[0][1]?.headers as Record<string, string>)["Idempotency-Key"])
       .toBe((calls[1][1]?.headers as Record<string, string>)["Idempotency-Key"]);
   });
+
+  it("supports reset_usage as a previewed bulk action with the same execute key", async () => {
+    installCSRF();
+    const request = { action: "reset_usage" as const, customer_ids: ["u1", "u2"] };
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(async () => jsonResponse({ bulk: { id: "b-reset", status: "previewed", preview: { requested: 2, affected: 2, changes: ["reset_usage"], conflicts: [], skipped: [], invalid: [] }, request } }))
+      .mockImplementationOnce(async () => jsonResponse({ bulk: { id: "b-reset", status: "executed", preview: { requested: 2, affected: 2, changes: ["reset_usage"], conflicts: [], skipped: [], invalid: [] }, result: { succeeded: 2, failed: 0, skipped: 0, items: [] }, request } }));
+
+    const preview = await previewProductBulk(request, fetcher as typeof fetch);
+    await executeProductBulk(request, preview.idempotencyKey, fetcher as typeof fetch);
+    const calls = callsOf(fetcher);
+    expect((calls[0][1]?.headers as Record<string, string>)["Idempotency-Key"])
+      .toBe((calls[1][1]?.headers as Record<string, string>)["Idempotency-Key"]);
+  });
+
 });

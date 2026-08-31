@@ -94,7 +94,7 @@ Current `customerExtraHandler` پیاده‌سازی واقعی برای این 
 - `POST /api/v1/users/bulk/preview`
 - `POST /api/v1/users/bulk/execute`
 
-Current bulk action set شامل lifecycle/product/subscription/volume/plan/group/tag actions است. Bulk Reset Usage هنوز در action set فعلی نیست.
+Current bulk action set شامل lifecycle/product/subscription/volume/plan/group/tag actions و `reset_usage` است. `reset_usage` فقط برای Owner مجاز است، Preview و Execute باید همان `Idempotency-Key` را استفاده کنند، و اجرای هر کاربر transaction مستقل با نتیجه‌ی per-item دارد؛ Password و Subscription token در این عملیات rotate نمی‌شوند.
 
 ## Runtime Naive API
 
