@@ -1,6 +1,6 @@
 # PVNaive — Known Issues / Risks / Technical Debt
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 This file contains only current gaps or intentionally retained historical closure evidence. Do not keep obsolete statements such as “exact accounting is unproven” after the integrated WS1 + Production proof.
 
@@ -72,9 +72,9 @@ Closed evidence: main includes DB/schema-backed readiness and Production `/api/v
 
 ## P0/P1 session and limit gaps
 
-### SESSION-001 — Operator-facing customer session management is incomplete
+### SESSION-001 — Session kill remains after active-session delivery
 
-Trusted accounting sessions exist, but ready user session list/kill endpoints/UI are not integrated as a product capability.
+Task12 active-session listing is integrated and deployed at schema17 with trusted Caddy `RemoteAddr`, exact session bytes/timestamps and tenant-scoped projection. Remaining gap is Task13: an exact one-session disconnect primitive plus confirmation/audit. Do not fake this by revoking the whole credential or restarting/reloading Caddy.
 
 ### SESSION-002 — Concurrent-session and simultaneous unique-IP limits are not enforced
 
