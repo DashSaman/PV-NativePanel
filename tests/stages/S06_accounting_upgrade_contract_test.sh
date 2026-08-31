@@ -78,6 +78,24 @@ if grep -Eq '(cat|xxd|base64|od)[[:space:]].*/etc/pvnaive/runtime\.key' "${upgra
   exit 1
 fi
 
+# Accounting is compiled into the forward_proxy module; it is not a standalone
+# Caddy module. Requiring a fictitious `pvnaive_accounting` module makes a valid
+# reproducible candidate undeployable. Capability proof must instead rely on the
+# exact candidate SHA/provenance, forward_proxy module, and validation of the
+# live Caddyfile that contains pvnaive accounting directives.
+if grep -E 'list-modules.*pvnaive_accounting' "${upgrade}" >/dev/null; then
+  echo 'ERROR: S06 accounting upgrade must not require a standalone pvnaive_accounting Caddy module' >&2
+  exit 1
+fi
+for token in \
+  'bundle candidate provenance does not match manifest SHA' \
+  'bundle candidate provenance lacks reproducibility proof' \
+  'bundle candidate failed config validation' \
+  'bundle candidate forward_proxy module missing' \
+  'accounting Caddy binary SHA mismatch after install'; do
+  grep -Fq -- "${token}" "${upgrade}" || { echo "ERROR: S06 accounting capability proof missing ${token}" >&2; exit 1; }
+done
+
 echo 'S06_ACCOUNTING_UPGRADE_CONTRACT=PASSED'
 # Rollback must restore every runtime artifact/symlink changed before postflight.
 grep -Fq 'pvnaive-telemetry-agent.before' "${upgrade}" || { echo 'ERROR: telemetry agent backup/rollback missing' >&2; exit 1; }
