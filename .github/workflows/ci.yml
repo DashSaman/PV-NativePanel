@@ -116,6 +116,7 @@ jobs:
               bash tests/db/periodic_usage_reset_migration_test.sh
               bash tests/db/periodic_usage_reset_executor_test.sh
               bash tests/db/operator_session_peers_migration_test.sh
+              bash tests/db/concurrent_session_limit_migration_test.sh
               bash tests/db/run_schema_fixture_test.sh 6 tests/db/direct_subscription_migration_test.sh
               bash tests/db/subscription_token_recovery_migration_test.sh
               bash tests/auth/bootstrap_owner_test.sh
