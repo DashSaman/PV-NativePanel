@@ -6,18 +6,11 @@ This file contains only current gaps or intentionally retained historical closur
 
 ## P0 bugs
 
-### BUG-001 — Refresh-token reuse-family handling is unreachable for a revoked rotated token
+### CLOSED — BUG-001 Refresh-token reuse-family handling
 
-- Area: Auth / session security
-- Owner sequence: Security bugs
-- Re-verified against current main `a021aa4b62c35b775fb521d042b2f8e6dbde10b0`.
-- Evidence:
-  - `refresh` hashes the existing session token then calls `AuthStore.BeginAuthenticated`.
-  - `BeginAuthenticated` selects the session only with `s.revoked_at IS NULL`.
-  - only after that does the refresh flow call `RotateSession` / SQL `auth_rotate_session`.
-  - therefore reuse of an already-rotated/revoked token can fail before the SQL reuse-family branch is allowed to detect/revoke the family.
-- Risk: intended family-reuse response is not reliably reached.
-- Done gate: RED regression for reuse → minimal redesign → family revocation/audit → full auth rehearsal green.
+- Closed on main `11ef273fe5ccbebc0b96e8ce45aa97bbf13d1757` by the schema18/auth hardening merge.
+- The revoked-token reuse path is now reachable without weakening refresh-hash validation, family revocation remains server-side, rollback restores the schema17 rotate function, and the auth regression/CI gates are green.
+- Main CI run `33406624501` completed successfully on 2026-08-31. Reopen only on a concrete regression.
 
 ### BUG-002 — Generic authenticated HTTP success can precede durable DB commit
 
