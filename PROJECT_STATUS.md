@@ -1,8 +1,8 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-08-30
+Last updated: 2026-09-01
 
-This file describes current repository + Production truth. Historical S04/S05 snapshots and stale PR branches must not override it.
+This file describes the current repository + Production truth. Historical S04/S05/S06 snapshots, old task-number summaries and stale PR branches are evidence only and must not override this file, `CONTINUE_HERE.md`, the current roadmap, exact GitHub `main`, or fresh Production evidence.
 
 ## Product / architecture invariants
 
@@ -16,164 +16,123 @@ PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy
 
 Do not rotate Runtime credentials or Subscription tokens when merely editing quota/expiry or viewing Subscription/QR.
 
-## Repository state
+## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current implementation / Production release: `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`
-- Current schema head: `0011_customer_product_management` / schema 11
-- Parity reference: `docs/PANEL_PARITY_MASTER_2026-08-30.md`
-- Master Tasks #1-#4: **DONE**
-- Next task: **#5 Legacy/adopted accounting baseline truth**
+- Freshly audited main SHA: `4098e2d22a2e802d277e424a968f685f9f20e6ac`
+- Exact-main CI run `33445151447`: **SUCCESS**
+- Old draft PR #4 is unrelated to the current roadmap and must not be merged as current work.
+- Task12 active-session management: **DONE / Production**, schema17.
+- Task14 concurrent-session limit: **DONE / Production**, schema19.
+- Security Task35: **DONE in main** — BUG-001 refresh-token reuse-family handling, BUG-002 commit-before-success semantics, and BUG-003 DB/schema-backed readiness are closed in repository truth with exact-main CI green.
+- Task13 exact live-session kill: **IN PROGRESS**, reconciled/tested candidate exists and is being published byte-for-byte to GitHub before PR gates.
+- Task15 unique-IP limit: **IN PROGRESS**, schema20 redesign worker active; no accepted final report yet.
+- Task16 bounded IP/session history: **IN PROGRESS**, schema21 worker active but integration remains ordered behind stable schema20; no accepted final report yet.
 
-## Current Production truth — verified 2026-08-30
+Do not infer a task as DONE merely because a local candidate or worker report exists. Merge, exact-head verification and — when Production semantics change — guarded deployment/postflight evidence are required.
 
-No secret-bearing values were printed.
+## Production truth
 
-- host: `testAmir5-3`
-- public panel: `https://namir.softarg.ir/panel/`
-- `pvnaive-api.service`: active, observed restart count 0
-- `pvnaive-runtime-agent.service`: active, observed restart count 0
-- `pvnaive-telemetry-agent.service`: active, observed restart count 0
-- `caddy-naive.service`: active, observed restart count 0
-- PostgreSQL: active
-- API listener: loopback `127.0.0.1:8080`
-- local readiness: healthy
-- Runtime health: healthy
-- Telemetry accounting socket health: healthy
-- PostgreSQL schema: **11**
-- six active users
-- six active Naive Runtime credentials
-- six active ServiceTerms
-- six active direct Subscription tokens
-- backup and restore-drill timers: active/enabled
-- public panel HTTP 200
-- public readiness HTTP 200
-- `pvnaive doctor`: 14 PASS / 1 disk WARN / 0 FAIL
-- real systemd restore drill: schema/ownership/ACL/signing-key checks PASS
-- bounded loopback rehearsal: 100/100 success, 0 failures; this is not a capacity proof
-- Caddy config SHA/PID/restart count unchanged through WS4 deployment
-- `/opt/pvnaive/release/CURRENT` and legacy deployment marker point to `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb`
-- Caddy serves the current panel release from `/var/www/pvnaive-preview/current`
-- `/opt/pvnaive/web/current` and `/opt/pvnaive/db/current` point to the same final release generation
-- root filesystem is around 79% used and intentionally remains a Doctor warning
+The latest independently recorded Production schema remains **19**. Historical evidence records Task12/schema17 and Task14/schema19 Production rollouts. In the current coordinator audit, SentinelX reports `pv-primary` connected at the control-plane level, but command execution returns `upgrade_required` because three hosts are connected while the current plan permits one active host.
 
-Fresh encrypted config/database snapshots and release rollback directories were created before each Production mutation.
+Therefore:
 
-## Already integrated on main
+- no fresh Production health assertion is made for this session;
+- no Production mutation/deployment/migration is permitted until `pv-primary` command execution is restored;
+- repository/CI/review/documentation work continues independently;
+- when access returns, begin with a read-only audit before any mutation;
+- every mutation requires fresh backup + rollback state and exact postflight provenance.
 
-### Runtime / customer / delivery
+The Production-access limitation is an operations/tooling blocker, not evidence that Production itself is unhealthy.
 
-- AES-GCM Runtime secret envelope and stable Runtime UUID identity;
-- safe Runtime Agent validate → backup → apply → verify → rollback path;
-- customer create/adopt/edit/suspend/resume/revoke-safe-delete;
-- quota/unlimited/add/set volume;
-- creation/first-CONNECT/manual validity, no-expiry and extend-days;
-- plans/groups/tags/notes/renewal/new immutable ServiceTerm;
-- search/filter/sort/pagination and supported idempotent bulk operations;
-- `/sub` machine endpoint, `/s` human account page, local QR;
-- Subscription reissue and password rotation remain separate explicit actions.
+## Exact accounting / session invariants
 
-### Exact accounting core
+The following are non-negotiable:
 
-- successful authenticated Naive CONNECT accounting boundary;
-- dedicated Telemetry Agent/accounting Unix socket;
-- append-only idempotent boot/session/sequence/cumulative events;
-- duplicate/conflict/gap/counter-regression handling;
-- restart-safe ServiceTerm-isolated usage projection;
-- trusted first-successful-CONNECT activation producer;
-- session/presence projection;
-- finite-quota reservation/settlement core.
+- usage, online state, peer IP and session identity must come from authoritative direct-Naive facts; never fabricate legacy history or device state;
+- Runtime credential identity, node ID, boot ID and opaque session ID form the exact live-session identity used by control paths;
+- killing one session must never revoke the whole credential or kill an unrelated sibling session;
+- a forced disconnect must converge through the normal exact final-accounting close/settlement path exactly once;
+- retries and idempotent operations must not double-count bytes or duplicate finalization;
+- concurrent-session/unique-IP admission must be race-safe in PostgreSQL, not merely process-local;
+- trusted peer identity comes from Caddy's actual `RemoteAddr`; never trust `Forwarded`, `X-Forwarded-For`, or client-supplied IP values for enforcement;
+- schema changes require forward/backward migration proof and coherent expected-schema/checksum manifests;
+- no Caddy reload/restart is acceptable merely to kill one live session.
 
-Do not rewrite this core. Remaining P0 accounting work starts with legacy/adopted baseline truth.
+## Task13 — exact live-session kill
 
-### Operations / observability / release foundations — Task #4 DONE
+Persistent worker candidate commit: `922a5e0e155746906f28fe46ca89a24f269acfa7`.
 
-Task #4 manually reconciled useful stale PR #16 ideas against the newer code and deployed them to Production:
+Previously verified candidate gates include full Go, targeted race/session-control/rehearsal tests, Web tests/build, pinned-forwardproxy and reproducible-Caddy checks while preserving BUG-002 and schema19 behavior. Publication branch: `lead/task13-kill-session-publish-20260901`.
 
-- Linux CPU/RAM/disk/load/uptime/network metrics with server-side counter-delta rates;
-- structured redacted logging;
-- request IDs, bounded per-IP rate limiting and trusted-proxy handling;
-- ready-route OpenAPI endpoint;
-- `/api/v1/system/status` with API/DB/Runtime/Telemetry dependencies;
-- `pvnaive doctor` and redacted diagnostic support bundle;
-- encrypted scheduled backup + isolated restore drill + active systemd timers;
-- release builder with dynamic schema discovery, checksums/basic SBOM/source provenance;
-- same-schema guarded deploy + telemetry-aware rollback;
-- Production-layout-aware web/DB symlink handling and deployment markers;
-- bounded loopback control-plane rehearsal;
-- notification retry/dedupe/redaction and secure Telegram transport foundations;
-- standalone-safe fleet model/drift/delete-guard foundation;
-- live owner System Dashboard;
-- safe React ErrorBoundary.
+Because the worker has no HTTPS push credential, publication is being reconstructed with GitHub Git objects. Every published file must match the worker's `git hash-object` exactly. Any mismatched upload is discarded and must never be attached to the branch. Do not open or merge a Task13 PR until the complete 18-path candidate is present and PR CI + Exact Accounting + Pinned Forwardproxy are green.
 
-Final WS4 evidence:
+## Task15 — unique-IP limit / schema20
 
-- PR #30 exact head `09b085a877e52fa02c095799359b6b9e89bb3492`: CI #1065, Exact Accounting #181, Pinned Forwardproxy #165 — SUCCESS;
-- merge `c717d162a7e9b2e31fb5822b6b16c27ad048cbbd` deployed with fresh encrypted backups and rollback state;
-- postflight exposed Doctor key-mode and restore-validation false negatives while customer service/accounting remained healthy;
-- PR #31 exact head `b740352012fd9646c25d4c70c83f64f2f86ce029`: CI #1070, Exact Accounting #185, Pinned Forwardproxy #169 — SUCCESS;
-- final hotfix merge `e9cce65d3fe8d82100b6bbb7e1231d07dc997edb` rebuilt, backed up, deployed and independently postflight-verified.
+The previously attempted schema20 design is rejected. The accepted design must:
 
-## Task #5 target — legacy/adopted accounting baseline truth
+- source peer IP only from trusted Caddy `RemoteAddr`;
+- use `direct_naive_accounting_session_peers` / authoritative live-session state rather than an invented or stale client-IP field;
+- perform fail-closed admission before payload forwarding;
+- serialize competing admissions with a PostgreSQL race-safe boundary keyed to the proper customer/service identity;
+- allow legitimate reconnect from an already-counted IP without consuming a second unique slot;
+- release closed/stale sessions correctly;
+- include PostgreSQL18 concurrency proof plus negative spoofing tests;
+- preserve exact accounting semantics under rejection, retry and disconnect.
 
-The six existing Production accounts and all future adopted accounts must not be assigned fabricated historical usage.
+No schema20 candidate is publishable until those gates pass.
 
-Required rules:
+## Task16 — bounded session/IP history / schema21
 
-- numeric historical baseline only when authoritative pre-adoption usage can be proven;
-- otherwise explicit Unknown/unavailable state, never implicit zero;
-- exact post-adoption direct Naive usage stays separate and trustworthy;
-- baseline + direct usage may be combined only when epoch/provenance proves the periods do not overlap;
-- adoption must preserve enough provenance and boundary information to prevent double-counting;
-- reads, quota/expiry edits, QR, Subscription view/reissue and password rotation cannot silently rewrite baseline history;
-- existing Production users are classified from real server/database evidence only.
+Integration is ordered behind stable Task15/schema20. Required invariants:
 
-Task #5 requires RED→GREEN unit/integration/database tests, exact-head CI/Exact Accounting/Pinned Forwardproxy, and a backed-up Production rollout if schema/runtime semantics change.
+- explicit bounded retention (30-day target from the current worker contract);
+- tenant-scoped owner/reseller reads with RLS/authorization proof;
+- history derived only from trusted session/peer/accounting facts;
+- no invented legacy peer history;
+- exact final-accounting synchronization rather than a second competing source of truth;
+- purge authority restricted to maintenance operations, not ordinary app/API access;
+- safe schema21 rollback and coherent migration/checksum manifests.
 
-## Important incomplete work after Task #5
+## Security / independent lane
 
-- complete `/s` accounting/presence projection;
-- Manual Reset Usage / Bulk Reset Usage / periodic restart-safe reset scheduler;
-- controlled Production hard-quota race/restart proof;
-- controlled first-successful-CONNECT Production proof;
-- operator session list/kill/concurrent/unique-IP limits/history;
-- trustworthy HWID/device identity PoC;
-- real per-user speed-limit PoC/enforcement;
-- full reseller CRUD/wallet/ledger/restrictions;
-- customer history + Audit Explorer;
-- notification preferences/history/rule builder and configured Telegram workflow;
-- historical metrics/log UIs beyond the live System Dashboard;
-- fleet controller/multi-node operations/failover/smart selection;
-- clean-server installer/upgrade/uninstall lifecycle;
-- Karing multi-OS compatibility campaign;
-- 50/100/200/400+ capacity campaign;
-- supply-chain SAST/dependency scan/signing policy beyond current checksum/SBOM foundation.
+Task36 authorization/IDOR/CSRF/redaction/fuzz work remains an independent lane and should advance whenever worker capacity is genuinely available. Do not starve the active schema20/schema21 workers or overload the only currently active worker host.
 
-## Confirmed P0 security defects still open
+## Release / Production safety
 
-1. refresh-token reuse-family path is blocked too early by `BeginAuthenticated`'s `revoked_at IS NULL` selection;
-2. generic authenticated handlers can write success before final transaction commit is known and commit errors are ignored;
-3. `/health/ready` still lacks the required bounded DB/schema readiness probe.
+Before any Production mutation:
 
-Do not remove these until their Owner-mandated security stage has tests and Production-safe proof.
+1. verify exact GitHub main and required CI gates;
+2. perform a fresh read-only Production audit;
+3. create a fresh encrypted backup and rollback snapshot;
+4. record exact preflight release/schema/service state;
+5. deploy only the intended commit and migrations;
+6. verify readiness, Runtime Agent, Telemetry Agent, Caddy/customer/accounting invariants and exact deployed provenance;
+7. roll back immediately on any failed invariant;
+8. record evidence and only then update roadmap/task status.
 
-## Current execution order
+Never force-push/reset main, print secrets, fake usage/online/IP/HWID/speed, or silently rotate credentials/tokens from read-only flows.
 
-1. Task #5 — legacy/adopted accounting baseline truth;
-2. Task #6 — `/s` accounting/presence completion;
-3. Tasks #7-#9 — reset semantics;
-4. Tasks #10-#11 — hard-quota and first-CONNECT controlled Production proofs;
-5. remaining session/reseller/security/fleet/installer/client/capacity/release gates in `ROADMAP.md` order.
+## Immediate execution order
+
+1. complete byte-identical Task13 publication and run branch/PR gates;
+2. merge Task13 only when all required gates are green;
+3. reconcile Task15 only after trusted-IP + PostgreSQL18 concurrency proof;
+4. reconcile Task16 only after schema20 is stable and schema21 retention/RLS/finalization proofs pass;
+5. advance Task36 when worker capacity allows;
+6. restore `pv-primary` execution access and perform a read-only audit;
+7. deploy eligible exact-main changes only with fresh backup/rollback/postflight proof;
+8. update `HANDOFF.md`, `ROADMAP.md`, `AGENT_TASKS.md`, `KNOWN_ISSUES.md` and evidence from verified merged/deployed truth only.
 
 ## Read next
 
-1. `OWNER_REQUIREMENTS.md`
-2. `docs/PANEL_PARITY_MASTER_2026-08-30.md`
-3. `HANDOFF.md`
-4. `KNOWN_ISSUES.md`
-5. `ROADMAP.md`
-6. `AGENT_TASKS.md`
-7. `WORKLOG.md`
-8. before any Production mutation, re-check live state and fresh backup/rollback evidence.
+1. `CONTINUE_HERE.md`
+2. `OWNER_REQUIREMENTS.md`
+3. `ROADMAP.md`
+4. `AGENT_TASKS.md`
+5. `KNOWN_ISSUES.md`
+6. `HANDOFF.md`
+7. newest `ops/evidence/*`
+8. latest GitHub `main`, open PRs, exact-head CI and fresh Production state before any mutation.
