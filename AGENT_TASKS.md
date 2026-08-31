@@ -1,6 +1,6 @@
 # PVNaive — Agent / Workstream Task Board
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 `OWNER_REQUIREMENTS.md` plus the Owner's Production/parity master prompt define product behavior and execution order. This board records current ownership and prevents duplicate work.
 
@@ -91,8 +91,8 @@ Do not reorder unless a real technical dependency is documented.
 | 9 | Periodic reset execution | TODO | persisted cursor/scheduler/timezone/exactly-once/audit/history |
 | 10 | Hard quota Production proof | TODO | concurrency/race/exhaustion/reload/restart/reconnect/no bypass |
 | 11 | First successful CONNECT proof | TODO | only successful authenticated CONNECT activates |
-| 12 | Customer sessions | READY_TO_PUBLISH | trusted peer IP + active timestamps + exact per-session bytes; local review/tests green, exact GitHub tree publication pending |
-| 13 | Kill session | TODO | real disconnect + confirmation/audit |
+| 12 | Customer sessions | DONE | trusted peer IP + active timestamps + exact per-session bytes; PR #40 merged, release blockers #41/#43 fixed, Production rollout completed at schema17 |
+| 13 | Kill session | IN_PROGRESS | real disconnect + confirmation/audit; next ordered implementation lane |
 | 14 | Concurrent session limit | TODO | Unlimited/N enforced under race |
 | 15 | Unique IP limit | TODO | simultaneous unique-IP semantics/enforcement |
 | 16 | IP/session history | TODO | bounded privacy-aware retention |
