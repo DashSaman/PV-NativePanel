@@ -14,6 +14,7 @@ func TestCustomerProductRoutePermissions(t *testing.T) {
 		"users.resume":           Reseller,
 		"users.revoke":           Reseller,
 		"users.renew":            Reseller,
+		"users.sessions.index":   Reseller,
 		"plans.index":            Reseller,
 		"plans.create":           Admin,
 		"customer-groups.index":  Reseller,

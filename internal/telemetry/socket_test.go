@@ -116,3 +116,45 @@ func TestTelemetryHandlerHealthIsReadOnly(t *testing.T) {
 		t.Fatalf("unexpected health response: %#v", got)
 	}
 }
+
+type recordingSessionPeerBackend struct {
+	requests []SessionPeerRequest
+	result   SessionPeerResult
+	err      error
+}
+
+func (r *recordingSessionPeerBackend) RecordSessionPeer(_ context.Context, request SessionPeerRequest) (SessionPeerResult, error) {
+	r.requests = append(r.requests, request)
+	return r.result, r.err
+}
+
+func TestTelemetryHandlerRecordsOnlyValidatedSessionPeer(t *testing.T) {
+	backend := &recordingSessionPeerBackend{result: SessionPeerResult{ServiceTermID: "44444444-4444-4444-4444-444444444444", Recorded: true}}
+	handler := NewTelemetryHandler(backend)
+	body := `{"runtime_credential_id":"11111111-1111-1111-1111-111111111111","node_id":"direct-1","boot_id":"22222222-2222-2222-2222-222222222222","session_id":"33333333-3333-3333-3333-333333333333","client_ip":"203.0.113.7","timestamp":"2026-08-31T00:00:01Z"}`
+	req := httptest.NewRequest(http.MethodPost, TelemetrySessionPeerPath, bytes.NewBufferString(body))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("session peer status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if len(backend.requests) != 1 || backend.requests[0].ClientIP != "203.0.113.7" {
+		t.Fatalf("unexpected peer requests: %#v", backend.requests)
+	}
+
+	for _, invalid := range []string{
+		`{"runtime_credential_id":"11111111-1111-1111-1111-111111111111","node_id":"direct-1","boot_id":"22222222-2222-2222-2222-222222222222","session_id":"33333333-3333-3333-3333-333333333333","client_ip":"203.0.113.7:443","timestamp":"2026-08-31T00:00:01Z"}`,
+		`{"runtime_credential_id":"11111111-1111-1111-1111-111111111111","node_id":"direct-1","boot_id":"22222222-2222-2222-2222-222222222222","session_id":"33333333-3333-3333-3333-333333333333","client_ip":"client.example","timestamp":"2026-08-31T00:00:01Z"}`,
+		`{"runtime_credential_id":"11111111-1111-1111-1111-111111111111","node_id":"direct-1","boot_id":"22222222-2222-2222-2222-222222222222","session_id":"33333333-3333-3333-3333-333333333333","client_ip":"203.0.113.7","timestamp":"2026-08-31T00:00:01Z","forwarded_for":"198.51.100.4"}`,
+	} {
+		req = httptest.NewRequest(http.MethodPost, TelemetrySessionPeerPath, bytes.NewBufferString(invalid))
+		rec = httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("invalid peer request status=%d body=%s", rec.Code, rec.Body.String())
+		}
+	}
+	if len(backend.requests) != 1 {
+		t.Fatalf("invalid peer requests reached backend: %#v", backend.requests)
+	}
+}

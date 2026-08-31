@@ -157,6 +157,23 @@ FROM pvnaive.direct_naive_accounting_claim(
 	return out, nil
 }
 
+func (s *PostgresStore) RecordSessionPeer(ctx context.Context, request SessionPeerRequest) (SessionPeerResult, error) {
+	if s == nil || s.db == nil || !validSessionPeerRequest(request) {
+		return SessionPeerResult{}, ErrInvalidEvent
+	}
+	var out SessionPeerResult
+	err := s.db.QueryRowContext(ctx, `
+SELECT service_term_id::text, recorded, duplicate
+FROM pvnaive.direct_naive_accounting_record_session_peer(
+    $1::uuid, $2, $3::uuid, $4::uuid, $5::inet, $6
+)`, request.RuntimeCredentialID, request.NodeID, request.BootID, request.SessionID,
+		request.ClientIP, request.ObservedAt.UTC()).Scan(&out.ServiceTermID, &out.Recorded, &out.Duplicate)
+	if err != nil {
+		return SessionPeerResult{}, fmt.Errorf("telemetry: record session peer: %w", err)
+	}
+	return out, nil
+}
+
 func (s *PostgresStore) Read(ctx context.Context, serviceTermID string, observedAt time.Time, staleAfter time.Duration) (ReadModel, error) {
 	if s == nil || s.db == nil || !validUUID(serviceTermID) || observedAt.IsZero() || staleAfter <= 0 {
 		return ReadModel{}, ErrInvalidProjection
@@ -176,7 +193,7 @@ SELECT service_term_id::text, upload_bytes, download_bytes, used_bytes,
        last_online, online, session_count, accounting_complete, last_reset_at
 FROM pvnaive.direct_naive_accounting_read($1::uuid, $2, $3)`, serviceTermID, observedAt.UTC(), seconds).Scan(
 		&out.ServiceTermID, &out.UploadBytes, &out.DownloadBytes, &out.UsedBytes,
-		&quota, &remaining, &state, &firstConnected, &lastOnline, &out.Online,
+		&quota, &remaining, &state, &firstConnected, &out.LastOnline, &out.Online,
 		&sessionCount, &out.AccountingComplete, &lastReset,
 	)
 	if err != nil {
