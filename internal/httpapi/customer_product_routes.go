@@ -2,15 +2,16 @@ package httpapi
 
 func init() {
 	ready := map[string]bool{
-		"users.index":   true,
-		"users.create":  true,
-		"users.update":  true,
-		"users.suspend": true,
-		"users.resume":  true,
-		"users.revoke":  true,
-		"users.renew":   true,
-		"plans.index":   true,
-		"plans.create":  true,
+		"users.index":          true,
+		"users.create":         true,
+		"users.update":         true,
+		"users.suspend":        true,
+		"users.resume":         true,
+		"users.revoke":         true,
+		"users.renew":          true,
+		"users.sessions.index": true,
+		"plans.index":          true,
+		"plans.create":         true,
 	}
 	for i := range Routes {
 		if ready[Routes[i].Name] {

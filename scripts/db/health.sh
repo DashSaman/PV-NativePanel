@@ -65,7 +65,8 @@ WITH required(name) AS (
          ('direct_subscription_tokens'), ('customer_groups'), ('customer_tags'),
          ('customer_profiles'), ('customer_tag_assignments'), ('plan_tag_assignments'),
          ('customer_bulk_operations'), ('customer_bulk_operation_keys'), ('customer_bulk_reset_operations'),
-         ('service_term_reset_schedules'), ('scheduled_usage_reset_attempts')
+         ('service_term_reset_schedules'), ('scheduled_usage_reset_attempts'),
+         ('direct_naive_accounting_session_peers')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -78,7 +79,9 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 16)); then
+if ((expected_version >= 17)); then
+  [[ "${required_tables}" == "44" ]] || pvnaive_die "required table check failed: ${required_tables}/44"
+elif ((expected_version >= 16)); then
   [[ "${required_tables}" == "43" ]] || pvnaive_die "required table check failed: ${required_tables}/43"
 elif ((expected_version >= 15)); then
   [[ "${required_tables}" == "41" ]] || pvnaive_die "required table check failed: ${required_tables}/41"
@@ -97,7 +100,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 16)); then
+if ((expected_version >= 17)); then
+  [[ "${rls_tables}" == "42" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/42"
+elif ((expected_version >= 16)); then
   [[ "${rls_tables}" == "41" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/41"
 elif ((expected_version >= 15)); then
   [[ "${rls_tables}" == "39" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/39"

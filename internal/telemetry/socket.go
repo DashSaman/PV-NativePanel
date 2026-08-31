@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"time"
 )
@@ -13,6 +14,7 @@ const (
 	DefaultTelemetrySocketPath = "/run/pvnaive/accounting.sock"
 	TelemetryAuthorizePath     = "/v1/accounting/authorize"
 	TelemetryClaimPath         = "/v1/accounting/claim"
+	TelemetrySessionPeerPath   = "/v1/accounting/session-peer"
 	TelemetryIngestPath        = "/v1/accounting/event"
 	TelemetryHealthPath        = "/v1/accounting/health"
 	maxTelemetryRequestBytes   = 32 << 10
@@ -49,6 +51,25 @@ type Claimer interface {
 	Claim(context.Context, ClaimRequest) (ClaimResult, error)
 }
 
+type SessionPeerRequest struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	NodeID              string    `json:"node_id"`
+	BootID              string    `json:"boot_id"`
+	SessionID           string    `json:"session_id"`
+	ClientIP            string    `json:"client_ip"`
+	ObservedAt          time.Time `json:"timestamp"`
+}
+
+type SessionPeerResult struct {
+	ServiceTermID string `json:"service_term_id"`
+	Recorded      bool   `json:"recorded"`
+	Duplicate     bool   `json:"duplicate"`
+}
+
+type SessionPeerRecorder interface {
+	RecordSessionPeer(context.Context, SessionPeerRequest) (SessionPeerResult, error)
+}
+
 type telemetryHandler struct {
 	backend any
 }
@@ -66,6 +87,8 @@ func (h *telemetryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleAuthorize(w, r)
 	case r.Method == http.MethodPost && r.URL.Path == TelemetryClaimPath:
 		h.handleClaim(w, r)
+	case r.Method == http.MethodPost && r.URL.Path == TelemetrySessionPeerPath:
+		h.handleSessionPeer(w, r)
 	case r.Method == http.MethodPost && r.URL.Path == TelemetryIngestPath:
 		h.handleIngest(w, r)
 	default:
@@ -115,6 +138,35 @@ func (h *telemetryHandler) handleClaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeTelemetryJSON(w, http.StatusOK, result)
+}
+
+func (h *telemetryHandler) handleSessionPeer(w http.ResponseWriter, r *http.Request) {
+	backend, ok := h.backend.(SessionPeerRecorder)
+	if !ok || backend == nil {
+		writeTelemetryError(w, http.StatusServiceUnavailable, "telemetry unavailable")
+		return
+	}
+	var request SessionPeerRequest
+	if !decodeStrictJSON(w, r, &request) {
+		return
+	}
+	if !validSessionPeerRequest(request) {
+		writeTelemetryError(w, http.StatusBadRequest, "invalid session peer")
+		return
+	}
+	result, err := backend.RecordSessionPeer(r.Context(), request)
+	if err != nil {
+		writeTelemetryError(w, http.StatusConflict, "session peer rejected")
+		return
+	}
+	writeTelemetryJSON(w, http.StatusOK, result)
+}
+
+func validSessionPeerRequest(request SessionPeerRequest) bool {
+	ip := net.ParseIP(request.ClientIP)
+	return validUUID(request.RuntimeCredentialID) && validDiagnostic(request.NodeID) &&
+		validUUID(request.BootID) && validUUID(request.SessionID) && ip != nil &&
+		ip.String() == request.ClientIP && !request.ObservedAt.IsZero()
 }
 
 func (h *telemetryHandler) handleIngest(w http.ResponseWriter, r *http.Request) {

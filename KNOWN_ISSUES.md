@@ -31,7 +31,7 @@ This file contains only current gaps or intentionally retained historical closur
 - Note: dedicated Runtime mutation saga has stronger compensation; this issue is broader generic HTTP integrity.
 - Done gate: buffered/commit-aware response boundary or equivalent design; injected commit failure must never emit success.
 
-### BUG-003 — DB/schema-backed readiness is missing
+### CLOSED — BUG-003 DB/schema-backed readiness
 
 - Area: Operations / readiness
 - Re-verified against current `server.ready`.
@@ -40,6 +40,8 @@ This file contains only current gaps or intentionally retained historical closur
 - Done gate: bounded DB/schema readiness probe + timeout/failure tests; no secret leakage.
 
 ## P0 accounting / enforcement gaps
+
+Closed evidence: main includes DB/schema-backed readiness and Production `/api/v1/health/ready` currently reports `{db:ok,schema:ok,ready:true}`. Do not reopen without a real readiness regression.
 
 ### ACCOUNTING-001 — Legacy/adopted accounting baseline policy needs explicit truth
 

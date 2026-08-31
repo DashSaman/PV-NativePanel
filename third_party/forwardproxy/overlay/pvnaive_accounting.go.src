@@ -240,6 +240,56 @@ type pvnaiveAccountingSession struct {
 	opened        bool
 	closed        bool
 	failed        bool
+	peerRecorded  bool
+}
+
+type pvnaiveSessionPeerRequest struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	NodeID              string    `json:"node_id"`
+	BootID              string    `json:"boot_id"`
+	SessionID           string    `json:"session_id"`
+	ClientIP            string    `json:"client_ip"`
+	Timestamp           time.Time `json:"timestamp"`
+}
+
+type pvnaiveSessionPeerResult struct {
+	ServiceTermID string `json:"service_term_id"`
+	Recorded      bool   `json:"recorded"`
+	Duplicate     bool   `json:"duplicate"`
+}
+
+func (s *pvnaiveAccountingSession) recordSessionPeer(ctx context.Context, remoteAddr string) error {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.opened || s.peerRecorded || s.failed {
+		return nil
+	}
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil || host == "" {
+		host = remoteAddr
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || ip.String() != host {
+		s.failed = true
+		return fmt.Errorf("pvnaive: invalid peer IP from RemoteAddr %q", remoteAddr)
+	}
+	peer := pvnaiveSessionPeerResult{}
+	if err := s.client.postJSON(ctx, "/v1/accounting/session-peer", pvnaiveSessionPeerRequest{
+		RuntimeCredentialID: s.runtimeCredentialID,
+		NodeID:              s.client.nodeID,
+		BootID:              s.client.bootID,
+		SessionID:           s.sessionID,
+		ClientIP:            host,
+		Timestamp:           time.Now().UTC(),
+	}, &peer); err != nil {
+		s.failed = true
+		return fmt.Errorf("%w: session peer: %v", errPVNaiveAccountingUnhealthy, err)
+	}
+	s.peerRecorded = true
+	return nil
 }
 
 func (s *pvnaiveAccountingSession) open(ctx context.Context) error {

@@ -47,6 +47,13 @@ func (s *server) customerExtraHandler(name string) http.Handler {
 		return http.HandlerFunc(s.listCustomerTags)
 	case "customer-tags.create":
 		return http.HandlerFunc(s.createCustomerTag)
+	case "users.sessions.index":
+		if s.config.CustomerService != nil {
+			return http.HandlerFunc(s.listCustomerActiveSessions)
+		}
+		return nil
+	case "users.sessions.delete":
+		return http.HandlerFunc(s.notImplementedSessionKill)
 	case "users.bulk.preview":
 		return http.HandlerFunc(s.previewCustomerBulk)
 	case "users.bulk.execute":
