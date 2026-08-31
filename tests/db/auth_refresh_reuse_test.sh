@@ -42,7 +42,7 @@ SQL
 )"
 grep -Eq '^[0-9a-f]{64}\|t$' <<<"$reused"
 [[ "$(tail -n1 <<<"$reused")" == t ]]
-family_state="$(psql_admin -d "$test_db" -AtF '|' -c "SELECT count(*), count(*) FILTER (WHERE revoked_at IS NOT NULL), count(*) FILTER (WHERE reuse_detected_at IS NOT NULL) FROM pvnaive.auth_sessions WHERE refresh_family_id='18180000-0000-0000-0000-000000000004')"
+family_state="$(psql_admin -d "$test_db" -AtF '|' -c "SELECT count(*), count(*) FILTER (WHERE revoked_at IS NOT NULL), count(*) FILTER (WHERE reuse_detected_at IS NOT NULL) FROM pvnaive.auth_sessions WHERE refresh_family_id='18180000-0000-0000-0000-000000000004'")"
 [[ "$family_state" == '2|2|2' ]]
 if psql_admin -d "$test_db" -Atc "SET ROLE pvnaive_app; SELECT * FROM pvnaive.auth_refresh_session_metadata(digest('wrong-token','sha256'))" >/dev/null 2>&1; then
   echo 'ERROR: wrong opaque token resolved refresh metadata' >&2; exit 1
