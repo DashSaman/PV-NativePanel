@@ -1,120 +1,79 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
-If a Chat/Agent session is interrupted, start here. The old S04/S05 instructions are superseded.
+If a Chat/Agent session is interrupted, start here. Historical S04/S05/S06 notes are evidence, not the current execution source of truth.
 
 ## First read
 
 1. `OWNER_REQUIREMENTS.md`
-2. `PROJECT_STATUS.md`
-3. `HANDOFF.md`
-4. `docs/PANEL_PARITY_MASTER_2026-08-30.md`
-5. `KNOWN_ISSUES.md`
-6. `ROADMAP.md`
-7. `AGENT_TASKS.md`
-8. `WORKLOG.md`
-9. newest `ops/evidence/*` before any Production mutation
+2. `ROADMAP.md`
+3. `AGENT_TASKS.md`
+4. `KNOWN_ISSUES.md`
+5. `HANDOFF.md`
+6. newest `ops/evidence/*`
+7. latest GitHub `main`, open PRs and exact-head CI before touching code or Production
 
-## One-line current state
+## Current verified state
 
-`main@a021aa4b62c35b775fb521d042b2f8e6dbde10b0` already contains customer/product management, `/sub` + `/s` + local QR, exact direct-Naive accounting, trusted first-CONNECT telemetry and hard-quota core. Production is running schema 11 with active API/Runtime/Telemetry/Caddy and live accounting data. The immediate task is **truth/CI reconciliation, not rebuilding those features**.
+- GitHub `main`: `fce39283c6449b0d1836757ee7caddb31fab9def`.
+- Main CI run `33426149726`: **SUCCESS**.
+- Latest independently recorded Production deployment: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`, schema **19**.
+- Task12 active-session management: **DONE / Production**, schema17.
+- Task14 concurrent-session limit: **DONE / Production**, schema19; see `ops/evidence/TASK14-20260831-concurrent-session-limit-production-pass.md`.
+- Security Task35: **DONE in main** — BUG-001 refresh reuse-family, BUG-002 commit-before-success and BUG-003 DB/schema-backed readiness are closed with exact-main CI green.
+- The BUG-002 merge is not yet claimed deployed because a fresh `pv-primary` audit/deploy could not run during the current SentinelX host-access limitation.
 
-Always re-fetch latest `main`; the SHA above is only the audit starting point.
+## Work in progress
 
-## Active branch / PR
+### Task13 — exact session kill
 
-- branch: `lead/parity-truth-2026-08-30`
-- PR: `#27` — Lead production truth and panel parity reconciliation
-- plan: `docs/superpowers/plans/2026-08-30-production-parity-reconciliation.md`
+A substantial local candidate exists from an older pre-BUG-002 base. It touches the pinned forwardproxy/session-control path, HTTP API and UI. Do **not** blindly merge it. Rebase on current main and re-prove:
 
-The PR is documentation/truth work only. It must not mutate Production.
+- exact one-session identity only;
+- no whole-credential revoke;
+- no Caddy restart/reload;
+- forced disconnect still produces final accounting close/settlement;
+- idempotent repeated kill;
+- tenant/role isolation and redacted audit;
+- forwardproxy reproducibility + Go/Web/rehearsal gates.
 
-## Current Production facts from read-only audit
+### Task15 — simultaneous unique-IP limit
 
-- panel: `https://namir.softarg.ir/panel/` returned 200;
-- public readiness returned 200;
-- API is loopback-only on `127.0.0.1:8080`;
-- `pvnaive-api`, Runtime Agent, Telemetry Agent and Caddy services are active;
-- PostgreSQL schema is 11;
-- six active users/runtime credentials/ServiceTerms and six active Subscription tokens exist;
-- all six direct-accounting term projections reported complete at audit time;
-- live accounting events/session rows are present;
-- root filesystem was 79% used;
-- backup files exist, but no PVNaive scheduled-backup timer was observed;
-- deployment marker files lag the actual newer binary/web timestamps and are not sufficient release provenance.
+The current schema20 candidate is **rejected / not publishable**. It attempted to count `direct_naive_accounting_sessions.client_ip`, while Task12 authoritative peer identity is stored in `direct_naive_accounting_session_peers`; its added ingest IP argument was also not wired from the pinned forwardproxy/Telemetry boundary.
 
-No secret/token/password/key is recorded here.
+Redesign around trusted Caddy `RemoteAddr` before payload forwarding with a PostgreSQL race-safe admission/reservation boundary. Never use `Forwarded`, `X-Forwarded-For` or a client-supplied identity.
 
-## Current CI fact
+### Task16 — bounded IP/session history
 
-PR #26's final bot commit recorded failed CI/WS1 runs, but the immediately preceding human commit and previous bot commit passed all three workflows. Do not call this a product regression without reproduction.
+Keep pending until the Task15 identity/admission boundary is stable. History must be privacy-aware, tenant-scoped, bounded by explicit retention and derived only from trusted session/peer facts. Never invent legacy peer history.
 
-PR #27 was opened from exact current main to reproduce the baseline. During the current reconciliation, WS1 Exact Accounting has already succeeded on a refreshed PR head; CI and pinned-forwardproxy results must be checked on the final exact head before merge.
+### Parallel independent lane
 
-## Current confirmed blockers/gaps
+Task36 authorization/IDOR/CSRF/redaction/fuzz work can progress without Production access and should be used to keep available workers productive.
 
-### Before feature expansion
+## Production access blocker
 
-1. finish current truth/parity/status reconciliation;
-2. get exact-head PR #27 CI green;
-3. merge the reconciliation;
-4. extract useful PR #16 work on a fresh branch, never blind merge.
+SentinelX currently reports five connected hosts on a plan allowing one active host. `pv-worker-main` is accessible, while `pv-primary` returns `upgrade_required`. Therefore do not claim a fresh Production audit or deploy until `pv-primary` becomes active again. GitHub/CI/code-review/documentation work continues independently.
 
-### Next product work after PR #16 reconciliation
+When Production access is restored, first perform a **read-only** audit, then if exact-main gates remain green execute the normal guarded flow: fresh encrypted backup + rollback snapshot → same-schema BUG-002 release deploy → readiness/Runtime/Telemetry/Caddy/customer/accounting smoke → verify exact deployed provenance. Roll back on any failed invariant.
 
-1. legacy/adopted Runtime accounting baseline truth;
-2. `/s` exact accounting/presence projection;
-3. Manual Reset Usage;
-4. Bulk Reset Usage;
-5. periodic reset scheduler/cursor/exactly-once execution;
-6. hard-quota controlled Production proof;
-7. first-successful-CONNECT controlled Production proof;
-8. sessions/kill/concurrent/IP/history;
-9. HWID/speed PoCs;
-10. reseller/RBAC/wallet/ledger/restrictions;
-11. remaining ordered Owner backlog.
+## Safety invariants
 
-## Do not claim these are done
+- start from latest `main`;
+- no force-push/reset of main;
+- no secret values in Git/chat/CI/evidence;
+- no fake usage/online/IP/HWID/speed;
+- read-only subscription/QR/account views never rotate credentials or tokens;
+- Runtime mutations preserve validate/backup/apply/verify/rollback;
+- no Production mutation without fresh backup and rollback state;
+- no task becomes DONE without fresh verification evidence.
 
-- Manual/Bulk Reset Usage;
-- periodic reset execution;
-- session kill or limits;
-- HWID/speed limit;
-- full reseller wallet/ledger/restrictions;
-- audit explorer/customer history;
-- notifications/Telegram;
-- real system monitoring/log UIs/doctor;
-- scheduled backup on Production;
-- OpenAPI on current main;
-- multi-node/fleet;
-- clean one-line installer;
-- real Karing compatibility matrix;
-- 400-concurrent capacity proof;
-- supply-chain/release signing gates.
+## Immediate next sequence
 
-## Current P0 security defects — still open
-
-- refresh-token reuse-family handling is bypassed by the `revoked_at IS NULL` authenticated lookup;
-- generic HTTP middleware can write success before durable transaction commit result is known;
-- readiness is not DB/schema-backed.
-
-See `KNOWN_ISSUES.md` for exact evidence.
-
-## Production mutation rule
-
-Before any mutation:
-
-1. fetch latest main + exact deployment evidence;
-2. confirm current service/database/Caddy state;
-3. DB backup;
-4. config backup;
-5. Caddy backup;
-6. web backup;
-7. binary backup;
-8. explicit rollback plan;
-9. validate/stage;
-10. apply one bounded change;
-11. postflight and rollback on failure.
-
-Never print or commit raw secrets.
+1. finish and merge this current-truth docs reconciliation after exact-head CI;
+2. rebase/review Task13 on current main;
+3. redesign Task15 from the trusted peer boundary, beginning with a real failing race/security contract;
+4. advance Task36 negative authorization gates in parallel;
+5. restore `pv-primary` access and safely deploy/verify the BUG-002 main release;
+6. continue remaining `ROADMAP.md` tasks without leaving an available worker idle.
