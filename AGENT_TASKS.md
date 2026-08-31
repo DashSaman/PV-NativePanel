@@ -114,7 +114,7 @@ Do not reorder unless a real technical dependency is documented.
 | 32 | Restore/verification/drill/UI | TODO | strong safeguards + recurring restore proof |
 | 33 | API/OpenAPI | TODO | actual ready contracts only |
 | 34 | API rate limit/idempotency/webhooks | TODO | stable policy/event contracts |
-| 35 | Security BUG-001/002/003 | TODO | refresh reuse, commit-before-success, DB readiness |
+| 35 | Security BUG-001/002/003 | IN_PROGRESS | BUG-001 DONE, BUG-003 DONE; BUG-002 commit-before-success remains |
 | 36 | Authorization/IDOR/CSRF/redaction/fuzz | TODO | complete route × role matrix |
 | 37 | Supply-chain security | TODO | dependency scan, secret scan, SAST, SBOM, signing/provenance/license |
 | 38 | Multi-node/fleet | TODO | node model/auth/health/metrics/capacity/assignment/deploy |
