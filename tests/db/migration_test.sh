@@ -41,10 +41,10 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" \
 export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 reapply_output="$("${repo_root}/scripts/db/migrate.sh")"
-for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018; do
+for version in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019; do
   grep -Fqx "MIGRATION ${version}=ALREADY_APPLIED" <<< "${reapply_output}"
 done
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=18' <<< "${reapply_output}"
+grep -Fqx 'PVNAIVE_SCHEMA_VERSION=19' <<< "${reapply_output}"
 grep -Fqx 'PVNAIVE_MIGRATION_RESULT=PASSED' <<< "${reapply_output}"
 
 psql_admin --dbname "${test_db}" <<'SQL' >/dev/null
@@ -110,20 +110,20 @@ if psql_admin --dbname "${test_db}" --command 'DELETE FROM pvnaive.audit_events'
   exit 1
 fi
 
-# Destructive SQL in the next contiguous migration (19) must fail closed.
+# Destructive SQL in the next contiguous migration (20) must fail closed.
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0019' \
+  '-- pvnaive:migration-version 0020' \
   '-- pvnaive:migration-name forbidden_drop' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'DROP TABLE pvnaive.users;' > "${temp_migrations}/0019_forbidden_drop.up.sql"
+  'DROP TABLE pvnaive.users;' > "${temp_migrations}/0020_forbidden_drop.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0019' \
+  '-- pvnaive:migration-version 0020' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0019_forbidden_drop.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0020_forbidden_drop.down.sql"
 (
   cd "${temp_migrations}"
   sha256sum *.sql > SHA256SUMS
@@ -134,40 +134,40 @@ if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.
 fi
 rm -rf -- "${temp_migrations}"
 
-# An unlisted next migration (19) must fail checksum-manifest validation.
+# An unlisted next migration (20) must fail checksum-manifest validation.
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0019' \
+  '-- pvnaive:migration-version 0020' \
   '-- pvnaive:migration-name unlisted_file' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'SELECT 1;' > "${temp_migrations}/0019_unlisted_file.up.sql"
+  'SELECT 1;' > "${temp_migrations}/0020_unlisted_file.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0019' \
+  '-- pvnaive:migration-version 0020' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0019_unlisted_file.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0020_unlisted_file.down.sql"
 if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo 'ERROR: unlisted migration was accepted' >&2
   exit 1
 fi
 rm -rf -- "${temp_migrations}"
 
-# A version gap from 18 to 20 must fail before executing SQL.
+# A version gap from 19 to 21 must fail before executing SQL.
 temp_migrations="$(mktemp -d)"
 cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0020' \
+  '-- pvnaive:migration-version 0021' \
   '-- pvnaive:migration-name version_gap' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive false' \
-  'SELECT 1;' > "${temp_migrations}/0020_version_gap.up.sql"
+  'SELECT 1;' > "${temp_migrations}/0021_version_gap.up.sql"
 printf '%s\n' \
-  '-- pvnaive:migration-version 0020' \
+  '-- pvnaive:migration-version 0021' \
   '-- pvnaive:transactional true' \
   '-- pvnaive:destructive true' \
-  'SELECT 1;' > "${temp_migrations}/0020_version_gap.down.sql"
+  'SELECT 1;' > "${temp_migrations}/0021_version_gap.down.sql"
 (
   cd "${temp_migrations}"
   sha256sum *.sql > SHA256SUMS
@@ -179,17 +179,17 @@ fi
 rm -rf -- "${temp_migrations}"
 
 # Applied migration immutability includes the newest repository migration.
-expected_checksum="$(sha256sum "${repo_root}/db/migrations/0018_auth_refresh_reuse_context.up.sql" | awk '{print $1}')"
+expected_checksum="$(sha256sum "${repo_root}/db/migrations/0019_concurrent_session_limit.up.sql" | awk '{print $1}')"
 psql_admin --dbname "${test_db}" --command \
-  "UPDATE pvnaive.schema_migrations SET checksum_sha256=repeat('0',64) WHERE version=18" >/dev/null
+  "UPDATE pvnaive.schema_migrations SET checksum_sha256=repeat('0',64) WHERE version=19" >/dev/null
 if "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
   echo 'ERROR: changed applied migration checksum was accepted' >&2
   exit 1
 fi
 psql_admin --dbname "${test_db}" --command \
-  "UPDATE pvnaive.schema_migrations SET checksum_sha256='${expected_checksum}' WHERE version=18" >/dev/null
+  "UPDATE pvnaive.schema_migrations SET checksum_sha256='${expected_checksum}' WHERE version=19" >/dev/null
 
-for expected in 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
+for expected in 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
   PVNAIVE_DISPOSABLE_DB=1 "${repo_root}/scripts/db/rollback.sh" >/dev/null
   actual="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${actual}" == "${expected}" ]] || {
