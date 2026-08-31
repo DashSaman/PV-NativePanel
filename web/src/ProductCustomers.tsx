@@ -5,6 +5,7 @@ import {
   executeProductBulk,
   getProductSubscription,
   listProductCustomers,
+  listProductCustomerSessions,
   listProductGroups,
   listProductPlans,
   listProductTags,
@@ -18,6 +19,7 @@ import {
   suspendProductCustomer,
   updateProductCustomer,
   DEFAULT_PRODUCT_FILTERS,
+  type ProductActiveSession,
   type ProductBulkAction,
   type ProductBulkOperation,
   type ProductBulkRequest,
@@ -42,6 +44,7 @@ type DialogState =
   | { type: "password"; customer: ProductCustomer }
   | { type: "subscription"; customer: ProductCustomer; delivery: ProductSubscriptionDelivery; rotated: boolean }
   | { type: "secret"; username: string; password?: string; subscriptionPath?: string; accountPagePath?: string; notice: string }
+  | { type: "sessions"; customer: ProductCustomer; sessions: ProductActiveSession[]; observedAt: string; loading: boolean; error: string }
   | { type: "bulk" };
 
 type BulkPreviewState = { request: ProductBulkRequest; operation: ProductBulkOperation; idempotencyKey: string };
@@ -83,6 +86,16 @@ function humanAccountPath(subscriptionPath: string, explicitPath?: string): stri
     }
   }
   return subscriptionPath;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
 }
 
 function commercialLabel(customer: ProductCustomer): string {
@@ -313,6 +326,32 @@ function BulkForm({ selected, plans, groups, tags, onDone, onClose }: { selected
   </form>;
 }
 
+function SessionsModal({ dialog, onClose }: { dialog: Extract<DialogState, { type: "sessions" }>; onClose: () => void }) {
+  const { customer, sessions, observedAt, loading, error } = dialog;
+  return <Modal title={`نشست‌های فعال · ${customer.username}`} eyebrow="مدیریت نشست" onClose={onClose}>
+    {loading && <div className="table-loading">در حال بارگذاری نشست‌ها…</div>}
+    {!loading && error && <div className="product-message danger">{error}</div>}
+    {!loading && !error && sessions.length === 0 && <div className="empty-state"><strong>نشست فعالی وجود ندارد</strong><span>کاربر در حال حاضر اتصال فعال Naive ندارد. نشست‌های منقضی یا ناقص نمایش داده نمی‌شوند.</span></div>}
+    {!loading && !error && sessions.length > 0 && <>
+      <div className="readonly-banner">{sessions.length} نشست فعال · زمان بروزرسانی: {new Date(observedAt).toLocaleString("fa-IR")}</div>
+      <div className="product-table-wrap"><table className="product-table compact-table"><thead><tr>
+        <th>آدرس IP</th><th>گره</th><th>متصل شده</th><th>آخرین فعالیت</th><th>مدت</th><th>آپلود</th><th>دانلود</th>
+      </tr></thead><tbody>
+        {sessions.map((session) => <tr key={session.session_id}>
+          <td><code>{session.client_ip}</code></td>
+          <td>{session.node_id}</td>
+          <td>{new Date(session.connected_at).toLocaleString("fa-IR")}</td>
+          <td>{new Date(session.last_activity_at).toLocaleString("fa-IR")}</td>
+          <td>{formatDuration(session.duration_seconds)}</td>
+          <td>{formatBytes(session.upload_bytes)}</td>
+          <td>{formatBytes(session.download_bytes)}</td>
+        </tr>)}
+      </tbody></table></div>
+    </>}
+    <div className="modal-actions"><button type="button" className="button-secondary" onClick={onClose}>بستن</button></div>
+  </Modal>;
+}
+
 export function ProductCustomers({ role: _role }: Props) {
   const [filters, setFilters] = useState<ProductFilters>({ ...DEFAULT_PRODUCT_FILTERS });
   const [searchDraft, setSearchDraft] = useState("");
@@ -383,6 +422,16 @@ export function ProductCustomers({ role: _role }: Props) {
     finally { setBusyID(""); }
   }
 
+  async function openSessions(customer: ProductCustomer) {
+    setBusyID(customer.id); setMessage("");
+    setDialog({ type: "sessions", customer, sessions: [], observedAt: "", loading: true, error: "" });
+    try {
+      const result = await listProductCustomerSessions(customer.id);
+      setDialog({ type: "sessions", customer, sessions: result.sessions, observedAt: result.observed_at, loading: false, error: "" });
+    } catch (error) { setDialog({ type: "sessions", customer, sessions: [], observedAt: "", loading: false, error: error instanceof Error ? error.message : "نشست‌ها بارگذاری نشد." }); }
+    finally { setBusyID(""); }
+  }
+
   return <main className="product-page customers-product-page">
     <header className="product-hero clean-hero"><div><p className="eyebrow">مدیریت سرویس</p><h1>کاربران</h1><p>ساخت، تمدید و مدیریت حساب‌ها از یک صفحه ساده.</p></div><div className="hero-actions"><button className="button-secondary" onClick={() => void refresh()}>↻ بروزرسانی</button><button className="primary-action" onClick={() => setDialog({ type: "create" })}>＋ کاربر جدید</button></div></header>
 
@@ -430,7 +479,7 @@ export function ProductCustomers({ role: _role }: Props) {
             <td><div className="presence-cell"><i className={usage.presence === "آنلاین" ? "online" : "offline"}/><div><strong>{usage.exact ? usage.presence : "—"}</strong><small>{usage.exact ? `${usage.sessions} نشست` : ""}</small></div></div></td>
             <td><div className="stack-cell"><strong>{customer.no_expiry ? "بدون انقضا" : formatPanelDate(customer.expires_at)}</strong><small>{customer.start_policy === "on_first_successful_connection" ? "از اولین اتصال" : "از زمان ثبت"}</small></div></td>
             <td><label className="toggle-switch" data-disabled={revoked ? "true" : "false"} title={suspended ? "فعال‌سازی" : "تعلیق"}><input type="checkbox" checked={!suspended && !revoked} disabled={busy || revoked} onChange={() => void lifecycle(customer, suspended ? "resume" : "suspend")} /><span/></label></td>
-            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button disabled={busy || revoked} onClick={() => void resetUsage(customer)}>Reset مصرف</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
+            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button disabled={busy || revoked} onClick={() => void resetUsage(customer)}>Reset مصرف</button><button disabled={busy} onClick={() => void openSessions(customer)}>نشست‌های فعال</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
           </tr>;
         })}
       </tbody></table></div>
@@ -444,5 +493,6 @@ export function ProductCustomers({ role: _role }: Props) {
     {dialog?.type === "subscription" && <Modal title={`اشتراک · ${dialog.customer.username}`} eyebrow={dialog.rotated ? "لینک جدید" : "نمایش اشتراک"} wide onClose={() => setDialog(null)}><div className="readonly-banner">{dialog.rotated ? "لینک قبلی باطل و لینک جدید صادر شد؛ رمز کاربر تغییر نکرد." : "لینک اشتراک و QR آماده استفاده است."}</div><SubscriptionContent delivery={dialog.delivery} /></Modal>}
     {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="فقط یک‌بار" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <><label>صفحه اشتراک کاربر<div className="copy-row"><input readOnly value={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} /><a className="open-account-page" href={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} target="_blank" rel="noreferrer">باز کردن صفحه</a></div></label><label>لینک ساب کلاینت<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label></>}</Modal>}
     {dialog?.type === "bulk" && <Modal title="عملیات گروهی" eyebrow="بازبینی قبل از اجرا" wide onClose={() => setDialog(null)}><BulkForm selected={Array.from(selected)} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async () => { setSelected(new Set()); await refresh(); }} /></Modal>}
+    {dialog?.type === "sessions" && <SessionsModal dialog={dialog} onClose={() => setDialog(null)} />}
   </main>;
 }

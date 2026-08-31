@@ -193,7 +193,7 @@ SELECT service_term_id::text, upload_bytes, download_bytes, used_bytes,
        last_online, online, session_count, accounting_complete, last_reset_at
 FROM pvnaive.direct_naive_accounting_read($1::uuid, $2, $3)`, serviceTermID, observedAt.UTC(), seconds).Scan(
 		&out.ServiceTermID, &out.UploadBytes, &out.DownloadBytes, &out.UsedBytes,
-		&quota, &remaining, &state, &firstConnected, &out.LastOnline, &out.Online,
+		&quota, &remaining, &state, &firstConnected, &lastOnline, &out.Online,
 		&sessionCount, &out.AccountingComplete, &lastReset,
 	)
 	if err != nil {

@@ -149,3 +149,13 @@ Implement with RED→GREEN tests, migration only if necessary, exact-head CI/Exa
 - no Runtime mutation without validate → backup → apply → verify → rollback;
 - no Production mutation without fresh backup + rollback state;
 - do not copy GPL/AGPL competitor code without explicit license review.
+
+## 2026-08-31 continuous orchestration checkpoint — Task12
+
+- GitHub `main`: `3cd98a1bc1358fc3b58dd8642646da122cac84c6`.
+- Production remains on schema 16 / deployed commit `4f7853fced230d65644a94ed8b50cf3c6c74ca98`; readiness is green and PostgreSQL/Caddy/API/Runtime/Telemetry services are active.
+- Task12 exact local head `bea9ebeba17f411e5926165483a546a988c4b20d`: independent release review `VERDICT=PASS`, no BLOCKER/HIGH; fresh `go test ./...`, 18/18 web files / 60/60 tests and production web build pass. Prior full PG18 schema17 and pinned reproducible Caddy proofs remain the release DB/data-plane gates.
+- GitHub staging branch `lead/task12-session-management-published-2026-08-31` is intentionally NOT mergeable yet: its tree is 14 files behind the exact reviewed local tree. Do not merge or deploy the partial branch.
+- Active independent work: BUG-001 refresh reuse DB proof; Task13 exact kill-session; Task14/15 deterministic race RED proof; Task16 bounded privacy-aware history proof.
+- Task15 unit/model candidate is not promotable until real PostgreSQL concurrency proof passes. Task16 is not promotable until migration numbering is reconciled after the P0 BUG-001 schema change and PG18/retention proof passes.
+- Next release action: publish the exact Task12 tree, run exact-head GitHub CI including schema17 and pinned forwardproxy/Caddy, then guarded Production backup → schema16→17 → API/web/Caddy rollout → postflight.

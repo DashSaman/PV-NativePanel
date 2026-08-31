@@ -407,3 +407,30 @@ export async function executeProductBulk(request: ProductBulkRequest, idempotenc
   }, fetcher);
   return body.bulk as ProductBulkOperation;
 }
+
+export type ProductActiveSession = {
+  runtime_credential_id: string;
+  node_id: string;
+  boot_id: string;
+  session_id: string;
+  service_term_id: string;
+  client_ip: string;
+  connected_at: string;
+  last_activity_at: string;
+  duration_seconds: number;
+  upload_bytes: number;
+  download_bytes: number;
+};
+
+export type ProductActiveSessionResponse = {
+  sessions: ProductActiveSession[];
+  observed_at: string;
+};
+
+export async function listProductCustomerSessions(id: string, fetcher: Fetcher = fetch): Promise<ProductActiveSessionResponse> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/sessions`, { method: "GET" }, fetcher);
+  return {
+    sessions: Array.isArray(body.sessions) ? body.sessions as ProductActiveSession[] : [],
+    observed_at: typeof body.observed_at === "string" ? body.observed_at : new Date().toISOString(),
+  };
+}

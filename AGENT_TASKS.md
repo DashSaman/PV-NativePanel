@@ -91,7 +91,7 @@ Do not reorder unless a real technical dependency is documented.
 | 9 | Periodic reset execution | TODO | persisted cursor/scheduler/timezone/exactly-once/audit/history |
 | 10 | Hard quota Production proof | TODO | concurrency/race/exhaustion/reload/restart/reconnect/no bypass |
 | 11 | First successful CONNECT proof | TODO | only successful authenticated CONNECT activates |
-| 12 | Customer sessions | TODO | active sessions/IP/timestamps/reliable bytes |
+| 12 | Customer sessions | READY_TO_PUBLISH | trusted peer IP + active timestamps + exact per-session bytes; local review/tests green, exact GitHub tree publication pending |
 | 13 | Kill session | TODO | real disconnect + confirmation/audit |
 | 14 | Concurrent session limit | TODO | Unlimited/N enforced under race |
 | 15 | Unique IP limit | TODO | simultaneous unique-IP semantics/enforcement |
