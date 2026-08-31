@@ -206,6 +206,7 @@ jobs:
           docker run --rm \
             --network host \
             --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_EXPECTED_SCHEMA_VERSION=16 \
             --env PVNAIVE_DB_HOST=127.0.0.1 \
             --env PVNAIVE_DB_PORT=5432 \
             --env PVNAIVE_DB_USER=postgres \
