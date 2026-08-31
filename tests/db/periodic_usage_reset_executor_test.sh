@@ -29,7 +29,7 @@ mkdir -p "$tmp/migrations"
 cp "${repo_root}/db/migrations/"[0-9][0-9][0-9][0-9]_*.sql "$tmp/migrations/"
 ( cd "$tmp/migrations" && sha256sum *.sql > SHA256SUMS )
 PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
-[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 18 ]]
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 19 ]]
 
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 INSERT INTO pvnaive.actors(id,tenant_id,actor_role,email,display_name,status)
@@ -128,9 +128,11 @@ third="$(printf '%s\n' "$third" | grep -E '^[0-9]+\|' | tail -n1)"
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT next_due_at-anchor_at=interval '1 day' AND retry_after_at IS NULL AND consecutive_failures=0 FROM pvnaive.service_term_reset_schedules WHERE service_term_id='d9260000-0000-0000-0000-000000000002'")" =~ ^(t|true)$ ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.direct_naive_accounting_reset_events WHERE reason='scheduled'")" == 1 ]]
 
-# Schema18 is additive, and schema17 is additive with no peer rows in this fixture.
-# Step back 18 -> 17 -> 16, then prove immutable scheduler history still prevents
+# Schema19, schema18 and schema17 are additive for this fixture.
+# Step back 19 -> 18 -> 17 -> 16, then prove immutable scheduler history still prevents
 # the destructive schema16 rollback exactly as this regression test originally intended.
+PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 18 ]]
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
 [[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 17 ]]
 PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
