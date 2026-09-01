@@ -6,11 +6,11 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `d00c96be9dccbb1f5402a24a18beeef6910c78cd`, verified merge of PR #57 / Task15 Production evidence.
-- Exact-main CI run `33476564850`: **SUCCESS**.
-- Open PRs: old draft #4 only; unrelated to current roadmap.
-- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; PR #57 changed documentation/evidence only.
-- Fresh read-only Production check on 2026-09-01: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` all active; `/api/v1/health/ready` returned `ready=true`, `db=ok`, `schema=ok`.
+- `main`: `d4cd9b790881b7363f6fa526a83f980f0451f701`, verified merge of PR #58 / post-Task15 reconciliation.
+- Exact-main CI run `33485730020`: **SUCCESS**.
+- Open PRs before this reconciliation: old draft #4 only; unrelated to current roadmap.
+- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; PRs #57/#58 changed documentation/evidence only.
+- Fresh read-only Production check at 2026-09-01T09:11Z: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` all active; `/api/v1/health/ready` returned `ready=true`, `db=ok`, `schema=ok`; checked recent service logs had no panic/fatal/schema-mismatch matches.
 - Task15 fresh encrypted DB/config backup and rollback snapshot remain retained and verified from the guarded schema20 rollout.
 
 ## Task accounting
@@ -20,15 +20,15 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
 - Task13 exact-session kill: **IN PROGRESS / current-schema20 candidate requires complete publication plus fresh real HTTP/1.1 + HTTP/2 rehearsal before merge**.
-- Task16 bounded session/IP history: **IN PROGRESS / schema21 / NOT mergeable yet**. Review found a design blocker in the worker candidate: caller-controlled retention/pagination must not permit bypassing the exact 30-day retention or bounded read contract. Add RED tests for oversized retention/page requests and enforce server-side constants/clamps before acceptance.
+- Task16 bounded session/IP history: **IN PROGRESS / schema21 / NOT mergeable yet**. Caller-controlled retention/pagination must not permit bypassing the exact 30-day retention or bounded read contract; RED tests and server-side enforcement remain required.
 
 ## Worker access
 
-Four SentinelX hosts are currently connected, but the Free plan permits only one active host. `pv-primary` is executable; `pv-worker-main` is connected/healthy but command execution returns `upgrade_required`. Do not run development or PostgreSQL proof on Production to work around this restriction. Persistent worker reports remain historical until a worker is executable again.
+Four SentinelX hosts are currently connected, but the Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` returned `upgrade_required` while connected/healthy. Do not run development or PostgreSQL proof on Production to work around this restriction. Persistent worker reports remain historical until a worker is executable again.
 
 ## Task13
 
-Do not merge the partial publication branch. Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
+Do not merge the partial publication branch. Fresh GitHub comparison shows `lead/task13-kill-session-publish-20260901` is 5 commits ahead and 40 behind current main, and its compare surface contains only four Task13 files. Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
 
 ## Task16
 

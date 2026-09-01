@@ -6,11 +6,11 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `d00c96be9dccbb1f5402a24a18beeef6910c78cd`, verified merge of PR #57 (Task15 Production evidence/docs only).
-- Exact-main CI run `33476564850`: **SUCCESS**.
+- Current `main`: `d4cd9b790881b7363f6fa526a83f980f0451f701`, verified merge of PR #58 (post-Task15 reconciliation only).
+- Exact-main CI run `33485730020`: **SUCCESS**.
 - Open PRs before this reconciliation: old draft #4 only; it is not current roadmap work.
 - Production schema: **20**.
-- Production runtime source remains the Task15 rollout commit `26aa74dddfd23535e45837f21531cf67ea2fd238`; PR #57 did not change runtime artifacts.
+- Production runtime source remains the Task15 rollout commit `26aa74dddfd23535e45837f21531cf67ea2fd238`; PRs #57/#58 did not change runtime artifacts.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
@@ -20,13 +20,13 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Fresh Production state
 
-Fresh read-only verification on 2026-09-01 confirmed all four services `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` are active. `/api/v1/health/ready` returned HTTP 200 with `ready=true`, `db=ok`, `schema=ok`. No Production mutation, restart, reload or migration was performed during this reconciliation.
+Fresh read-only verification at 2026-09-01T09:11Z confirmed all four services `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` are active. `/api/v1/health/ready` reports `ready=true`, `db=ok`, `schema=ok`; checked recent service logs contained no panic/fatal/schema-mismatch matches. No Production mutation, restart, reload or migration was performed during this reconciliation.
 
 Exact Task15 rollout evidence remains `ops/evidence/TASK15-20260901-schema20-production-pass.md`; fresh encrypted backup and rollback material remain retained under `/var/backups/pvnaive`.
 
 ## Task13
 
-Remote publication remains partial. Reconstruct/recover the complete integration on top of exact schema20 main and rerun full Go/race/Web/real HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence. Mandatory invariants: exact runtime-credential/node/boot/session tuple, sibling survival, no credential revoke, no Caddy reload/restart, idempotent kill, tenant/role isolation and exactly-once final accounting.
+Remote publication remains partial. Fresh GitHub compare of `lead/task13-kill-session-publish-20260901` against current main is **5 commits ahead / 40 behind**, with only four Task13 files in the compare surface. Do not merge it. Reconstruct/recover the complete integration on top of exact schema20 main and rerun full Go/race/Web/real HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence. Mandatory invariants: exact runtime-credential/node/boot/session tuple, sibling survival, no credential revoke, no Caddy reload/restart, idempotent kill, tenant/role isolation and exactly-once final accounting.
 
 ## Task16
 
@@ -34,7 +34,7 @@ Do not merge the existing worker candidate as-is. Review identified a contract b
 
 ## Worker capacity
 
-Four SentinelX hosts are connected and the Free plan currently permits one active host. `pv-primary` is executable; `pv-worker-main` is connected/healthy but returns `upgrade_required` for command execution. Do not use Production as a development or PostgreSQL test worker. Persistent worker reports remain historical until a worker becomes executable.
+Four SentinelX hosts are connected and the Free plan currently permits one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` returned `upgrade_required` while the worker remained connected/healthy. Do not use Production as a development or PostgreSQL test worker. Persistent worker reports remain historical until a worker becomes executable.
 
 To resume parallel workers, disconnect unused connected hosts so a worker becomes active or change the SentinelX host limit.
 
