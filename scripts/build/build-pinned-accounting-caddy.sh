@@ -8,6 +8,7 @@ caddy_version="$(tr -d '[:space:]' < "${repo_root}/third_party/forwardproxy/CADD
 xcaddy_version="$(tr -d '[:space:]' < "${repo_root}/third_party/forwardproxy/XCADDY_VERSION")"
 accounting_patch="${repo_root}/third_party/forwardproxy/patches/0001-pvnaive-exact-accounting.patch"
 session_control_patch="${repo_root}/third_party/forwardproxy/patches/0002-pvnaive-session-control.patch"
+session_control_lifecycle_patch="${repo_root}/third_party/forwardproxy/patches/0003-pvnaive-session-control-lifecycle.patch"
 overlay_dir="${repo_root}/third_party/forwardproxy/overlay"
 out_dir="${PVNAIVE_ACCOUNTING_BUILD_OUT:-${repo_root}/dist/ws1-accounting}"
 
@@ -19,6 +20,7 @@ done
 [[ "${xcaddy_version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'ERROR: invalid pinned xcaddy version' >&2; exit 1; }
 [[ -f "${accounting_patch}" ]] || { echo 'ERROR: forwardproxy accounting patch is missing' >&2; exit 1; }
 [[ -f "${session_control_patch}" ]] || { echo 'ERROR: forwardproxy session-control patch is missing' >&2; exit 1; }
+[[ -f "${session_control_lifecycle_patch}" ]] || { echo 'ERROR: forwardproxy session-control lifecycle patch is missing' >&2; exit 1; }
 [[ -f "${overlay_dir}/pvnaive_accounting.go.src" ]] || { echo 'ERROR: forwardproxy overlay is missing' >&2; exit 1; }
 [[ -f "${overlay_dir}/pvnaive_accounting_test.go.src" ]] || { echo 'ERROR: forwardproxy accounting tests are missing' >&2; exit 1; }
 
@@ -43,6 +45,8 @@ prepare_forwardproxy() {
   cp "${overlay_dir}/pvnaive_accounting_test.go.src" "${src}/pvnaive_accounting_test.go"
   git -C "${src}" apply --check "${session_control_patch}"
   git -C "${src}" apply "${session_control_patch}"
+  git -C "${src}" apply --check "${session_control_lifecycle_patch}"
+  git -C "${src}" apply "${session_control_lifecycle_patch}"
   gofmt -w "${src}"/*.go
 
   (
@@ -136,6 +140,7 @@ printf '%s  caddy-pvnaive-accounting\n%s  caddy-pvnaive-accounting.repro\n' \
   "${sha_primary}" "${sha_secondary}" > "${out_dir}/caddy-pvnaive-accounting.repro.sha256"
 sha256sum "${accounting_patch}" > "${out_dir}/forwardproxy-accounting-patch.sha256"
 sha256sum "${session_control_patch}" > "${out_dir}/forwardproxy-session-control-patch.sha256"
+sha256sum "${session_control_lifecycle_patch}" > "${out_dir}/forwardproxy-session-control-lifecycle-patch.sha256"
 sha256sum "${overlay_dir}/pvnaive_accounting.go.src" > "${out_dir}/forwardproxy-overlay.sha256"
 sha256sum "${overlay_dir}/pvnaive_accounting_test.go.src" > "${out_dir}/forwardproxy-overlay-test.sha256"
 cat > "${out_dir}/PROVENANCE.txt" <<EOF
@@ -150,6 +155,7 @@ xcaddy_version_pin=${xcaddy_version}
 xcaddy_used=false
 accounting_patch_sha256=$(sha256sum "${accounting_patch}" | awk '{print $1}')
 session_control_patch_sha256=$(sha256sum "${session_control_patch}" | awk '{print $1}')
+session_control_lifecycle_patch_sha256=$(sha256sum "${session_control_lifecycle_patch}" | awk '{print $1}')
 overlay_sha256=$(sha256sum "${overlay_dir}/pvnaive_accounting.go.src" | awk '{print $1}')
 overlay_test_sha256=$(sha256sum "${overlay_dir}/pvnaive_accounting_test.go.src" | awk '{print $1}')
 binary_sha256=${sha_primary}
