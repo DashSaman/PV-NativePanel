@@ -1,0 +1,239 @@
+diff --git a/forwardproxy.go b/forwardproxy.go
+index 9232871..9628be7 100644
+--- a/forwardproxy.go
++++ b/forwardproxy.go
+@@ -115,6 +115,7 @@ type Handler struct {
+ 	PVNaiveRuntimeCredentials map[string]string `json:"pvnaive_runtime_credentials,omitempty"`
+ 	pvnaiveAccountingClient   *pvnaiveAccountingClient
+ 	pvnaiveSessions           *pvnaiveSessionRegistry
++	pvnaiveSessionControl     *pvnaiveSessionControlLease
+ }
+ 
+ // CaddyModule returns the Caddy module information.
+@@ -128,9 +129,6 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
+ // Provision ensures that h is set up properly before use.
+ func (h *Handler) Provision(ctx caddy.Context) error {
+ 	h.logger = ctx.Logger(h)
+-	if h.pvnaiveSessions == nil {
+-		h.pvnaiveSessions = newPVNaiveSessionRegistry()
+-	}
+ 
+ 	if h.DialTimeout <= 0 {
+ 		h.DialTimeout = caddy.Duration(30 * time.Second)
+@@ -255,6 +253,9 @@ func (h *Handler) Provision(ctx caddy.Context) error {
+ 	if err := h.provisionPVNaiveAccounting(); err != nil {
+ 		return err
+ 	}
++	if err := h.provisionPVNaiveSessionControl(); err != nil {
++		return err
++	}
+ 
+ 	return nil
+ }
+@@ -924,6 +925,7 @@ func readLinesFromFile(filename string) ([]string, error) {
+ // Interface guards
+ var (
+ 	_ caddy.Provisioner           = (*Handler)(nil)
++	_ caddy.CleanerUpper          = (*Handler)(nil)
+ 	_ caddyhttp.MiddlewareHandler = (*Handler)(nil)
+ 	_ caddyfile.Unmarshaler       = (*Handler)(nil)
+ )
+diff --git a/pvnaive_session_control.go b/pvnaive_session_control.go
+index 8ba6ec0..d02c807 100644
+--- a/pvnaive_session_control.go
++++ b/pvnaive_session_control.go
+@@ -12,7 +12,10 @@ import (
+ 	"time"
+ )
+ 
+-const pvnaiveSessionControlMaxRequestBytes = 8 << 10
++const (
++	pvnaiveSessionControlMaxRequestBytes = 8 << 10
++	pvnaiveSessionControlSocketPath      = "/run/pvnaive/session-control.sock"
++)
+ 
+ type pvnaiveSessionTuple struct {
+ 	RuntimeCredentialID string
+@@ -95,6 +98,93 @@ type pvnaiveSessionControlServer struct {
+ 	closeErr   error
+ }
+ 
++type pvnaiveSessionControlShared struct {
++	server   *pvnaiveSessionControlServer
++	registry *pvnaiveSessionRegistry
++	refs     int
++}
++
++type pvnaiveSessionControlManager struct {
++	mu     sync.Mutex
++	byPath map[string]*pvnaiveSessionControlShared
++}
++
++var pvnaiveSessionControls = pvnaiveSessionControlManager{byPath: make(map[string]*pvnaiveSessionControlShared)}
++
++type pvnaiveSessionControlLease struct {
++	path   string
++	shared *pvnaiveSessionControlShared
++	once   sync.Once
++	err    error
++}
++
++func acquirePVNaiveSessionControl(path string) (*pvnaiveSessionControlLease, *pvnaiveSessionRegistry, error) {
++	pvnaiveSessionControls.mu.Lock()
++	defer pvnaiveSessionControls.mu.Unlock()
++	if shared := pvnaiveSessionControls.byPath[path]; shared != nil {
++		shared.refs++
++		return &pvnaiveSessionControlLease{path: path, shared: shared}, shared.registry, nil
++	}
++	registry := newPVNaiveSessionRegistry()
++	server, err := startPVNaiveSessionControlServer(path, registry)
++	if err != nil {
++		return nil, nil, err
++	}
++	shared := &pvnaiveSessionControlShared{server: server, registry: registry, refs: 1}
++	pvnaiveSessionControls.byPath[path] = shared
++	return &pvnaiveSessionControlLease{path: path, shared: shared}, registry, nil
++}
++
++func (l *pvnaiveSessionControlLease) Close() error {
++	if l == nil {
++		return nil
++	}
++	l.once.Do(func() {
++		pvnaiveSessionControls.mu.Lock()
++		defer pvnaiveSessionControls.mu.Unlock()
++		shared := pvnaiveSessionControls.byPath[l.path]
++		if shared == nil || shared != l.shared {
++			return
++		}
++		shared.refs--
++		if shared.refs > 0 {
++			return
++		}
++		delete(pvnaiveSessionControls.byPath, l.path)
++		l.err = shared.server.Close()
++	})
++	return l.err
++}
++
++func (h *Handler) provisionPVNaiveSessionControl() error {
++	return h.provisionPVNaiveSessionControlAt(pvnaiveSessionControlSocketPath)
++}
++
++func (h *Handler) provisionPVNaiveSessionControlAt(path string) error {
++	if h == nil || h.pvnaiveAccountingClient == nil {
++		return nil
++	}
++	if h.pvnaiveSessionControl != nil {
++		return nil
++	}
++	lease, registry, err := acquirePVNaiveSessionControl(path)
++	if err != nil {
++		return err
++	}
++	h.pvnaiveSessions = registry
++	h.pvnaiveSessionControl = lease
++	return nil
++}
++
++func (h *Handler) Cleanup() error {
++	if h == nil || h.pvnaiveSessionControl == nil {
++		return nil
++	}
++	lease := h.pvnaiveSessionControl
++	h.pvnaiveSessionControl = nil
++	return lease.Close()
++}
++
+ type pvnaiveSessionControlRequest struct {
+ 	RuntimeCredentialID string `json:"runtime_credential_id"`
+ 	NodeID              string `json:"node_id"`
+diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
+index f16e29e..bef338f 100644
+--- a/pvnaive_session_control_test.go
++++ b/pvnaive_session_control_test.go
+@@ -4,6 +4,7 @@ import (
+ 	"bytes"
+ 	"context"
+ 	"encoding/json"
++	"errors"
+ 	"net"
+ 	"net/http"
+ 	"os"
+@@ -198,3 +199,76 @@ func TestPVNaiveSessionControlServerKillsExactTupleAndCleansOwnedSocket(t *testi
+ 		t.Fatalf("socket after close stat err=%v want not-exist", err)
+ 	}
+ }
++
++func pvnaiveShortSocketPath(t *testing.T) string {
++	t.Helper()
++	f, err := os.CreateTemp("", "pv-t13-*.sock")
++	if err != nil {
++		t.Fatalf("create short socket path: %v", err)
++	}
++	path := f.Name()
++	if err := f.Close(); err != nil {
++		t.Fatalf("close temp socket placeholder: %v", err)
++	}
++	if err := os.Remove(path); err != nil {
++		t.Fatalf("remove temp socket placeholder: %v", err)
++	}
++	t.Cleanup(func() { _ = os.Remove(path) })
++	return path
++}
++
++func TestPVNaiveSessionControlLeaseKeepsSocketAcrossReload(t *testing.T) {
++	path := pvnaiveShortSocketPath(t)
++	lease1, registry1, err := acquirePVNaiveSessionControl(path)
++	if err != nil {
++		t.Fatalf("acquire first lease: %v", err)
++	}
++	lease2, registry2, err := acquirePVNaiveSessionControl(path)
++	if err != nil {
++		_ = lease1.Close()
++		t.Fatalf("acquire successor lease: %v", err)
++	}
++	if registry1 != registry2 {
++		t.Fatal("reload successor must share live registry")
++	}
++	if err := lease1.Close(); err != nil {
++		t.Fatalf("close predecessor: %v", err)
++	}
++	if _, err := os.Lstat(path); err != nil {
++		_ = lease2.Close()
++		t.Fatalf("predecessor removed successor socket: %v", err)
++	}
++	if err := lease2.Close(); err != nil {
++		t.Fatalf("close successor: %v", err)
++	}
++	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
++		t.Fatalf("last lease must remove socket, stat=%v", err)
++	}
++}
++
++func TestPVNaiveSessionControlProvisionOnlyForAccountingHandler(t *testing.T) {
++	path := pvnaiveShortSocketPath(t)
++	h := &Handler{}
++	if err := h.provisionPVNaiveSessionControlAt(path); err != nil {
++		t.Fatalf("non-accounting provision: %v", err)
++	}
++	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
++		t.Fatalf("non-accounting handler created control socket: %v", err)
++	}
++	h.pvnaiveAccountingClient = &pvnaiveAccountingClient{}
++	if err := h.provisionPVNaiveSessionControlAt(path); err != nil {
++		t.Fatalf("accounting provision: %v", err)
++	}
++	if h.pvnaiveSessions == nil || h.pvnaiveSessionControl == nil {
++		t.Fatal("accounting handler must own shared registry lease")
++	}
++	if _, err := os.Lstat(path); err != nil {
++		t.Fatalf("accounting handler did not create socket: %v", err)
++	}
++	if err := h.Cleanup(); err != nil {
++		t.Fatalf("cleanup: %v", err)
++	}
++	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
++		t.Fatalf("cleanup must release final socket: %v", err)
++	}
++}
