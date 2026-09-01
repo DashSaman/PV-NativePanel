@@ -62,7 +62,7 @@ SELECT pvnaive.direct_naive_accounting_enter_context();
 INSERT INTO pvnaive.service_terms(id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,starts_at,expires_at,state,concurrency_limit,unique_ip_limit,accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,accounting_baseline_upload_bytes,accounting_baseline_download_bytes)
 -- unique_ip_limit=2: two unique IPs allowed; third distinct IP must be rejected
 SELECT '18180000-0000-0000-0000-000000000041',tenant_id,id,1000000,3600,'on_creation','2026-08-31 00:00:00+00','2026-08-31 00:00:00+00','2026-09-01 00:00:00+00','active',NULL,2,'known','fresh_managed_term','2026-08-31 00:00:00+00',0,0
-FROM pvnaive.users WHERE id='18180000-0000-0000-000000000021';
+FROM pvnaive.users WHERE id='18180000-0000-0000-0000-000000000021';
 SELECT pvnaive.direct_naive_accounting_leave_context();
 COMMIT;
 INSERT INTO pvnaive.user_runtime_credentials(id,tenant_id,user_id,service_term_id,runtime_credential_id,role,bound_at)
@@ -71,17 +71,17 @@ FROM pvnaive.users WHERE id='18180000-0000-0000-0000-000000000021';
 SQL
 
 # Two sessions from the SAME IP should both be accepted (same IP counts once)
-same_ip_a="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-000000000061','18180000-0000-0000-000000000071',1,'2026-08-31 01:00:00+00',true,0,0,false,'10.0.0.1')")"
+same_ip_a="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-0000-000000000061','18180000-0000-0000-0000-000000000071',1,'2026-08-31 01:00:00+00',true,0,0,false,'10.0.0.1')")"
 [[ "$same_ip_a" =~ ^(t|true)\|accepted$ ]] || { echo "ERROR: first session from 10.0.0.1 rejected: $same_ip_a" >&2; exit 1; }
-same_ip_b="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-000000000061','18180000-0000-0000-000000000072',1,'2026-08-31 01:00:01+00',true,0,0,false,'10.0.0.1')")"
+same_ip_b="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-0000-000000000061','18180000-0000-0000-0000-000000000072',1,'2026-08-31 01:00:01+00',true,0,0,false,'10.0.0.1')")"
 [[ "$same_ip_b" =~ ^(t|true)\|accepted$ ]] || { echo "ERROR: second session from same IP 10.0.0.1 rejected: $same_ip_b" >&2; exit 1; }
 
 # A session from a NEW IP should be accepted as unique #2 (limit=2 allows 2 unique IPs)
-new_ip2="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-000000000061','18180000-0000-0000-000000000073',1,'2026-08-31 01:00:02+00',true,0,0,false,'10.0.0.2')")"
+new_ip2="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-0000-000000000061','18180000-0000-0000-0000-000000000073',1,'2026-08-31 01:00:02+00',true,0,0,false,'10.0.0.2')")"
 [[ "$new_ip2" =~ ^(t|true)\|accepted$ ]] || { echo "ERROR: third session from new IP 10.0.0.2 rejected (should be accepted as unique #2): $new_ip2" >&2; exit 1; }
 
 # A session from a THIRD distinct IP should be rejected (unique_ip_limit=2, 3 distinct IPs exceed limit)
-diff_ip="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-000000000061','18180000-0000-0000-000000000074',1,'2026-08-31 01:00:03+00',true,0,0,false,'10.0.0.3')")"
+diff_ip="$(psql_app -c "SELECT concat_ws('|',accepted::text,reason) FROM pvnaive.direct_naive_accounting_ingest('18180000-0000-0000-0000-000000000031','task15-ip-limited','node-task15','18180000-0000-0000-0000-000000000061','18180000-0000-0000-0000-000000000074',1,'2026-08-31 01:00:03+00',true,0,0,false,'10.0.0.3')")"
 [[ "$diff_ip" =~ ^(f|false)\|unique_ip_limit$ ]] || { echo "ERROR: fourth session from different IP 10.0.0.3 not rejected (should be rejected, exceeds limit=2): $diff_ip" >&2; exit 1; }
 
 # Replay of an exact session identity is still idempotent (duplicate semantics from schema19)
