@@ -33,6 +33,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           bash tests/stages/WS1_reproducible_caddy_build_contract_test.sh
+      - name: Task13 exact-session control contract
+        run: |
+          set -Eeuo pipefail
+          bash tests/stages/Task13_forwardproxy_session_control_test.sh
       - name: Patch, upstream tests, vet and bit-reproducible Caddy build
         run: |
           set -Eeuo pipefail
