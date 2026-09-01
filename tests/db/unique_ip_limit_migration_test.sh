@@ -137,7 +137,7 @@ VALUES('18180000-0000-0000-0000-000000000231','task15-race-limited',decode(repea
 BEGIN;
 SELECT pvnaive.direct_naive_accounting_enter_context();
 INSERT INTO pvnaive.service_terms(id,tenant_id,user_id,quota_bytes,duration_seconds,start_policy,purchased_at,starts_at,expires_at,state,concurrency_limit,unique_ip_limit,accounting_baseline_state,accounting_baseline_source,accounting_baseline_cutoff_at,accounting_baseline_upload_bytes,accounting_baseline_download_bytes)
-SELECT '18180000-0000-0000-0000-000000000241',tenant_id,id,1000000,3600,'on_creation','2026-08-31 00:00:00+00','2026-08-31 00:00:00+00','2026-09-01 00:00:00+00','active',NULL,1,'known','fresh_managed_term','2026-08-31 00:00:00+00',0,0
+SELECT '18180000-0000-0000-0000-000000000241',tenant_id,id,1000000,3600,'on_first_successful_connection','2026-08-31 00:00:00+00',NULL,NULL,'pending',NULL,1,'known','fresh_managed_term','2026-08-31 00:00:00+00',0,0
 FROM pvnaive.users WHERE id='18180000-0000-0000-0000-000000000221';
 SELECT pvnaive.direct_naive_accounting_leave_context();
 COMMIT;
