@@ -2,7 +2,7 @@ diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
 new file mode 100644
 --- /dev/null
 +++ b/pvnaive_session_control_test.go
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,89 @@
 +package forwardproxy
 +
 +import (
