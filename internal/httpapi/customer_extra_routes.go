@@ -53,7 +53,7 @@ func (s *server) customerExtraHandler(name string) http.Handler {
 		}
 		return nil
 	case "users.sessions.delete":
-		return http.HandlerFunc(s.notImplementedSessionKill)
+		return http.HandlerFunc(s.killCustomerActiveSession)
 	case "users.bulk.preview":
 		return http.HandlerFunc(s.previewCustomerBulk)
 	case "users.bulk.execute":
