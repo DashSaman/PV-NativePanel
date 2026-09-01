@@ -6,6 +6,7 @@ import {
   getProductSubscription,
   listProductCustomers,
   listProductCustomerSessions,
+  killProductCustomerSessionAndReload,
   listProductGroups,
   listProductPlans,
   listProductTags,
@@ -326,7 +327,7 @@ function BulkForm({ selected, plans, groups, tags, onDone, onClose }: { selected
   </form>;
 }
 
-function SessionsModal({ dialog, onClose }: { dialog: Extract<DialogState, { type: "sessions" }>; onClose: () => void }) {
+function SessionsModal({ dialog, onClose, onKill, busySessionID }: { dialog: Extract<DialogState, { type: "sessions" }>; onClose: () => void; onKill: (session: ProductActiveSession) => void; busySessionID: string }) {
   const { customer, sessions, observedAt, loading, error } = dialog;
   return <Modal title={`نشست‌های فعال · ${customer.username}`} eyebrow="مدیریت نشست" onClose={onClose}>
     {loading && <div className="table-loading">در حال بارگذاری نشست‌ها…</div>}
@@ -335,7 +336,7 @@ function SessionsModal({ dialog, onClose }: { dialog: Extract<DialogState, { typ
     {!loading && !error && sessions.length > 0 && <>
       <div className="readonly-banner">{sessions.length} نشست فعال · زمان بروزرسانی: {new Date(observedAt).toLocaleString("fa-IR")}</div>
       <div className="product-table-wrap"><table className="product-table compact-table"><thead><tr>
-        <th>آدرس IP</th><th>گره</th><th>متصل شده</th><th>آخرین فعالیت</th><th>مدت</th><th>آپلود</th><th>دانلود</th>
+        <th>آدرس IP</th><th>گره</th><th>متصل شده</th><th>آخرین فعالیت</th><th>مدت</th><th>آپلود</th><th>دانلود</th><th>عملیات</th>
       </tr></thead><tbody>
         {sessions.map((session) => <tr key={session.session_id}>
           <td><code>{session.client_ip}</code></td>
@@ -345,6 +346,7 @@ function SessionsModal({ dialog, onClose }: { dialog: Extract<DialogState, { typ
           <td>{formatDuration(session.duration_seconds)}</td>
           <td>{formatBytes(session.upload_bytes)}</td>
           <td>{formatBytes(session.download_bytes)}</td>
+          <td><button type="button" className="danger-action" disabled={busySessionID === session.session_id} onClick={() => onKill(session)}>{busySessionID === session.session_id ? "در حال قطع…" : "قطع نشست"}</button></td>
         </tr>)}
       </tbody></table></div>
     </>}
@@ -360,7 +362,7 @@ export function ProductCustomers({ role: _role }: Props) {
   const [plans, setPlans] = useState<ProductPlan[]>([]); const [groups, setGroups] = useState<ProductGroup[]>([]); const [tags, setTags] = useState<ProductTag[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<DialogState | null>(null);
-  const [loading, setLoading] = useState(true); const [busyID, setBusyID] = useState(""); const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true); const [busyID, setBusyID] = useState(""); const [sessionBusyID, setSessionBusyID] = useState(""); const [message, setMessage] = useState("");
 
   const refreshCatalog = useCallback(async () => {
     const [nextPlans, nextGroups, nextTags] = await Promise.all([listProductPlans(), listProductGroups(), listProductTags()]);
@@ -432,6 +434,19 @@ export function ProductCustomers({ role: _role }: Props) {
     finally { setBusyID(""); }
   }
 
+  async function killSession(customer: ProductCustomer, session: ProductActiveSession) {
+    if (!window.confirm(`فقط نشست انتخاب‌شده برای ${customer.username} قطع شود؟ رمز و لینک اشتراک تغییر نمی‌کنند.`)) return;
+    setSessionBusyID(session.session_id);
+    try {
+      const result = await killProductCustomerSessionAndReload(customer.id, session.session_id);
+      setDialog({ type: "sessions", customer, sessions: result.sessions, observedAt: result.observed_at, loading: false, error: "" });
+    } catch (error) {
+      setDialog((current) => current?.type === "sessions" && current.customer.id === customer.id
+        ? { ...current, loading: false, error: error instanceof Error ? error.message : "قطع نشست انجام نشد." }
+        : current);
+    } finally { setSessionBusyID(""); }
+  }
+
   return <main className="product-page customers-product-page">
     <header className="product-hero clean-hero"><div><p className="eyebrow">مدیریت سرویس</p><h1>کاربران</h1><p>ساخت، تمدید و مدیریت حساب‌ها از یک صفحه ساده.</p></div><div className="hero-actions"><button className="button-secondary" onClick={() => void refresh()}>↻ بروزرسانی</button><button className="primary-action" onClick={() => setDialog({ type: "create" })}>＋ کاربر جدید</button></div></header>
 
@@ -493,6 +508,6 @@ export function ProductCustomers({ role: _role }: Props) {
     {dialog?.type === "subscription" && <Modal title={`اشتراک · ${dialog.customer.username}`} eyebrow={dialog.rotated ? "لینک جدید" : "نمایش اشتراک"} wide onClose={() => setDialog(null)}><div className="readonly-banner">{dialog.rotated ? "لینک قبلی باطل و لینک جدید صادر شد؛ رمز کاربر تغییر نکرد." : "لینک اشتراک و QR آماده استفاده است."}</div><SubscriptionContent delivery={dialog.delivery} /></Modal>}
     {dialog?.type === "secret" && <Modal title={`تحویل امن · ${dialog.username}`} eyebrow="فقط یک‌بار" onClose={() => setDialog(null)}><div className="product-warning"><strong>{dialog.notice}</strong></div>{dialog.password && <label>رمز<div className="copy-row"><input readOnly value={dialog.password} /><button onClick={() => void navigator.clipboard.writeText(dialog.password!)}>کپی</button></div></label>}{dialog.subscriptionPath && <><label>صفحه اشتراک کاربر<div className="copy-row"><input readOnly value={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} /><a className="open-account-page" href={absoluteSubscription(humanAccountPath(dialog.subscriptionPath, dialog.accountPagePath))} target="_blank" rel="noreferrer">باز کردن صفحه</a></div></label><label>لینک ساب کلاینت<div className="copy-row"><input readOnly value={absoluteSubscription(dialog.subscriptionPath)} /><button onClick={() => void navigator.clipboard.writeText(absoluteSubscription(dialog.subscriptionPath!))}>کپی</button></div></label></>}</Modal>}
     {dialog?.type === "bulk" && <Modal title="عملیات گروهی" eyebrow="بازبینی قبل از اجرا" wide onClose={() => setDialog(null)}><BulkForm selected={Array.from(selected)} plans={plans} groups={groups} tags={tags} onClose={() => setDialog(null)} onDone={async () => { setSelected(new Set()); await refresh(); }} /></Modal>}
-    {dialog?.type === "sessions" && <SessionsModal dialog={dialog} onClose={() => setDialog(null)} />}
+    {dialog?.type === "sessions" && <SessionsModal dialog={dialog} busySessionID={sessionBusyID} onKill={(session) => void killSession(dialog.customer, session)} onClose={() => setDialog(null)} />}
   </main>;
 }
