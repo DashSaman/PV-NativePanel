@@ -6,6 +6,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 forwardproxy_commit="$(tr -d '[:space:]' < "${repo_root}/third_party/forwardproxy/UPSTREAM_COMMIT")"
 patch1="${repo_root}/third_party/forwardproxy/patches/0001-pvnaive-exact-accounting.patch"
 patch2="${repo_root}/third_party/forwardproxy/patches/0002-pvnaive-session-control.patch"
+patch3="${repo_root}/third_party/forwardproxy/patches/0003-pvnaive-session-control-lifecycle.patch"
 overlay="${repo_root}/third_party/forwardproxy/overlay"
 work="$(mktemp -d)"
 trap 'rm -rf -- "${work}"' EXIT
@@ -23,6 +24,8 @@ cp "${overlay}/pvnaive_accounting.go.src" "${src}/pvnaive_accounting.go"
 cp "${overlay}/pvnaive_accounting_test.go.src" "${src}/pvnaive_accounting_test.go"
 git -C "${src}" apply --check "${patch2}"
 git -C "${src}" apply "${patch2}"
+git -C "${src}" apply --check "${patch3}"
+git -C "${src}" apply "${patch3}"
 gofmt -w "${src}"/*.go
 (
   cd "${src}"
