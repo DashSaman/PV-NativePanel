@@ -5,11 +5,18 @@ umask 077
 bundle="${1:-}"
 [[ ${EUID} -eq 0 ]] || { echo 'ERROR: deploy must run as root' >&2; exit 1; }
 [[ -d "$bundle" && -f "$bundle/RELEASE.json" && -f "$bundle/SHA256SUMS" ]] || { echo 'ERROR: unpacked R1 bundle required' >&2; exit 1; }
-for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find getent groupadd groupdel; do
+for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find getent groupadd groupdel grep; do
   command -v "$cmd" >/dev/null || { echo "ERROR: missing $cmd" >&2; exit 1; }
 done
 ( cd "$bundle" && sha256sum --check --strict SHA256SUMS >/dev/null ) || { echo 'ERROR: release checksums failed' >&2; exit 1; }
 grep -q '"product"[[:space:]]*:[[:space:]]*"PVNaive"' "$bundle/RELEASE.json" || { echo 'ERROR: product mismatch' >&2; exit 1; }
+[[ -x "$bundle/caddy/caddy-pvnaive-accounting" ]] || { echo 'ERROR: Task13 Caddy candidate missing from bundle' >&2; exit 1; }
+[[ -f "$bundle/caddy/PROVENANCE.txt" ]] || { echo 'ERROR: Task13 Caddy provenance missing from bundle' >&2; exit 1; }
+candidate_caddy_sha="$(sha256sum "$bundle/caddy/caddy-pvnaive-accounting" | awk '{print $1}')"
+grep -Fq "binary_sha256=$candidate_caddy_sha" "$bundle/caddy/PROVENANCE.txt" || { echo 'ERROR: Task13 Caddy provenance SHA mismatch' >&2; exit 1; }
+grep -Fq 'reproducibility_verified=true' "$bundle/caddy/PROVENANCE.txt" || { echo 'ERROR: Task13 Caddy reproducibility proof missing' >&2; exit 1; }
+"$bundle/caddy/caddy-pvnaive-accounting" validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || { echo 'ERROR: Task13 Caddy candidate failed config validation' >&2; exit 1; }
+"$bundle/caddy/caddy-pvnaive-accounting" list-modules | grep -Fx 'http.handlers.forward_proxy' >/dev/null || { echo 'ERROR: Task13 Caddy candidate missing forward_proxy module' >&2; exit 1; }
 
 commit="$(sed -nE 's/.*"source_commit"[[:space:]]*:[[:space:]]*"([0-9a-f]{40})".*/\1/p' "$bundle/RELEASE.json")"
 release_schema="$(sed -nE 's/.*"schema_version"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' "$bundle/RELEASE.json")"
@@ -49,6 +56,12 @@ for name in pvnaive pvnaive-password pvnaive-runtime-agent pvnaive-telemetry-age
   cp -a "/opt/pvnaive/bin/$name" "$backup/$name.before"
 done
 cp -a /etc/caddy/Caddyfile "$backup/Caddyfile.before"
+cp -a /usr/local/bin/caddy "$backup/caddy-before"
+if [[ -f /etc/systemd/system/caddy-naive.service.d/20-pvnaive-accounting.conf ]]; then
+  cp -a /etc/systemd/system/caddy-naive.service.d/20-pvnaive-accounting.conf "$backup/20-pvnaive-accounting.conf.before"
+else
+  : >"$backup/20-pvnaive-accounting.conf.missing"
+fi
 
 for unit in pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-agent.service pvnaive-backup.service pvnaive-backup.timer pvnaive-restore-drill.service pvnaive-restore-drill.timer; do
   if [[ -f "/etc/systemd/system/$unit" ]]; then
@@ -120,6 +133,9 @@ install -o root -g root -m 0750 "$bundle/scripts/ops/"*.sh /opt/pvnaive/ops/
 for file in "$bundle/systemd/"*; do
   [[ -f "$file" ]] && install -o root -g root -m 0644 "$file" "/etc/systemd/system/$(basename "$file")"
 done
+install -d -o root -g root -m 0755 /etc/systemd/system/caddy-naive.service.d
+install -o root -g root -m 0644 "$bundle/systemd/caddy-naive.service.d/20-pvnaive-accounting.conf" /etc/systemd/system/caddy-naive.service.d/20-pvnaive-accounting.conf
+install -o root -g root -m 0755 "$bundle/caddy/caddy-pvnaive-accounting" /usr/local/bin/caddy
 if [[ -f "$bundle/tmpfiles/pvnaive.conf" ]]; then
   install -o root -g root -m 0644 "$bundle/tmpfiles/pvnaive.conf" /etc/tmpfiles.d/pvnaive.conf
   systemd-tmpfiles --create /etc/tmpfiles.d/pvnaive.conf
@@ -134,6 +150,7 @@ printf '%s\n' "$web_release" >/opt/pvnaive/DEPLOYED_WEB_RELEASE
 
 systemctl daemon-reload
 systemctl restart pvnaive-telemetry-agent.service
+systemctl restart caddy-naive.service
 systemctl restart pvnaive-runtime-agent.service
 systemctl restart pvnaive-api.service
 systemctl enable --now pvnaive-backup.timer pvnaive-restore-drill.timer
@@ -152,12 +169,13 @@ for unit in pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-
 [[ "$(cat /opt/pvnaive/DEPLOYED_COMMIT)" == "$commit" ]]
 [[ "$(cat /opt/pvnaive/DEPLOYED_WEB_RELEASE)" == "$web_release" ]]
 [[ "$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')" == "$caddy_sha" ]]
-[[ "$(systemctl show caddy-naive.service -p MainPID --value)" == "$caddy_pid" ]]
-[[ "$(systemctl show caddy-naive.service -p NRestarts --value)" == "$caddy_restarts" ]]
+[[ "$(sha256sum /usr/local/bin/caddy | awk '{print $1}')" == "$candidate_caddy_sha" ]]
+[[ "$(systemctl show caddy-naive.service -p MainPID --value)" != "$caddy_pid" ]]
+systemctl is-active --quiet caddy-naive.service
 trap - ERR INT TERM HUP
 
 echo 'PVNAIVE_R1_DEPLOY_RESULT=PASSED'
 echo "PVNAIVE_R1_SOURCE_COMMIT=$commit"
 echo "PVNAIVE_R1_SCHEMA_VERSION=$release_schema"
 echo "PVNAIVE_R1_BACKUP_DIR=$backup"
-echo 'PVNAIVE_R1_CADDY_ACTION=NONE'
+echo 'PVNAIVE_R1_CADDY_ACTION=ONE_CONTROLLED_BINARY_SWAP_RESTART'
