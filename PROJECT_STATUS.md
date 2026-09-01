@@ -13,63 +13,54 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current main after verified documentation merge PR #55: `c6228290937a18c2dbe4ee06f966dc4636521d57`.
-- PR #55 exact head `156f728f...` passed CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy before merge.
-- Open roadmap PR: **#54 Task15 schema20**; old draft PR #4 remains unrelated and must not be merged as current work.
+- Current main: `26aa74dddfd23535e45837f21531cf67ea2fd238` (verified merge of PR #54, Task15 schema20).
+- Exact-main CI run `33471780919`: **SUCCESS**.
+- Open PRs: old draft #4 only; it is unrelated to the current roadmap and remains unmerged pending a real Karing client smoke.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
-- Security Task35: **DONE in main** (BUG-001/002/003 closed in repository truth).
-- Task13 exact live-session kill: **IN PROGRESS / recovery + publication incomplete**.
-- Task15 unique-IP limit: **IN PROGRESS / PR #54, not merged/deployed**.
-- Task16 bounded IP/session history: **IN PROGRESS but integration remains ordered behind schema20**.
+- Security Task35 / BUG-001/002/003: **DONE in main**.
+- Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
+- Task13 exact live-session kill: **IN PROGRESS / current-main recovery + publication incomplete**.
+- Task16 bounded IP/session history: **IN PROGRESS / now unblocked by stable schema20 but not merged/deployed**.
 
 No task becomes DONE from a local candidate, historical worker report or partial branch alone.
 
 ## Fresh Production truth
 
-SentinelX execution access to `pv-primary` is currently available again. Fresh read-only checks on 2026-09-01 show:
+Fresh guarded rollout on 2026-09-01 deployed exact main `26aa74dddfd23535e45837f21531cf67ea2fd238` and schema20.
 
-- `pvnaive-api.service`, `caddy-naive.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`: **active**;
-- API listener: `127.0.0.1:8080`; Caddy: public `:80` / `:443`;
-- canonical liveness endpoint `GET /api/v1/health/live`: HTTP **200**, service status `ok`;
-- canonical readiness endpoint `GET /api/v1/health/ready`: HTTP **200**, DB/schema ready;
-- DB health script with `/etc/pvnaive/db.env`: `PVNAIVE_DB_HEALTH=OK`, schema **19**, direct secret/MFA SELECT denied;
-- release metadata source commit: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`;
-- release metadata schema: **19**.
+- `pvnaive-api.service`, `caddy-naive.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`: **active**.
+- API listener: `127.0.0.1:8080`; Caddy: public `:80` / `:443`.
+- `GET /api/v1/health/live`: HTTP **200**.
+- `GET /api/v1/health/ready`: HTTP **200**, DB/schema ready.
+- public SNI-correct panel probe: HTTP **200**.
+- public SNI-correct API readiness probe: HTTP **200**.
+- database schema: **20**; `/etc/pvnaive/db.env` expected schema: **20**.
+- release metadata source commit: `26aa74dddfd23535e45837f21531cf67ea2fd238`.
+- Caddy: `v2.11.2`, pinned `http.handlers.forward_proxy` module present and config validation passes.
 
-Important correction: `/healthz` and `/readyz` are not the canonical routes on this deployed binary and return 404. The current health routes are `/api/v1/health/live` and `/api/v1/health/ready`. A 404 on the legacy probes is not an outage.
+Task15 rollout used a fresh encrypted DB/config backup and a separately checksummed rollback snapshot before migration. Exact evidence is in `ops/evidence/TASK15-20260901-schema20-production-pass.md`.
 
-No Production mutation was performed during this verification. Production remains schema19/source `0645b2e...`.
+Important health-route correction remains: `/healthz` and `/readyz` are not canonical on this deployed API. Use `/api/v1/health/live` and `/api/v1/health/ready`.
 
 ## Task13 — exact live-session kill
 
-Remote publication branch `lead/task13-kill-session-publish-20260901` remains incomplete. Historical evidence proves a prior complete candidate passed strong exact-kill gates, but the complete current-main source must be recovered/reconstructed and reverified before merge. Invariants remain exact credential/node/boot/session identity, sibling survival, no credential revoke, no Caddy restart/reload, idempotent repeated kill, tenant/role isolation and exactly-once normal final accounting.
-
-The persistent worker hosts are currently connected but unavailable for command execution under the SentinelX one-active-host limit while `pv-primary` is active. Do not claim fresh Task13 worker progress until access to a worker host is restored or the source is reconstructed through repository-backed evidence.
-
-## Task15 — simultaneous unique-IP limit / schema20
-
-PR #54 implements the schema20 candidate. Its original exact head `31fd2caf...` had Go and Web PASS and Pinned Forwardproxy PASS, but CI database and WS1 Exact Accounting PostgreSQL18 gates failed. The first exact failure was not the unique-IP SQL itself: `tests/stages/S04_db_env_version_test.sh` still treated schema20 as unsupported.
-
-That contract is now corrected on PR #54 head `ece028cb9122131f0b362474609ddd9f69701ced`: schema20 is accepted and schema21 is rejected. This advances the gate to the next real PostgreSQL18 failure rather than weakening accounting semantics. PR #54 is still **NOT mergeable as DONE** until a fresh exact-head run proves CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy all green.
-
-Fresh PG18 debugging evidence also identified malformed UUID fixtures and an incorrect `first_connected_at` expectation for an `on_creation` service term. Those fixes must be applied only when reproduced on the current exact head; do not alter production accounting semantics to satisfy a bad fixture.
-
-Task15 invariants remain trusted Caddy `RemoteAddr` only, fail-closed-before-acceptance, PostgreSQL service-term serialization, same-IP de-duplication, schema19 concurrent-session authority and no leaked peer/session rows on rejection.
+Task13 remains the highest-priority unfinished runtime/session item. Do not merge the old partial publication branch. Required invariants: exact runtime-credential/node/boot/session tuple, sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once normal final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/real HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
 
 ## Task16 — bounded IP/session history / schema21
 
-Task16 stays behind stable schema20. Required proof: exact 30-day retention, tenant-scoped RLS/authorization, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, bounded pagination/read paths, coherent schema21 migration/checksums and safe rollback. No merge/deploy/DONE claim exists yet.
+Schema20 is now stable in Production, so Task16 is no longer blocked by Task15 ordering. Required proof remains exact 30-day retention, tenant-scoped RLS/authorization, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, bounded pagination/read paths, coherent schema21 migration/checksums and safe rollback. It is not yet merged or deployed.
 
 ## Worker / orchestration capacity
 
-Three SentinelX hosts are connected, but the Free plan permits one active host. `pv-primary` is the currently usable host; the two worker hosts return `upgrade_required`. Therefore no new worker-agent process was started in this run and existing persistent worker reports cannot be freshly inspected from those hosts. Repository/CI work continues independently. Human action is needed only if parallel worker execution is desired: disconnect an unused connected host so a worker can become active, or change the SentinelX plan.
+Three SentinelX hosts remain connected but the current plan permits only one active host. `pv-primary` is executable; the two worker hosts remain unavailable for command execution while Production is the active host. Therefore persistent worker reports cannot be freshly trusted until a worker becomes executable. Repository/CI work can continue independently.
+
+Human action is needed only to restore parallel worker capacity: disconnect an unused connected host so a worker can become active, or change the SentinelX host limit.
 
 ## Immediate execution order
 
-1. Let PR #54 rerun from head `ece028cb...`; inspect the next exact PostgreSQL18 failure and fix only reproduced test/implementation defects.
-2. Merge Task15 only after exact-head CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy are all green.
-3. Do not deploy schema20 until it is merged into an eligible main and a fresh Production backup/rollback snapshot is created and verified.
-4. Resume Task13 source recovery/reconstruction and Task16 reconciliation when worker access is available; continue repository-backed independent work meanwhile.
-5. Keep old draft PR #4 out of the current roadmap unless a real Karing client smoke explicitly revives it.
-6. After any eligible merge, run exact-main CI, then guarded Production deployment/postflight with rollback on any failed invariant.
+1. Publish this verified Task15 Production evidence/doc reconciliation and merge only if documentation CI is green.
+2. Reconcile/recover Task13 against exact schema20 main and republish only after full exact-session-kill gates pass.
+3. Rebase/reconcile Task16 onto schema20 main, rerun PG18 + Go/Web/RLS/retention/purge/rollback gates, then publish schema21 candidate.
+4. Keep old draft PR #4 out of the roadmap unless a real Karing client smoke explicitly revives it.
+5. Before every future Production mutation, create and verify a fresh encrypted backup + rollback snapshot and retain exact provenance.
