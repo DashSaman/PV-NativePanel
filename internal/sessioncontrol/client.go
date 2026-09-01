@@ -13,10 +13,12 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/sessionkill"
 )
 
-type Client struct { httpClient *http.Client }
+type Client struct{ httpClient *http.Client }
 
 func NewClient(socketPath string) *Client {
-	if socketPath == "" { socketPath = DefaultSocketPath }
+	if socketPath == "" {
+		socketPath = DefaultSocketPath
+	}
 	transport := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 		var dialer net.Dialer
 		return dialer.DialContext(ctx, "unix", socketPath)
@@ -27,7 +29,9 @@ func NewClient(socketPath string) *Client {
 func (c *Client) Kill(ctx context.Context, key sessionkill.Key) (sessionkill.KillResult, error) {
 	wire := KillRequest{RuntimeCredentialID: key.RuntimeCredentialID, NodeID: key.NodeID, BootID: key.BootID, SessionID: key.SessionID}
 	var result KillResult
-	if err := c.do(ctx, http.MethodPost, "/v1/sessions/kill", wire, &result); err != nil { return sessionkill.KillResult{}, err }
+	if err := c.do(ctx, http.MethodPost, "/v1/sessions/kill", wire, &result); err != nil {
+		return sessionkill.KillResult{}, err
+	}
 	return sessionkill.KillResult{Found: result.Found, Killed: result.Killed}, nil
 }
 
@@ -35,16 +39,26 @@ func (c *Client) do(ctx context.Context, method, path string, requestBody any, r
 	var body io.Reader
 	if requestBody != nil {
 		encoded, err := json.Marshal(requestBody)
-		if err != nil { return fmt.Errorf("sessioncontrol client: encode request: %w", err) }
-		if len(encoded) > maxRequestBytes { return errors.New("sessioncontrol client: request exceeds size limit") }
+		if err != nil {
+			return fmt.Errorf("sessioncontrol client: encode request: %w", err)
+		}
+		if len(encoded) > maxRequestBytes {
+			return errors.New("sessioncontrol client: request exceeds size limit")
+		}
 		body = bytes.NewReader(encoded)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, "http://unix"+path, body)
-	if err != nil { return fmt.Errorf("sessioncontrol client: build request: %w", err) }
+	if err != nil {
+		return fmt.Errorf("sessioncontrol client: build request: %w", err)
+	}
 	req.Header.Set("Accept", "application/json")
-	if requestBody != nil { req.Header.Set("Content-Type", "application/json") }
+	if requestBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	resp, err := c.httpClient.Do(req)
-	if err != nil { return fmt.Errorf("sessioncontrol client: request failed: %w", err) }
+	if err != nil {
+		return fmt.Errorf("sessioncontrol client: request failed: %w", err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxResponseBytes))
@@ -52,11 +66,19 @@ func (c *Client) do(ctx context.Context, method, path string, requestBody any, r
 	}
 	limited := io.LimitReader(resp.Body, maxResponseBytes+1)
 	encoded, err := io.ReadAll(limited)
-	if err != nil { return fmt.Errorf("sessioncontrol client: read response: %w", err) }
-	if len(encoded) > maxResponseBytes { return errors.New("sessioncontrol client: response exceeds size limit") }
+	if err != nil {
+		return fmt.Errorf("sessioncontrol client: read response: %w", err)
+	}
+	if len(encoded) > maxResponseBytes {
+		return errors.New("sessioncontrol client: response exceeds size limit")
+	}
 	decoder := json.NewDecoder(bytes.NewReader(encoded))
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(responseBody); err != nil { return fmt.Errorf("sessioncontrol client: decode response: %w", err) }
-	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) { return errors.New("sessioncontrol client: response contains trailing JSON") }
+	if err := decoder.Decode(responseBody); err != nil {
+		return fmt.Errorf("sessioncontrol client: decode response: %w", err)
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return errors.New("sessioncontrol client: response contains trailing JSON")
+	}
 	return nil
 }
