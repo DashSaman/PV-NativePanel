@@ -6,11 +6,12 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `b5d32352f99f362c6c4850703c9efc27544f966c`, verified merge of PR #59 / current-state reconciliation.
-- Exact-main CI run `33491705169`: **SUCCESS**.
+- `main`: `8b8549b8d1431dfa8858c207e55b9a52eaa2c4e8`, verified merge of PR #60 / documentation-state reconciliation.
+- Exact-main CI run `33500952494`: **SUCCESS**.
 - Open roadmap PRs: none. Old draft #4 remains unrelated to current roadmap and awaits a real Karing client smoke.
-- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; PRs #57/#58/#59 changed documentation/evidence only.
-- Fresh read-only Production check at 2026-09-01T10:13Z: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` all active; `/api/v1/health/ready` returned `ready=true`, `db=ok`, `schema=ok`.
+- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; later PRs changed documentation/evidence only.
+- Last successful fresh Production check confirmed all four PVNaive services active and readiness `ready=true`, `db=ok`, `schema=ok`.
+- A new read-only Production probe in the latest run was blocked by SentinelX `upgrade_required` because the single active slot had moved away from `pv-primary`; no Production mutation was attempted.
 - Task15 fresh encrypted DB/config backup and rollback snapshot remain retained and verified from the guarded schema20 rollout.
 
 ## Task accounting
@@ -19,16 +20,18 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
 - Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
-- Task13 exact-session kill: **IN PROGRESS / current-schema20 candidate requires complete publication plus fresh real HTTP/1.1 + HTTP/2 rehearsal before merge**.
+- Task13 exact-session kill: **IN PROGRESS / active-worker schema20 reconstruction underway; complete integration, exact publication and fresh real HTTP/1.1 + HTTP/2 rehearsal still required**.
 - Task16 bounded session/IP history: **IN PROGRESS / schema21 / NOT mergeable yet**. Caller-controlled retention/pagination must not permit bypassing the exact 30-day retention or bounded read contract; RED tests and server-side enforcement remain required.
 
 ## Worker access
 
-Four SentinelX hosts are connected, but the Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` at 2026-09-01T10:13Z returned `upgrade_required` while connected/healthy. Do not run development or PostgreSQL proof on Production to work around this restriction. Persistent worker reports remain historical until a worker is executable again.
+Four SentinelX hosts are connected, while the Free plan permits one active host. In the latest run `pv-primary`, `pv-worker-main`, and `host_311ff...` returned `upgrade_required`, but `ubuntu-4gb-hel1-1` was executable with about 32% RAM used. A clean PVNaive repository was cloned there at exact main `8b8549b8...` and is now the development lane. Do not use Production as a development or PostgreSQL test worker.
 
 ## Task13
 
-Do not merge the partial publication branch. `lead/task13-kill-session-publish-20260901` still points to `2af0e4edfb3d66047835cd886d46b94221cf77b7`; its latest publication only restores one client-test file and remains based on stale lineage. Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
+Do not merge the partial publication branch `lead/task13-kill-session-publish-20260901`. On the active worker, historical Task13 session-control protocol/client and exact-tuple registry primitives were reapplied on exact schema20 main. Focused `go test -race ./internal/sessionkill ./internal/sessioncontrol -count=1` passed, but the historical partial registry has no committed registry test and the data-plane/API/UI integration is still absent. Treat this only as recovered building blocks, not a completed candidate.
+
+Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Add RED tests before new integration code. Then rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
 
 ## Task16
 
@@ -40,7 +43,8 @@ Before every Production mutation: fresh encrypted DB/config backup + rollback sn
 
 ## Next sequence
 
-1. Recover/reconcile Task13 against exact current schema20 main and republish only after all exact-session-kill gates pass, including fresh real HTTP/1.1 + HTTP/2 rehearsal.
-2. Fix Task16 retention/pagination bypass with RED tests first, then rerun PG18 + Go/Web/RLS/retention/purge/rollback gates before any schema21 PR.
-3. Resume parallel worker execution when a worker host becomes active; do not invent worker progress while inaccessible.
-4. Keep `PROJECT_STATUS.md`, `HANDOFF.md` and evidence synchronized only from verified repository/Production truth.
+1. Continue Task13 surgical integration on `ubuntu-4gb-hel1-1` from exact main, TDD-first for registry/data-plane/API/UI behavior.
+2. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates and a fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
+3. Publish only the exact verified Task13 tree, require green exact-head CI, then deploy with fresh backup/rollback and postflight if all gates remain green.
+4. Fix Task16 retention/pagination bypass with RED tests first, then rerun PG18 + Go/Web/RLS/retention/purge/rollback gates before any schema21 PR.
+5. Keep `PROJECT_STATUS.md`, `HANDOFF.md` and evidence synchronized only from verified repository/Production truth.
