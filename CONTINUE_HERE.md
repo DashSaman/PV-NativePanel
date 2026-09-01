@@ -6,11 +6,11 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `d4cd9b790881b7363f6fa526a83f980f0451f701`, verified merge of PR #58 / post-Task15 reconciliation.
-- Exact-main CI run `33485730020`: **SUCCESS**.
-- Open PRs before this reconciliation: old draft #4 only; unrelated to current roadmap.
-- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; PRs #57/#58 changed documentation/evidence only.
-- Fresh read-only Production check at 2026-09-01T09:11Z: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` all active; `/api/v1/health/ready` returned `ready=true`, `db=ok`, `schema=ok`; checked recent service logs had no panic/fatal/schema-mismatch matches.
+- `main`: `b5d32352f99f362c6c4850703c9efc27544f966c`, verified merge of PR #59 / current-state reconciliation.
+- Exact-main CI run `33491705169`: **SUCCESS**.
+- Open roadmap PRs: none. Old draft #4 remains unrelated to current roadmap and awaits a real Karing client smoke.
+- Production: schema **20**, deployed runtime source remains Task15 main `26aa74dddfd23535e45837f21531cf67ea2fd238`; PRs #57/#58/#59 changed documentation/evidence only.
+- Fresh read-only Production check at 2026-09-01T10:13Z: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent` all active; `/api/v1/health/ready` returned `ready=true`, `db=ok`, `schema=ok`.
 - Task15 fresh encrypted DB/config backup and rollback snapshot remain retained and verified from the guarded schema20 rollout.
 
 ## Task accounting
@@ -24,11 +24,11 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Worker access
 
-Four SentinelX hosts are currently connected, but the Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` returned `upgrade_required` while connected/healthy. Do not run development or PostgreSQL proof on Production to work around this restriction. Persistent worker reports remain historical until a worker is executable again.
+Four SentinelX hosts are connected, but the Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` at 2026-09-01T10:13Z returned `upgrade_required` while connected/healthy. Do not run development or PostgreSQL proof on Production to work around this restriction. Persistent worker reports remain historical until a worker is executable again.
 
 ## Task13
 
-Do not merge the partial publication branch. Fresh GitHub comparison shows `lead/task13-kill-session-publish-20260901` is 5 commits ahead and 40 behind current main, and its compare surface contains only four Task13 files. Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
+Do not merge the partial publication branch. `lead/task13-kill-session-publish-20260901` still points to `2af0e4edfb3d66047835cd886d46b94221cf77b7`; its latest publication only restores one client-test file and remains based on stale lineage. Preserve exact tuple identity (runtime credential + node + boot + session), sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
 
 ## Task16
 

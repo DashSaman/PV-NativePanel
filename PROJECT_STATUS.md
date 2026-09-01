@@ -13,9 +13,9 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current main: `d4cd9b790881b7363f6fa526a83f980f0451f701` (verified merge of PR #58; post-Task15 repository/Production/worker reconciliation only).
-- Exact-main CI run `33485730020`: **SUCCESS**.
-- Open PRs before this reconciliation: old draft #4 only; it is unrelated to the current roadmap and remains unmerged pending a real Karing client smoke.
+- Current main: `b5d32352f99f362c6c4850703c9efc27544f966c` (verified merge of PR #59; current-state reconciliation only).
+- Exact-main CI run `33491705169`: **SUCCESS**.
+- Open roadmap PRs: none. Old draft #4 is unrelated to the current roadmap and remains unmerged pending a real Karing client smoke.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
 - Security Task35 / BUG-001/002/003: **DONE in main**.
@@ -27,19 +27,18 @@ No task becomes DONE from a local candidate, historical worker report or partial
 
 ## Fresh Production truth
 
-Production runtime remains the guarded Task15 rollout from source `26aa74dddfd23535e45837f21531cf67ea2fd238`; later merges through PR #58 changed repository documentation/evidence only.
+Production runtime remains the guarded Task15 rollout from source `26aa74dddfd23535e45837f21531cf67ea2fd238`; later merges through PR #59 changed repository documentation/evidence only.
 
-Fresh read-only verification at 2026-09-01T09:11Z confirmed:
+Fresh read-only verification at 2026-09-01T10:13Z confirmed:
 
 - `pvnaive-api.service`, `caddy-naive.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`: **active**.
 - `GET /api/v1/health/ready`: body reports `ready=true`, `db=ok`, `schema=ok`.
-- no panic/fatal/schema-mismatch lines were found in the checked recent service logs.
 - Production remains on the verified schema20 Task15 rollout; no mutation was performed during this reconciliation.
 - Task15 backup and rollback evidence remains in `ops/evidence/TASK15-20260901-schema20-production-pass.md` and `/var/backups/pvnaive`.
 
 ## Task13 — exact live-session kill
 
-Task13 remains the highest-priority unfinished runtime/session item. The only GitHub publication branch found, `lead/task13-kill-session-publish-20260901`, is **diverged: 5 commits ahead / 40 behind main** and its compare surface contains only four Task13 files (`internal/sessioncontrol/{client.go,client_test.go,protocol.go}` and `internal/sessionkill/registry.go`). It is therefore partial and must not be merged.
+Task13 remains the highest-priority unfinished runtime/session item. The only GitHub publication branch found, `lead/task13-kill-session-publish-20260901`, still points to `2af0e4edfb3d66047835cd886d46b94221cf77b7`. Its latest commit modifies only `internal/sessioncontrol/client_test.go`, while the branch remains stale relative to current schema20 main. It must not be merged wholesale.
 
 Required invariants remain exact runtime-credential/node/boot/session tuple identity, sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once normal final accounting. Reconstruct/recover against current schema20 main and rerun full Go/race/Web/real HTTP1+HTTP2/pinned-forwardproxy/reproducible-Caddy evidence before publication.
 
@@ -49,7 +48,7 @@ Schema20 is stable, but Task16 is not mergeable. Review of the worker candidate 
 
 ## Worker / orchestration capacity
 
-Four SentinelX hosts are connected but the current Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` returned `upgrade_required` while the host remained connected/healthy. Therefore persistent worker reports cannot be freshly trusted and Production must not be repurposed as a development/test worker.
+Four SentinelX hosts are connected but the current Free plan permits only one active host. `pv-primary` is executable. A fresh execution attempt on `pv-worker-main` at 2026-09-01T10:13Z returned `upgrade_required` while the host remained connected/healthy. Therefore persistent worker reports cannot be freshly trusted and Production must not be repurposed as a development/test worker.
 
 Human action is needed only to restore parallel worker capacity: disconnect unused connected hosts so a worker can become active, or change the SentinelX host limit.
 
