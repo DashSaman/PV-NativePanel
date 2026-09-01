@@ -1,0 +1,50 @@
+name: Task15 race fixture repair
+
+on:
+  push:
+    branches:
+      - lead/task15-unique-ip-schema20-v3-20260901
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lead/task15-unique-ip-schema20-v3-20260901
+      - name: Apply exact semantic fixture correction
+        run: |
+          set -Eeuo pipefail
+          file=tests/db/unique_ip_limit_migration_test.sh
+          python3 - "$file" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text()
+          old = "SELECT '18180000-0000-0000-0000-000000000241',tenant_id,id,1000000,3600,'on_creation','2026-08-31 00:00:00+00','2026-08-31 00:00:00+00','2026-09-01 00:00:00+00','active',NULL,1,'known','fresh_managed_term','2026-08-31 00:00:00+00',0,0"
+          new = "SELECT '18180000-0000-0000-0000-000000000241',tenant_id,id,1000000,3600,'on_first_successful_connection','2026-08-31 00:00:00+00',NULL,NULL,'pending',NULL,1,'known','fresh_managed_term','2026-08-31 00:00:00+00',0,0"
+          if old not in s:
+              if new in s:
+                  print('TASK15_RACE_FIX=ALREADY_APPLIED')
+                  raise SystemExit(0)
+              raise SystemExit('guard failed: neither exact old nor exact new fixture found')
+          if s.count(old) != 1:
+              raise SystemExit(f'guard failed: expected one old fixture, got {s.count(old)}')
+          p.write_text(s.replace(old, new))
+          print('TASK15_RACE_FIX=APPLIED')
+          PY
+          bash -n "$file"
+          git diff --check
+          if git diff --quiet -- "$file"; then
+            exit 0
+          fi
+          git diff -- "$file"
+          git config user.name 'pvnaive-ci-repair'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$file"
+          git commit -m 'test(task15): make first-connect race fixture semantically valid'
+          git push origin HEAD:lead/task15-unique-ip-schema20-v3-20260901
