@@ -19,7 +19,7 @@ func (s *PostgresStore) CurrentRenewalContextTx(ctx context.Context, tx *sql.Tx,
 	var baselineUpload, baselineDownload sql.NullInt64
 	err := tx.QueryRowContext(ctx, `
 SELECT u.tenant_id::text, u.id::text,
-       st.id::text, st.plan_id::text, st.quota_bytes, st.duration_seconds, st.no_expiry, st.concurrency_limit,
+       st.id::text, st.plan_id::text, st.quota_bytes, st.duration_seconds, st.no_expiry, st.concurrency_limit, st.unique_ip_limit,
        st.start_policy, st.purchased_at, st.starts_at, st.first_connected_at, st.expires_at,
        st.state, st.renewal_kind, st.renewed_from_term_id::text,
        st.accounting_baseline_state, st.accounting_baseline_source, st.accounting_baseline_cutoff_at,
@@ -38,7 +38,7 @@ JOIN pvnaive.user_runtime_credentials urc
 WHERE u.id=$1::uuid
 LIMIT 1`, userID).Scan(
 		&out.TenantID, &out.UserID,
-		&out.Current.ID, &planID, &out.Current.QuotaBytes, &out.Current.DurationSeconds, &out.Current.NoExpiry, &out.Current.ConcurrencyLimit,
+		&out.Current.ID, &planID, &out.Current.QuotaBytes, &out.Current.DurationSeconds, &out.Current.NoExpiry, &out.Current.ConcurrencyLimit, &out.Current.UniqueIPLimit,
 		&startPolicy, &out.Current.PurchasedAt, &out.Current.StartsAt, &out.Current.FirstConnectedAt,
 		&out.Current.ExpiresAt, &state, &out.Current.RenewalKind, &renewedFrom,
 		&baselineState, &baselineSource, &out.Current.AccountingBaseline.CutoffAt, &baselineUpload, &baselineDownload,
@@ -74,12 +74,12 @@ func (s *PostgresStore) PlanByIDTx(ctx context.Context, tx *sql.Tx, planID strin
 	err := tx.QueryRowContext(ctx, `
 SELECT id::text, name, quota_bytes,
        CASE WHEN no_expiry THEN 0 ELSE duration_seconds END,
-       no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0), concurrency_limit,
+       no_expiry, start_policy, reset_strategy, COALESCE(reset_custom_days,0), concurrency_limit, unique_ip_limit,
        default_group_id::text, enabled, sort_order
 FROM pvnaive.plans
 WHERE id=$1::uuid AND status <> 'archived'`, planID).Scan(
 		&out.ID, &out.Name, &out.QuotaBytes, &out.ValiditySeconds, &out.NoExpiry,
-		&startPolicy, &resetStrategy, &out.ResetCustomDays, &out.ConcurrencyLimit, &groupID, &out.Enabled, &out.SortOrder,
+		&startPolicy, &resetStrategy, &out.ResetCustomDays, &out.ConcurrencyLimit, &out.UniqueIPLimit, &groupID, &out.Enabled, &out.SortOrder,
 	)
 	if err != nil {
 		return PlanPreset{}, fmt.Errorf("customer: resolve plan: %w", err)
@@ -106,27 +106,27 @@ func (s *PostgresStore) CreateRenewalTermTx(ctx context.Context, tx *sql.Tx, rec
 	var baselineUpload, baselineDownload sql.NullInt64
 	err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
-    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry, concurrency_limit,
+    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry, concurrency_limit, unique_ip_limit,
     start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id,
     accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
     accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::uuid,
-    $15,$16,$17,$18,$19
+    $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::uuid,
+    $16,$17,$18,$19,$20
 )
 RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
-          duration_seconds, no_expiry, concurrency_limit, start_policy, purchased_at, starts_at,
+          duration_seconds, no_expiry, concurrency_limit, unique_ip_limit, start_policy, purchased_at, starts_at,
           first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text,
           accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
           accounting_baseline_upload_bytes, accounting_baseline_download_bytes, revision`,
 		record.TenantID, record.UserID, record.PlanID, record.QuotaBytes, record.DurationSeconds,
-		record.NoExpiry, record.ConcurrencyLimit, string(record.StartPolicy), record.PurchasedAt, record.StartsAt, record.ExpiresAt,
+		record.NoExpiry, record.ConcurrencyLimit, record.UniqueIPLimit, string(record.StartPolicy), record.PurchasedAt, record.StartsAt, record.ExpiresAt,
 		string(record.State), record.RenewalKind, record.RenewedFromTermID,
 		string(record.AccountingBaseline.State), string(record.AccountingBaseline.Source), record.AccountingBaseline.CutoffAt.UTC(),
 		record.AccountingBaseline.UploadBytes, record.AccountingBaseline.DownloadBytes,
 	).Scan(
 		&out.ID, &out.TenantID, &out.UserID, &planID, &out.QuotaBytes,
-		&out.DurationSeconds, &out.NoExpiry, &out.ConcurrencyLimit, &startPolicy, &out.PurchasedAt, &out.StartsAt,
+		&out.DurationSeconds, &out.NoExpiry, &out.ConcurrencyLimit, &out.UniqueIPLimit, &startPolicy, &out.PurchasedAt, &out.StartsAt,
 		&out.FirstConnectedAt, &out.ExpiresAt, &state, &out.RenewalKind, &renewedFrom,
 		&baselineState, &baselineSource, &out.AccountingBaseline.CutoffAt,
 		&baselineUpload, &baselineDownload, &out.Revision,

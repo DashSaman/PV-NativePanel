@@ -29,6 +29,7 @@ type Event struct {
 	UploadBytes          int64     `json:"upload_bytes"`
 	DownloadBytes        int64     `json:"download_bytes"`
 	Final                bool      `json:"final,omitempty"`
+	ClientIP             string    `json:"client_ip,omitempty"`
 }
 
 type SessionKey struct {
@@ -149,7 +150,8 @@ func sameEvent(a, b Event) bool {
 		a.AuthenticatedConnect == b.AuthenticatedConnect &&
 		a.UploadBytes == b.UploadBytes &&
 		a.DownloadBytes == b.DownloadBytes &&
-		a.Final == b.Final
+		a.Final == b.Final &&
+		a.ClientIP == b.ClientIP
 }
 
 func validDiagnostic(value string) bool {
