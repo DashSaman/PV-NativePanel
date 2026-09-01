@@ -46,7 +46,7 @@ grep -Fq 'actor_totp_factors' "${new_target}/scripts/db/health.sh" || {
 }
 (
   cd "${new_target}/db/migrations"
-  sha256sum --check --strict SHA256SUMS >/dev/null
+  sha256sum --check --strict SHA256SUMS
 )
 
 # Promotion must also be idempotent when the immutable release already exists
