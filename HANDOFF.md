@@ -6,45 +6,53 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `b5f9466c1464afa9bc3183418aaf8e124b890563`.
-- Exact-main push CI `33556193807`: **SUCCESS**.
+- Current `main`: `898536d8e44585fc696895bc74831b52416fba93`.
+- Exact-main push CI `33560195019`: **SUCCESS**.
 - Open roadmap PR: draft #64, exact published head `5bc42d8dedd682eaf560a99777b21b9e82062c79`.
 - Exact-head workflows on `5bc42d8...`: CI `33557107036` **SUCCESS**, WS1 Exact Accounting `33557107038` **SUCCESS**, WS1 Pinned Forwardproxy `33557107045` **SUCCESS**.
+- PR #64 is now diverged from current main: 38 commits ahead / 25 behind, merge base `62573fee8b88e4f951224da10e6a26d5b5838a54`, and GitHub currently reports `mergeable=false`. Its green old-base head is evidence, not a merge authorization.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 BUG-001/002/003: **DONE in main**.
-- Task13: **IN PROGRESS / PR #64 draft**.
+- Task13: **IN PROGRESS / PR #64 draft / current-main reconciliation required**.
 - Task16: **IN PROGRESS / schema21 design gate blocked until retention/pagination are server-bounded**.
 
 ## Production state
 
-A fresh read-only Production probe was attempted, but `pv-primary` is inactive under the SentinelX Free-plan one-active-host limit while development Worker `TrPaqet` owns the slot. The probe returned `upgrade_required`; therefore no new Production-health PASS is credited.
+Fresh read-only Production evidence on `pv-primary`:
 
-No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
+- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, and `pvnaive-telemetry-agent` are all **active**;
+- `GET /api/v1/health/ready` returns `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
+- `GET /api/v1/health/live` returns `service=pvnaive-api`, `status=ok`;
+- inspected recent journals produced no panic/fatal/schema-mismatch matches.
+
+The SentinelX account cannot read `/proc/<api-pid>/environ`, so fresh process-env schema provenance was not established. No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
 
 ## Task13
 
-PR #64 now contains:
+PR #64 validated scope includes:
 
 - exact full-tuple registry: runtime credential + node + boot + session;
 - sibling survival, forged tuple rejection, repeated-kill idempotence and unregister semantics;
 - local session-control protocol/client;
 - live CONNECT registration after accounting open + trusted peer recording, with teardown unregister;
 - Unix-domain control server with bounded/strict JSON, exact tuple control, stale-socket handling and reload-safe shared lifecycle;
-- ownership-checked API route selecting the exact tuple from trusted customer/RLS active-session state; client tuple fields are not accepted and credential mutation stays false;
+- ownership-checked API route selecting the exact tuple from trusted customer/RLS active-session state; caller tuple fields are not accepted and credential mutation stays false;
 - dedicated `pvnaive-session-control` system group, separated from telemetry, with `0660` Caddy-owned socket;
 - per-session Web/UI kill action that sends only path identifiers/CSRF, leaves credentials/subscriptions unchanged and refreshes the trusted list;
-- **release proof:** R1 packages the exact reproducible pinned Task13 Caddy candidate, its provenance/build metadata and Caddy service drop-in; predeploy verifies checksums/provenance/config/module, mandatory encrypted backup precedes binary/drop-in mutation, activation performs exactly one controlled release-time Caddy binary-swap restart, and rollback restores/restarts the prior Caddy binary/drop-in state.
+- R1 packaging/install/rollback support for the exact reproducible pinned Task13 Caddy candidate and service drop-in;
+- PostgreSQL18 DB/auth rehearsal proving CSRF rejection, cross-tenant IDOR rejection with zero socket side effects, trusted full-tuple owned kill, and credential survival.
 
-TDD/evidence on `TrPaqet`: release contract first failed RED because R1 lacked the Task13 Caddy candidate; after the implementation, `TASK13_R1_RELEASE_CONTRACT=PASSED`, `TASK13_SESSION_CONTROL_PERMISSIONS=PASSED`, focused API/session/ops race PASS, full Go PASS, reproducible pinned Caddy build PASS, and `TASK13_FORWARDPROXY_SESSION_CONTROL=PASSED`. Pinned candidate SHA: `0e44d42a63b5e1001b6c2410f6fa7108256aabb89dfd86cbb50334030bdddb0e`.
+The published exact head is green, but it is not based on current main and is now `mergeable=false`. Do not merge it as-is and do not force-push an unreviewed rewritten history.
 
-A new TDD-first DB/auth rehearsal is published on head `5bc42d8...`: CI-contract RED was observed before workflow wiring; local contract/Go/race/Caddy checks are green. Exact-head PostgreSQL18 CI now owns proof that missing-CSRF and cross-tenant IDOR attempts never reach the Unix control side effect and an owned kill emits exactly one trusted full tuple without credential mutation.
+Required Task13 sequence:
 
-Exact head `5bc42d8...` is fully green: CI, Exact Accounting, and Pinned Forwardproxy all succeeded; CI also completed PostgreSQL18 database, Go, Web, rehearsal, and bundle jobs successfully.
-
-PR #64 must remain draft until a fresh HTTP1/HTTP2 rehearsal proves target-only termination, sibling survival, forged tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
+1. On an executable development Worker, reconstruct/cherry-pick the validated Task13 delta onto exact current `main`, resolving any changed-main semantics explicitly.
+2. Rerun focused race/full Go, Web, release contracts, pinned Caddy proof, PostgreSQL18 rehearsal, then exact-head CI + Exact Accounting + Pinned Forwardproxy.
+3. Run fresh real HTTP1/HTTP2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
+4. Merge only that current-main verified tree; then deploy only after fresh encrypted backup + rollback snapshot and complete Production postflight.
 
 ## Task16
 
@@ -54,11 +62,11 @@ No fresh current-main Task16 completion is credited. First implementation step r
 
 Fresh host listing: three connected hosts, `TrPaqet`, `pv-worker-main`, and `pv-primary`; Free plan allows one active host.
 
-- `TrPaqet`: active development Worker; assigned Task13 DB-integrated authorization + final live-rehearsal lane.
-- `pv-primary`: Production-only; current fresh execution is blocked by `upgrade_required`.
-- `pv-worker-main`: connected/healthy but inactive under the same one-active-host limit; Task16 remains assigned there for the first independently executable slot.
+- `pv-primary`: currently active/executable; **Production-only**.
+- `TrPaqet`: connected/healthy but fresh execution returns `upgrade_required`; first assignment is Task13 current-main reconciliation + final live rehearsal.
+- `pv-worker-main`: connected/healthy but fresh execution returns `upgrade_required`; first independent assignment is Task16 RED retention/pagination lane.
 
-Human action is required only for true parallelism or simultaneous fresh Production probing: switch/disconnect hosts as needed or increase the SentinelX active-host limit. Do not move development/testing onto Production.
+Human action is required to resume development: switch/disconnect hosts as needed or increase the SentinelX active-host limit. Do not move development/testing onto Production.
 
 ## Current execution rules
 
@@ -73,6 +81,8 @@ Human action is required only for true parallelism or simultaneous fresh Product
 
 ## Exact next sequence
 
-1. Keep #64 draft despite fully green exact-head gates; run fresh real HTTP1+HTTP2 exact-kill rehearsal with target-only termination, sibling survival and exactly-once accounting, and verify kill requests cause no Caddy lifecycle action.
-2. Merge only the exact verified Task13 tree; deploy only after fresh encrypted backup + rollback snapshot and Production postflight access.
-3. Execute Task16 on `pv-worker-main` when an independent active slot exists.
+1. Keep #64 draft while diverged/mergeable=false.
+2. Make `TrPaqet` or another development host executable; republish/reconcile Task13 from exact current main and rerun all gates.
+3. Complete the fresh HTTP1+HTTP2 exact-kill rehearsal with exactly-once final accounting and no kill-triggered Caddy lifecycle action.
+4. Merge/deploy only after current-main verification and fresh Production backup/rollback/postflight proof.
+5. Execute Task16 on `pv-worker-main` when an independent active slot exists.
