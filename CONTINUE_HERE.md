@@ -6,12 +6,13 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `5f7fd64f34d951ec7f9c16907123ddd659484515`.
-- Exact-main push CI run `33548065775`: **SUCCESS**.
-- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact head `8bb5804545cd977ec1e01f6331d40d1aa9148279`.
-- Exact-head workflows were restarted for `8bb5804...`; WS1 Exact Accounting is **SUCCESS** and the other exact-head gates were still running at this checkpoint.
-- New Task13 permission increment creates a dedicated `pvnaive-session-control` system group, distinct from `pvnaive-telemetry`; API gets only session-control access, while Caddy keeps telemetry plus the new group. The Caddy-owned `0660` socket resolves/chowns to the dedicated GID and fails closed if permission setup cannot be proven.
-- Worker TDD/evidence passed: real RED permission failures before implementation, permission contract PASS, pinned forwardproxy race PASS, focused session/API race PASS, full Go PASS, diff check PASS.
+- `main`: `6e58111665993e6e62c2d4e364a476d20ceb4896`.
+- Exact-main push CI run `33550756339`: **SUCCESS**.
+- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact published head `932a7f1b9f38c062559c870860959162901fb99b`.
+- Exact-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy are running for `932a7f1b...`; do not reuse prior-head green results.
+- Task13 now contains exact tuple/live CONNECT registration, Unix control lifecycle, dedicated `pvnaive-session-control` socket permissions, trusted-tuple DELETE API, and per-session Web/UI kill with no credential mutation.
+- A real release blocker was found and fixed TDD-first: R1 previously did not carry the patched Caddy binary/drop-in, so Task13 could not become live even from a green tree. R1 now packages the reproducible pinned Caddy candidate and provenance, validates it before mutation, backs up the existing Caddy binary/drop-in, activates the candidate with exactly one controlled release-time Caddy restart, and restores/restarts the prior Caddy on rollback.
+- Local Worker proof: focused Go race PASS, full Go PASS, `TASK13_R1_RELEASE_CONTRACT=PASSED`, `TASK13_SESSION_CONTROL_PERMISSIONS=PASSED`, reproducible pinned Caddy build PASS, `TASK13_FORWARDPROXY_SESSION_CONTROL=PASSED`. Pinned candidate SHA: `0e44d42a63b5e1001b6c2410f6fa7108256aabb89dfd86cbb50334030bdddb0e`.
 - Old draft #4 remains outside the current roadmap.
 - No Task13 runtime/schema change has been deployed; Production remains on Task15/schema20.
 - Fresh Production probing was attempted but `pv-primary` returned `upgrade_required` while `TrPaqet` owns the single active SentinelX slot. Do not represent prior health as fresh.
@@ -28,9 +29,9 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Task13 current checkpoint
 
-PR #64 contains exact-tuple primitives/live CONNECT registration, Unix-domain control server, reload-safe lifecycle, ownership-checked API kill, and a narrow dedicated socket permission model.
+PR #64 contains the data-plane registry/control path, narrow socket permission model, ownership-checked API, UI exact-session action, and R1 packaging/install/rollback support for the patched reproducible Caddy candidate.
 
-Next sequence: strengthen handler-level ownership/IDOR/CSRF failure tests; add UI exact-session kill; prove release packaging/install/rollback for the Caddy drop-in/binary and dedicated group; run full exact-tree gates; finally perform real HTTP/1.1 + HTTP/2 exact-kill rehearsal with exactly-once final accounting.
+Next sequence: add PostgreSQL18 DB-integrated handler-level ownership/IDOR/CSRF failure-path proof; require all exact-head workflows green; then perform a real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving target-only kill, sibling survival, forged tuple rejection, repeated-kill idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once final accounting.
 
 ## Task16
 
@@ -42,8 +43,7 @@ Fresh SentinelX listing shows three connected hosts: `TrPaqet`, `pv-worker-main`
 
 - Active/executable now: `TrPaqet`, Task13 development lane.
 - `pv-primary`: Production-only, currently `upgrade_required` while the development Worker owns the slot.
-- `pv-worker-main`: connected/healthy but also `upgrade_required`.
-- No second executable Worker exists for Task16 in parallel.
+- `pv-worker-main`: connected/healthy but inactive under the same limit; Task16 remains assigned there for the first independently executable slot.
 
 ## Production deployment rules
 
@@ -51,8 +51,7 @@ Before every Production mutation: fresh encrypted DB/config backup + rollback sn
 
 ## Next sequence
 
-1. Keep #64 draft while its exact-head checks complete and independent work continues on `TrPaqet`.
-2. Add handler authorization/ownership/CSRF/IDOR failure tests, UI, and release packaging/rollback proof with TDD.
-3. Run full exact-tree gates and fresh HTTP1/HTTP2 rehearsal.
-4. Only then merge; deploy only with fresh Production backup/rollback/postflight access.
-5. Put Task16 on the next independent Worker as soon as capacity exists.
+1. Keep #64 draft while exact-head checks and DB-integrated authorization proof complete.
+2. Run the final HTTP1/HTTP2 exact-kill rehearsal with exactly-once accounting and no kill-triggered Caddy lifecycle action.
+3. Only then merge; deploy only with fresh Production access, encrypted backup, rollback state and postflight verification.
+4. Put Task16 on `pv-worker-main` as soon as an independent active slot exists.
