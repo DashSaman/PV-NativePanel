@@ -110,10 +110,10 @@ SELECT service_term_id::text, tracked, accepted, duplicate, reason,
        upload_delta, download_delta, quota_depleted, remaining_bytes,
        first_connected_at, accounting_complete
 FROM pvnaive.direct_naive_accounting_ingest(
-    $1::uuid, $2, $3, $4::uuid, $5::uuid, $6, $7, $8, $9, $10, $11
+    $1::uuid, $2, $3, $4::uuid, $5::uuid, $6, $7, $8, $9, $10, $11, $12
 )`, event.RuntimeCredentialID, event.Username, event.NodeID, event.BootID,
 		event.SessionID, event.Sequence, event.ObservedAt.UTC(), event.AuthenticatedConnect,
-		event.UploadBytes, event.DownloadBytes, event.Final).Scan(
+		event.UploadBytes, event.DownloadBytes, event.Final, event.ClientIP).Scan(
 		&serviceTerm, &out.Tracked, &out.Accepted, &out.Duplicate, &out.Reason,
 		&out.UploadDelta, &out.DownloadDelta, &out.QuotaDepleted, &remaining,
 		&firstConnected, &out.AccountingComplete,

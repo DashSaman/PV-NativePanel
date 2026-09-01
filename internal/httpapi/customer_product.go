@@ -255,6 +255,7 @@ func (s *server) createProductPlan(w http.ResponseWriter, r *http.Request) {
 		ResetStrategy    customer.ResetStrategy `json:"reset_strategy"`
 		ResetCustomDays  int                    `json:"reset_custom_days,omitempty"`
 		ConcurrencyLimit *int                   `json:"concurrency_limit"`
+		UniqueIPLimit    *int                   `json:"unique_ip_limit"`
 		DefaultGroupID   string                 `json:"default_group_id,omitempty"`
 		TagIDs           []string               `json:"tag_ids,omitempty"`
 		Enabled          *bool                  `json:"enabled,omitempty"`
@@ -294,7 +295,7 @@ func (s *server) createProductPlan(w http.ResponseWriter, r *http.Request) {
 	plan, err := s.config.CustomerService.CreatePlan(r.Context(), authenticated.Bound.Tx, authenticated.Bound.Principal.ActorID, customer.PlanPreset{
 		Name: payload.Name, QuotaBytes: quotaBytes, ValiditySeconds: validitySeconds,
 		NoExpiry: payload.NoExpiry, StartPolicy: payload.StartPolicy, ResetStrategy: payload.ResetStrategy,
-		ResetCustomDays: payload.ResetCustomDays, ConcurrencyLimit: payload.ConcurrencyLimit, DefaultGroupID: payload.DefaultGroupID,
+		ResetCustomDays: payload.ResetCustomDays, ConcurrencyLimit: payload.ConcurrencyLimit, UniqueIPLimit: payload.UniqueIPLimit, DefaultGroupID: payload.DefaultGroupID,
 		TagIDs: payload.TagIDs, Enabled: enabled, SortOrder: payload.SortOrder,
 	})
 	if err != nil {
