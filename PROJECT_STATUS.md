@@ -11,12 +11,15 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `5f7fd64f34d951ec7f9c16907123ddd659484515` (PR #68 documentation reconciliation).
-- Exact-main push CI run `33548065775`: **SUCCESS**.
-- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact head `8bb5804545cd977ec1e01f6331d40d1aa9148279`.
-- Exact-head #64 workflows were restarted for `8bb5804...`; WS1 Exact Accounting is **SUCCESS**, while CI and WS1 Pinned Forwardproxy were still running at this checkpoint. Do not reuse green results from the prior head.
-- Task13 now has a dedicated `pvnaive-session-control` Unix-socket group, separated from telemetry. API receives only that group; Caddy retains telemetry and adds the session-control group. Fresh foundation and same-schema deploy paths provision it idempotently; the Caddy-owned socket resolves/chowns to that GID and then applies `0660`, failing closed on lookup/GID/chown errors.
-- Worker TDD/evidence for the permission increment: two real RED gates, `TASK13_SESSION_CONTROL_PERMISSIONS=PASSED`, pinned forwardproxy `go test -race ./...` + `TASK13_FORWARDPROXY_SESSION_CONTROL=PASSED`, focused API/session race tests, full `go test ./...`, and `git diff --check` all PASS.
+- Current `main`: `6e58111665993e6e62c2d4e364a476d20ceb4896` (PR #69 documentation reconciliation).
+- Exact-main push CI run `33550756339`: **SUCCESS**.
+- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact head `233fb1a3cc1b926e709b2035e777c9594fae2ef1`.
+- Exact-head #64 workflows were restarted for `233fb1a...`; CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy were **in progress** at this checkpoint. Do not reuse green results from a prior head.
+- Task13 dedicated `pvnaive-session-control` permission boundary remains in place: API receives only that supplementary group; Caddy keeps telemetry access separately and additionally receives session-control; the Caddy-owned socket resolves/chowns to the dedicated GID then applies `0660`, failing closed.
+- Same-schema release logic takes the mandatory backup before creating the dedicated group and removes a newly-created group during failed-release rollback.
+- New Task13 Web/UI increment is published: exact session DELETE sends only `userId/sessionId` in the path with CSRF and no caller tuple/body; successful kill reloads trusted active-session state; the Sessions modal exposes a per-session `قطع نشست` action with explicit confirmation that password/subscription remain unchanged.
+- Fresh Worker verification for the exact published tree: targeted Web 10/10 PASS, full Web 19 files / 64 tests PASS, production Web build PASS, focused Go race PASS, full Go PASS, `TASK13_SESSION_CONTROL_PERMISSIONS=PASSED`, pinned-forwardproxy Task13 race PASS, and `git diff --check` PASS.
+- Persistent `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` inspected on the Worker are stale S04-era ledgers from Aug 27 and contain no newer Task13/Task16 completion; they are historical evidence only.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
 - Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
@@ -36,9 +39,9 @@ No Production mutation, deployment, migration, restart, reload, DB write or cred
 
 ## Task13 — exact live-session kill
 
-Draft PR #64 contains exact-tuple registry/client primitives, live CONNECT registration, reload-safe Unix session-control lifecycle, ownership-checked API kill, and the new narrow socket-permission boundary.
+Draft PR #64 now contains exact-tuple registry/client primitives, live CONNECT registration, reload-safe Unix session-control lifecycle, ownership-checked API kill, narrow dedicated socket permissions, backup-before-permission release safety, and the exact-session Web/UI action.
 
-Still required before Task13 can merge: stronger handler-level ownership/IDOR/CSRF failure tests; UI exact-session kill action; release packaging/install/rollback proof for the Caddy drop-in/binary + dedicated group; full final-tree Go/race/Web/pinned/reproducible-Caddy gates; and fresh real HTTP/1.1 + HTTP/2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival and exactly-once final accounting.
+Still required before Task13 can merge: DB-integrated handler-level ownership/IDOR/CSRF failure-path proof; final release packaging/install/rollback proof; full final-tree Go/race/Web/pinned/reproducible-Caddy gates; and fresh real HTTP/1.1 + HTTP/2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival and exactly-once final accounting.
 
 ## Task16 — bounded IP/session history / schema21
 
@@ -58,7 +61,7 @@ True parallel Task13 + Task16 execution, or simultaneous development plus Produc
 ## Immediate execution order
 
 1. Keep PR #64 draft until exact-head workflows and all remaining Task13 gates complete.
-2. Continue Task13 on `TrPaqet` with stronger handler authorization/ownership/CSRF/IDOR tests, UI, and release packaging/rollback proof.
+2. Continue Task13 on `TrPaqet` with DB-integrated ownership/IDOR/CSRF failure-path proof and release packaging/install/rollback verification.
 3. Run full exact-tree gates plus fresh real HTTP1+HTTP2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
 4. Merge/deploy Task13 only after the exact verified tree is green and fresh encrypted Production backup + rollback snapshot + postflight access are available.
 5. Start Task16 on the next independently executable Worker with RED retention/pagination tests; never use Production for schema21 development.
