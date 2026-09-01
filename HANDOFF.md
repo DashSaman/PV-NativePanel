@@ -9,7 +9,7 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 - Current `main`: `b5f9466c1464afa9bc3183418aaf8e124b890563`.
 - Exact-main push CI `33556193807`: **SUCCESS**.
 - Open roadmap PR: draft #64, exact published head `5bc42d8dedd682eaf560a99777b21b9e82062c79`.
-- Exact-head workflows on `5bc42d8...`: WS1 Exact Accounting `33557107038` is **SUCCESS**; CI `33557107036` and WS1 Pinned Forwardproxy `33557107045` are still running on the exact new head.
+- Exact-head workflows on `5bc42d8...`: CI `33557107036` **SUCCESS**, WS1 Exact Accounting `33557107038` **SUCCESS**, WS1 Pinned Forwardproxy `33557107045` **SUCCESS**.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
@@ -42,9 +42,9 @@ TDD/evidence on `TrPaqet`: release contract first failed RED because R1 lacked t
 
 A new TDD-first DB/auth rehearsal is published on head `5bc42d8...`: CI-contract RED was observed before workflow wiring; local contract/Go/race/Caddy checks are green. Exact-head PostgreSQL18 CI now owns proof that missing-CSRF and cross-tenant IDOR attempts never reach the Unix control side effect and an owned kill emits exactly one trusted full tuple without credential mutation.
 
-The prior exact head was fully green. On new head `5bc42d8...`, Exact Accounting is green while CI and Pinned Forwardproxy are still running; the new PostgreSQL18 DB/auth rehearsal is not credited until CI finishes successfully.
+Exact head `5bc42d8...` is fully green: CI, Exact Accounting, and Pinned Forwardproxy all succeeded; CI also completed PostgreSQL18 database, Go, Web, rehearsal, and bundle jobs successfully.
 
-PR #64 must remain draft until the newly published DB-integrated ownership/IDOR/CSRF rehearsal passes exact-head PostgreSQL18 CI and a fresh HTTP1/HTTP2 rehearsal prove target-only termination, sibling survival, forged tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
+PR #64 must remain draft until a fresh HTTP1/HTTP2 rehearsal proves target-only termination, sibling survival, forged tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
 
 ## Task16
 
@@ -73,7 +73,6 @@ Human action is required only for true parallelism or simultaneous fresh Product
 
 ## Exact next sequence
 
-1. Keep #64 draft while the new exact head is re-gated; require PostgreSQL18 ownership/IDOR/CSRF proof on exact head `5bc42d8...`.
-2. Run fresh real HTTP1+HTTP2 exact-kill rehearsal with target-only termination, sibling survival and exactly-once accounting, and verify kill requests cause no Caddy lifecycle action.
-3. Merge only the exact verified Task13 tree; deploy only after fresh encrypted backup + rollback snapshot and Production postflight access.
-4. Execute Task16 on `pv-worker-main` when an independent active slot exists.
+1. Keep #64 draft despite fully green exact-head gates; run fresh real HTTP1+HTTP2 exact-kill rehearsal with target-only termination, sibling survival and exactly-once accounting, and verify kill requests cause no Caddy lifecycle action.
+2. Merge only the exact verified Task13 tree; deploy only after fresh encrypted backup + rollback snapshot and Production postflight access.
+3. Execute Task16 on `pv-worker-main` when an independent active slot exists.
