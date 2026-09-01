@@ -24,7 +24,9 @@ func TestCurrentR1ReleaseToolingContracts(t *testing.T) {
 			"release_schema",
 			"pvnaive-telemetry-agent.service",
 			"accounting.sock",
-			"PVNAIVE_R1_CADDY_ACTION=NONE",
+			"caddy/caddy-pvnaive-accounting",
+			"caddy-before",
+			"PVNAIVE_R1_CADDY_ACTION=ONE_CONTROLLED_BINARY_SWAP_RESTART",
 			"pvnaive-backup.timer",
 			"pvnaive-restore-drill.timer",
 			"/var/www/pvnaive-preview/current",
@@ -37,7 +39,9 @@ func TestCurrentR1ReleaseToolingContracts(t *testing.T) {
 		filepath.Join(root, "scripts", "release", "rollback-r1.sh"): {
 			"pvnaive-telemetry-agent.before",
 			"pvnaive-telemetry-agent.service.before",
-			"PVNAIVE_R1_CADDY_ACTION=NONE",
+			"caddy-before",
+			"20-pvnaive-accounting.conf.before",
+			"PVNAIVE_R1_CADDY_ACTION=RESTORED_PRIOR_BINARY_RESTART",
 			"/var/www/pvnaive-preview/current",
 			"preview.before",
 			"/opt/pvnaive/DEPLOYED_COMMIT",
@@ -79,6 +83,6 @@ func TestLoadRehearsalIsExplicitlyBounded(t *testing.T) {
 		}
 	}
 	if out, err := exec.Command("python3", "-m", "py_compile", path).CombinedOutput(); err != nil {
-		t.Fatalf("load rehearsal syntax invalid: %v: %s", err, out)
+		t.Fatalf("load rehearsal syntax invalid: %v: %s", path, err, out)
 	}
 }
