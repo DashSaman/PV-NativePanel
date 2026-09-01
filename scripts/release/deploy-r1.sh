@@ -5,11 +5,15 @@ umask 077
 bundle="${1:-}"
 [[ ${EUID} -eq 0 ]] || { echo 'ERROR: deploy must run as root' >&2; exit 1; }
 [[ -d "$bundle" && -f "$bundle/RELEASE.json" && -f "$bundle/SHA256SUMS" ]] || { echo 'ERROR: unpacked R1 bundle required' >&2; exit 1; }
-for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find; do
+for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find getent groupadd; do
   command -v "$cmd" >/dev/null || { echo "ERROR: missing $cmd" >&2; exit 1; }
 done
 ( cd "$bundle" && sha256sum --check --strict SHA256SUMS >/dev/null ) || { echo 'ERROR: release checksums failed' >&2; exit 1; }
 grep -q '"product"[[:space:]]*:[[:space:]]*"PVNaive"' "$bundle/RELEASE.json" || { echo 'ERROR: product mismatch' >&2; exit 1; }
+
+if ! getent group pvnaive-session-control >/dev/null; then
+  groupadd --system pvnaive-session-control
+fi
 
 commit="$(sed -nE 's/.*"source_commit"[[:space:]]*:[[:space:]]*"([0-9a-f]{40})".*/\1/p' "$bundle/RELEASE.json")"
 release_schema="$(sed -nE 's/.*"schema_version"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' "$bundle/RELEASE.json")"

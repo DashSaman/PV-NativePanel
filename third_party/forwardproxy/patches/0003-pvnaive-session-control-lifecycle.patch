@@ -39,10 +39,16 @@ index 9232871..9628be7 100644
  	_ caddyfile.Unmarshaler       = (*Handler)(nil)
  )
 diff --git a/pvnaive_session_control.go b/pvnaive_session_control.go
-index 8ba6ec0..d02c807 100644
+index 8ba6ec0..3d7fc28 100644
 --- a/pvnaive_session_control.go
 +++ b/pvnaive_session_control.go
-@@ -12,7 +12,10 @@ import (
+@@ -8,11 +8,25 @@ import (
+ 	"net"
+ 	"net/http"
+ 	"os"
++	"os/user"
++	"strconv"
+ 	"sync"
  	"time"
  )
  
@@ -50,11 +56,20 @@ index 8ba6ec0..d02c807 100644
 +const (
 +	pvnaiveSessionControlMaxRequestBytes = 8 << 10
 +	pvnaiveSessionControlSocketPath      = "/run/pvnaive/session-control.sock"
++	pvnaiveSessionControlGroup           = "pvnaive-session-control"
 +)
++
++var pvnaiveSessionControlGroupLookup = func(name string) (string, error) {
++	group, err := user.LookupGroup(name)
++	if err != nil {
++		return "", err
++	}
++	return group.Gid, nil
++}
  
  type pvnaiveSessionTuple struct {
  	RuntimeCredentialID string
-@@ -95,6 +98,93 @@ type pvnaiveSessionControlServer struct {
+@@ -95,6 +109,93 @@ type pvnaiveSessionControlServer struct {
  	closeErr   error
  }
  
@@ -148,11 +163,29 @@ index 8ba6ec0..d02c807 100644
  type pvnaiveSessionControlRequest struct {
  	RuntimeCredentialID string `json:"runtime_credential_id"`
  	NodeID              string `json:"node_id"`
+@@ -128,6 +229,17 @@ func startPVNaiveSessionControlServer(path string, registry *pvnaiveSessionRegis
+ 			_ = os.Remove(path)
+ 		}
+ 	}()
++	groupIDText, err := pvnaiveSessionControlGroupLookup(pvnaiveSessionControlGroup)
++	if err != nil {
++		return nil, fmt.Errorf("pvnaive: lookup session-control group: %w", err)
++	}
++	groupID, err := strconv.Atoi(groupIDText)
++	if err != nil || groupID < 0 {
++		return nil, fmt.Errorf("pvnaive: invalid session-control group id %q", groupIDText)
++	}
++	if err := os.Chown(path, -1, groupID); err != nil {
++		return nil, fmt.Errorf("pvnaive: chown session-control socket: %w", err)
++	}
+ 	if err := os.Chmod(path, 0o660); err != nil {
+ 		return nil, fmt.Errorf("pvnaive: chmod session-control socket: %w", err)
+ 	}
 diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
-index f16e29e..bef338f 100644
+index f16e29e..c0e6f6b 100644
 --- a/pvnaive_session_control_test.go
 +++ b/pvnaive_session_control_test.go
-@@ -4,6 +4,7 @@ import (
+@@ -4,11 +4,14 @@ import (
  	"bytes"
  	"context"
  	"encoding/json"
@@ -160,7 +193,35 @@ index f16e29e..bef338f 100644
  	"net"
  	"net/http"
  	"os"
-@@ -198,3 +199,76 @@ func TestPVNaiveSessionControlServerKillsExactTupleAndCleansOwnedSocket(t *testi
+ 	"path/filepath"
++	"strconv"
+ 	"sync/atomic"
++	"syscall"
+ 	"testing"
+ )
+ 
+@@ -136,7 +139,20 @@ func TestPVNaiveSessionRegistryUnregisterRemovesTuple(t *testing.T) {
+ 	}
+ }
+ 
++func pvnaiveUseCurrentGroup(t *testing.T) {
++	t.Helper()
++	oldLookup := pvnaiveSessionControlGroupLookup
++	pvnaiveSessionControlGroupLookup = func(name string) (string, error) {
++		if name != pvnaiveSessionControlGroup {
++			t.Fatalf("group lookup name=%q", name)
++		}
++		return strconv.Itoa(os.Getgid()), nil
++	}
++	t.Cleanup(func() { pvnaiveSessionControlGroupLookup = oldLookup })
++}
++
+ func TestPVNaiveSessionControlServerKillsExactTupleAndCleansOwnedSocket(t *testing.T) {
++	pvnaiveUseCurrentGroup(t)
+ 	registry := newPVNaiveSessionRegistry()
+ 	targetClient, targetServer := net.Pipe()
+ 	siblingClient, siblingServer := net.Pipe()
+@@ -198,3 +214,104 @@ func TestPVNaiveSessionControlServerKillsExactTupleAndCleansOwnedSocket(t *testi
  		t.Fatalf("socket after close stat err=%v want not-exist", err)
  	}
  }
@@ -183,6 +244,7 @@ index f16e29e..bef338f 100644
 +}
 +
 +func TestPVNaiveSessionControlLeaseKeepsSocketAcrossReload(t *testing.T) {
++	pvnaiveUseCurrentGroup(t)
 +	path := pvnaiveShortSocketPath(t)
 +	lease1, registry1, err := acquirePVNaiveSessionControl(path)
 +	if err != nil {
@@ -212,6 +274,7 @@ index f16e29e..bef338f 100644
 +}
 +
 +func TestPVNaiveSessionControlProvisionOnlyForAccountingHandler(t *testing.T) {
++	pvnaiveUseCurrentGroup(t)
 +	path := pvnaiveShortSocketPath(t)
 +	h := &Handler{}
 +	if err := h.provisionPVNaiveSessionControlAt(path); err != nil {
@@ -235,5 +298,31 @@ index f16e29e..bef338f 100644
 +	}
 +	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
 +		t.Fatalf("cleanup must release final socket: %v", err)
++	}
++}
++
++func TestPVNaiveSessionControlServerAssignsDedicatedGroup(t *testing.T) {
++	pvnaiveUseCurrentGroup(t)
++
++	path := pvnaiveShortSocketPath(t)
++	server, err := startPVNaiveSessionControlServer(path, newPVNaiveSessionRegistry())
++	if err != nil {
++		t.Fatalf("start server: %v", err)
++	}
++	t.Cleanup(func() { _ = server.Close() })
++
++	info, err := os.Lstat(path)
++	if err != nil {
++		t.Fatalf("stat socket: %v", err)
++	}
++	if got := info.Mode().Perm(); got != 0o660 {
++		t.Fatalf("socket mode=%#o want 0660", got)
++	}
++	stat, ok := info.Sys().(*syscall.Stat_t)
++	if !ok {
++		t.Fatalf("socket stat type=%T", info.Sys())
++	}
++	if got, want := int(stat.Gid), os.Getgid(); got != want {
++		t.Fatalf("socket gid=%d want %d", got, want)
 +	}
 +}
