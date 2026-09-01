@@ -63,26 +63,26 @@ func (s *PostgresStore) CreateServiceTermTx(ctx context.Context, tx *sql.Tx, rec
 	var baselineUpload, baselineDownload sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
-    tenant_id, user_id, quota_bytes, concurrency_limit, duration_seconds, start_policy,
+    tenant_id, user_id, quota_bytes, concurrency_limit, unique_ip_limit, duration_seconds, start_policy,
     purchased_at, starts_at, expires_at, state,
     accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
     accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, $15
+    $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+    $12, $13, $14, $15, $16
 )
-RETURNING id::text, tenant_id::text, user_id::text, quota_bytes, concurrency_limit,
+RETURNING id::text, tenant_id::text, user_id::text, quota_bytes, concurrency_limit, unique_ip_limit,
           duration_seconds, start_policy, purchased_at, starts_at,
           first_connected_at, expires_at, state,
           accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
           accounting_baseline_upload_bytes, accounting_baseline_download_bytes,
           revision`,
-		record.TenantID, record.UserID, record.QuotaBytes, record.ConcurrencyLimit, record.DurationSeconds,
+		record.TenantID, record.UserID, record.QuotaBytes, record.ConcurrencyLimit, record.UniqueIPLimit, record.DurationSeconds,
 		string(record.StartPolicy), record.PurchasedAt, record.StartsAt, record.ExpiresAt,
 		string(record.State), string(record.AccountingBaseline.State), string(record.AccountingBaseline.Source),
 		record.AccountingBaseline.CutoffAt.UTC(), record.AccountingBaseline.UploadBytes, record.AccountingBaseline.DownloadBytes,
 	).Scan(
-		&term.ID, &term.TenantID, &term.UserID, &term.QuotaBytes, &term.ConcurrencyLimit,
+		&term.ID, &term.TenantID, &term.UserID, &term.QuotaBytes, &term.ConcurrencyLimit, &term.UniqueIPLimit,
 		&term.DurationSeconds, &startPolicy, &term.PurchasedAt, &term.StartsAt,
 		&term.FirstConnectedAt, &term.ExpiresAt, &state,
 		&baselineState, &baselineSource, &term.AccountingBaseline.CutoffAt,
