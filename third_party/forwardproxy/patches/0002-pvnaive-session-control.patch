@@ -1,8 +1,40 @@
+diff --git a/forwardproxy.go b/forwardproxy.go
+index 15bb5e9..9232871 100644
+--- a/forwardproxy.go
++++ b/forwardproxy.go
+@@ -114,6 +114,7 @@ type Handler struct {
+ 	PVNaiveNodeID             string            `json:"pvnaive_node_id,omitempty"`
+ 	PVNaiveRuntimeCredentials map[string]string `json:"pvnaive_runtime_credentials,omitempty"`
+ 	pvnaiveAccountingClient   *pvnaiveAccountingClient
++	pvnaiveSessions           *pvnaiveSessionRegistry
+ }
+ 
+ // CaddyModule returns the Caddy module information.
+@@ -127,6 +128,9 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
+ // Provision ensures that h is set up properly before use.
+ func (h *Handler) Provision(ctx caddy.Context) error {
+ 	h.logger = ctx.Logger(h)
++	if h.pvnaiveSessions == nil {
++		h.pvnaiveSessions = newPVNaiveSessionRegistry()
++	}
+ 
+ 	if h.DialTimeout <= 0 {
+ 		h.DialTimeout = caddy.Duration(30 * time.Second)
+@@ -371,6 +375,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
+ 			}
+ 			targetConn = &pvnaiveAccountingConn{Conn: targetConn, session: accountingSession}
+ 		}
++		unregisterPVNaiveSession := h.registerPVNaiveSession(targetConn, accountingSession)
++		defer unregisterPVNaiveSession()
+ 
+ 		var streamErr error
+ 		switch r.ProtoMajor {
 diff --git a/pvnaive_session_control.go b/pvnaive_session_control.go
 new file mode 100644
+index 0000000..7f9d7ed
 --- /dev/null
 +++ b/pvnaive_session_control.go
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,78 @@
 +package forwardproxy
 +
 +import (
@@ -72,11 +104,21 @@ new file mode 100644
 +	})
 +	return true, true
 +}
++
++func (h *Handler) registerPVNaiveSession(conn net.Conn, accountingSession *pvnaiveAccountingSession) func() {
++	if h == nil || h.pvnaiveSessions == nil || conn == nil || accountingSession == nil || accountingSession.client == nil {
++		return func() {}
++	}
++	key := pvnaiveSessionTuple{RuntimeCredentialID: accountingSession.runtimeCredentialID, NodeID: accountingSession.client.nodeID, BootID: accountingSession.client.bootID, SessionID: accountingSession.sessionID}
++	h.pvnaiveSessions.register(key, conn, accountingSession)
++	return func() { h.pvnaiveSessions.unregister(key) }
++}
 diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
 new file mode 100644
+index 0000000..0c4228f
 --- /dev/null
 +++ b/pvnaive_session_control_test.go
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,118 @@
 +package forwardproxy
 +
 +import (
@@ -164,5 +206,34 @@ new file mode 100644
 +	}
 +	if got := conn.closes.Load(); got != 1 {
 +		t.Fatalf("close count=%d want 1", got)
++	}
++}
++
++func TestPVNaiveHandlerRegisterUsesAccountingExactTuple(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	h := &Handler{pvnaiveSessions: registry}
++	client, server := net.Pipe()
++	defer client.Close()
++	conn := &pvnaiveTrackedConn{Conn: server}
++	s := &pvnaiveAccountingSession{client: &pvnaiveAccountingClient{nodeID: "node-a", bootID: "22222222-2222-4222-8222-222222222222"}, runtimeCredentialID: "11111111-1111-4111-8111-111111111111", sessionID: "33333333-3333-4333-8333-333333333333"}
++	unregister := h.registerPVNaiveSession(conn, s)
++	defer unregister()
++	if found, killed := registry.kill(pvnaiveTask13Key(s.sessionID)); !found || !killed {
++		t.Fatalf("registered exact tuple kill found=%v killed=%v want true/true", found, killed)
++	}
++	if got := conn.closes.Load(); got != 1 {
++		t.Fatalf("close count=%d want 1", got)
++	}
++}
++
++func TestPVNaiveHandlerRegisterNilAccountingIsNoop(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	h := &Handler{pvnaiveSessions: registry}
++	client, server := net.Pipe()
++	defer client.Close()
++	defer server.Close()
++	h.registerPVNaiveSession(server, nil)()
++	if len(registry.live) != 0 {
++		t.Fatalf("live entries=%d want 0", len(registry.live))
 +	}
 +}
