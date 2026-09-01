@@ -68,6 +68,7 @@ type pvnaiveEvent struct {
 	UploadBytes         int64     `json:"upload_bytes"`
 	DownloadBytes       int64     `json:"download_bytes"`
 	Final               bool      `json:"final,omitempty"`
+	ClientIP            string    `json:"client_ip,omitempty"`
 }
 
 type pvnaiveEventResult struct {
@@ -193,11 +194,22 @@ func (h *Handler) newPVNaiveAccountingSession(r *http.Request) (*pvnaiveAccounti
 	if err != nil {
 		return nil, err
 	}
+	// Extract canonical client IP from trusted RemoteAddr. Never Forwarded/XFF.
+	remoteAddr := r.RemoteAddr
+	host, _, splitErr := net.SplitHostPort(remoteAddr)
+	if splitErr != nil || host == "" {
+		host = remoteAddr
+	}
+	clientIP := ""
+	if ip := net.ParseIP(host); ip != nil && ip.String() == host {
+		clientIP = host
+	}
 	return &pvnaiveAccountingSession{
 		client:              h.pvnaiveAccountingClient,
 		runtimeCredentialID: runtimeID,
 		username:            username,
 		sessionID:           sessionID,
+		clientIP:            clientIP,
 	}, nil
 }
 
@@ -232,6 +244,7 @@ type pvnaiveAccountingSession struct {
 	runtimeCredentialID string
 	username            string
 	sessionID           string
+	clientIP            string
 
 	mu            sync.Mutex
 	sequence      int64
@@ -448,6 +461,7 @@ func (s *pvnaiveAccountingSession) eventLocked(sequence int64, final bool) pvnai
 		UploadBytes:         s.uploadBytes,
 		DownloadBytes:       s.downloadBytes,
 		Final:               final,
+		ClientIP:            s.clientIP,
 	}
 }
 

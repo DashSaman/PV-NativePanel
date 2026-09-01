@@ -28,17 +28,17 @@ func (s *PostgresStore) CreateProductServiceTermTx(ctx context.Context, tx *sql.
 	var baselineUpload, baselineDownload sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO pvnaive.service_terms (
-    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry, concurrency_limit,
+    tenant_id, user_id, plan_id, quota_bytes, duration_seconds, no_expiry, concurrency_limit, unique_ip_limit,
     start_policy, purchased_at, starts_at, expires_at, state, renewal_kind, renewed_from_term_id,
     accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
     accounting_baseline_upload_bytes, accounting_baseline_download_bytes
 ) VALUES (
-    $1::uuid, $2::uuid, NULLIF($3,'')::uuid, $4, $5, $6, $7,
-    $8, $9, $10, $11, $12, COALESCE(NULLIF($13,''),'initial'), NULLIF($14,'')::uuid,
-    $15, $16, $17, $18, $19
+    $1::uuid, $2::uuid, NULLIF($3,'')::uuid, $4, $5, $6, $7, $8,
+    $9, $10, $11, $12, $13, COALESCE(NULLIF($14,''),'initial'), NULLIF($15,'')::uuid,
+    $16, $17, $18, $19, $20
 )
 RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
-          duration_seconds, no_expiry, concurrency_limit, start_policy, purchased_at, starts_at,
+          duration_seconds, no_expiry, concurrency_limit, unique_ip_limit, start_policy, purchased_at, starts_at,
           first_connected_at, expires_at, state, renewal_kind, renewed_from_term_id::text,
           accounting_baseline_state, accounting_baseline_source, accounting_baseline_cutoff_at,
           accounting_baseline_upload_bytes, accounting_baseline_download_bytes, revision`,
@@ -49,6 +49,7 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		record.DurationSeconds,
 		record.NoExpiry,
 		record.ConcurrencyLimit,
+		record.UniqueIPLimit,
 		string(record.StartPolicy),
 		record.PurchasedAt,
 		record.StartsAt,
@@ -70,6 +71,7 @@ RETURNING id::text, tenant_id::text, user_id::text, plan_id::text, quota_bytes,
 		&term.DurationSeconds,
 		&term.NoExpiry,
 		&term.ConcurrencyLimit,
+		&term.UniqueIPLimit,
 		&startPolicy,
 		&term.PurchasedAt,
 		&term.StartsAt,

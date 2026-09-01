@@ -32,6 +32,7 @@ type PlanPreset struct {
 	ResetStrategy    ResetStrategy `json:"reset_strategy"`
 	ResetCustomDays  int           `json:"reset_custom_days,omitempty"`
 	ConcurrencyLimit *int          `json:"concurrency_limit"`
+	UniqueIPLimit    *int          `json:"unique_ip_limit"`
 	DefaultGroupID   string        `json:"default_group_id,omitempty"`
 	TagIDs           []string      `json:"tag_ids,omitempty"`
 	Enabled          bool          `json:"enabled"`
@@ -49,6 +50,7 @@ type ServiceSnapshot struct {
 	ResetStrategy    ResetStrategy
 	ResetCustomDays  int
 	ConcurrencyLimit *int
+	UniqueIPLimit    *int
 }
 
 func (p PlanPreset) Validate() error {
@@ -76,6 +78,9 @@ func (p PlanPreset) Validate() error {
 	if p.ConcurrencyLimit != nil && *p.ConcurrencyLimit <= 0 {
 		return errors.New("customer: concurrency limit must be positive or null for Unlimited")
 	}
+	if p.UniqueIPLimit != nil && *p.UniqueIPLimit <= 0 {
+		return errors.New("customer: unique IP limit must be positive or null for Unlimited")
+	}
 	switch p.ResetStrategy {
 	case ResetNone, ResetDaily, ResetWeekly, ResetMonthly, ResetYearly:
 		if p.ResetCustomDays != 0 {
@@ -102,6 +107,11 @@ func (p PlanPreset) ServiceSnapshot(now time.Time) ServiceSnapshot {
 		value := *p.ConcurrencyLimit
 		concurrencyLimit = &value
 	}
+	var uniqueIPLimit *int
+	if p.UniqueIPLimit != nil {
+		value := *p.UniqueIPLimit
+		uniqueIPLimit = &value
+	}
 	return ServiceSnapshot{
 		PlanID:           p.ID,
 		QuotaBytes:       quota,
@@ -112,6 +122,7 @@ func (p PlanPreset) ServiceSnapshot(now time.Time) ServiceSnapshot {
 		ResetStrategy:    p.ResetStrategy,
 		ResetCustomDays:  p.ResetCustomDays,
 		ConcurrencyLimit: concurrencyLimit,
+		UniqueIPLimit:    uniqueIPLimit,
 	}
 }
 
