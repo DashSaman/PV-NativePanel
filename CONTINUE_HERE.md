@@ -6,13 +6,14 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `cce50c4b198bd8ea449f385c1198fffbddfead8e`.
-- Exact-main push CI run `33530087359`: **SUCCESS**.
+- `main`: `392a153f14dc311f6d1dffe60e6b4d4da5f8cb17`.
+- Prior exact-main CI on `cce50c4b...`: **SUCCESS**; no commit-associated workflow run has surfaced yet for the new documentation merge SHA, so do not invent one.
 - Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact head `485657d5232da27cbcc4a2c5b8018a4c6b42d3e9`.
-- Exact-head gates at latest observation: Exact Accounting **SUCCESS**, Pinned Forwardproxy **SUCCESS**, CI **IN PROGRESS**.
+- Exact-head gates: CI **SUCCESS**, Exact Accounting **SUCCESS**, Pinned Forwardproxy **SUCCESS**.
 - Old draft #4 remains outside the current roadmap.
-- No runtime/schema change from this run has been deployed; Production remains on the previously verified Task15/schema20 rollout.
-- Fresh Production probing was attempted but blocked because `pv-primary` is non-active under the one-active-host SentinelX Free-plan limit. Do not restate prior health as fresh evidence.
+- No Task13 runtime/schema change has been deployed; Production remains on Task15/schema20.
+- Fresh Production read-only probe: all four PVNaive services active and readiness on `127.0.0.1:8080` returned `db=ok`, `schema=ok`, `ready=true`.
+- Journal scanning and deploy-source provenance could not be freshly re-proven due permissions; do not promote those missing observations into PASS.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
 
 ## Task accounting
@@ -26,33 +27,22 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Task13 current checkpoint
 
-PR #64 now contains the earlier exact-tuple primitives/live CONNECT registration plus a tested Unix-domain control-server primitive.
+PR #64 contains exact-tuple primitives/live CONNECT registration plus a tested Unix-domain control-server primitive. Its exact published head has all three GitHub gates green.
 
-Fresh RED→GREEN evidence on the active Worker:
+Validated behavior includes strict/bounded local JSON, exact tuple kill, `0660` socket mode, stale-socket handling, owned-socket cleanup, sibling survival, forged-tuple rejection, idempotent repeat kill, unregister semantics, and preservation of the existing accounting teardown path.
 
-- RED failed on missing `startPVNaiveSessionControlServer`;
-- GREEN adds bounded/strict JSON handling, exact tuple kill, mode `0660`, stale-socket handling and owned-socket cleanup;
-- a real HTTP request over the Unix socket proves exact target kill while sibling remains open;
-- unregister-removes-tuple is covered;
-- patched forwardproxy normal/race tests PASS;
-- Task13 forwardproxy stage PASS;
-- pinned forwardproxy boundary PASS;
-- repository Go tests, focused race tests and `git diff --check` PASS.
-
-The combined local reproducible-Caddy/full-gate command timed out and is not credited. Use exact GitHub workflows for published-head validation.
-
-Next TDD sequence: wire the Caddy-owned listener lifecycle so reload/unload cannot steal/delete a successor socket; prove the narrow local group/permission model for API access without broadening accounting access; then API RBAC/ownership/IDOR/CSRF; UI; full gates; finally real HTTP/1.1 + HTTP/2 exact-kill rehearsal with exactly-once final accounting.
+Next TDD sequence: wire the Caddy-owned listener lifecycle so reload/unload cannot steal/delete a successor socket; prove a narrow local group/permission model for API access without broadening accounting access; then API RBAC/ownership/IDOR/CSRF; UI; full gates; finally real HTTP/1.1 + HTTP/2 exact-kill rehearsal with exactly-once final accounting.
 
 ## Task16
 
-Fresh persistent-workspace reconciliation found no new Task16 delta: its current run workspace is clean on an older main snapshot. Keep Task16 uncredited and queued for the next independently executable Worker. Required first step remains RED tests proving callers cannot request >30 days or oversized pagination.
+No fresh current-main Task16 delta is credited. Keep it queued for the next independently executable Worker. Required first step remains RED tests proving callers cannot request >30 days or oversized pagination, followed by server-side enforcement and schema21/RLS/PG18/rollback proof.
 
 ## Worker access
 
 Fresh SentinelX listing shows two connected hosts: `TrPaqet` and `pv-primary`. Only one can be active under the Free plan.
 
-- Active/executable now: `TrPaqet` → assigned Task13.
-- `pv-primary`: connected but `upgrade_required` on fresh command, so no fresh Production probe this run.
+- Active/executable now: `pv-primary`, used only for read-only Production verification.
+- `TrPaqet`: connected/healthy but currently `upgrade_required`, so development is blocked while Primary owns the slot.
 - No second executable Worker exists for Task16 in parallel.
 
 ## Production deployment rules
@@ -61,9 +51,9 @@ Before every Production mutation: fresh encrypted DB/config backup + rollback sn
 
 ## Next sequence
 
-1. Review remaining exact-head CI for PR #64; keep it draft regardless because functional integration is still incomplete.
-2. Continue Task13 on `TrPaqet`: reload-safe Caddy listener lifecycle + narrow socket permission proof.
-3. Implement API authorization boundary and UI with TDD.
+1. Keep #64 draft even though its exact-head gates are green; lifecycle/API/UI/rehearsal remain incomplete.
+2. Switch/free the development slot back to `TrPaqet` when continuing implementation, without using Production as a development lane.
+3. Continue Task13: reload-safe Caddy listener lifecycle + narrow socket permission proof, then API authorization boundary and UI with TDD.
 4. Run full exact-tree gates and fresh HTTP1/HTTP2 rehearsal.
 5. Only then merge; deploy only with fresh Production backup/rollback/postflight access.
 6. Put Task16 on the next independent Worker as soon as capacity exists.
