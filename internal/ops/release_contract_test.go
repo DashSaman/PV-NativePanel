@@ -83,6 +83,6 @@ func TestLoadRehearsalIsExplicitlyBounded(t *testing.T) {
 		}
 	}
 	if out, err := exec.Command("python3", "-m", "py_compile", path).CombinedOutput(); err != nil {
-		t.Fatalf("load rehearsal syntax invalid: %v: %s", path, err, out)
+		t.Fatalf("load rehearsal syntax invalid: %v: %s", err, out)
 	}
 }
