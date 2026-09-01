@@ -1,0 +1,19 @@
+name: Task15 Checksum Diagnostic
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checksum:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print migration checksum verification
+        run: |
+          set -Eeuo pipefail
+          cd db/migrations
+          sha256sum --check --strict SHA256SUMS
