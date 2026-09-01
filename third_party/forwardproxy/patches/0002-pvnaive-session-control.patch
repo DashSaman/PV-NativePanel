@@ -31,16 +31,25 @@ index 15bb5e9..9232871 100644
  		switch r.ProtoMajor {
 diff --git a/pvnaive_session_control.go b/pvnaive_session_control.go
 new file mode 100644
-index 0000000..7f9d7ed
+index 0000000..8ba6ec0
 --- /dev/null
 +++ b/pvnaive_session_control.go
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,231 @@
 +package forwardproxy
 +
 +import (
++	"encoding/json"
++	"errors"
++	"fmt"
++	"io"
 +	"net"
++	"net/http"
++	"os"
 +	"sync"
++	"time"
 +)
++
++const pvnaiveSessionControlMaxRequestBytes = 8 << 10
 +
 +type pvnaiveSessionTuple struct {
 +	RuntimeCredentialID string
@@ -113,16 +122,166 @@ index 0000000..7f9d7ed
 +	h.pvnaiveSessions.register(key, conn, accountingSession)
 +	return func() { h.pvnaiveSessions.unregister(key) }
 +}
++
++type pvnaiveSessionControlServer struct {
++	path       string
++	listener   net.Listener
++	httpServer *http.Server
++	socketInfo os.FileInfo
++	closeOnce  sync.Once
++	closeErr   error
++}
++
++type pvnaiveSessionControlRequest struct {
++	RuntimeCredentialID string `json:"runtime_credential_id"`
++	NodeID              string `json:"node_id"`
++	BootID              string `json:"boot_id"`
++	SessionID           string `json:"session_id"`
++}
++
++type pvnaiveSessionControlResult struct {
++	Found  bool `json:"found"`
++	Killed bool `json:"killed"`
++}
++
++func startPVNaiveSessionControlServer(path string, registry *pvnaiveSessionRegistry) (*pvnaiveSessionControlServer, error) {
++	if path == "" {
++		return nil, errors.New("pvnaive: session-control socket path is required")
++	}
++	if registry == nil {
++		return nil, errors.New("pvnaive: session-control registry is required")
++	}
++	if err := preparePVNaiveSessionControlSocket(path); err != nil {
++		return nil, err
++	}
++	listener, err := net.Listen("unix", path)
++	if err != nil {
++		return nil, fmt.Errorf("pvnaive: listen session-control socket: %w", err)
++	}
++	cleanup := true
++	defer func() {
++		if cleanup {
++			_ = listener.Close()
++			_ = os.Remove(path)
++		}
++	}()
++	if err := os.Chmod(path, 0o660); err != nil {
++		return nil, fmt.Errorf("pvnaive: chmod session-control socket: %w", err)
++	}
++	info, err := os.Lstat(path)
++	if err != nil {
++		return nil, fmt.Errorf("pvnaive: stat session-control socket: %w", err)
++	}
++
++	server := &pvnaiveSessionControlServer{path: path, listener: listener, socketInfo: info}
++	server.httpServer = &http.Server{
++		Handler:           newPVNaiveSessionControlHandler(registry),
++		ReadHeaderTimeout: 2 * time.Second,
++		IdleTimeout:       5 * time.Second,
++	}
++	go func() {
++		_ = server.httpServer.Serve(listener)
++	}()
++	cleanup = false
++	return server, nil
++}
++
++func preparePVNaiveSessionControlSocket(path string) error {
++	info, err := os.Lstat(path)
++	if errors.Is(err, os.ErrNotExist) {
++		return nil
++	}
++	if err != nil {
++		return fmt.Errorf("pvnaive: stat session-control socket: %w", err)
++	}
++	if info.Mode()&os.ModeSocket == 0 {
++		return errors.New("pvnaive: session-control path exists and is not a socket")
++	}
++	conn, dialErr := net.DialTimeout("unix", path, 150*time.Millisecond)
++	if dialErr == nil {
++		_ = conn.Close()
++		return errors.New("pvnaive: session-control socket is already active")
++	}
++	if err := os.Remove(path); err != nil {
++		return fmt.Errorf("pvnaive: remove stale session-control socket: %w", err)
++	}
++	return nil
++}
++
++func newPVNaiveSessionControlHandler(registry *pvnaiveSessionRegistry) http.Handler {
++	mux := http.NewServeMux()
++	mux.HandleFunc("/v1/sessions/kill", func(w http.ResponseWriter, r *http.Request) {
++		if r.Method != http.MethodPost {
++			w.Header().Set("Allow", http.MethodPost)
++			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
++			return
++		}
++		body := http.MaxBytesReader(w, r.Body, pvnaiveSessionControlMaxRequestBytes)
++		defer body.Close()
++		decoder := json.NewDecoder(body)
++		decoder.DisallowUnknownFields()
++		var req pvnaiveSessionControlRequest
++		if err := decoder.Decode(&req); err != nil {
++			http.Error(w, "invalid request", http.StatusBadRequest)
++			return
++		}
++		if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
++			http.Error(w, "invalid request", http.StatusBadRequest)
++			return
++		}
++		if req.RuntimeCredentialID == "" || req.NodeID == "" || req.BootID == "" || req.SessionID == "" {
++			http.Error(w, "incomplete session tuple", http.StatusBadRequest)
++			return
++		}
++		found, killed := registry.kill(pvnaiveSessionTuple{
++			RuntimeCredentialID: req.RuntimeCredentialID,
++			NodeID:              req.NodeID,
++			BootID:              req.BootID,
++			SessionID:           req.SessionID,
++		})
++		w.Header().Set("Content-Type", "application/json")
++		_ = json.NewEncoder(w).Encode(pvnaiveSessionControlResult{Found: found, Killed: killed})
++	})
++	return mux
++}
++
++func (s *pvnaiveSessionControlServer) Close() error {
++	if s == nil {
++		return nil
++	}
++	s.closeOnce.Do(func() {
++		if s.httpServer != nil {
++			s.closeErr = s.httpServer.Close()
++		} else if s.listener != nil {
++			s.closeErr = s.listener.Close()
++		}
++		current, err := os.Lstat(s.path)
++		if err == nil && s.socketInfo != nil && os.SameFile(s.socketInfo, current) {
++			if removeErr := os.Remove(s.path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) && s.closeErr == nil {
++				s.closeErr = removeErr
++			}
++		} else if err != nil && !errors.Is(err, os.ErrNotExist) && s.closeErr == nil {
++			s.closeErr = err
++		}
++	})
++	return s.closeErr
++}
 diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
 new file mode 100644
-index 0000000..0c4228f
+index 0000000..f16e29e
 --- /dev/null
 +++ b/pvnaive_session_control_test.go
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,200 @@
 +package forwardproxy
 +
 +import (
++	"bytes"
++	"context"
++	"encoding/json"
 +	"net"
++	"net/http"
++	"os"
++	"path/filepath"
 +	"sync/atomic"
 +	"testing"
 +)
@@ -235,5 +394,81 @@ index 0000000..0c4228f
 +	h.registerPVNaiveSession(server, nil)()
 +	if len(registry.live) != 0 {
 +		t.Fatalf("live entries=%d want 0", len(registry.live))
++	}
++}
++
++func TestPVNaiveSessionRegistryUnregisterRemovesTuple(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	client, server := net.Pipe()
++	defer client.Close()
++	defer server.Close()
++	key := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
++	registry.register(key, server, nil)
++	registry.unregister(key)
++	if found, killed := registry.kill(key); found || killed {
++		t.Fatalf("unregistered kill found=%v killed=%v want false/false", found, killed)
++	}
++}
++
++func TestPVNaiveSessionControlServerKillsExactTupleAndCleansOwnedSocket(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	targetClient, targetServer := net.Pipe()
++	siblingClient, siblingServer := net.Pipe()
++	defer targetClient.Close()
++	defer siblingClient.Close()
++	target := &pvnaiveTrackedConn{Conn: targetServer}
++	sibling := &pvnaiveTrackedConn{Conn: siblingServer}
++	targetKey := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
++	siblingKey := pvnaiveTask13Key("44444444-4444-4444-8444-444444444444")
++	registry.register(targetKey, target, nil)
++	registry.register(siblingKey, sibling, nil)
++
++	socketPath := filepath.Join(t.TempDir(), "session-control.sock")
++	server, err := startPVNaiveSessionControlServer(socketPath, registry)
++	if err != nil {
++		t.Fatalf("start control server: %v", err)
++	}
++
++	transport := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
++		var dialer net.Dialer
++		return dialer.DialContext(ctx, "unix", socketPath)
++	}}
++	client := &http.Client{Transport: transport}
++	body, err := json.Marshal(map[string]string{
++		"runtime_credential_id": targetKey.RuntimeCredentialID,
++		"node_id":               targetKey.NodeID,
++		"boot_id":               targetKey.BootID,
++		"session_id":            targetKey.SessionID,
++	})
++	if err != nil {
++		t.Fatalf("marshal request: %v", err)
++	}
++	resp, err := client.Post("http://unix/v1/sessions/kill", "application/json", bytes.NewReader(body))
++	if err != nil {
++		t.Fatalf("post kill: %v", err)
++	}
++	defer resp.Body.Close()
++	if resp.StatusCode != http.StatusOK {
++		t.Fatalf("status=%d want 200", resp.StatusCode)
++	}
++	var got struct {
++		Found  bool `json:"found"`
++		Killed bool `json:"killed"`
++	}
++	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
++		t.Fatalf("decode response: %v", err)
++	}
++	if !got.Found || !got.Killed {
++		t.Fatalf("result=%+v want found=true killed=true", got)
++	}
++	if target.closes.Load() != 1 || sibling.closes.Load() != 0 {
++		t.Fatalf("close counts target=%d sibling=%d", target.closes.Load(), sibling.closes.Load())
++	}
++
++	if err := server.Close(); err != nil {
++		t.Fatalf("close control server: %v", err)
++	}
++	if _, err := os.Stat(socketPath); !os.IsNotExist(err) {
++		t.Fatalf("socket after close stat err=%v want not-exist", err)
 +	}
 +}
