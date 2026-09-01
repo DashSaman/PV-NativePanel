@@ -29,9 +29,15 @@ No task becomes DONE from a local candidate, historical worker report or partial
 
 Production runtime remains the guarded Task15 rollout from source `26aa74dddfd23535e45837f21531cf67ea2fd238`; later merges through PR #61 changed repository documentation/evidence only.
 
-The last successful fresh read-only verification confirmed all four core services active, `/api/v1/health/ready` reporting `ready=true`, `db=ok`, `schema=ok`, and schema20 Task15 provenance.
+A fresh read-only Production verification in the current run succeeded after the SentinelX active slot moved to `pv-primary`:
 
-A fresh read-only probe in the current run could not execute because `pv-primary` is connected/healthy but inactive under the SentinelX Free-plan one-active-host limit (`4` connected hosts). The probe returned `upgrade_required`. No Production mutation, restart, reload or migration was attempted.
+- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`: **active**;
+- `GET /api/v1/health/ready`: `ready=true`, `db=ok`, `schema=ok`;
+- API process environment: `PVNAIVE_EXPECTED_SCHEMA_VERSION=20`;
+- `/opt/pvnaive/deploy-src`: exact Task15 source `26aa74dddfd23535e45837f21531cf67ea2fd238`, clean;
+- no `panic`, `fatal` or `schema mismatch` match in the checked last 30 minutes of the four core-service journals.
+
+No Production mutation, restart, reload or migration was performed in this run.
 
 ## Task13 — exact live-session kill
 
@@ -45,9 +51,10 @@ Current verified/published Task13 scope:
 - initial CI formatting blocker was isolated to gofmt and corrected without behavior change;
 - TDD-first local control handler was added after observing RED `undefined: NewHandler`;
 - fresh isolated Worker verification with a clean Go 1.25.0 toolchain: focused handler tests PASS, `go test -race ./internal/sessionkill ./internal/sessioncontrol -count=1` PASS, full `go test ./... -count=1` PASS, `git diff --check` PASS;
-- handler rejects incomplete tuples before touching live state and exact kill preserves siblings.
+- handler rejects incomplete tuples before touching live state and exact kill preserves siblings;
+- on exact head `2e0f485...`, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS; CI database/web/go/rehearsal jobs are SUCCESS and only the bundle job remained in progress at the latest check.
 
-Exact-head CI for `2e0f485...` is currently running. PR #62 remains draft and must not merge until forwardproxy/Unix-listener ownership, API RBAC/ownership/CSRF, UI action, exact final accounting, full gates and fresh real HTTP/1.1 + HTTP/2 kill rehearsal are green on the exact published tree.
+PR #62 remains draft and must not merge until forwardproxy/Unix-listener ownership, API RBAC/ownership/CSRF, UI action, exact final accounting, full exact-head gates and fresh real HTTP/1.1 + HTTP/2 kill rehearsal are green on the exact published tree.
 
 ## Task16 — bounded IP/session history / schema21
 
@@ -55,14 +62,14 @@ Schema20 is stable, but Task16 is not mergeable. Retention/pagination behavior m
 
 ## Worker / orchestration capacity
 
-Four SentinelX hosts are connected and the current Free plan permits only one active host. In this run `TrPaqet` (`host_311ff...`) is executable and was used for isolated Task13 verification and a clean Task16 inspection workspace. `pv-primary` is connected/healthy but inactive with `upgrade_required`; Production remains excluded from development/testing.
+SentinelX host availability changed during this run: `TrPaqet` was executable and used for isolated Task13 verification, then disconnected while the next overlay RED test was being staged. The latest host listing returned three connected hosts (`pv-worker-main`, `pv-primary`, `ubuntu-4gb-hel1-1`), while inactive-worker plan responses still reported four connected; `pv-primary` is currently the executable slot and the two development workers tested after the switch return `upgrade_required`.
 
-True parallel worker capacity still requires human action: disconnect unused connected hosts or change the SentinelX active-host limit.
+Production remains excluded from development/testing. True parallel worker capacity still requires human action: disconnect unused connected hosts or change the SentinelX active-host limit.
 
 ## Immediate execution order
 
 1. Finish Task13 surgical integration on draft PR #62: forwardproxy registration/cancel path + Unix listener, then API RBAC/ownership/CSRF and UI action, each TDD-first.
 2. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates plus fresh real HTTP1+HTTP2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
 3. Merge only the exact verified Task13 tree; Production rollout then requires fresh encrypted backup + rollback snapshot and postflight evidence.
-4. In parallel when a second worker becomes active, implement Task16 RED tests for >30-day retention and oversized pagination before any schema21 code is accepted.
+4. In parallel when a development worker becomes executable again, implement Task16 RED tests for >30-day retention and oversized pagination before any schema21 code is accepted.
 5. Keep old draft PR #4 out of the roadmap unless a real Karing client smoke explicitly revives it.
