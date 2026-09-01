@@ -1,6 +1,6 @@
 # PVNaive — Agent / Workstream Task Board
 
-Last updated: 2026-08-31
+Last updated: 2026-09-01
 
 This is the active execution board. `OWNER_REQUIREMENTS.md` and `ROADMAP.md` define product intent and ordering; repository/CI/Production evidence decides status.
 
@@ -13,45 +13,47 @@ This is the active execution board. `OWNER_REQUIREMENTS.md` and `ROADMAP.md` def
 - route/schema presence is not delivery evidence;
 - never fabricate usage, online state, IP/HWID, speed or Production proof;
 - never expose password/token/key/secret values in Git/chat/CI/evidence;
-- Production mutation requires fresh backup, rollback state, exact-head CI and postflight;
+- Production mutation requires fresh encrypted backup, rollback state, exact-head CI and postflight;
+- Production is never a development/test worker;
 - GPL/AGPL competitor code remains reference-only unless license compatibility is explicitly approved.
 
 ## Current verified baseline
 
-- GitHub `main`: `fce39283c6449b0d1836757ee7caddb31fab9def` — PR #47 BUG-002 merge.
-- Exact-main CI run `33426149726`: **SUCCESS**.
-- Latest independently recorded Production release: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`, schema **19**, from Task14 rollout evidence.
+- GitHub `main`: `a29b5ef434a72004af80cf489f47fffe0b0a03a8`.
+- Active roadmap implementation: draft PR #62 (`lead/task13-reconstruct-a29b5ef`), exact published head `2e0f485d61f2dd70647b6f626b1f8a18178336d7`.
+- Production: Task15 source `26aa74dddfd23535e45837f21531cf67ea2fd238`, schema **20**.
+- Fresh current-run read-only Production audit: four core services active; readiness `ready=true`, `db=ok`, `schema=ok`; expected schema20; deploy source clean at exact Task15 commit; no checked panic/fatal/schema mismatch.
 - Task12 active-session management is deployed at schema17.
-- Task14 concurrent-session limit is deployed at schema19 with PostgreSQL race/reconnect proof.
+- Task14 concurrent-session limit is deployed at schema19.
+- Task15 trusted-RemoteAddr unique-IP limit is deployed at schema20.
 - BUG-001 refresh reuse-family, BUG-002 commit-before-success and BUG-003 DB/schema readiness are closed; Task35 is DONE.
-- A fresh live Production audit/deploy after the BUG-002 merge is currently blocked by SentinelX host-plan access to `pv-primary`; do not claim `fce39283...` is deployed until that gate is available and verified.
 
 ## Current ordered task queue
 
-Do not call a task DONE merely because code exists. `PARTIAL` means implementation/history exists but the exact current acceptance/Production evidence still needs reconciliation.
+Do not call a task DONE merely because code exists. `PARTIAL` means implementation/history exists but exact current acceptance/Production evidence still needs reconciliation.
 
 | # | Workstream | Status | Current gate / next action |
 |---:|---|---|---|
-| 1 | Latest repo/PR/CI/Production audit | IN_PROGRESS | GitHub/CI reconciled; fresh `pv-primary` read-only audit blocked by current SentinelX active-host limit |
-| 2 | Competitor parity | DONE | current 120-feature matrix exists; re-check only when product surface changes materially |
-| 3 | Canonical docs truth | IN_PROGRESS | this reconciliation branch removes stale Task14/BUG-002/session-limit claims |
+| 1 | Latest repo/PR/CI/Production audit | IN_PROGRESS | fresh current-run schema20 Production read-only audit complete; repeat before every mutation |
+| 2 | Competitor parity | DONE | current parity matrix exists; re-check only on material product-surface change |
+| 3 | Canonical docs truth | IN_PROGRESS | PR #63 reconciles main/schema20/Task13/Task16/worker truth |
 | 4 | WS4 safe operations extraction | DONE | observability/Doctor/backup/restore/release foundations deployed previously |
-| 5 | Legacy/adopted accounting baseline | PARTIAL | implementation merged historically; re-confirm exact Production evidence before promoting canonical DONE |
+| 5 | Legacy/adopted accounting baseline | PARTIAL | implementation merged historically; re-confirm exact Production evidence before canonical DONE |
 | 6 | `/s` accounting/presence projection | PARTIAL | implementation merged historically; re-confirm acceptance evidence |
 | 7 | Manual Reset Usage | PARTIAL | implementation merged historically; re-confirm acceptance/evidence |
 | 8 | Bulk Reset Usage | PARTIAL | implementation merged historically; re-confirm acceptance/evidence |
 | 9 | Periodic reset execution | PARTIAL | merged restart-safe implementation exists; re-confirm acceptance/evidence |
-| 10 | Hard quota controlled Production proof | TODO | prove race/exhaustion/reload/restart/reconnect/no bypass on controlled Production canary |
+| 10 | Hard quota controlled Production proof | TODO | prove race/exhaustion/reload/restart/reconnect/no bypass on controlled canary |
 | 11 | First-successful-CONNECT Production proof | TODO | prove reads/failed-auth/reload inert and successful CONNECT only activation path |
 | 12 | Customer active sessions | DONE | trusted Caddy peer IP, active timestamps and exact per-session bytes deployed at schema17 |
-| 13 | Exact kill/disconnect session | IN_PROGRESS | rebase/review existing candidate on latest main; must kill one live CONNECT without credential revoke or Caddy reload/restart |
-| 14 | Concurrent session limit | DONE | schema19 Unlimited/N enforcement deployed; race/reconnect proof and Production evidence recorded |
-| 15 | Simultaneous unique-IP limit | BLOCKED | current schema20 candidate rejected: it counted the wrong session IP source and did not wire trusted RemoteAddr into the enforcement boundary; redesign required |
-| 16 | Bounded IP/session history | TODO | privacy-aware retention using trusted peer/session facts; reconcile migration numbering after Task15 design |
-| 17 | HWID/device identity PoC | TODO | implement only if a trustworthy standard Naive/Karing identity exists |
-| 18 | Per-user speed-limit PoC | TODO | expose only if a real data-plane enforcement boundary is proven |
+| 13 | Exact kill/disconnect session | IN_PROGRESS | PR #62: exact-tuple primitives + local handler published; next forwardproxy/listener → API auth → UI → real HTTP1/2/final-accounting proof |
+| 14 | Concurrent session limit | DONE | schema19 Unlimited/N enforcement deployed; race/reconnect proof recorded |
+| 15 | Simultaneous unique-IP limit | DONE | schema20 trusted Caddy `RemoteAddr` + race-safe admission deployed and verified |
+| 16 | Bounded IP/session history | IN_PROGRESS | schema21 blocked until RED tests prove exact 30-day retention and bounded pagination cannot be caller-bypassed |
+| 17 | HWID/device identity PoC | TODO | implement only if trustworthy standard Naive/Karing identity exists |
+| 18 | Per-user speed-limit PoC | TODO | expose only if real data-plane enforcement exists |
 | 19 | Reseller CRUD | TODO | create/edit/disable/revoke/list/search |
-| 20 | Full tenant isolation / IDOR audit | TODO | negative Route × role matrix and cross-reseller mutations/reads |
+| 20 | Full tenant isolation / IDOR audit | TODO | negative Route × role matrix and cross-reseller reads/mutations |
 | 21 | Reseller wallet/credit | TODO | correct audited balance mutation semantics |
 | 22 | Immutable financial ledger | TODO | credit/debit/create/renew/refund/adjustment history |
 | 23 | Reseller plan/restriction quotas | TODO | allowed plans/max users/max active/credit |
@@ -59,14 +61,14 @@ Do not call a task DONE merely because code exists. `PARTIAL` means implementati
 | 25 | Audit Explorer | TODO | actor/user/action/date/IP/result filters with redaction |
 | 26 | Notification engine/preferences/history | PARTIAL | transport/foundation exists; product persistence/preferences/event wiring/history remain |
 | 27 | Telegram + rules | PARTIAL | secure transport foundation exists; configuration/rules/history/product UX remain |
-| 28 | Dashboard/monitoring/history | PARTIAL | live system monitoring exists; historical charts/online aggregates remain |
+| 28 | Dashboard/monitoring/history | PARTIAL | live monitoring exists; historical charts/online aggregates remain |
 | 29 | Logs/request diagnostics/support bundle | PARTIAL | request IDs/redaction/support bundle exist; product log explorer remains |
 | 30 | Doctor | PARTIAL | CLI deployed previously; product page/workflow remains |
 | 31 | Scheduled encrypted backup + retention | PARTIAL | timer/backup foundation deployed; retention product policy remains |
 | 32 | Restore/verification/drill/UI | PARTIAL | automated drill foundation deployed; operator UI/full workflow remains |
 | 33 | API/OpenAPI | PARTIAL | ready-route OpenAPI exists; broader stabilization/version policy remains |
 | 34 | API rate limit/idempotency/webhooks | PARTIAL | request/rate-limit foundation exists; stable mutation/webhook contracts remain |
-| 35 | Security BUG-001/002/003 | DONE | all three fixes merged; exact-main CI through BUG-002 merge is green |
+| 35 | Security BUG-001/002/003 | DONE | all three fixes merged and current main remains green |
 | 36 | Authorization/IDOR/CSRF/redaction/fuzz | TODO | complete full route × role quality gate |
 | 37 | Supply-chain security | PARTIAL | checksums/basic SBOM/provenance foundation exists; SAST/dependency/secret scan/signing/NOTICE remain |
 | 38 | Multi-node/fleet | PARTIAL | standalone-safe model/drift foundations exist; controller/network operations remain |
@@ -85,15 +87,16 @@ Do not call a task DONE merely because code exists. `PARTIAL` means implementati
 
 ## Parallel work allocation
 
-While only `pv-worker-main` is accessible through the current SentinelX host plan, keep independent lanes isolated in worktrees and use GitHub CI for full toolchain proof:
+Current SentinelX plan permits one active host. In this run `TrPaqet` was the development lane, then disconnected; the active slot moved to `pv-primary`. `pv-worker-main` and `ubuntu-4gb-hel1-1` currently return `upgrade_required`, so do not move development onto Production.
 
-- Lead: integration, CI, canonical truth and safe release gating;
-- Task13 lane: exact one-session disconnect, rebase existing candidate after BUG-002;
-- Task15 lane: redesign unique-IP enforcement around trusted Caddy `RemoteAddr` and PostgreSQL race-safe admission;
-- Task16 lane: bounded privacy-aware history after Task15 identity/enforcement boundary stabilizes;
-- independent security/release lane: Task36 authorization/IDOR/fuzz preparation that does not depend on Production access.
+When development worker capacity is available, allocate in this order:
 
-When additional SentinelX hosts become active again, redistribute these lanes immediately and keep total CPU/RAM pressure around the Owner-requested 70% ceiling, backing off when other services raise host load.
+- **Lead / integration:** GitHub CI, canonical truth, reviews and safe release gating.
+- **Worker A — Task13:** exact one-session disconnect on PR #62; preserve trusted `RemoteAddr`, schema20 unique-IP admission and BUG-002/final-accounting semantics.
+- **Worker B — Task16:** RED tests for retention >30 days and oversized pagination, then minimal schema21 server enforcement/RLS/purge/PG18/rollback.
+- **Worker C — Task36:** route×role/IDOR/CSRF/redaction/fuzz negative gates; independent of Production mutation.
+
+If only one development worker is executable, Task13 owns it until its exact-head integration/rehearsal gate is complete; Task16 and Task36 remain prepared independent lanes, not falsely reported as running.
 
 ## Mandatory work-unit report
 

@@ -1,6 +1,6 @@
 # PVNaive — Canonical Roadmap
 
-Last updated: 2026-08-31
+Last updated: 2026-09-01
 
 This is the current Production-readiness roadmap. Historical `PVN-*` task IDs and older stage documents remain audit history; they do not override this ledger.
 
@@ -8,16 +8,16 @@ Status vocabulary: `DONE`, `IN_PROGRESS`, `TODO`, `BLOCKED`, `PARTIAL`, `SUPERSE
 
 ## Current baseline
 
-- Current GitHub `main`: `fce39283c6449b0d1836757ee7caddb31fab9def`.
-- Exact-main CI run `33426149726`: **SUCCESS**.
-- Latest independently recorded Production deployment: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`.
-- Production schema recorded by Task14 evidence: **19**.
+- Current GitHub `main`: `a29b5ef434a72004af80cf489f47fffe0b0a03a8`.
+- Current roadmap implementation PR: draft #62, Task13 exact-session kill, exact published head `2e0f485d61f2dd70647b6f626b1f8a18178336d7`.
+- Production deployment: Task15 source `26aa74dddfd23535e45837f21531cf67ea2fd238`, schema **20**.
+- Fresh current-run Production read-only audit: all four core services active; readiness `ready=true`, `db=ok`, `schema=ok`; expected schema20; deploy source clean at Task15 commit; no checked panic/fatal/schema mismatch.
 - Task12 active-session projection is deployed at schema17.
 - Task14 concurrent-session limit is deployed at schema19.
+- Task15 simultaneous unique-IP limit is deployed at schema20.
 - Security Task35 (BUG-001 refresh reuse-family, BUG-002 commit-before-success, BUG-003 DB/schema readiness) is closed in main.
-- The BUG-002 merge is not claimed deployed until a fresh Production audit and guarded same-schema deployment can run.
 
-Already integrated and not to be rewritten: secure Runtime credential lifecycle, narrow Runtime Agent, customer/product/subscription foundations, exact direct-Naive accounting/telemetry, trusted first-CONNECT identity, hard-quota reservation/settlement core, Task12 active-session projection, Task14 concurrent-session enforcement, observability/Doctor/backup/restore/release foundations.
+Already integrated and not to be rewritten: secure Runtime credential lifecycle, narrow Runtime Agent, customer/product/subscription foundations, exact direct-Naive accounting/telemetry, trusted first-CONNECT identity, hard-quota reservation/settlement core, Task12 active-session projection, Task14 concurrent-session enforcement, Task15 trusted-RemoteAddr unique-IP enforcement, observability/Doctor/backup/restore/release foundations.
 
 ## Production-ready master execution ledger
 
@@ -25,9 +25,9 @@ Already integrated and not to be rewritten: secure Runtime credential lifecycle,
 
 | # | Status | Priority | Task | Done gate / current truth |
 |---:|---|---|---|---|
-| 1 | IN_PROGRESS | P0 | Audit latest main / PR / CI / Production | GitHub/CI current; fresh Production audit blocked by current SentinelX active-host limit |
+| 1 | IN_PROGRESS | P0 | Audit latest main / PR / CI / Production | fresh GitHub/CI and schema20 Production read-only audit current; repeat before any mutation |
 | 2 | DONE | P0 | Competitor parity | current 120-feature parity matrix and licensing guard exist |
-| 3 | IN_PROGRESS | P0 | Canonical project docs | current Task14/security/session-limit truth being reconciled |
+| 3 | IN_PROGRESS | P0 | Canonical project docs | current schema20/Task13/Task16/worker truth being reconciled in PR #63 |
 | 4 | DONE | P0 | Reconcile useful old operations work | safe extraction/deployment of observability/Doctor/backup/restore/release foundations completed |
 | 5 | PARTIAL | P0 | Legacy/adopted accounting baseline truth | merged implementation exists; canonical acceptance/Production evidence needs re-confirmation |
 | 6 | PARTIAL | P0 | `/s` accounting/presence completion | merged implementation exists; re-confirm exact acceptance evidence |
@@ -37,10 +37,10 @@ Already integrated and not to be rewritten: secure Runtime credential lifecycle,
 | 10 | TODO | P0 | Hard quota controlled Production proof | simultaneous race/exhaustion/reload/restart/reconnect/no negative/no bypass |
 | 11 | TODO | P0 | First-successful-CONNECT controlled Production proof | reads/failed-auth/reload inert; successful authenticated CONNECT only activation |
 | 12 | DONE | P0 | Session management | schema17 trusted peer IP + connected/last activity + exact session bytes deployed |
-| 13 | IN_PROGRESS | P0 | Kill/disconnect session | exact one-session disconnect + confirmation/audit, no whole-credential revoke and no Caddy reload/restart |
+| 13 | IN_PROGRESS | P0 | Kill/disconnect session | draft PR #62; exact-tuple primitives + local control handler published; full data-plane/API/UI/final-accounting/live-protocol proof remains |
 | 14 | DONE | P0 | Concurrent session limit | schema19 Unlimited/N enforcement deployed with PostgreSQL race/reconnect proof |
-| 15 | BLOCKED | P0 | Simultaneous unique-IP limit | rejected schema20 candidate used wrong IP source/unwired parameter; redesign around trusted Caddy RemoteAddr + race-safe DB admission |
-| 16 | TODO | P1 | IP/session history | privacy-aware bounded retention using trusted session/peer facts |
+| 15 | DONE | P0 | Simultaneous unique-IP limit | schema20 trusted Caddy RemoteAddr + race-safe DB admission deployed and verified |
+| 16 | IN_PROGRESS | P1 | IP/session history | schema21 design gate: exact 30-day retention and pagination must be server-bounded; RED tests required before implementation acceptance |
 | 17 | TODO | P1 | HWID/device identity PoC | implement only if trustworthy standard Naive/Karing identity exists |
 | 18 | TODO | P1 | Per-user speed-limit PoC | enforce in real data plane or do not expose |
 | 19 | TODO | P1 | Reseller CRUD | create/edit/disable/revoke/list/search |
@@ -59,7 +59,7 @@ Already integrated and not to be rewritten: secure Runtime credential lifecycle,
 | 32 | PARTIAL | P1 | Restore / verification / drill / UI | automated restore drill foundation exists; full operator UI/workflow remains |
 | 33 | PARTIAL | P1 | REST API + OpenAPI | ready-route OpenAPI exists; broader stabilization/version policy remains |
 | 34 | PARTIAL | P1 | API rate limit / idempotency / webhooks | request/rate-limit foundation exists; stable mutation/webhook contracts remain |
-| 35 | DONE | P0 | Fix auth/security BUG-001/002/003 | all three fixes merged; exact-main CI through BUG-002 merge green |
+| 35 | DONE | P0 | Fix auth/security BUG-001/002/003 | all three fixes merged and current main remains green |
 | 36 | TODO | P0 | Authorization / IDOR / CSRF / redaction / fuzz | complete Route × role negative/quality matrix |
 | 37 | PARTIAL | P1 | Supply-chain security + license policy | checksums/basic SBOM/provenance exist; SAST/dependency/secret scan/signing/NOTICE remain |
 | 38 | PARTIAL | P1 | Multi-node model/auth/health/metrics/assignment | standalone-safe model/drift foundation only; controller/network operations remain |
@@ -78,15 +78,16 @@ Already integrated and not to be rewritten: secure Runtime credential lifecycle,
 
 ## Current immediate execution order
 
-1. Rebase and independently review Task13 exact-session disconnect on `fce39283...`; prove close/final accounting survives the forced disconnect.
-2. Redesign Task15 unique-IP admission using authoritative Task12 peer identity; reject any client-header or nonexistent-session-column shortcut.
-3. Reconcile Task16 bounded session/IP history after the Task15 identity boundary is stable.
-4. In parallel, start Task36 route×role/IDOR/fuzz negative gates because it does not require Production mutation.
-5. As soon as `pv-primary` access is restored, run fresh read-only Production audit, exact backup/rollback preflight, deploy the same-schema BUG-002 main safely, and verify postflight before changing deployed provenance.
+1. Finish Task13 on draft PR #62 without overwriting current Task14/15 or BUG-002 semantics: exact one-session close must drive the existing normal `accountingSession.close()` path and preserve sibling sessions.
+2. Prove Task13 end-to-end on exact published tree: Go/race/Web/pinned-forwardproxy/reproducible Caddy + real HTTP/1.1 and HTTP/2 kill + exactly-once final accounting + unchanged Caddy PID/no reload.
+3. Merge/deploy Task13 only after exact-head gates are green and fresh Production encrypted backup + rollback snapshot are ready.
+4. As soon as a development worker is executable in parallel, start Task16 with RED tests proving requests cannot exceed 30-day retention or bounded page size; then implement minimal schema21 server-side enforcement, RLS, purge and PG18/rollback proof.
+5. Continue independent Task36 route×role/IDOR/fuzz preparation when worker capacity permits because it does not require Production mutation.
 
-## Task14 Production evidence
+## Production evidence
 
-See `ops/evidence/TASK14-20260831-concurrent-session-limit-production-pass.md` for the exact merge/deploy commit, release artifact SHA256, encrypted backup, schema18→19 migration, guarded R1 deploy and postflight/Caddy invariants.
+- Task14: `ops/evidence/TASK14-20260831-concurrent-session-limit-production-pass.md`.
+- Task15: `ops/evidence/TASK15-20260901-schema20-production-pass.md`.
 
 ## Definition of Done
 

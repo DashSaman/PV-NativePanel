@@ -13,52 +13,63 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Current main: `8b8549b8d1431dfa8858c207e55b9a52eaa2c4e8` (verified merge of PR #60; documentation/state reconciliation only).
-- Exact-main CI run `33500952494`: **SUCCESS**.
-- Open roadmap PRs: none. Old draft #4 is unrelated to the current roadmap and remains unmerged pending a real Karing client smoke.
+- Current main: `a29b5ef434a72004af80cf489f47fffe0b0a03a8` (verified merge of PR #61; documentation/state reconciliation only).
+- Exact-main CI for this main was already verified green before the current run; no new main mutation occurred in this run.
+- Open roadmap PR: **draft PR #62**, `lead/task13-reconstruct-a29b5ef`, exact published head `2e0f485d61f2dd70647b6f626b1f8a18178336d7`. Old draft #4 remains unrelated to the current roadmap and awaits a real Karing client smoke.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
 - Security Task35 / BUG-001/002/003: **DONE in main**.
 - Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
-- Task13 exact live-session kill: **IN PROGRESS / active-worker schema20 reconstruction underway; complete integration/publication/rehearsal still required**.
-- Task16 bounded IP/session history: **IN PROGRESS / schema21 / design gate failed until retention and pagination are server-bounded**.
+- Task13 exact live-session kill: **IN PROGRESS / draft PR #62**. Primitive registry/client plus a TDD-first local control handler are now published; forwardproxy/Unix-listener wiring, API authorization/ownership/CSRF, UI action, exact final accounting and real HTTP1+HTTP2 rehearsal are still required.
+- Task16 bounded IP/session history: **IN PROGRESS / schema21 design gate remains failed until retention and pagination are server-bounded**.
 
 No task becomes DONE from a local candidate, historical worker report or partial branch alone.
 
 ## Production truth
 
-Production runtime remains the guarded Task15 rollout from source `26aa74dddfd23535e45837f21531cf67ea2fd238`; later merges through PR #60 changed repository documentation/evidence only.
+Production runtime remains the guarded Task15 rollout from source `26aa74dddfd23535e45837f21531cf67ea2fd238`; later merges through PR #61 changed repository documentation/evidence only.
 
-Last successful fresh read-only verification confirmed:
+A fresh read-only Production verification in the current run succeeded after the SentinelX active slot moved to `pv-primary`:
 
-- `pvnaive-api.service`, `caddy-naive.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`: **active**.
-- `GET /api/v1/health/ready`: body reports `ready=true`, `db=ok`, `schema=ok`.
-- Production remains on the verified schema20 Task15 rollout.
-- Task15 backup and rollback evidence remains in `ops/evidence/TASK15-20260901-schema20-production-pass.md` and `/var/backups/pvnaive`.
+- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`: **active**;
+- `GET /api/v1/health/ready`: `ready=true`, `db=ok`, `schema=ok`;
+- API process environment: `PVNAIVE_EXPECTED_SCHEMA_VERSION=20`;
+- `/opt/pvnaive/deploy-src`: exact Task15 source `26aa74dddfd23535e45837f21531cf67ea2fd238`, clean;
+- no `panic`, `fatal` or `schema mismatch` match in the checked last 30 minutes of the four core-service journals.
 
-A new Production read-only probe in the latest orchestration run could not execute because the SentinelX Free-plan active slot had moved away from `pv-primary`; the host remained connected/healthy but returned `upgrade_required`. No Production mutation was attempted.
+No Production mutation, restart, reload or migration was performed in this run.
 
 ## Task13 — exact live-session kill
 
-Task13 remains the highest-priority unfinished runtime/session item. The old GitHub publication branch `lead/task13-kill-session-publish-20260901` remains partial and stale; it must not be merged wholesale.
+The stale branch `lead/task13-kill-session-publish-20260901` must not be merged wholesale. The active reconstruction branch is draft PR #62 on current schema20 main.
 
-An executable worker was recovered on `ubuntu-4gb-hel1-1` while `pv-primary` and `pv-worker-main` were inactive under the one-active-host plan limit. A clean repository was cloned at exact main `8b8549b8...`. The historical Task13 primitives were reapplied locally on top of schema20: exact session-control protocol/client and exact-tuple in-process registry. Focused `go test -race ./internal/sessionkill ./internal/sessioncontrol -count=1` passed; `sessionkill` still has no committed registry test in that historical partial candidate, so this is not sufficient for publication.
+Current verified/published Task13 scope:
 
-Required invariants remain exact runtime-credential/node/boot/session tuple identity, sibling survival, no credential revoke, no Caddy reload/restart, idempotent repeated kill, tenant/role isolation and exactly-once normal final accounting. The remaining work is surgical integration with current forwardproxy/accounting, API authorization/ownership, UI action and fresh real HTTP1+HTTP2 rehearsal before publication.
+- exact runtime-credential/node/boot/session registry primitive;
+- sibling survival, forged-tuple rejection, repeat-kill idempotence and unregister semantics;
+- local session-control protocol/client;
+- initial CI formatting blocker was isolated to gofmt and corrected without behavior change;
+- TDD-first local control handler was added after observing RED `undefined: NewHandler`;
+- fresh isolated Worker verification with a clean Go 1.25.0 toolchain: focused handler tests PASS, `go test -race ./internal/sessionkill ./internal/sessioncontrol -count=1` PASS, full `go test ./... -count=1` PASS, `git diff --check` PASS;
+- handler rejects incomplete tuples before touching live state and exact kill preserves siblings;
+- on exact head `2e0f485...`, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS; CI database/web/go/rehearsal jobs are SUCCESS and only the bundle job remained in progress at the latest check.
+
+PR #62 remains draft and must not merge until forwardproxy/Unix-listener ownership, API RBAC/ownership/CSRF, UI action, exact final accounting, full exact-head gates and fresh real HTTP/1.1 + HTTP/2 kill rehearsal are green on the exact published tree.
 
 ## Task16 — bounded IP/session history / schema21
 
-Schema20 is stable, but Task16 is not mergeable. Retention/pagination behavior must be server-enforced rather than caller-extensible: a caller must not be able to request history older than the exact 30-day contract or exceed bounded pagination/read limits. Required next proof is RED tests for oversized retention/page requests, minimal server-side constants/clamps, tenant RLS/authorization, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent schema21 migration/checksums, PostgreSQL18 behavior and rollback safety.
+Schema20 is stable, but Task16 is not mergeable. Retention/pagination behavior must be server-enforced rather than caller-extensible: a caller must not be able to request history older than the exact 30-day contract or exceed bounded pagination/read limits. Required proof remains RED tests for oversized retention/page requests, minimal server-side constants/clamps, tenant RLS/authorization, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent schema21 migration/checksums, PostgreSQL18 behavior and rollback safety.
 
 ## Worker / orchestration capacity
 
-Four SentinelX hosts are connected and the current Free plan permits only one active host. In the latest run, `pv-primary`, `pv-worker-main`, and `host_311ff...` all returned `upgrade_required`, while `ubuntu-4gb-hel1-1` was executable with about 32% RAM used. That host is now the safe development lane for Task13 reconstruction; Production remains excluded from development/testing.
+SentinelX host availability changed during this run: `TrPaqet` was executable and used for isolated Task13 verification, then disconnected while the next overlay RED test was being staged. The latest host listing returned three connected hosts (`pv-worker-main`, `pv-primary`, `ubuntu-4gb-hel1-1`), while inactive-worker plan responses still reported four connected; `pv-primary` is currently the executable slot and the two development workers tested after the switch return `upgrade_required`.
 
-Human action is still needed to restore true parallel worker capacity: disconnect unused connected hosts so multiple intended workers can be selected over time, or change the SentinelX host limit.
+Production remains excluded from development/testing. True parallel worker capacity still requires human action: disconnect unused connected hosts or change the SentinelX active-host limit.
 
 ## Immediate execution order
 
-1. Finish surgical Task13 integration on the active worker against exact schema20 main; add RED tests first for any new integration behavior, then run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates and fresh real HTTP1+HTTP2 rehearsal.
-2. Publish Task13 only as the exact verified tree and merge only after exact-head CI is green; Production rollout then requires fresh encrypted backup + rollback snapshot and postflight evidence.
-3. Repair Task16 retention/pagination bypass with RED tests first; then rerun PG18 + Go/Web/RLS/retention/purge/rollback gates before schema21 publication.
-4. Keep old draft PR #4 out of the roadmap unless a real Karing client smoke explicitly revives it.
+1. Finish Task13 surgical integration on draft PR #62: forwardproxy registration/cancel path + Unix listener, then API RBAC/ownership/CSRF and UI action, each TDD-first.
+2. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates plus fresh real HTTP1+HTTP2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
+3. Merge only the exact verified Task13 tree; Production rollout then requires fresh encrypted backup + rollback snapshot and postflight evidence.
+4. In parallel when a development worker becomes executable again, implement Task16 RED tests for >30-day retention and oversized pagination before any schema21 code is accepted.
+5. Keep old draft PR #4 out of the roadmap unless a real Karing client smoke explicitly revives it.
