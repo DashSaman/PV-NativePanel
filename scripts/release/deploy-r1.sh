@@ -5,15 +5,11 @@ umask 077
 bundle="${1:-}"
 [[ ${EUID} -eq 0 ]] || { echo 'ERROR: deploy must run as root' >&2; exit 1; }
 [[ -d "$bundle" && -f "$bundle/RELEASE.json" && -f "$bundle/SHA256SUMS" ]] || { echo 'ERROR: unpacked R1 bundle required' >&2; exit 1; }
-for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find getent groupadd; do
+for cmd in sha256sum systemctl systemd-tmpfiles curl readlink install cp ln mkdir runuser psql awk sed tar chown chmod find getent groupadd groupdel; do
   command -v "$cmd" >/dev/null || { echo "ERROR: missing $cmd" >&2; exit 1; }
 done
 ( cd "$bundle" && sha256sum --check --strict SHA256SUMS >/dev/null ) || { echo 'ERROR: release checksums failed' >&2; exit 1; }
 grep -q '"product"[[:space:]]*:[[:space:]]*"PVNaive"' "$bundle/RELEASE.json" || { echo 'ERROR: product mismatch' >&2; exit 1; }
-
-if ! getent group pvnaive-session-control >/dev/null; then
-  groupadd --system pvnaive-session-control
-fi
 
 commit="$(sed -nE 's/.*"source_commit"[[:space:]]*:[[:space:]]*"([0-9a-f]{40})".*/\1/p' "$bundle/RELEASE.json")"
 release_schema="$(sed -nE 's/.*"schema_version"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' "$bundle/RELEASE.json")"
@@ -96,14 +92,23 @@ install -d -o root -g pvnaive -m 0750 "$db_release/scripts/db"
 cp -a "$bundle/scripts/db/." "$db_release/scripts/db/"
 chown -R root:pvnaive "$db_release"
 
+session_control_group_created=false
 rollback_on_error() {
   code=$?
   trap - ERR INT TERM HUP
   set +e
   bash "$bundle/scripts/release/rollback-r1.sh" "$backup"
+  if [[ "$session_control_group_created" == true ]]; then
+    groupdel pvnaive-session-control >/dev/null 2>&1 || true
+  fi
   exit "$code"
 }
 trap rollback_on_error ERR INT TERM HUP
+
+if ! getent group pvnaive-session-control >/dev/null; then
+  groupadd --system pvnaive-session-control
+  session_control_group_created=true
+fi
 
 systemctl stop pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-agent.service
 for name in pvnaive pvnaive-password pvnaive-runtime-agent pvnaive-telemetry-agent; do

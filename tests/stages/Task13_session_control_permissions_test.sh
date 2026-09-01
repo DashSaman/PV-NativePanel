@@ -19,6 +19,15 @@ grep -Fq 'getent group pvnaive-session-control' "${foundation}" && grep -Fq 'gro
 grep -Fq 'getent group pvnaive-session-control' "${deploy}" && grep -Fq 'groupadd --system pvnaive-session-control' "${deploy}" || {
   echo 'ERROR: same-schema release deploy must provision dedicated session-control group before service activation' >&2; exit 1;
 }
+
+backup_line="$(grep -n 'backup_output=' "${deploy}" | head -1 | cut -d: -f1)"
+groupadd_line="$(grep -n 'groupadd --system pvnaive-session-control' "${deploy}" | head -1 | cut -d: -f1)"
+if [[ -z "${backup_line}" || -z "${groupadd_line}" || ${groupadd_line} -le ${backup_line} ]]; then
+  echo 'ERROR: release deploy must take the mandatory backup before creating the session-control group' >&2; exit 1;
+fi
+grep -Fq 'groupdel pvnaive-session-control' "${deploy}" || {
+  echo 'ERROR: rollback must remove a session-control group created by the failed release' >&2; exit 1;
+}
 grep -Fq 'pvnaive-session-control' "${patch3}" || {
   echo 'ERROR: forwardproxy session-control socket must assign the dedicated group' >&2; exit 1;
 }
