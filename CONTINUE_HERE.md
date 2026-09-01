@@ -6,55 +6,64 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `62573fee8b88e4f951224da10e6a26d5b5838a54`, verified merge of PR #63 / documentation-state reconciliation.
-- Exact-main CI run `33520634435`: **SUCCESS**.
-- No runtime/schema change has landed on main since Task15; Production runtime remains the guarded schema20 Task15 rollout.
-- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact head `263dc3e34982c739363822c7ac2cc643af7408c2`.
-- PR #62 is closed as superseded because its branch diverged from current main; its validated seven-file Task13 primitive/control delta was republished cleanly in PR #64.
-- Old draft #4 remains unrelated to the roadmap.
-- Fresh current-run Production audit: all four PVNaive services active; readiness `ready=true`, `db=ok`, `schema=ok`; no Production mutation/restart/reload/migration was performed.
+- `main`: `cce50c4b198bd8ea449f385c1198fffbddfead8e`.
+- Exact-main push CI run `33530087359`: **SUCCESS**.
+- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact head `485657d5232da27cbcc4a2c5b8018a4c6b42d3e9`.
+- Exact-head gates at latest observation: Exact Accounting **SUCCESS**, Pinned Forwardproxy **SUCCESS**, CI **IN PROGRESS**.
+- Old draft #4 remains outside the current roadmap.
+- No runtime/schema change from this run has been deployed; Production remains on the previously verified Task15/schema20 rollout.
+- Fresh Production probing was attempted but blocked because `pv-primary` is non-active under the one-active-host SentinelX Free-plan limit. Do not restate prior health as fresh evidence.
+- No Production mutation/restart/reload/migration/DB write/credential change occurred.
 
 ## Task accounting
 
-- Task12 active-session management: **DONE / Production**, schema17.
-- Task14 concurrent-session limit: **DONE / Production**, schema19.
-- Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
+- Task12: **DONE / Production**, schema17.
+- Task14: **DONE / Production**, schema19.
+- Task15: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
-- Task13 exact-session kill: **IN PROGRESS / draft PR #64**. Exact-tuple registry/client plus local control handler are published on current main; forwardproxy/Unix listener integration, API RBAC/ownership/CSRF, UI action, exact final accounting and real HTTP1+HTTP2 rehearsal remain.
-- Task16 bounded session/IP history: **IN PROGRESS / schema21 / NOT mergeable yet**. Caller-controlled retention/pagination must not bypass exact 30-day retention or bounded reads.
+- Task13 exact-session kill: **IN PROGRESS / draft PR #64**.
+- Task16 bounded session/IP history: **IN PROGRESS / schema21 / NOT mergeable yet**.
 
-## Worker access
+## Task13 current checkpoint
 
-Fresh SentinelX host listing shows three connected hosts: `TrPaqet`, `pv-worker-main`, `pv-primary`. Free-plan capacity permits only one active host. Fresh execution on both development workers returned `upgrade_required`; `pv-primary` is active and must remain Production-only for guarded/read-only operations. Do not use Production as a development or PostgreSQL test worker.
+PR #64 now contains the earlier exact-tuple primitives/live CONNECT registration plus a tested Unix-domain control-server primitive.
 
-## Task13
+Fresh RED→GREEN evidence on the active Worker:
 
-Do not merge stale `lead/task13-kill-session-publish-20260901`, closed PR #62, or draft PR #64 while incomplete.
+- RED failed on missing `startPVNaiveSessionControlServer`;
+- GREEN adds bounded/strict JSON handling, exact tuple kill, mode `0660`, stale-socket handling and owned-socket cleanup;
+- a real HTTP request over the Unix socket proves exact target kill while sibling remains open;
+- unregister-removes-tuple is covered;
+- patched forwardproxy normal/race tests PASS;
+- Task13 forwardproxy stage PASS;
+- pinned forwardproxy boundary PASS;
+- repository Go tests, focused race tests and `git diff --check` PASS.
 
-PR #64 starts directly from exact current main and carries exactly seven validated primitive/control files:
+The combined local reproducible-Caddy/full-gate command timed out and is not credited. Use exact GitHub workflows for published-head validation.
 
-- exact runtime credential + node + boot + session registry;
-- sibling survival, forged tuple rejection, idempotent repeated kill, unregister semantics;
-- local session-control protocol/client;
-- local control handler that rejects incomplete tuples before touching live state.
-
-At latest observation, exact-head workflows for `263dc3e...` had started: CI and Exact Accounting queued, Pinned Forwardproxy in progress. Continue only after reviewing those results.
-
-Next implementation sequence is TDD-first: forwardproxy registration/cancel wiring + Unix listener ownership; preserve Task14/15 response/finalization and trusted `RemoteAddr`/`ClientIP` unique-IP semantics; then API RBAC/ownership/CSRF and UI action. Final proof must include exact HTTP/1.1 + HTTP/2 kill, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival and exactly-once final accounting.
+Next TDD sequence: wire the Caddy-owned listener lifecycle so reload/unload cannot steal/delete a successor socket; prove the narrow local group/permission model for API access without broadening accounting access; then API RBAC/ownership/IDOR/CSRF; UI; full gates; finally real HTTP/1.1 + HTTP/2 exact-kill rehearsal with exactly-once final accounting.
 
 ## Task16
 
-Reconcile schema21 directly on current schema20 main. Required proof: exact server-enforced 30-day retention, hard-bounded pagination/read paths, tenant RLS, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent migration/checksums, PG18 proof and safe rollback. Add RED tests for >30-day and oversized-page requests before implementation.
+Fresh persistent-workspace reconciliation found no new Task16 delta: its current run workspace is clean on an older main snapshot. Keep Task16 uncredited and queued for the next independently executable Worker. Required first step remains RED tests proving callers cannot request >30 days or oversized pagination.
+
+## Worker access
+
+Fresh SentinelX listing shows two connected hosts: `TrPaqet` and `pv-primary`. Only one can be active under the Free plan.
+
+- Active/executable now: `TrPaqet` → assigned Task13.
+- `pv-primary`: connected but `upgrade_required` on fresh command, so no fresh Production probe this run.
+- No second executable Worker exists for Task16 in parallel.
 
 ## Production deployment rules
 
-Before every Production mutation: fresh encrypted DB/config backup + rollback snapshot, verify artifacts, apply only intended migration/release, verify API readiness + Runtime/Telemetry/Caddy/customer/accounting invariants + exact release provenance, and roll back on any failed invariant. Never use Production as a test database.
+Before every Production mutation: fresh encrypted DB/config backup + rollback snapshot, verify artifacts, apply only intended migration/release, verify readiness + Runtime/Telemetry/Caddy/customer/accounting invariants + exact release provenance, and roll back on any failed invariant. Never use Production as a test database.
 
 ## Next sequence
 
-1. Review all exact-head gates on PR #64; keep draft while incomplete.
-2. When a development worker becomes executable, continue Task13 TDD-first on PR #64.
-3. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates and fresh real HTTP1+HTTP2 exact-kill rehearsal.
-4. Merge/deploy only the exact verified Task13 tree after fresh backup/rollback/postflight gates.
-5. When another worker is available, begin Task16 RED tests and minimal server-side enforcement.
-6. Keep `PROJECT_STATUS.md`, `HANDOFF.md` and evidence synchronized only from verified repository/Production truth.
+1. Review remaining exact-head CI for PR #64; keep it draft regardless because functional integration is still incomplete.
+2. Continue Task13 on `TrPaqet`: reload-safe Caddy listener lifecycle + narrow socket permission proof.
+3. Implement API authorization boundary and UI with TDD.
+4. Run full exact-tree gates and fresh HTTP1/HTTP2 rehearsal.
+5. Only then merge; deploy only with fresh Production backup/rollback/postflight access.
+6. Put Task16 on the next independent Worker as soon as capacity exists.
