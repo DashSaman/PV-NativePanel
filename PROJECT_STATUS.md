@@ -10,13 +10,12 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 
 ## Repository truth
 
-- Repository: `DashSaman/PV-NativePanel`
-- Product: **PVNaive**
-- Default branch: `main`
-- Current main: `392a153f14dc311f6d1dffe60e6b4d4da5f8cb17`, documentation/state reconciliation only.
-- Prior exact-main push CI on `cce50c4b198bd8ea449f385c1198fffbddfead8e` completed **SUCCESS**; the new merge SHA has not yet surfaced a commit-associated workflow run, so no green claim is made for it yet.
-- Current roadmap PR: **draft PR #64**, `lead/task13-reconstruct-62573fee`, exact head `485657d5232da27cbcc4a2c5b8018a4c6b42d3e9`.
-- Exact-head #64 gates are now all **SUCCESS**: CI run `33537563177`, WS1 Exact Accounting `33537563178`, WS1 Pinned Forwardproxy `33537563183`.
+- Repository: `DashSaman/PV-NativePanel`.
+- Current `main`: `1aea1961515ab86428231499490202af4aef5e97` (PR #67 documentation reconciliation).
+- Exact-main push CI run `33541904912`: **SUCCESS**.
+- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact head `1e6974a8098a1162d4a5ca6ebc1d89206c02ddd9`.
+- Exact-head #64 workflows for this new lifecycle publication are running; do not reuse green results from the prior head.
+- Published Task13 lifecycle patch blob is byte-identical to the Worker-tested file: `b5889058caf4312df5508655193a6275c4ae5a1e`.
 - Old draft #4 remains unrelated to the current roadmap and awaits a real Karing client smoke.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
@@ -31,30 +30,28 @@ No task becomes DONE from a local candidate, historical worker report or partial
 
 Production remains on the guarded Task15/schema20 rollout; no Task13 code has been deployed.
 
-Fresh read-only Production observation in this run:
-
-- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, and `pvnaive-telemetry-agent` are all `active`.
-- `GET http://127.0.0.1:8080/api/v1/health/ready` returned `{"db":"ok","ready":true,"schema":"ok","status":"ready"}`.
-- Journal error scanning could not be completed because the SentinelX account lacks journal permissions; that missing observation is not treated as a pass.
-- `/opt/pvnaive/deploy-src` provenance/process-environment inspection is permission-blocked in this run, so previously verified release provenance remains the latest valid provenance evidence.
+A fresh read-only Production probe could not be executed in this checkpoint because the single SentinelX execution slot is currently on development Worker `TrPaqet`; `pv-primary` returns `upgrade_required`. Therefore no new Production-health PASS is claimed here. The last fresh successful health observation remains historical evidence only until Primary is executable again.
 
 No Production mutation, deployment, migration, restart, reload, DB write or credential change was performed.
 
 ## Task13 — exact live-session kill
 
-Draft PR #64 now includes the exact-tuple registry/client, live CONNECT registration, and a validated Unix session-control server primitive.
+Draft PR #64 now contains the exact-tuple registry/client, live CONNECT registration, Unix session-control server primitive, and a reload-safe Caddy-owned lifecycle.
 
-Validated evidence for exact head `485657d...`:
+Latest lifecycle evidence on the Worker:
 
-- RED was observed specifically because `startPVNaiveSessionControlServer` did not exist;
-- minimal Unix-domain control server was implemented with bounded/strict JSON, exact-tuple kill, socket mode `0660`, stale-socket handling, and owned-socket cleanup;
-- a real HTTP request over a Unix socket proves target-only kill while the sibling remains untouched;
-- explicit unregister-removes-tuple coverage is present;
-- patched upstream forwardproxy `go test ./...` and `go test -race ./...` passed with Go 1.26.3;
-- `tests/stages/Task13_forwardproxy_session_control_test.sh`, pinned forwardproxy boundary proof, repository Go tests, focused race tests and `git diff --check` passed;
-- all three exact GitHub gates are green for the published head.
+- TDD RED failed on the missing lifecycle acquire/wiring functions before implementation;
+- only accounting-enabled forwardproxy handlers acquire `/run/pvnaive/session-control.sock`; ordinary non-accounting handlers do not;
+- overlapping old/new Caddy configs share one exact-session registry and socket through a ref-counted lease;
+- predecessor cleanup cannot remove a successor socket; final lease cleanup removes the owned socket;
+- patched pinned forwardproxy `go test -race ./... -count=1` passed with isolated Go 1.26.3;
+- `tests/stages/Task13_forwardproxy_session_control_test.sh` passed;
+- pinned forwardproxy boundary proof passed;
+- reproducible-Caddy build contract passed;
+- `git diff --check` passed;
+- the published `0003` patch exactly reproduces the validated lifecycle source from the existing `0002` state and its Git blob SHA matches the Worker file.
 
-Still required before Task13 can merge: Caddy-owned reload-safe lifecycle for `/run/pvnaive/session-control.sock`; a narrow service/group permission model allowing only the intended local API across the `0660` socket boundary; API ownership/RBAC/IDOR/CSRF without credential mutation; UI action; and fresh real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival and exactly-once final accounting.
+Still required before Task13 can merge: narrow Production service/group permission proof for the `0660` socket; API ownership/RBAC/IDOR/CSRF without credential mutation; UI action; full final-tree Go/race/Web/pinned/reproducible-Caddy gates; and fresh real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival and exactly-once final accounting.
 
 ## Task16 — bounded IP/session history / schema21
 
@@ -64,17 +61,16 @@ Persistent Worker evidence remains uncredited: there is no fresh current-main Ta
 
 Fresh SentinelX listing shows **two connected hosts**: `TrPaqet` and `pv-primary`, while the Free plan permits one active host.
 
-- The active slot is currently on `pv-primary`, which enabled the fresh read-only Production probe above.
-- `TrPaqet` is connected/healthy but currently returns `upgrade_required`, so Task13 development cannot continue there simultaneously.
-- Task16 has no independently executable Worker lane at this checkpoint.
+- Active/executable now: `TrPaqet`, reserved for development work.
+- `pv-primary`: Production-only and currently blocked from execution by the one-active-host limit.
+- Task16 has no independently executable second Worker lane at this checkpoint.
 
-True parallel Task13 + Task16 execution, or simultaneous development plus Production probing, requires human action: disconnect/switch the active host as needed or increase the SentinelX active-host limit.
+True parallel Task13 + Task16 execution, or simultaneous development plus Production probing, requires human action: switch/disconnect hosts as needed or increase the SentinelX active-host limit.
 
 ## Immediate execution order
 
-1. Keep PR #64 draft despite its green exact-head gates because functional integration remains incomplete.
-2. When the development slot returns to `TrPaqet`, continue Task13 TDD-first with Caddy reload-safe session-control lifecycle and narrow Unix-socket permission proof.
-3. Then implement API ownership/RBAC/IDOR/CSRF and UI exact-session kill.
-4. Run full exact-tree gates plus fresh real HTTP1+HTTP2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
-5. Merge/deploy Task13 only after the exact verified tree is green and a fresh encrypted Production backup + rollback snapshot + postflight are available.
-6. Assign Task16 to the next independently executable Worker; do not move schema21 development onto Production.
+1. Keep PR #64 draft while its new exact-head workflows run and while API/UI/rehearsal remain incomplete.
+2. Continue Task13 on `TrPaqet` with the narrow socket service/group permission proof, then API ownership/RBAC/IDOR/CSRF and UI.
+3. Run full exact-tree gates plus fresh real HTTP1+HTTP2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
+4. Merge/deploy Task13 only after the exact verified tree is green and fresh encrypted Production backup + rollback snapshot + postflight access are available.
+5. Assign Task16 to the next independently executable Worker; do not move schema21 development onto Production.
