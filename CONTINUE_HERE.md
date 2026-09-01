@@ -9,8 +9,8 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - `main`: `a29b5ef434a72004af80cf489f47fffe0b0a03a8`, verified merge of PR #61 / documentation-state reconciliation.
 - No runtime/schema change has landed on main since Task15; Production runtime provenance remains Task15 source `26aa74dddfd23535e45837f21531cf67ea2fd238`, schema20.
 - Open roadmap work: draft PR #62 (`lead/task13-reconstruct-a29b5ef`), exact published head `2e0f485d61f2dd70647b6f626b1f8a18178336d7`. Old draft #4 remains unrelated to the roadmap.
-- Last successful fresh Production check confirmed all four PVNaive services active and readiness `ready=true`, `db=ok`, `schema=ok`.
-- Current-run read-only Production probe was blocked by SentinelX `upgrade_required`: `pv-primary` is connected/healthy but inactive because 4 hosts are connected under a one-active-host Free plan. No Production mutation was attempted.
+- Fresh current-run Production audit succeeded after the active slot moved to `pv-primary`: all four PVNaive services active; readiness `ready=true`, `db=ok`, `schema=ok`; expected schema 20; deploy source exact Task15 `26aa74...`, clean; no panic/fatal/schema-mismatch match in checked 30-minute core-service journals.
+- No Production mutation, restart, reload or migration was attempted.
 
 ## Task accounting
 
@@ -23,7 +23,7 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Worker access
 
-Four SentinelX hosts are connected while the Free plan permits one active host. In the current run `TrPaqet` (`host_311ff...`) is executable. A clean Go 1.25.0 toolchain was installed in an isolated worker path and used only for development verification. `pv-primary` remains connected/healthy but inactive; do not use Production as a development or PostgreSQL test worker.
+`TrPaqet` was executable earlier in this run and used for isolated Task13 verification with a clean Go 1.25.0 toolchain, then disconnected during staging of the next overlay RED test. Latest host listing returned three connected hosts (`pv-worker-main`, `pv-primary`, `ubuntu-4gb-hel1-1`); inactive-worker plan responses still reported four connected. `pv-primary` is currently executable; tested development workers return `upgrade_required`. Do not use Production as a development or PostgreSQL test worker.
 
 ## Task13
 
@@ -37,11 +37,11 @@ PR #62 currently contains:
 - gofmt correction for the initial CI formatting-only failure;
 - TDD-first local control HTTP handler. RED was explicitly observed as `undefined: NewHandler` before implementation; GREEN verification on the isolated Worker passed focused handler tests, race tests for `sessionkill` + `sessioncontrol`, full `go test ./... -count=1`, and `git diff --check`.
 
-Exact-head CI for `2e0f485...` is running. Continue TDD-first with forwardproxy registration/cancel wiring + Unix socket listener, then API RBAC/ownership/CSRF and UI action. Preserve no credential revoke, no Caddy reload/restart, sibling survival, exact tuple identity, idempotent kill and exactly-once final accounting.
+On exact head `2e0f485...`, Exact Accounting and Pinned Forwardproxy are green; CI database/web/go/rehearsal are green and only bundle remained in progress at the latest check. Continue TDD-first with forwardproxy registration/cancel wiring + Unix socket listener, then API RBAC/ownership/CSRF and UI action. Preserve no credential revoke, no Caddy reload/restart, sibling survival, exact tuple identity, idempotent kill and exactly-once final accounting.
 
 ## Task16
 
-A clean Task16 inspection workspace exists on the active worker at exact main. Reconcile schema21 directly on top of current schema20 main. Required proof: exact server-enforced 30-day retention, hard-bounded pagination/read paths, tenant RLS, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent migration/checksums, PG18 proof and safe rollback. Caller-supplied values must not extend history visibility beyond 30 days or bypass read bounds.
+A clean Task16 inspection was completed on exact main before the Worker slot moved. Reconcile schema21 directly on top of current schema20 main. Required proof: exact server-enforced 30-day retention, hard-bounded pagination/read paths, tenant RLS, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent migration/checksums, PG18 proof and safe rollback. Caller-supplied values must not extend history visibility beyond 30 days or bypass read bounds.
 
 ## Production deployment rules
 
@@ -49,7 +49,7 @@ Before every Production mutation: fresh encrypted DB/config backup + rollback sn
 
 ## Next sequence
 
-1. Continue Task13 surgical integration on PR #62, TDD-first for forwardproxy/listener/API/UI behavior.
+1. Continue Task13 surgical integration on PR #62 as soon as a development worker becomes executable again; TDD-first for forwardproxy/listener/API/UI behavior.
 2. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates and a fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving sibling survival and exactly-once final accounting.
 3. Publish/merge only the exact verified Task13 tree, then deploy only after fresh backup/rollback and postflight if all gates remain green.
 4. When additional worker capacity is available, start Task16 with RED tests for >30-day retention and oversized pagination before server-side enforcement code.
