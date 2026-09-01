@@ -1,23 +1,18 @@
 name: Task15 exact self-patch
-
 on:
   push:
-    branches:
-      - lead/task15-unique-ip-schema20-v2-20260901
-
+    branches: [lead/task15-unique-ip-schema20-v2-20260901]
 permissions:
   contents: write
-
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, 'task15: apply exact race winner patch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: lead/task15-unique-ip-schema20-v2-20260901
           fetch-depth: 0
-      - name: Apply exact verified patch and remove helper workflow
+      - name: Apply exact verified race-winner patch
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -25,37 +20,36 @@ jobs:
           from pathlib import Path
           p = Path('tests/db/unique_ip_limit_migration_test.sh')
           s = p.read_text()
-          old_a = """if [[ \"$race_a_result\" =~ ^(t|true)\\|accepted$ ]]; then
+          old = """if [[ "$race_a_result" =~ ^(t|true)\\|accepted$ ]]; then
             expected_race_winner='18180000-0000-0000-0000-000000000271'
-          elif [[ \"$race_b_result\" =~ ^(t|true)\\|accepted$ ]]; then
+          elif [[ "$race_b_result" =~ ^(t|true)\\|accepted$ ]]; then
             expected_race_winner='18180000-0000-0000-0000-000000000272'
           """
-          new_a = """if [[ \"$race_a_result\" =~ ^(t|true)\\|accepted$ ]]; then
+          new = """if [[ "$race_a_result" =~ ^(t|true)\\|accepted$ ]]; then
             expected_race_winner='18180000-0000-0000-0000-000000000271'
             race_winner_ip='10.0.10.1'
-          elif [[ \"$race_b_result\" =~ ^(t|true)\\|accepted$ ]]; then
+          elif [[ "$race_b_result" =~ ^(t|true)\\|accepted$ ]]; then
             expected_race_winner='18180000-0000-0000-0000-000000000272'
             race_winner_ip='10.0.10.2'
           """
-          old_b = "race_open '18180000-0000-0000-0000-000000000273' '10.0.10.1' \"$tmp/same_a.out\" &"
-          new_b = "race_open '18180000-0000-0000-0000-000000000273' \"$race_winner_ip\" \"$tmp/same_a.out\" &"
-          old_c = "race_open '18180000-0000-0000-0000-000000000274' '10.0.10.1' \"$tmp/same_b.out\" &"
-          new_c = "race_open '18180000-0000-0000-0000-000000000274' \"$race_winner_ip\" \"$tmp/same_b.out\" &"
-          old_d = "# Distinct-IP count must still be 1 (only 10.0.10.1 as active peer IP)."
-          new_d = "# Distinct-IP count must still be 1: the two new sessions reuse the actual\n# winner IP, whichever concurrent caller acquired the term lock first."
-          for old, new in ((old_a,new_a),(old_b,new_b),(old_c,new_c),(old_d,new_d)):
-              if old not in s:
-                  raise SystemExit(f'expected patch target missing: {old[:80]!r}')
-              s = s.replace(old, new, 1)
+          replacements = [
+            (old, new),
+            ("race_open '18180000-0000-0000-0000-000000000273' '10.0.10.1' \"$tmp/same_a.out\" &", "race_open '18180000-0000-0000-0000-000000000273' \"$race_winner_ip\" \"$tmp/same_a.out\" &"),
+            ("race_open '18180000-0000-0000-0000-000000000274' '10.0.10.1' \"$tmp/same_b.out\" &", "race_open '18180000-0000-0000-0000-000000000274' \"$race_winner_ip\" \"$tmp/same_b.out\" &"),
+            ("# Distinct-IP count must still be 1 (only 10.0.10.1 as active peer IP).", "# Distinct-IP count must still be 1: the two new sessions reuse the actual\n# winner IP, whichever concurrent caller acquired the term lock first."),
+          ]
+          for before, after in replacements:
+              if before not in s:
+                  raise SystemExit('expected patch target missing')
+              s = s.replace(before, after, 1)
           p.write_text(s)
           PY
           bash -n tests/db/unique_ip_limit_migration_test.sh
           git diff --check
-          actual="$(git hash-object tests/db/unique_ip_limit_migration_test.sh)"
-          test "$actual" = 085238cb0f7c1a618a87792697eb323e86b2c9b1
+          test "$(git hash-object tests/db/unique_ip_limit_migration_test.sh)" = 085238cb0f7c1a618a87792697eb323e86b2c9b1
           rm .github/workflows/task15-selfpatch.yml
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/db/unique_ip_limit_migration_test.sh .github/workflows/task15-selfpatch.yml
           git commit -m 'test(task15): apply exact race winner patch'
           git push origin HEAD:lead/task15-unique-ip-schema20-v2-20260901
