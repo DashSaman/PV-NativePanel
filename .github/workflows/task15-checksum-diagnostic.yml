@@ -16,4 +16,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd db/migrations
+          expected="$(awk '$2 == "0020_unique_ip_limit.up.sql" {print $1}' SHA256SUMS)"
+          actual="$(sha256sum 0020_unique_ip_limit.up.sql | awk '{print $1}')"
+          echo "EXPECTED_0020_UP=${expected}"
+          echo "ACTUAL_0020_UP=${actual}"
           sha256sum --check --strict SHA256SUMS
