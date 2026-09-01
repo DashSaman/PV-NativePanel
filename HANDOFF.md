@@ -6,13 +6,10 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `1aea1961515ab86428231499490202af4aef5e97`.
-- Exact-main push CI `33541904912`: **SUCCESS**.
-- Open roadmap PR: draft #64, exact head `9a863258455473605a370f7ad4964043a0df92a1`.
-- New exact-head #64 workflows for the API publication are running; prior-head green results are not reused.
-- Published lifecycle patch Git blob `b5889058caf4312df5508655193a6275c4ae5a1e` exactly matches the Worker-tested file.
-- New API increment wires ownership-checked exact-session kill through the authenticated customer/RLS read model; exact tuple fields come from trusted session state, not request data. Worker RED→GREEN, focused race tests, full Go suite and diff check passed.
-- Old draft #4 is not current roadmap work.
+- Current `main`: `5f7fd64f34d951ec7f9c16907123ddd659484515`.
+- Exact-main push CI `33548065775`: **SUCCESS**.
+- Open roadmap PR: draft #64, exact head `8bb5804545cd977ec1e01f6331d40d1aa9148279`.
+- Exact-head workflows were restarted after the socket-permission publication. WS1 Exact Accounting is **SUCCESS**; CI and WS1 Pinned Forwardproxy were still running at this checkpoint, so prior-head greens are not reused.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
@@ -23,7 +20,7 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Production state
 
-No fresh Production probe is credited in this checkpoint. The sole SentinelX active slot is currently assigned to development Worker `TrPaqet`, so `pv-primary` cannot be queried without moving capacity. This does not invalidate prior health evidence, but it is not fresh enough to authorize a deployment.
+A fresh read-only Production probe was attempted, but `pv-primary` is inactive under the SentinelX Free-plan one-active-host limit while development Worker `TrPaqet` owns the slot. The probe returned `upgrade_required`; therefore no new Production-health PASS is credited.
 
 No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
 
@@ -35,13 +32,16 @@ PR #64 now contains:
 - sibling survival, forged tuple rejection, repeated-kill idempotence and unregister semantics;
 - local session-control protocol/client;
 - live CONNECT registration after accounting open + trusted peer recording, with teardown unregister;
-- Unix-domain control-server primitive with bounded/strict JSON, exact kill, `0660` socket mode, stale-socket handling and owned-socket cleanup;
-- reload-safe Caddy lifecycle in `0003`: accounting-only acquire, shared registry/socket across overlapping configs, predecessor-safe cleanup, final-lease cleanup, `caddy.CleanerUpper` integration;
-- ownership-checked API kill route: user/session IDs enter via the route, but exact runtime credential/node/boot/session tuple is selected from the authenticated customer/RLS active-session read model; no credential mutation is performed.
+- Unix-domain control server with bounded/strict JSON, exact tuple control, stale-socket handling and reload-safe shared lifecycle;
+- ownership-checked API route selecting the exact tuple from trusted customer/RLS active-session state; client tuple fields are not accepted and credential mutation stays false;
+- dedicated `pvnaive-session-control` system group, separated from telemetry;
+- API service gets only the dedicated group; Caddy retains telemetry plus the dedicated group;
+- fresh foundation and same-schema deploy paths provision the group idempotently;
+- session-control socket resolves/chowns to the dedicated GID, then applies `0660`, failing closed on permission setup errors.
 
-New API validation passed on `TrPaqet` with isolated Go 1.26.3: clean behavioral RED, focused route/tuple tests, `go test -race ./internal/httpapi ./internal/sessioncontrol ./internal/sessionkill -count=1`, full `go test ./... -count=1`, and `git diff --check`.
+Permission TDD/evidence on `TrPaqet`: initial contract RED, forwardproxy group-assignment RED, permission contract PASS, patched pinned forwardproxy `go test -race ./...` PASS, focused API/session race tests PASS, full `go test ./...` PASS, and `git diff --check` PASS.
 
-PR #64 must remain draft until all of the following are proven: narrow Unix-socket ownership/group model allowing the intended API but not widening accounting/local access; stronger handler-level ownership/IDOR/CSRF failure tests; UI kill action; full exact-tree gates after those changes; real HTTP1/HTTP2 target-only kill; sibling survival; forged tuple rejection; repeated-kill idempotency; credential survival; exactly-once normal final accounting.
+PR #64 must remain draft until stronger handler-level ownership/IDOR/CSRF failure tests, UI exact-session action, release packaging/install/rollback proof, full final-tree gates, and a fresh HTTP1/HTTP2 rehearsal prove target-only termination, sibling survival, forged tuple rejection, repeated-request idempotency, credential survival and exactly-once normal final accounting.
 
 ## Task16
 
@@ -49,11 +49,12 @@ No fresh current-main Task16 completion is credited. First implementation step r
 
 ## Worker capacity / assignments
 
-Fresh host listing: two connected hosts, `TrPaqet` and `pv-primary`; Free plan allows one active host.
+Fresh host listing: three connected hosts, `TrPaqet`, `pv-worker-main`, and `pv-primary`; Free plan allows one active host.
 
-- `TrPaqet`: active development Worker; assigned Task13 permission/API lane.
-- `pv-primary`: Production-only; currently non-executable while the development slot is active.
-- Task16: assigned to the next independently executable development Worker; currently no second slot exists.
+- `TrPaqet`: active development Worker; assigned Task13 handler/UI/release-rehearsal lane.
+- `pv-primary`: Production-only; current fresh execution is blocked by `upgrade_required`.
+- `pv-worker-main`: connected/healthy, but fresh execution also returns `upgrade_required`.
+- Task16: assigned to the next independently executable development Worker.
 
 Human action is required only for true parallelism or simultaneous fresh Production probing: switch/disconnect hosts as needed or increase the SentinelX active-host limit. Do not move development/testing onto Production.
 
@@ -71,7 +72,7 @@ Human action is required only for true parallelism or simultaneous fresh Product
 ## Exact next sequence
 
 1. Keep #64 draft while exact-head checks complete.
-2. Continue Task13 on `TrPaqet`: narrow socket permission/service-group proof, then stronger handler-level ownership/IDOR/CSRF failure tests and UI action with TDD.
+2. Continue Task13 on `TrPaqet`: handler-level authorization/ownership/CSRF/IDOR failure tests, UI action, then release packaging/rollback proof.
 3. Run full Go/race/Web/pinned-forwardproxy/reproducible-Caddy gates and fresh real HTTP1+HTTP2 rehearsal.
 4. Merge only the exact verified Task13 tree; deploy only after fresh encrypted backup + rollback snapshot and Production postflight access.
 5. Execute Task16 on the next independent Worker when capacity exists.
