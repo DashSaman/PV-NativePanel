@@ -2,99 +2,74 @@
 
 Last updated: 2026-09-01
 
-This file describes current repository + Production truth. Historical S04/S05/S06 snapshots and stale branches are evidence only and must not override this file, `CONTINUE_HERE.md`, exact GitHub `main`, or fresh Production evidence.
+This file is current repository + Production truth. Historical stage notes, worker reports and stale branches are evidence only; exact GitHub `main`, exact-head CI and fresh Production observations override them.
 
-## Product / architecture invariants
+## Product / safety invariants
 
-PVNaive is PVNETWORK's standalone-first management plane for standard NaiveProxy. Keep commercial customer/service state, Runtime credentials/secrets, subscription/account delivery, exact direct-Naive accounting/session telemetry, and privileged Runtime mutation as separate boundaries. Read-only/edit flows must never silently rotate Runtime credentials or Subscription tokens.
+PVNaive remains standalone-first. Customer/service state, Runtime credentials, subscription delivery, exact direct-Naive accounting/session telemetry and privileged Runtime mutation stay separate. Never fabricate usage/online/IP/session history; never rotate credentials/tokens from read-only flows. Production changes require a fresh encrypted backup + rollback state, intended migrations only, postflight verification and exact deployed provenance.
 
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`
 - Product: **PVNaive**
 - Default branch: `main`
-- Freshly audited main SHA: `fe6a9fea76fa48577fb8063bb246563f2696846b`
-- Exact-main CI run `33453736537`: **SUCCESS**
-- Only open PR found: old draft PR #4, unrelated to the current roadmap; do not merge it as current work.
+- Current main after verified documentation merge PR #55: `c6228290937a18c2dbe4ee06f966dc4636521d57`.
+- PR #55 exact head `156f728f...` passed CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy before merge.
+- Open roadmap PR: **#54 Task15 schema20**; old draft PR #4 remains unrelated and must not be merged as current work.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
-- Security Task35: **DONE in main** — BUG-001 refresh-token reuse-family handling, BUG-002 commit-before-success semantics, and BUG-003 DB/schema-backed readiness are closed in repository truth.
+- Security Task35: **DONE in main** (BUG-001/002/003 closed in repository truth).
 - Task13 exact live-session kill: **IN PROGRESS / recovery + publication incomplete**.
-- Task15 unique-IP limit: **IN PROGRESS / exact-current-main local schema20 candidate validated for Go/Web/static gates; PostgreSQL18 + publication still pending**.
-- Task16 bounded IP/session history: **IN PROGRESS / isolated schema21 worker active behind schema20**.
+- Task15 unique-IP limit: **IN PROGRESS / PR #54, not merged/deployed**.
+- Task16 bounded IP/session history: **IN PROGRESS but integration remains ordered behind schema20**.
 
-Do not infer a task as DONE merely because a local candidate, worker report or historical test exists. Merge, exact-head verification and — when Production semantics change — guarded deployment/postflight evidence are required.
+No task becomes DONE from a local candidate, historical worker report or partial branch alone.
 
-## Production truth
+## Fresh Production truth
 
-Latest independently recorded Production schema remains **19**. SentinelX freshly reports `pv-primary` connected/healthy at the control-plane level, but command execution returns `upgrade_required` because three hosts are connected while the plan permits one active host. Therefore no fresh Production-health assertion or mutation is made in this state. Repository/CI/review work continues independently.
+SentinelX execution access to `pv-primary` is currently available again. Fresh read-only checks on 2026-09-01 show:
 
-When access returns: read-only audit first; then fresh encrypted backup + rollback snapshot; deploy only the intended exact commit/migrations; verify readiness, Runtime Agent, Telemetry Agent, Caddy/customer/accounting invariants and exact deployed provenance; roll back on any failed invariant.
+- `pvnaive-api.service`, `caddy-naive.service`, `pvnaive-runtime-agent.service`, `pvnaive-telemetry-agent.service`: **active**;
+- API listener: `127.0.0.1:8080`; Caddy: public `:80` / `:443`;
+- canonical liveness endpoint `GET /api/v1/health/live`: HTTP **200**, service status `ok`;
+- canonical readiness endpoint `GET /api/v1/health/ready`: HTTP **200**, DB/schema ready;
+- DB health script with `/etc/pvnaive/db.env`: `PVNAIVE_DB_HEALTH=OK`, schema **19**, direct secret/MFA SELECT denied;
+- release metadata source commit: `0645b2e4758d3cc6c197dd9dba9127e8de983d6c`;
+- release metadata schema: **19**.
 
-## Exact accounting / session invariants
+Important correction: `/healthz` and `/readyz` are not the canonical routes on this deployed binary and return 404. The current health routes are `/api/v1/health/live` and `/api/v1/health/ready`. A 404 on the legacy probes is not an outage.
 
-- Usage, online state, peer IP and session identity come only from authoritative direct-Naive facts; never fabricate history/device state.
-- Exact live-session identity is Runtime credential ID + node ID + boot ID + opaque session ID.
-- Killing one session must not revoke the credential or affect sibling sessions.
-- Forced disconnect converges through normal final accounting exactly once.
-- Retries/idempotency must not double-count or duplicate finalization.
-- Concurrent-session and unique-IP admission must be PostgreSQL race-safe where policy is global to the service term.
-- Trusted peer identity comes only from Caddy's actual `RemoteAddr`; never `Forwarded`, `X-Forwarded-For`, or client-supplied IP.
-- Schema changes require forward/backward migration proof and coherent expected-schema/checksum manifests.
-- No Caddy reload/restart merely to kill one live session.
+No Production mutation was performed during this verification. Production remains schema19/source `0645b2e...`.
 
 ## Task13 — exact live-session kill
 
-The prior canonical state named persistent candidate commit `922a5e0e155746906f28fe46ca89a24f269acfa7`. Fresh inspection of the active persistent worker cannot resolve that commit object, so it is no longer a valid recoverable local source-of-truth claim.
+Remote publication branch `lead/task13-kill-session-publish-20260901` remains incomplete. Historical evidence proves a prior complete candidate passed strong exact-kill gates, but the complete current-main source must be recovered/reconstructed and reverified before merge. Invariants remain exact credential/node/boot/session identity, sibling survival, no credential revoke, no Caddy restart/reload, idempotent repeated kill, tenant/role isolation and exactly-once normal final accounting.
 
-Remote publication branch `lead/task13-kill-session-publish-20260901` exists but is incomplete and diverged from current main; relative to current main it currently contains only four Task13 files. A recovery bundle at `/tmp/task13-reference` contains eight exact previously reviewed files. Hash comparison confirms already-published objects such as `internal/sessioncontrol/client.go` (`1f7111ad538e5d0b12c39e8c76e99d090f4e2557`) are byte-identical to the recovered reference.
+The persistent worker hosts are currently connected but unavailable for command execution under the SentinelX one-active-host limit while `pv-primary` is active. Do not claim fresh Task13 worker progress until access to a worker host is restored or the source is reconstructed through repository-backed evidence.
 
-A current-main recovery worktree proves the recovered sessionkill/sessioncontrol packages compile/test. HTTP API compilation exposes the missing integration boundary rather than hiding it: `ServerConfig.SessionKiller` and the real delete-session route are absent on current main. Reconstruct remaining wiring/tests from preserved evidence and repository patterns, then rerun full verification. Do not merge the partial branch or claim the old 18-file local candidate still exists.
+## Task15 — simultaneous unique-IP limit / schema20
 
-`ops/evidence/TASK13-20260901-prepublication-verification.md` remains historical proof that a complete reconciled candidate previously passed full Go, focused race/rehearsal, Web, pinned-forwardproxy, reproducible-Caddy and real HTTP/1.1/HTTP/2 exact-kill rehearsal. It does not substitute for publishing/retesting the recovered current-main source.
+PR #54 implements the schema20 candidate. Its original exact head `31fd2caf...` had Go and Web PASS and Pinned Forwardproxy PASS, but CI database and WS1 Exact Accounting PostgreSQL18 gates failed. The first exact failure was not the unique-IP SQL itself: `tests/stages/S04_db_env_version_test.sh` still treated schema20 as unsupported.
 
-## Task15 — unique-IP limit / schema20
+That contract is now corrected on PR #54 head `ece028cb9122131f0b362474609ddd9f69701ced`: schema20 is accepted and schema21 is rejected. This advances the gate to the next real PostgreSQL18 failure rather than weakening accounting semantics. PR #54 is still **NOT mergeable as DONE** until a fresh exact-head run proves CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy all green.
 
-Local candidate branch: `lead/task15-unique-ip-schema20-20260901`.
-Local candidate commit: `2b175991f1d5628dc084f4ffddfea6b63d960bf8`.
-Parent: exact current main `fe6a9fea76fa48577fb8063bb246563f2696846b`.
+Fresh PG18 debugging evidence also identified malformed UUID fixtures and an incorrect `first_connected_at` expectation for an `on_creation` service term. Those fixes must be applied only when reproduced on the current exact head; do not alter production accounting semantics to satisfy a bad fixture.
 
-Fresh local verification PASS:
+Task15 invariants remain trusted Caddy `RemoteAddr` only, fail-closed-before-acceptance, PostgreSQL service-term serialization, same-IP de-duplication, schema19 concurrent-session authority and no leaked peer/session rows on rejection.
 
-- `git diff --check`
-- `go vet ./...` with repository Go 1.25 toolchain
-- `go test ./...`
-- `go test -race ./internal/customer ./internal/httpapi ./internal/telemetry`
-- Web: 18 test files / 61 tests
-- Web production build
-- shell syntax for the schema20 PostgreSQL gate
+## Task16 — bounded IP/session history / schema21
 
-The candidate sources the peer only from trusted Caddy `RemoteAddr`, passes it through the exact accounting event, serializes admission by locking the ServiceTerm row, counts canonical active `direct_naive_accounting_session_peers`, and records peer state only when schema19 actually accepts a new session. Review fixed the PostgreSQL race test so it does not assume a deterministic lock winner; it proves the persisted winner is whichever concurrent caller actually returned accepted.
+Task16 stays behind stable schema20. Required proof: exact 30-day retention, tenant-scoped RLS/authorization, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, bounded pagination/read paths, coherent schema21 migration/checksums and safe rollback. No merge/deploy/DONE claim exists yet.
 
-The active worker only has PostgreSQL 14.24 and no PostgreSQL18/container runtime. The modern migration baseline uses `security_invoker`, unsupported by PG14; therefore a local DB failure is environmental and **not** accepted as schema20 proof. The candidate's CI workflow includes `tests/db/unique_ip_limit_migration_test.sh`; PostgreSQL18 migration + concurrency proof is mandatory after publication.
+## Worker / orchestration capacity
 
-Worker HTTPS `git push` still lacks credentials. Candidate is not repository truth, merged or deployed. See `ops/evidence/TASK15-20260901-schema20-candidate-verification.md`.
-
-## Task16 — bounded session/IP history / schema21
-
-An isolated worker is active on `worker/task16-schema21-20260901`, based on Task15 candidate `2b175991...` to keep schema20→schema21 contiguous. Integration remains ordered behind stable schema20.
-
-Required invariants: exact 30-day retention; tenant-scoped RLS/authorization; trusted session/peer/accounting facts only; no invented legacy peer history; final-accounting synchronization; maintenance-only purge (not ordinary app/API authority); bounded pagination/read paths; safe rollback and coherent migration/checksum manifests. No DONE claim until a durable worker report and independent validation exist.
-
-## Security / independent lane
-
-Task36 authorization/IDOR/CSRF/redaction/fuzz remains independent, but the active host has only 2 CPUs / ~2 GB RAM and the Task16 agent currently consumes substantial CPU. Start Task36 when this worker frees or another host is active rather than violating the resource ceiling.
-
-## Human-action blocker
-
-To resume Production audit/deploy, make `pv-primary` an active SentinelX host: disconnect another connected host or change the plan. This is an operations/tooling blocker, not evidence that Production itself is unhealthy.
+Three SentinelX hosts are connected, but the Free plan permits one active host. `pv-primary` is the currently usable host; the two worker hosts return `upgrade_required`. Therefore no new worker-agent process was started in this run and existing persistent worker reports cannot be freshly inspected from those hosts. Repository/CI work continues independently. Human action is needed only if parallel worker execution is desired: disconnect an unused connected host so a worker can become active, or change the SentinelX plan.
 
 ## Immediate execution order
 
-1. recover/reconstruct the complete Task13 current-main source and re-run full exact-kill verification before publication/PR;
-2. publish exact Task15 commit through authenticated Git/GitHub Git-data transport and require PostgreSQL18 CI + all normal gates;
-3. merge neither Task13 nor Task15 unless exact-head gates are green;
-4. reconcile Task16 only behind stable schema20 and independently prove schema21 retention/RLS/finalization/rollback;
-5. advance Task36 when worker capacity allows;
-6. restore `pv-primary`, perform read-only audit, then deploy eligible exact-main changes only with fresh backup/rollback/postflight proof;
-7. update handoff/roadmap/task accounting only from merged/deployed evidence.
+1. Let PR #54 rerun from head `ece028cb...`; inspect the next exact PostgreSQL18 failure and fix only reproduced test/implementation defects.
+2. Merge Task15 only after exact-head CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy are all green.
+3. Do not deploy schema20 until it is merged into an eligible main and a fresh Production backup/rollback snapshot is created and verified.
+4. Resume Task13 source recovery/reconstruction and Task16 reconciliation when worker access is available; continue repository-backed independent work meanwhile.
+5. Keep old draft PR #4 out of the current roadmap unless a real Karing client smoke explicitly revives it.
+6. After any eligible merge, run exact-main CI, then guarded Production deployment/postflight with rollback on any failed invariant.
