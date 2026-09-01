@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   checksum:
@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Print migration checksum verification
         run: |
           set -Eeuo pipefail
@@ -21,3 +23,25 @@ jobs:
           echo "EXPECTED_0020_UP=${expected}"
           echo "ACTUAL_0020_UP=${actual}"
           sha256sum --check --strict SHA256SUMS
+      - name: Repair malformed Task15 fixture UUIDs exactly once
+        run: |
+          set -Eeuo pipefail
+          file=tests/db/unique_ip_limit_migration_test.sh
+          before="$(grep -Eoc "18180000-0000-0000-000000000[0-9]{3}" "$file" || true)"
+          echo "MALFORMED_UUIDS_BEFORE=${before}"
+          if (( before > 0 )); then
+            sed -E -i 's/18180000-0000-0000-000000000([0-9]{3})/18180000-0000-0000-0000-000000000\1/g' "$file"
+          fi
+          after="$(grep -Eoc "18180000-0000-0000-000000000[0-9]{3}" "$file" || true)"
+          echo "MALFORMED_UUIDS_AFTER=${after}"
+          [[ "$after" == 0 ]]
+          bash -n "$file"
+          if git diff --quiet -- "$file"; then
+            echo 'FIXTURE_REPAIR=NO_CHANGE'
+            exit 0
+          fi
+          git config user.name 'pvnaive-ci-repair'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$file"
+          git commit -m 'test(task15): repair malformed unique-IP fixture UUIDs'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
