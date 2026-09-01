@@ -72,97 +72,97 @@ new file mode 100644
 +	})
 +	return true, true
 +}
-+diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
-+new file mode 100644
-+--- /dev/null
-++++ b/pvnaive_session_control_test.go
-+@@ -0,0 +1,89 @@
-++package forwardproxy
-++
-++import (
-++	"net"
-++	"sync/atomic"
-++	"testing"
-++)
-++
-++type pvnaiveTrackedConn struct {
-++	net.Conn
-++	closes atomic.Int32
-++}
-++
-++func (c *pvnaiveTrackedConn) Close() error {
-++	c.closes.Add(1)
-++	return c.Conn.Close()
-++}
-++
-++func pvnaiveTask13Key(sessionID string) pvnaiveSessionTuple {
-++	return pvnaiveSessionTuple{
-++		RuntimeCredentialID: "11111111-1111-4111-8111-111111111111",
-++		NodeID:              "node-a",
-++		BootID:              "22222222-2222-4222-8222-222222222222",
-++		SessionID:           sessionID,
-++	}
-++}
-++
-++func TestPVNaiveSessionRegistryExactKillKeepsSiblingAlive(t *testing.T) {
-++	registry := newPVNaiveSessionRegistry()
-++	aClient, aServer := net.Pipe()
-++	bClient, bServer := net.Pipe()
-++	defer aClient.Close()
-++	defer bClient.Close()
-++	target := &pvnaiveTrackedConn{Conn: aServer}
-++	sibling := &pvnaiveTrackedConn{Conn: bServer}
-++	targetKey := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
-++	siblingKey := pvnaiveTask13Key("44444444-4444-4444-8444-444444444444")
-++	registry.register(targetKey, target, nil)
-++	registry.register(siblingKey, sibling, nil)
-++
-++	found, killed := registry.kill(targetKey)
-++	if !found || !killed {
-++		t.Fatalf("target kill found=%v killed=%v want true/true", found, killed)
-++	}
-++	if got := target.closes.Load(); got != 1 {
-++		t.Fatalf("target closes=%d want 1", got)
-++	}
-++	if got := sibling.closes.Load(); got != 0 {
-++		t.Fatalf("sibling closes=%d want 0", got)
-++	}
-++}
-++
-++func TestPVNaiveSessionRegistryForgedTupleCannotKill(t *testing.T) {
-++	registry := newPVNaiveSessionRegistry()
-++	client, server := net.Pipe()
-++	defer client.Close()
-++	conn := &pvnaiveTrackedConn{Conn: server}
-++	realKey := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
-++	registry.register(realKey, conn, nil)
-++	forged := realKey
-++	forged.BootID = "99999999-9999-4999-8999-999999999999"
-++
-++	found, killed := registry.kill(forged)
-++	if found || killed {
-++		t.Fatalf("forged kill found=%v killed=%v want false/false", found, killed)
-++	}
-++	if got := conn.closes.Load(); got != 0 {
-++		t.Fatalf("real session closes=%d want 0", got)
-++	}
-++}
-++
-++func TestPVNaiveSessionRegistryRepeatKillIsIdempotent(t *testing.T) {
-++	registry := newPVNaiveSessionRegistry()
-++	client, server := net.Pipe()
-++	defer client.Close()
-++	conn := &pvnaiveTrackedConn{Conn: server}
-++	key := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
-++	registry.register(key, conn, nil)
-++
-++	if found, killed := registry.kill(key); !found || !killed {
-++		t.Fatalf("first kill found=%v killed=%v want true/true", found, killed)
-++	}
-++	if found, killed := registry.kill(key); !found || killed {
-++		t.Fatalf("second kill found=%v killed=%v want true/false", found, killed)
-++	}
-++	if got := conn.closes.Load(); got != 1 {
-++		t.Fatalf("close count=%d want 1", got)
-++	}
-++}
+diff --git a/pvnaive_session_control_test.go b/pvnaive_session_control_test.go
+new file mode 100644
+--- /dev/null
++++ b/pvnaive_session_control_test.go
+@@ -0,0 +1,89 @@
++package forwardproxy
++
++import (
++	"net"
++	"sync/atomic"
++	"testing"
++)
++
++type pvnaiveTrackedConn struct {
++	net.Conn
++	closes atomic.Int32
++}
++
++func (c *pvnaiveTrackedConn) Close() error {
++	c.closes.Add(1)
++	return c.Conn.Close()
++}
++
++func pvnaiveTask13Key(sessionID string) pvnaiveSessionTuple {
++	return pvnaiveSessionTuple{
++		RuntimeCredentialID: "11111111-1111-4111-8111-111111111111",
++		NodeID:              "node-a",
++		BootID:              "22222222-2222-4222-8222-222222222222",
++		SessionID:           sessionID,
++	}
++}
++
++func TestPVNaiveSessionRegistryExactKillKeepsSiblingAlive(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	aClient, aServer := net.Pipe()
++	bClient, bServer := net.Pipe()
++	defer aClient.Close()
++	defer bClient.Close()
++	target := &pvnaiveTrackedConn{Conn: aServer}
++	sibling := &pvnaiveTrackedConn{Conn: bServer}
++	targetKey := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
++	siblingKey := pvnaiveTask13Key("44444444-4444-4444-8444-444444444444")
++	registry.register(targetKey, target, nil)
++	registry.register(siblingKey, sibling, nil)
++
++	found, killed := registry.kill(targetKey)
++	if !found || !killed {
++		t.Fatalf("target kill found=%v killed=%v want true/true", found, killed)
++	}
++	if got := target.closes.Load(); got != 1 {
++		t.Fatalf("target closes=%d want 1", got)
++	}
++	if got := sibling.closes.Load(); got != 0 {
++		t.Fatalf("sibling closes=%d want 0", got)
++	}
++}
++
++func TestPVNaiveSessionRegistryForgedTupleCannotKill(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	client, server := net.Pipe()
++	defer client.Close()
++	conn := &pvnaiveTrackedConn{Conn: server}
++	realKey := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
++	registry.register(realKey, conn, nil)
++	forged := realKey
++	forged.BootID = "99999999-9999-4999-8999-999999999999"
++
++	found, killed := registry.kill(forged)
++	if found || killed {
++		t.Fatalf("forged kill found=%v killed=%v want false/false", found, killed)
++	}
++	if got := conn.closes.Load(); got != 0 {
++		t.Fatalf("real session closes=%d want 0", got)
++	}
++}
++
++func TestPVNaiveSessionRegistryRepeatKillIsIdempotent(t *testing.T) {
++	registry := newPVNaiveSessionRegistry()
++	client, server := net.Pipe()
++	defer client.Close()
++	conn := &pvnaiveTrackedConn{Conn: server}
++	key := pvnaiveTask13Key("33333333-3333-4333-8333-333333333333")
++	registry.register(key, conn, nil)
++
++	if found, killed := registry.kill(key); !found || !killed {
++		t.Fatalf("first kill found=%v killed=%v want true/true", found, killed)
++	}
++	if found, killed := registry.kill(key); !found || killed {
++		t.Fatalf("second kill found=%v killed=%v want true/false", found, killed)
++	}
++	if got := conn.closes.Load(); got != 1 {
++		t.Fatalf("close count=%d want 1", got)
++	}
++}
