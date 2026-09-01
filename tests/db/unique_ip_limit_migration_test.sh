@@ -174,8 +174,10 @@ race_a_result="$(tr -d '\r\n' <"$tmp/race_a.out")"
 race_b_result="$(tr -d '\r\n' <"$tmp/race_b.out")"
 if [[ "$race_a_result" =~ ^(t|true)\|accepted$ ]]; then
   expected_race_winner='18180000-0000-0000-0000-000000000271'
+  race_winner_ip='10.0.10.1'
 elif [[ "$race_b_result" =~ ^(t|true)\|accepted$ ]]; then
   expected_race_winner='18180000-0000-0000-0000-000000000272'
+  race_winner_ip='10.0.10.2'
 else
   echo "ERROR: race: neither concurrent call was accepted" >&2
   cat "$tmp/race.out" >&2
@@ -200,9 +202,9 @@ race_usage="$(psql_admin -d "$test_db" -Atc "select coalesce(upload_bytes,0) + c
 # Parallel same-IP two sessions must both be accepted while distinct-IP
 # count stays at 1 (same IP counts as one unique IP).
 # ---------------------------------------------------------------------------
-race_open '18180000-0000-0000-0000-000000000273' '10.0.10.1' "$tmp/same_a.out" &
+race_open '18180000-0000-0000-0000-000000000273' "$race_winner_ip" "$tmp/same_a.out" &
 same_a_pid=$!
-race_open '18180000-0000-0000-0000-000000000274' '10.0.10.1' "$tmp/same_b.out" &
+race_open '18180000-0000-0000-0000-000000000274' "$race_winner_ip" "$tmp/same_b.out" &
 same_b_pid=$!
 wait "$same_a_pid"; wait "$same_b_pid"
 cat "$tmp/same_a.out" "$tmp/same_b.out" >"$tmp/same.out"
@@ -210,7 +212,8 @@ cat "$tmp/same_a.out" "$tmp/same_b.out" >"$tmp/same.out"
 same_accepted="$(grep -Ec '^(t|true)\|accepted$' "$tmp/same.out" || true)"
 [[ "$same_accepted" == 2 ]] || { echo "ERROR: same-IP race: expected 2 accepted, got $same_accepted" >&2; cat "$tmp/same.out" >&2; exit 1; }
 
-# Distinct-IP count must still be 1 (only 10.0.10.1 as active peer IP).
+# Distinct-IP count must still be 1: the two new sessions reuse the actual
+# winner IP, whichever concurrent caller acquired the term lock first.
 same_ip_count="$(psql_admin -d "$test_db" -Atc "select count(distinct host(client_ip)) from pvnaive.direct_naive_accounting_session_peers where service_term_id='18180000-0000-0000-0000-000000000241'")"
 [[ "$same_ip_count" == 1 ]] || { echo "ERROR: same-IP race: expected 1 distinct IP, got $same_ip_count" >&2; exit 1; }
 
