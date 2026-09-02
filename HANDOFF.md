@@ -6,11 +6,11 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `61a46f4cb124cb5d4a180e9c564f51634cc8bba3`.
-- Exact-main push CI `33585915354`: **SUCCESS**.
-- Open roadmap PR: draft #64, exact published head `664b690239f723dc534164eceddfcb1dc9b3374f`.
-- Task13 was reconciled again onto current main using a non-force two-parent merge. Fresh compare reports #64 **41 ahead / 0 behind**, merge base = exact current main; validated Task13 history was not rewritten.
-- New exact-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy runs have started for `664b6902...`; old-head green workflows remain historical evidence only.
+- Current `main`: `284a2e3fbc807e9a0e82962975fd354ee9f703c7`.
+- Exact-main push CI `33593800133`: **SUCCESS**.
+- Open roadmap PR: draft #64, exact published head `0496a554c15fcf0ea7e63c706a0fa94d58cb8a38`.
+- Mechanical PR #76 merged current main into Task13 using a non-force two-parent merge. Fresh compare reports #64 **42 ahead / 0 behind**, merge base = exact current main; validated Task13 history was not rewritten.
+- New exact-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy runs have started for `0496a554...`; old-head green workflows remain historical evidence only.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
@@ -27,7 +27,7 @@ Fresh read-only Production evidence on `pv-primary` in this run:
 - `GET /api/v1/health/ready` returns `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET /api/v1/health/live` returns `service=pvnaive-api`, `status=ok`.
 
-No fresh journal-health claim is made in this run. No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
+No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
 
 ## Task13
 
@@ -35,7 +35,7 @@ PR #64 validated scope includes the exact tuple registry/live CONNECT boundary, 
 
 Remaining merge gates:
 
-1. all three new exact-head GitHub workflows on `664b6902...` must pass;
+1. all three new exact-head GitHub workflows on `0496a554...` must pass;
 2. fresh real HTTP1/HTTP2 rehearsal must prove target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
 
 Only then may #64 leave draft and merge. Production deployment additionally requires fresh encrypted backup + rollback snapshot and complete postflight.
@@ -54,7 +54,7 @@ Fresh host listing: three connected hosts, `TrPaqet`, `pv-worker-main`, and `pv-
 
 - `pv-primary`: active/executable; **Production-only**.
 - `TrPaqet`: connected/healthy but fresh execution returns `upgrade_required`; assignment = Task13 final live HTTP1/HTTP2 rehearsal.
-- `pv-worker-main`: connected/healthy but fresh execution returns `upgrade_required`; assignment = Task16 RED retention/pagination lane.
+- `pv-worker-main`: connected/healthy but inactive under the same one-host plan limit; assignment = Task16 RED retention/pagination lane.
 
 Human action is required to resume development execution: switch/disconnect hosts as needed or increase the SentinelX active-host limit. Do not move development/testing onto Production.
 
