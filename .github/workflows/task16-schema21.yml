@@ -5,6 +5,7 @@ on:
     paths:
       - 'db/migrations/0021_*'
       - 'tests/db/ip_session_history_contract_test.sh'
+      - 'scripts/db/purge_session_history.sh'
       - '.github/workflows/task16-schema21.yml'
 
 permissions:
@@ -16,6 +17,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: Record schema21 checksums
+        run: sha256sum db/migrations/0021_ip_session_history.up.sql db/migrations/0021_ip_session_history.down.sql
       - name: Start PostgreSQL 18
         run: |
           set -Eeuo pipefail
