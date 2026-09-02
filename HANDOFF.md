@@ -6,42 +6,42 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub
 
 ## Repository / release truth
 
-- Current `main`: `3f775195439163a20935caff1bb4c2b8c3225c84`.
-- Exact-main push CI `33602254294`: **SUCCESS**.
-- Open roadmap PR: draft #64, exact head `e47fb53ca2885a0aee7ffc2fc8fc7a0b7d461ac7` after PR #78 reconciled current main without force-push/history rewrite.
-- Exact-head CI `33602350141`, WS1 Exact Accounting `33602350122`, WS1 Pinned Forwardproxy `33602350340`: all **SUCCESS**.
-- Production remains on Task15/schema20; no Task13 code is deployed.
+- Current `main`: `6e7e14aabe22719099443d80d65798bb53b2769c`.
+- Open Task13 PR: draft #64, exact head `c79f5385b7a751c30282948423b8c34d1ba89deb`.
+- Fresh compare: 44 commits ahead / 0 behind; merge-base exact current main.
+- Exact-head Task13 CI `33612706915`, WS1 Exact Accounting `33612706979`, WS1 Pinned Forwardproxy `33612706951`: all **SUCCESS**.
+- Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 BUG-001/002/003: **DONE in main**.
-- Task13: **IN PROGRESS / #64 draft / CI green / final real protocol proof pending**.
-- Task16: **IN PROGRESS / issue #79 / schema21 RED established**.
+- Task13: **IN PROGRESS / #64 draft / exact-head GitHub gates green / final real protocol proof pending**.
+- Task16: **IN PROGRESS / draft #81 / issue #79 / schema21 RED established**.
 
 ## Production state
 
-Fresh read-only evidence at `2026-09-02T08:18:36Z` on `pv-primary`:
+Fresh read-only evidence this cycle on `pv-primary`:
 
 - `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`: **active**;
 - `GET /api/v1/health/ready`: `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET /api/v1/health/live`: `service=pvnaive-api`, `status=ok`;
-- 45-minute journal scan: no panic/fatal/schema-mismatch/segmentation/error matches.
+- 45-minute critical journal scan: zero panic/fatal/schema-mismatch/segmentation-fault matches.
 
 No Production mutation, restart, reload, migration, DB write, credential rotation or deployment occurred.
 
 ## Task13
 
-PR #64 validated scope includes exact tuple registry/live CONNECT boundary, local Unix control path, narrow `pvnaive-session-control` permissions, ownership/RLS/CSRF-safe DELETE API, per-session Web/UI action, R1 pinned-Caddy packaging/rollback and PostgreSQL18 auth/tenant proof.
+All exact-head GitHub gates are green. The sole merge gate is a fresh real HTTP1/HTTP2 rehearsal on exact head `c79f5385...` proving target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once final accounting.
 
-All exact-head GitHub gates are green. The sole merge gate is now a fresh real HTTP1/HTTP2 rehearsal on exact head `e47fb53c...` proving target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
-
-A focused exact-head Worker run was attempted this cycle; it reached the race/build stage but timed out and `pv-worker-main` disconnected afterward. This is not PASS evidence. Do not merge #64 until the real live proof is completed.
+`TrPaqet` owns this proof but currently returns `upgrade_required` while Production Primary owns the single SentinelX active-host slot. Do not substitute Production as the development/rehearsal host. Do not merge #64 until this live proof is completed.
 
 ## Task16
 
-Issue #79 is the active ledger. Genuine RED evidence exists on the Worker: `tests/db/ip_session_history_contract_test.sh` was written before implementation and fails because the schema21 migration pair is missing. Required implementation proof: exact 30-day retention, hard server-side pagination/read bounds, tenant RLS, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent migration/checksums, PostgreSQL18 behavior and rollback safety.
+Issue #79 and draft PR #81 are the active ledger. Genuine RED evidence exists: `tests/db/ip_session_history_contract_test.sh` was written before implementation and failed because schema21 was absent.
 
-Direct Worker push is still not trusted/available; use connector-side publication only after local validation if that remains true.
+Fresh CI review found that `.github/workflows/ci.yml` syntax-checks all DB shell tests but does not explicitly execute this Task16 test in the PostgreSQL18 database job. Consequently current generic PR #81 green CI is not Task16 GREEN proof.
+
+Required implementation proof: exact 30-day retention, hard server-side read cap of 500, forced tenant RLS, trusted schema17 peer/accounting lineage only, final-accounting-safe maintenance purge, coherent schema21 checksums, explicit PostgreSQL18 test execution and disposable rollback safety.
 
 ## Persistent reports
 
@@ -49,11 +49,9 @@ Direct Worker push is still not trusted/available; use connector-side publicatio
 
 ## Worker capacity / assignments
 
-Fresh SentinelX state currently shows two connected hosts: `pv-primary` and `TrPaqet`; `pv-worker-main` disconnected during the long Task13 exact-head run.
-
 - `pv-primary`: executable; **Production-only**.
-- `TrPaqet`: assignment = Task13 final live HTTP1/HTTP2 rehearsal if executable under current plan capacity.
-- `pv-worker-main`: assignment on reconnect = Task16 schema21 TDD/PG18 lane.
+- `TrPaqet`: connected; assignment = Task13 final live HTTP1/HTTP2 rehearsal; currently plan-blocked.
+- `pv-worker-main`: assignment when executable = Task16 schema21 TDD/PG18 lane.
 
 ## Current execution rules
 

@@ -11,24 +11,24 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `3f775195439163a20935caff1bb4c2b8c3225c84` (PR #77).
-- Exact-main push CI run `33602254294`: **SUCCESS**.
-- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact head `e47fb53ca2885a0aee7ffc2fc8fc7a0b7d461ac7` after mechanical PR #78 reconciled current main without force-push/history rewrite.
-- Exact-head Task13 workflows on `e47fb53c...`: CI `33602350141` **SUCCESS**; WS1 Exact Accounting `33602350122` **SUCCESS**; WS1 Pinned Forwardproxy `33602350340` **SUCCESS**.
-- Task13 exact live-session kill: **IN PROGRESS / draft / final real HTTP1+HTTP2 live proof pending**.
+- Current `main`: `6e7e14aabe22719099443d80d65798bb53b2769c`.
+- Task13: draft PR #64, branch `lead/task13-reconstruct-62573fee`, exact head `c79f5385b7a751c30282948423b8c34d1ba89deb`.
+- Fresh compare: Task13 is 44 commits ahead / 0 behind current main; merge-base is exact current main.
+- Exact-head Task13 workflows: CI `33612706915` **SUCCESS**; WS1 Exact Accounting `33612706979` **SUCCESS**; WS1 Pinned Forwardproxy `33612706951` **SUCCESS**.
+- Task13 exact live-session kill: **IN PROGRESS / draft / sole remaining merge gate is fresh real HTTP1+HTTP2 live proof**.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
 - Task15 simultaneous unique-IP limit: **DONE / Production**, schema20.
 - Security Task35 / BUG-001/002/003: **DONE in main**.
-- Task16 bounded IP/session history: **IN PROGRESS / issue #79 / schema21 TDD RED established**.
+- Task16 bounded IP/session history: **IN PROGRESS / draft PR #81 / issue #79 / schema21 TDD RED established**.
 
 No task becomes DONE from a local candidate, historical report or partial branch alone.
 
 ## Production truth
 
-Production remains on Task15/schema20; no Task13 code has been deployed.
+Production remains on Task15/schema20; no Task13 or schema21 code has been deployed.
 
-Fresh read-only observation at `2026-09-02T08:18:36Z` on `pv-primary`:
+Fresh read-only observation this cycle on `pv-primary`:
 
 - `pvnaive-api`: **active**;
 - `caddy-naive`: **active**;
@@ -36,41 +36,41 @@ Fresh read-only observation at `2026-09-02T08:18:36Z` on `pv-primary`:
 - `pvnaive-telemetry-agent`: **active**;
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: `service=pvnaive-api`, `status=ok`;
-- 45-minute journal scan found no `panic`, `fatal`, `schema mismatch`, segmentation or error matches for the four services.
+- 45-minute journal scan: zero `panic`, `fatal`, `schema mismatch` or `segmentation fault` matches.
 
 No Production mutation, deploy, restart, reload, migration, DB write or credential change was performed.
 
 ## Task13 — exact live-session kill
 
-PR #64 contains the validated exact-tuple registry/control/API/UI/release implementation. All three exact-head GitHub gates are green on `e47fb53c...`.
+All exact-head GitHub gates are green on `c79f5385...`. The sole merge gate is a fresh real HTTP/1.1 + HTTP/2 rehearsal on that exact head proving target-only termination, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting.
 
-The remaining merge gate is a fresh real HTTP/1.1 + HTTP/2 rehearsal on the exact published tree proving target-only termination, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy lifecycle action, and exactly-once final accounting. A focused exact-head Worker run was attempted this orchestration cycle, but the long race/build execution timed out and the Worker subsequently disconnected; it is **not** credited as PASS.
+`TrPaqet` remains assigned to that rehearsal. It is connected but current SentinelX plan capacity returns `upgrade_required` while Production Primary owns the single active-host slot. Production must not be used as the rehearsal lane.
 
-Only after that live proof may Task13 be merged. Production deployment additionally requires fresh encrypted backup + rollback snapshot and complete postflight.
+Only after live proof may Task13 be merged. Deployment additionally requires a fresh encrypted Production backup + rollback snapshot, exact R1 artifact provenance and complete postflight.
 
 ## Task16 — bounded IP/session history / schema21
 
-Issue #79 is the current execution ledger. On `pv-worker-main`, `tests/db/ip_session_history_contract_test.sh` was authored before implementation and produced the expected RED result `schema21 migration pair missing`. Required acceptance remains exact 30-day retention, hard server-side pagination/read limits, tenant RLS, trusted peer/accounting facts only, final-accounting synchronization, maintenance-only purge, coherent schema21 migration/checksums, PostgreSQL18 proof and rollback safety.
+Issue #79 and draft PR #81 are the active execution ledger. Genuine TDD RED evidence exists: `tests/db/ip_session_history_contract_test.sh` was authored before implementation and failed because the schema21 migration pair was absent.
 
-The Worker currently lacks GitHub write credentials, but connector-side GitHub writes remain available for validated publication.
+Fresh review found a coverage gap: `.github/workflows/ci.yml` syntax-checks all `tests/db/*.sh`, but its PostgreSQL18 database job explicitly invokes selected tests and does **not** execute `tests/db/ip_session_history_contract_test.sh`. Therefore PR #81's current generic green CI is not Task16 GREEN evidence.
+
+Schema21 must derive history only from trusted schema17 peer/accounting lineage (`direct_naive_accounting_session_peers`), preserve forced tenant RLS and exact accounting semantics, enforce an exact 30-day retention boundary and hard server-side maximum 500 reads, provide maintenance-safe purge behavior, update migration checksums, and prove migration + rollback on PostgreSQL 18. The new integration test must be explicitly wired into CI before promotion.
 
 ## Persistent worker reports
 
-`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain historical S04-era ledgers last updated 2026-08-27 and contain no newer Task13/Task16 completion. They do not override this file.
+`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain historical S04-era ledgers last updated 2026-08-27 and contain no newer Task13/Task16 completion. They do not override the canonical files.
 
 ## Worker / orchestration capacity
 
-Fresh SentinelX state currently shows two connected hosts: `pv-primary` and `TrPaqet`; `pv-worker-main` disconnected while an exact-head Task13 background run was executing.
-
-- `pv-primary`: executable, **Production-only**.
-- `TrPaqet`: connected; assignment = Task13 final HTTP1/HTTP2 rehearsal if it becomes executable under the plan limit.
-- `pv-worker-main`: assignment on reconnect = Task16 schema21 TDD/PG18 lane.
+- `pv-primary`: currently executable; **Production-only**.
+- `TrPaqet`: connected; assignment = Task13 final HTTP1/HTTP2 rehearsal when executable.
+- `pv-worker-main`: assignment when executable = Task16 schema21 TDD/PostgreSQL18 lane.
 
 Do not move development/testing onto Production.
 
 ## Immediate execution order
 
-1. Keep #64 draft; exact-head CI is already fully green.
-2. On the first executable development Worker, run the fresh real HTTP1+HTTP2 exact-kill rehearsal with exactly-once final accounting.
-3. If and only if that proof passes, merge Task13, build the final R1 artifact, take fresh encrypted Production backup + rollback snapshot, deploy and postflight.
-4. In parallel, continue Task16 from the established RED test through schema21 migration, bounded query/purge semantics, PG18 migration/rollback tests and publication through GitHub connector if direct Worker push remains unavailable.
+1. Keep #64 draft despite all exact-head GitHub gates being green.
+2. Run the final exact-head Task13 live rehearsal on the first executable development Worker.
+3. If and only if that proof passes, merge Task13, build exact R1 artifact, take fresh encrypted Production backup + rollback snapshot, deploy and postflight.
+4. In parallel, continue Task16 with a real schema21 PostgreSQL18 integration test wired into CI, then implement only enough migration/query/purge behavior to turn that test green without weakening trusted accounting/session semantics.
