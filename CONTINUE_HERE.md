@@ -6,14 +6,16 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `6e7e14aabe22719099443d80d65798bb53b2769c`.
-- Draft Task13 PR #64 exact head: `c79f5385b7a751c30282948423b8c34d1ba89deb`.
-- Task13 compare: 44 ahead / 0 behind; merge-base = exact current main.
-- Exact-head Task13 CI `33612706915`, Exact Accounting `33612706979`, and Pinned Forwardproxy `33612706951`: all **SUCCESS**.
+- `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
+- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`.
+- Task13 exact-head CI `33623363327`, Exact Accounting `33623363299`, Pinned Forwardproxy `33623363389`: all **SUCCESS**.
+- Fresh exact-head worker checks also PASS: diff-check, focused race tests for sessionkill/sessioncontrol/httpapi, forwardproxy session-control and permission contracts.
+- Task13 is **not DONE**: fresh real HTTP/1.1 + HTTP/2 live proof remains mandatory.
 - Production remains on Task15/schema20; no Task13/schema21 code is deployed.
-- Fresh Production probe: all four services active; `/api/v1/health/ready` = `db=ok/schema=ok/ready=true/status=ready`; `/api/v1/health/live` = `service=pvnaive-api/status=ok`; 45-minute critical journal scan = zero matches.
+- No fresh Production command-level health claim this cycle because the one executable SentinelX slot is currently on development worker `TrPaqet`; `pv-primary` is connected but inactive.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
-- Task16 draft PR #81 / issue #79 has genuine pre-implementation RED evidence.
+- Task16 draft PR #81 current head: `b96c65903e5fc314284ea777ceea236913a03842`.
+- Task16 has real pre-implementation RED and prior dedicated PostgreSQL18 GREEN evidence. Generic CI on earlier head `a366c359...` failed only the database job after exposing stale generic newest-schema=20 fixtures; four such fixtures have now been advanced to 21 without changing intentionally schema20-pinned Task15 fixtures.
 
 ## Task accounting
 
@@ -21,22 +23,22 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
-- Task13 exact-session kill: **IN PROGRESS / draft #64 / all exact-head GitHub gates green / final real live proof pending**.
-- Task16 bounded session/IP history: **IN PROGRESS / draft #81 / issue #79 / schema21 RED established**.
+- Task13 exact-session kill: **IN PROGRESS / draft #64 / exact-head GitHub + focused gates green / final real live proof pending**.
+- Task16 bounded session/IP history: **IN PROGRESS / draft #81 / issue #79 / schema21 implementation and final exact-head gates pending**.
 
 ## Task13 next sequence
 
 1. Keep #64 draft.
-2. On an executable development Worker, run a fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal on `c79f5385...` proving target-only kill, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload and exactly-once final accounting.
-3. `TrPaqet` owns this rehearsal but currently returns `upgrade_required` under the one-active-host SentinelX plan while `pv-primary` remains Production-only.
+2. On `TrPaqet`, run a fresh real HTTP/1.1 + HTTP/2 rehearsal on exact `3fc14825...` proving target-only kill, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload and exactly-once final accounting.
+3. Historical protocol rehearsal evidence does not substitute for this exact-head proof.
 4. Merge only after the live rehearsal is green.
-5. Deploy only after fresh encrypted Production backup + rollback state, exact artifact verification and postflight checks.
+5. Before deployment, activate `pv-primary`, perform a fresh read-only audit, create encrypted Production backup + rollback snapshot, verify exact R1 artifact, then deploy and postflight.
 
-## Task16
+## Task16 next sequence
 
-Continue from issue #79 and draft PR #81. Important correction: current CI syntax-checks `tests/db/ip_session_history_contract_test.sh` but does not invoke it in the PostgreSQL18 database test list, so generic PR #81 green CI is not Task16 GREEN proof.
+Continue from issue #79 and draft PR #81. Current head `b96c659...` contains schema21 implementation plus generic fixture corrections for auth refresh, DB health, backup/restore and periodic reset executor. Do not bulk-change intentionally frozen schema20 fixtures.
 
-Next slice: wire a real schema21 PG18 integration test into CI; implement the minimal up/down pair preserving exact 30-day retention, maximum 500 server-side reads, tenant forced-RLS, trusted `direct_naive_accounting_session_peers` lineage, final-accounting-safe purge, coherent `SHA256SUMS`, and disposable rollback. Do not accept client-provided IP/session facts.
+Final promotion requires exact-head normal CI, Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy all green. Keep exact 30-day retention, hard server-side maximum 500 reads, FORCE RLS, trusted `direct_naive_accounting_session_peers` lineage, final/accounting-complete materialization, explicit confirmation-gated maintenance purge, coherent checksums and rollback safety.
 
 ## Persistent reports
 
@@ -44,8 +46,8 @@ Next slice: wire a real schema21 PG18 integration test into CI; implement the mi
 
 ## Worker access
 
-- `pv-primary`: executable, **Production-only**.
-- `TrPaqet`: connected; Task13 final rehearsal assignment; currently plan-blocked.
-- `pv-worker-main`: Task16 schema21 TDD/PG18 assignment when executable.
+- `TrPaqet`: currently executable; Task13 final rehearsal owner.
+- `pv-worker-main`: connected but inactive under one-active-host limit; Task16 CI/PG18 owner when executable.
+- `pv-primary`: connected but inactive; **Production-only**, activate for fresh audit/deploy lane.
 
-Never use Production as a development database or test lane.
+Never use Production as a development database or rehearsal host.
