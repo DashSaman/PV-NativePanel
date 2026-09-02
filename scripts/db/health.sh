@@ -21,8 +21,6 @@ expected_db_user="${PVNAIVE_EXPECTED_DB_USER:-pvnaive_app}"
 
 pg_isready --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --dbname "${PVNAIVE_DB_NAME}" --username "${PVNAIVE_DB_USER}" --timeout "${PVNAIVE_DB_CONNECT_TIMEOUT}" >/dev/null
 
-# inet_server_addr()/inet_client_addr() return PostgreSQL inet values. Use host()
-# so the health contract compares canonical address text without /32 or /128.
 identity_row="$(pvnaive_psql_at --command "SELECT current_user || '|' || session_user || '|' || current_setting('row_security') || '|' || COALESCE(host(inet_server_addr()), '') || '|' || COALESCE(inet_server_port()::text, '') || '|' || COALESCE(host(inet_client_addr()), '')")"
 IFS='|' read -r database_user session_user row_security_setting server_address server_port client_address <<< "${identity_row}"
 [[ "${database_user}" == "${expected_db_user}" ]] || pvnaive_die "database user mismatch: current_user=${database_user}, expected=${expected_db_user}"
@@ -34,12 +32,8 @@ IFS='|' read -r database_user session_user row_security_setting server_address s
 
 key_table_exists="$(pvnaive_psql_at --command "SELECT to_regclass('pvnaive.security_context_keys') IS NOT NULL")"
 [[ "${key_table_exists}" == "t" ]] || pvnaive_die "RLS signing-key table is missing"
-
 can_read_context_key="$(pvnaive_psql_at --command "SELECT has_table_privilege(current_user, 'pvnaive.security_context_keys', 'SELECT')")"
 [[ "${can_read_context_key}" == "f" ]] || pvnaive_die "application role has SELECT privilege on the RLS signing-key table (current_user=${database_user})"
-
-# Prove the effective boundary with a real SELECT permission check. LIMIT 0 keeps
-# the signing key out of output while PostgreSQL still performs access control.
 if pvnaive_psql_at --command 'SELECT signing_key FROM pvnaive.security_context_keys LIMIT 0' >/dev/null 2>&1; then
   pvnaive_die "application role can directly SELECT the RLS signing key"
 fi
@@ -100,7 +94,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 17)); then
+if ((expected_version >= 21)); then
+  [[ "${rls_tables}" == "43" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/43"
+elif ((expected_version >= 17)); then
   [[ "${rls_tables}" == "42" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/42"
 elif ((expected_version >= 16)); then
   [[ "${rls_tables}" == "41" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/41"
