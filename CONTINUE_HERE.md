@@ -6,16 +6,14 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `284a2e3fbc807e9a0e82962975fd354ee9f703c7`.
-- Exact-main push CI `33593800133`: **SUCCESS**.
-- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact published head `0496a554c15fcf0ea7e63c706a0fa94d58cb8a38`.
-- Task13 is reconciled onto exact current main without force-push/history rewrite via mechanical PR #76; fresh comparison reports **42 ahead / 0 behind** with merge base = exact current main.
-- New CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs are executing for exact head `0496a554...`; do not reuse old-head greens.
-- Task13 validated scope includes exact tuple/live CONNECT registration, Unix control lifecycle, dedicated `pvnaive-session-control` socket permissions, trusted-tuple DELETE API, per-session Web/UI kill with no credential mutation, R1 patched-Caddy packaging/rollback, and PostgreSQL18 auth/tenant proof.
-- Old draft #4 remains outside the current roadmap.
-- No Task13 runtime/schema change has been deployed; Production remains on Task15/schema20.
-- Fresh Production read-only probe in this run: all four PVNaive/Caddy services active; readiness `db=ok`, `schema=ok`, `ready=true`; liveness `status=ok`.
+- `main`: `3f775195439163a20935caff1bb4c2b8c3225c84`.
+- Exact-main push CI `33602254294`: **SUCCESS**.
+- Draft Task13 PR #64 exact head: `e47fb53ca2885a0aee7ffc2fc8fc7a0b7d461ac7` after mechanical PR #78 reconciled current main without force-push/history rewrite.
+- Exact-head Task13 CI `33602350141`, Exact Accounting `33602350122`, and Pinned Forwardproxy `33602350340`: all **SUCCESS**.
+- Production remains on Task15/schema20; no Task13 runtime/schema change is deployed.
+- Fresh Production probe at `2026-09-02T08:18:36Z`: all four services active, readiness `db=ok/schema=ok/ready=true`, liveness `status=ok`; 45-minute journal scan found no panic/fatal/schema-mismatch/error matches.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
+- Task16 issue #79 has genuine TDD RED evidence: `tests/db/ip_session_history_contract_test.sh` fails because schema21 migration pair is absent, before implementation.
 
 ## Task accounting
 
@@ -23,32 +21,31 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
-- Task13 exact-session kill: **IN PROGRESS / draft PR #64 / current-main reconciled / final live proof pending**.
-- Task16 bounded session/IP history: **IN PROGRESS / schema21 / design gate pending**.
+- Task13 exact-session kill: **IN PROGRESS / draft #64 / exact-head CI green / final real live proof pending**.
+- Task16 bounded session/IP history: **IN PROGRESS / issue #79 / schema21 RED established**.
 
 ## Task13 next sequence
 
-1. Keep #64 draft until all exact-head GitHub gates on `0496a554...` are green.
-2. On the first executable development Worker, run the fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving target-only kill, sibling survival, forged tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting.
-3. Merge only when both exact-head gates and the live rehearsal are green.
-4. Deploy only with fresh Production access, encrypted backup, rollback state and postflight verification.
+1. Keep #64 draft despite all exact-head CI being green.
+2. On an executable development Worker, run a fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal on `e47fb53c...` proving target-only kill, sibling survival, forged tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload and exactly-once final accounting.
+3. The focused exact-head Worker run attempted this cycle timed out during race/build and the Worker then disconnected; do not count it as PASS.
+4. Merge only after the live rehearsal is green.
+5. Deploy only after fresh encrypted Production backup + rollback state, exact artifact verification and postflight checks.
 
 ## Task16
 
-No fresh current-main Task16 delta is credited. First step remains RED tests proving callers cannot request >30 days or oversized pagination, followed by server-side enforcement and schema21/RLS/PG18/rollback proof.
+Continue from issue #79 and the existing RED test. Implement the minimal schema21 pair only after preserving exact 30-day retention, hard server-side pagination bounds, tenant RLS, trusted peer/accounting lineage, finalization synchronization and maintenance-only purge. Require PostgreSQL18 migration/rollback proof before promotion. If direct Worker push remains unavailable, publish only validated files through the GitHub connector.
 
 ## Persistent reports
 
-`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are still S04-era (2026-08-27) and contain no current Task13/Task16 completion. Treat them as historical evidence only.
+`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain S04-era (2026-08-27) and contain no current Task13/Task16 completion.
 
 ## Worker access
 
-Three SentinelX hosts are connected: `TrPaqet`, `pv-worker-main`, `pv-primary`; Free plan permits one active host.
+Fresh SentinelX state currently shows `pv-primary` and `TrPaqet` connected; `pv-worker-main` disconnected during the exact-head Task13 long run.
 
-- `pv-primary`: active/executable, **Production-only**.
-- `TrPaqet`: connected/healthy, fresh execution `upgrade_required`; assignment = Task13 final HTTP1/HTTP2 rehearsal.
-- `pv-worker-main`: connected/healthy but inactive under the same one-host plan limit; assignment = Task16 RED retention/pagination lane.
+- `pv-primary`: executable, **Production-only**.
+- `TrPaqet`: assignment = Task13 final HTTP1/HTTP2 rehearsal if executable.
+- `pv-worker-main`: on reconnect, assignment = Task16 schema21 TDD/PG18 lane.
 
-## Production deployment rules
-
-Before every Production mutation: fresh encrypted DB/config backup + rollback snapshot, verify artifacts, apply only intended migration/release, verify readiness + Runtime/Telemetry/Caddy/customer/accounting invariants + exact release provenance, and roll back on any failed invariant. Never use Production as a test database.
+Never use Production as a development database or test lane.
