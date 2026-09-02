@@ -77,9 +77,6 @@ BEGIN
     IF p_user_id IS NULL OR p_before IS NULL OR p_limit < 1 OR p_limit > 500 THEN
         RAISE EXCEPTION 'invalid session history query' USING ERRCODE = '22023';
     END IF;
-    IF NOT pvnaive.has_valid_context() THEN
-        RAISE EXCEPTION 'valid request context required' USING ERRCODE = '28000';
-    END IF;
 
     RETURN QUERY
     SELECT h.runtime_credential_id, h.node_id, h.boot_id, h.session_id,
