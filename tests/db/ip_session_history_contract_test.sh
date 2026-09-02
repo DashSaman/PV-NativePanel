@@ -4,9 +4,10 @@ umask 077
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 up="$root/db/migrations/0021_ip_session_history.up.sql"
 down="$root/db/migrations/0021_ip_session_history.down.sql"
-[[ -f "$up" && -f "$down" ]] || { echo 'RED: schema21 migration pair missing' >&2; exit 1; }
+purge="$root/scripts/db/purge_session_history.sh"
+[[ -f "$up" && -f "$down" && -f "$purge" ]] || { echo 'RED: schema21 migration/purge set missing' >&2; exit 1; }
 grep -Fqx -- '-- pvnaive:migration-version 0021' "$up" || { echo 'RED: schema21 version marker missing' >&2; exit 1; }
-grep -Eq "interval[[:space:]]+'30 days'|make_interval\(days[[:space:]]*=>[[:space:]]*30\)" "$up" || { echo 'RED: exact 30-day retention boundary missing' >&2; exit 1; }
+grep -Eq "interval[[:space:]]+'30 days'|make_interval\(days[[:space:]]*=>[[:space:]]*30\)" "$up" || { echo 'RED: exact 30-day read/materialization boundary missing' >&2; exit 1; }
 grep -Eq 'p_limit[[:space:]]+integer' "$up" || { echo 'RED: server-side pagination limit parameter missing' >&2; exit 1; }
 grep -Eq 'p_limit[[:space:]]*<[^\n]*1|p_limit[[:space:]]*>[^\n]*500' "$up" || { echo 'RED: hard pagination bounds missing' >&2; exit 1; }
 grep -Eq 'LIMIT[[:space:]]+p_limit' "$up" || { echo 'RED: query is not server-bounded by p_limit' >&2; exit 1; }
@@ -14,6 +15,8 @@ grep -q 'direct_naive_accounting_session_peers' "$up" || { echo 'RED: trusted pe
 grep -Eq 's\.final[[:space:]]*=[[:space:]]*true|s\.final' "$up" || { echo 'RED: finalized accounting gate missing' >&2; exit 1; }
 grep -Eq 's\.accounting_complete[[:space:]]*=[[:space:]]*true|s\.accounting_complete' "$up" || { echo 'RED: accounting-complete gate missing' >&2; exit 1; }
 grep -q 'FORCE ROW LEVEL SECURITY' "$up" || { echo 'RED: forced tenant RLS history boundary missing' >&2; exit 1; }
+grep -Fq 'PVNAIVE_SESSION_HISTORY_PURGE_CONFIRM=PURGE_OLDER_THAN_30_DAYS' "$purge" || { echo 'RED: destructive purge confirmation gate missing' >&2; exit 1; }
+grep -Eq "final_at[[:space:]]*<[^\n]*interval[[:space:]]+'30 days'" "$purge" || { echo 'RED: purge must delete only rows strictly older than 30 days' >&2; exit 1; }
 
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
@@ -45,15 +48,20 @@ PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "$root/scripts/db/migrate.sh" >/dev/nul
 [[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 21 ]] || { echo 'RED: schema21 did not migrate on PostgreSQL18' >&2; exit 1; }
 [[ "$(psql_admin -d "$test_db" -Atc "select relrowsecurity::text||'|'||relforcerowsecurity::text from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='pvnaive' and c.relname='direct_naive_session_history'")" =~ ^(t|true)\|(t|true)$ ]] || { echo 'RED: history table is not ENABLE+FORCE RLS' >&2; exit 1; }
 [[ "$(psql_admin -d "$test_db" -Atc "select has_function_privilege('pvnaive_app','pvnaive.list_customer_session_history(uuid,timestamptz,integer)','EXECUTE')")" =~ ^(t|true)$ ]] || { echo 'RED: bounded history read is not available to app role' >&2; exit 1; }
-[[ "$(psql_admin -d "$test_db" -Atc "select has_function_privilege('pvnaive_app','pvnaive.sync_direct_naive_session_history(timestamptz)','EXECUTE')")" =~ ^(f|false)$ ]] || { echo 'RED: maintenance sync/purge leaked to app role' >&2; exit 1; }
+[[ "$(psql_admin -d "$test_db" -Atc "select has_function_privilege('pvnaive_app','pvnaive.sync_direct_naive_session_history(timestamptz)','EXECUTE')")" =~ ^(f|false)$ ]] || { echo 'RED: maintenance materialization leaked to app role' >&2; exit 1; }
 fn="$(psql_admin -d "$test_db" -Atc "select pg_get_functiondef('pvnaive.sync_direct_naive_session_history(timestamptz)'::regprocedure)")"
-[[ "$fn" == *"direct_naive_accounting_session_peers"* && "$fn" == *"s.final"* && "$fn" == *"s.accounting_complete"* && "$fn" == *"30 days"* ]] || { echo 'RED: sync does not derive only from trusted finalized accounting facts with exact retention' >&2; exit 1; }
+[[ "$fn" == *"direct_naive_accounting_session_peers"* && "$fn" == *"s.final"* && "$fn" == *"s.accounting_complete"* && "$fn" == *"30 days"* ]] || { echo 'RED: materialization does not derive only from trusted finalized accounting facts with exact retention' >&2; exit 1; }
 set +e
 bad_hi="$(PGPASSWORD=pvnaive-task16-ci psql --no-psqlrc -h "$PVNAIVE_DB_HOST" -p "$PVNAIVE_DB_PORT" -U pvnaive_app -d "$test_db" -v ON_ERROR_STOP=1 -c "select * from pvnaive.list_customer_session_history('00000000-0000-0000-0000-000000000001',clock_timestamp(),501)" 2>&1)"; rc_hi=$?
 bad_lo="$(PGPASSWORD=pvnaive-task16-ci psql --no-psqlrc -h "$PVNAIVE_DB_HOST" -p "$PVNAIVE_DB_PORT" -U pvnaive_app -d "$test_db" -v ON_ERROR_STOP=1 -c "select * from pvnaive.list_customer_session_history('00000000-0000-0000-0000-000000000001',clock_timestamp(),0)" 2>&1)"; rc_lo=$?
+unconfirmed="$(env -u PVNAIVE_SESSION_HISTORY_PURGE_CONFIRM bash "$purge" 2>&1)"; rc_unconfirmed=$?
 set -e
 [[ $rc_hi -ne 0 && "$bad_hi" == *"invalid session history query"* ]] || { echo 'RED: oversized pagination was not rejected server-side' >&2; exit 1; }
 [[ $rc_lo -ne 0 && "$bad_lo" == *"invalid session history query"* ]] || { echo 'RED: zero pagination was not rejected server-side' >&2; exit 1; }
+[[ $rc_unconfirmed -ne 0 && "$unconfirmed" == *"requires PVNAIVE_SESSION_HISTORY_PURGE_CONFIRM"* ]] || { echo 'RED: destructive purge did not fail closed without explicit confirmation' >&2; exit 1; }
+PVNAIVE_SESSION_HISTORY_PURGE_CONFIRM=PURGE_OLDER_THAN_30_DAYS \
+PVNAIVE_SESSION_HISTORY_OBSERVED_AT=2026-09-02T00:00:00Z \
+bash "$purge" | grep -q 'PVNAIVE_SESSION_HISTORY_PURGE_RESULT=PASSED' || { echo 'RED: confirmed maintenance purge failed on PostgreSQL18' >&2; exit 1; }
 psql_admin -d "$test_db" -f "$down" >/dev/null
 [[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 20 ]] || { echo 'RED: schema21 rollback did not restore version 20' >&2; exit 1; }
 [[ "$(psql_admin -d "$test_db" -Atc "select to_regclass('pvnaive.direct_naive_session_history') is null")" =~ ^(t|true)$ ]] || { echo 'RED: schema21 rollback left history table behind' >&2; exit 1; }
