@@ -6,11 +6,11 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `c876b20343c6ae3aae27d096e9034955e88195c9`.
-- Exact-main push CI `33578213894`: **SUCCESS**.
-- Open roadmap PR: draft #64, exact published head `64acfd2593a19cf2048e45f8a63d9a1173ad8240`.
-- Task13 was reconciled again onto current main using a non-force two-parent merge. Fresh compare reports #64 **40 ahead / 0 behind**, merge base = exact current main; validated Task13 history was not rewritten.
-- New exact-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy runs have started for `64acfd2...`; old-head green workflows remain historical evidence only.
+- Current `main`: `61a46f4cb124cb5d4a180e9c564f51634cc8bba3`.
+- Exact-main push CI `33585915354`: **SUCCESS**.
+- Open roadmap PR: draft #64, exact published head `664b690239f723dc534164eceddfcb1dc9b3374f`.
+- Task13 was reconciled again onto current main using a non-force two-parent merge. Fresh compare reports #64 **41 ahead / 0 behind**, merge base = exact current main; validated Task13 history was not rewritten.
+- New exact-head CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy runs have started for `664b6902...`; old-head green workflows remain historical evidence only.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
@@ -21,14 +21,13 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Production state
 
-Fresh read-only Production evidence on `pv-primary` at `2026-09-02T02:11:55Z`:
+Fresh read-only Production evidence on `pv-primary` in this run:
 
 - `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, and `pvnaive-telemetry-agent` are all **active**;
 - `GET /api/v1/health/ready` returns `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
-- `GET /api/v1/health/live` returns `service=pvnaive-api`, `status=ok`;
-- the previous 45-minute journal window produced no panic/fatal/schema-mismatch matches.
+- `GET /api/v1/health/live` returns `service=pvnaive-api`, `status=ok`.
 
-No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
+No fresh journal-health claim is made in this run. No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
 
 ## Task13
 
@@ -36,7 +35,7 @@ PR #64 validated scope includes the exact tuple registry/live CONNECT boundary, 
 
 Remaining merge gates:
 
-1. all three new exact-head GitHub workflows on `64acfd2...` must pass;
+1. all three new exact-head GitHub workflows on `664b6902...` must pass;
 2. fresh real HTTP1/HTTP2 rehearsal must prove target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
 
 Only then may #64 leave draft and merge. Production deployment additionally requires fresh encrypted backup + rollback snapshot and complete postflight.
