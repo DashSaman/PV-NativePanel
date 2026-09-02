@@ -11,11 +11,11 @@ PVNaive remains standalone-first. Customer/service state, Runtime credentials, s
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `61a46f4cb124cb5d4a180e9c564f51634cc8bba3` (PR #74 canonical reconciliation).
-- Exact-main push CI run `33585915354`: **SUCCESS**.
-- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact published head `664b690239f723dc534164eceddfcb1dc9b3374f`.
-- Task13 has been reconciled onto exact current main without force-push/history rewrite. Fresh compare: **41 commits ahead / 0 behind**, merge base = exact current main `61a46f4c...`.
-- Fresh CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs have started for exact head `664b6902...`; old-head green workflows remain historical evidence only and must not be reused as merge authorization.
+- Current `main`: `284a2e3fbc807e9a0e82962975fd354ee9f703c7` (PR #75 canonical reconciliation).
+- Exact-main push CI run `33593800133`: **SUCCESS**.
+- Current roadmap PR: **draft PR #64**, branch `lead/task13-reconstruct-62573fee`, exact published head `0496a554c15fcf0ea7e63c706a0fa94d58cb8a38`.
+- Mechanical PR #76 merged exact current `main` into Task13 without force-push/history rewrite. Fresh compare: **42 commits ahead / 0 behind**, merge base = exact current main `284a2e3f...`.
+- Fresh CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs are executing for exact head `0496a554...`; old-head green workflows remain historical evidence only and must not be reused as merge authorization.
 - Task13 exact live-session kill: **IN PROGRESS / draft PR #64 / final live proof pending**.
 - Task12 active-session management: **DONE / Production**, schema17.
 - Task14 concurrent-session limit: **DONE / Production**, schema19.
@@ -38,7 +38,7 @@ Fresh read-only observation on `pv-primary` during this orchestration run:
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: `{db:"ok", ready:true, schema:"ok", status:"ready"}`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: `{service:"pvnaive-api", status:"ok"}`.
 
-No fresh journal-health claim is made in this run. No Production mutation, deployment, migration, restart, reload, DB write or credential change was performed.
+No Production mutation, deployment, migration, restart, reload, DB write or credential change was performed.
 
 ## Task13 — exact live-session kill
 
@@ -46,7 +46,7 @@ Draft PR #64 contains the validated Task13 implementation on a branch whose merg
 
 Two gates remain before merge:
 
-1. **Fresh exact-head gates:** CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy must pass on exact head `664b6902...`.
+1. **Fresh exact-head gates:** CI + WS1 Exact Accounting + WS1 Pinned Forwardproxy must pass on exact head `0496a554...`.
 2. **Final live protocol/accounting proof:** fresh real HTTP/1.1 + HTTP/2 rehearsal must prove target-only termination, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no Caddy lifecycle action caused by kill, and exactly-once final accounting.
 
 Only after both gates pass may Task13 be merged. Production deployment additionally requires a fresh encrypted backup + rollback snapshot and postflight verification.
@@ -65,14 +65,14 @@ Fresh SentinelX listing shows **three connected hosts**: `TrPaqet`, `pv-worker-m
 
 - Active/executable now: `pv-primary`, Production-only.
 - `TrPaqet`: connected/healthy but fresh execution returns `upgrade_required`; assignment = Task13 final HTTP1/HTTP2 rehearsal.
-- `pv-worker-main`: connected/healthy but fresh execution returns `upgrade_required`; assignment = Task16 RED retention/pagination lane.
+- `pv-worker-main`: connected/healthy but inactive under the same one-host plan limit; assignment = Task16 RED retention/pagination lane.
 - Do not use `pv-primary` as a development lane.
 
 Task13 final live rehearsal and Task16 development cannot execute until a development Worker becomes executable. Human action is required to disconnect/switch hosts or increase the SentinelX active-host limit.
 
 ## Immediate execution order
 
-1. Keep PR #64 draft while exact-head gates for `664b6902...` run.
+1. Keep PR #64 draft while exact-head gates for `0496a554...` run.
 2. On the first executable development Worker, run the final real HTTP1+HTTP2 exact-kill rehearsal with exactly-once final accounting and no kill-triggered Caddy lifecycle action.
 3. Require all exact-head gates green; merge Task13 only after both CI and final live proof are green.
 4. Deploy only after fresh encrypted Production backup + rollback snapshot and postflight access are available.
