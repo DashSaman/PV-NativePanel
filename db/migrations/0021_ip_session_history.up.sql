@@ -96,7 +96,7 @@ $$;
 CREATE FUNCTION pvnaive.sync_direct_naive_session_history(
     p_observed_at timestamptz
 )
-RETURNS TABLE(inserted_count bigint, purged_count bigint)
+RETURNS bigint
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
@@ -104,10 +104,9 @@ SET search_path = pg_catalog, pvnaive
 AS $$
 DECLARE
     v_inserted bigint := 0;
-    v_purged bigint := 0;
 BEGIN
     IF p_observed_at IS NULL THEN
-        RAISE EXCEPTION 'invalid history maintenance timestamp' USING ERRCODE = '22023';
+        RAISE EXCEPTION 'invalid history materialization timestamp' USING ERRCODE = '22023';
     END IF;
 
     PERFORM pvnaive.direct_naive_accounting_enter_context();
@@ -139,13 +138,8 @@ BEGIN
     ON CONFLICT (runtime_credential_id, node_id, boot_id, session_id) DO NOTHING;
 
     GET DIAGNOSTICS v_inserted = ROW_COUNT;
-
-    DELETE FROM pvnaive.direct_naive_session_history AS h
-     WHERE h.final_at < p_observed_at - interval '30 days';
-    GET DIAGNOSTICS v_purged = ROW_COUNT;
-
     PERFORM pvnaive.direct_naive_accounting_leave_context();
-    RETURN QUERY SELECT v_inserted, v_purged;
+    RETURN v_inserted;
 END;
 $$;
 
@@ -159,4 +153,4 @@ COMMENT ON TABLE pvnaive.direct_naive_session_history IS
 COMMENT ON FUNCTION pvnaive.list_customer_session_history(uuid,timestamptz,integer) IS
     'Tenant-scoped bounded session history read. p_limit is mandatory and hard-capped at 500.';
 COMMENT ON FUNCTION pvnaive.sync_direct_naive_session_history(timestamptz) IS
-    'Maintenance-only materialization and purge boundary; keeps exactly the trailing 30 days and accepts only final accounting-complete sessions with trusted exact peer lineage.';
+    'Maintenance-only materialization from final accounting-complete sessions with trusted exact peer lineage; destructive retention purge is an explicit separate operation.';
