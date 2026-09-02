@@ -6,33 +6,33 @@ Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, newest `ops/
 
 ## Repository / release truth
 
-- Current `main`: `898536d8e44585fc696895bc74831b52416fba93`.
-- Exact-main push CI `33560195019`: **SUCCESS**.
+- Current `main`: `274979910e1845b3918105a7043f982c6a0a6e78`.
+- Exact-main push CI `33570049441`: **SUCCESS**.
 - Open roadmap PR: draft #64, exact published head `5bc42d8dedd682eaf560a99777b21b9e82062c79`.
-- Exact-head workflows on `5bc42d8...`: CI `33557107036` **SUCCESS**, WS1 Exact Accounting `33557107038` **SUCCESS**, WS1 Pinned Forwardproxy `33557107045` **SUCCESS**.
-- PR #64 is now diverged from current main: 38 commits ahead / 25 behind, merge base `62573fee8b88e4f951224da10e6a26d5b5838a54`, and GitHub currently reports `mergeable=false`. Its green old-base head is evidence, not a merge authorization.
+- Exact-head workflows on `5bc42d8...` are historical green evidence: CI `33557107036` **SUCCESS**, WS1 Exact Accounting `33557107038` **SUCCESS**, WS1 Pinned Forwardproxy `33557107045` **SUCCESS**.
+- PR #64 is diverged from current main: 38 commits ahead / 26 behind, merge base `62573fee8b88e4f951224da10e6a26d5b5838a54`, and GitHub reports `mergeable=false`. Its green old-base head is evidence, not merge authorization.
 - Production remains on Task15/schema20; no Task13 code has been deployed.
 - Task12: **DONE / Production**, schema17.
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 BUG-001/002/003: **DONE in main**.
-- Task13: **IN PROGRESS / PR #64 draft / current-main reconciliation required**.
+- Task13: **IN PROGRESS / PR #64 draft / current-main reconstruction required**.
 - Task16: **IN PROGRESS / schema21 design gate blocked until retention/pagination are server-bounded**.
 
 ## Production state
 
-Fresh read-only Production evidence on `pv-primary`:
+Fresh read-only Production evidence on `pv-primary` at `2026-09-02T00:13:29Z`:
 
 - `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, and `pvnaive-telemetry-agent` are all **active**;
 - `GET /api/v1/health/ready` returns `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET /api/v1/health/live` returns `service=pvnaive-api`, `status=ok`;
-- inspected recent journals produced no panic/fatal/schema-mismatch matches.
+- the previous 30-minute journal window produced no panic/fatal/schema-mismatch matches.
 
-The SentinelX account cannot read `/proc/<api-pid>/environ`, so fresh process-env schema provenance was not established. No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
+No Production mutation, restart, reload, migration, credential rotation, DB write or deployment occurred.
 
 ## Task13
 
-PR #64 validated scope includes:
+PR #64 validated historical scope includes:
 
 - exact full-tuple registry: runtime credential + node + boot + session;
 - sibling survival, forged tuple rejection, repeated-kill idempotence and unregister semantics;
@@ -45,11 +45,11 @@ PR #64 validated scope includes:
 - R1 packaging/install/rollback support for the exact reproducible pinned Task13 Caddy candidate and service drop-in;
 - PostgreSQL18 DB/auth rehearsal proving CSRF rejection, cross-tenant IDOR rejection with zero socket side effects, trusted full-tuple owned kill, and credential survival.
 
-The published exact head is green, but it is not based on current main and is now `mergeable=false`. Do not merge it as-is and do not force-push an unreviewed rewritten history.
+The published exact head is green, but it is not based on current main and is `mergeable=false`. Do not merge it as-is and do not force-push unreviewed rewritten history.
 
 Required Task13 sequence:
 
-1. On an executable development Worker, reconstruct/cherry-pick the validated Task13 delta onto exact current `main`, resolving any changed-main semantics explicitly.
+1. On an executable development Worker, reconstruct the validated Task13 delta onto exact current `main`, resolving changed-main semantics explicitly.
 2. Rerun focused race/full Go, Web, release contracts, pinned Caddy proof, PostgreSQL18 rehearsal, then exact-head CI + Exact Accounting + Pinned Forwardproxy.
 3. Run fresh real HTTP1/HTTP2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeated-request idempotency, credential survival, no kill-request-triggered Caddy restart/reload, and exactly-once normal final accounting.
 4. Merge only that current-main verified tree; then deploy only after fresh encrypted backup + rollback snapshot and complete Production postflight.
@@ -63,7 +63,7 @@ No fresh current-main Task16 completion is credited. First implementation step r
 Fresh host listing: three connected hosts, `TrPaqet`, `pv-worker-main`, and `pv-primary`; Free plan allows one active host.
 
 - `pv-primary`: currently active/executable; **Production-only**.
-- `TrPaqet`: connected/healthy but fresh execution returns `upgrade_required`; first assignment is Task13 current-main reconciliation + final live rehearsal.
+- `TrPaqet`: connected/healthy but fresh execution returns `upgrade_required`; first assignment is Task13 current-main reconstruction + final live rehearsal.
 - `pv-worker-main`: connected/healthy but fresh execution returns `upgrade_required`; first independent assignment is Task16 RED retention/pagination lane.
 
 Human action is required to resume development: switch/disconnect hosts as needed or increase the SentinelX active-host limit. Do not move development/testing onto Production.
@@ -82,7 +82,7 @@ Human action is required to resume development: switch/disconnect hosts as neede
 ## Exact next sequence
 
 1. Keep #64 draft while diverged/mergeable=false.
-2. Make `TrPaqet` or another development host executable; republish/reconcile Task13 from exact current main and rerun all gates.
+2. Make `TrPaqet` or another development host executable; republish/reconstruct Task13 from exact current main and rerun all gates.
 3. Complete the fresh HTTP1+HTTP2 exact-kill rehearsal with exactly-once final accounting and no kill-triggered Caddy lifecycle action.
 4. Merge/deploy only after current-main verification and fresh Production backup/rollback/postflight proof.
 5. Execute Task16 on `pv-worker-main` when an independent active slot exists.
