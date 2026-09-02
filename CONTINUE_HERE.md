@@ -6,16 +6,14 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `284a2e3fbc807e9a0e82962975fd354ee9f703c7`.
-- Exact-main push CI `33593800133`: **SUCCESS**.
-- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact published head `0496a554c15fcf0ea7e63c706a0fa94d58cb8a38`.
-- Task13 is reconciled onto exact current main without force-push/history rewrite via mechanical PR #76; fresh comparison reports **42 ahead / 0 behind** with merge base = exact current main.
-- New CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs are executing for exact head `0496a554...`; do not reuse old-head greens.
-- Task13 validated scope includes exact tuple/live CONNECT registration, Unix control lifecycle, dedicated `pvnaive-session-control` socket permissions, trusted-tuple DELETE API, per-session Web/UI kill with no credential mutation, R1 patched-Caddy packaging/rollback, and PostgreSQL18 auth/tenant proof.
-- Old draft #4 remains outside the current roadmap.
-- No Task13 runtime/schema change has been deployed; Production remains on Task15/schema20.
-- Fresh Production read-only probe in this run: all four PVNaive/Caddy services active; readiness `db=ok`, `schema=ok`, `ready=true`; liveness `status=ok`.
+- `main`: `6e7e14aabe22719099443d80d65798bb53b2769c`.
+- Draft Task13 PR #64 exact head: `c79f5385b7a751c30282948423b8c34d1ba89deb`.
+- Task13 compare: 44 ahead / 0 behind; merge-base = exact current main.
+- Exact-head Task13 CI `33612706915`, Exact Accounting `33612706979`, and Pinned Forwardproxy `33612706951`: all **SUCCESS**.
+- Production remains on Task15/schema20; no Task13/schema21 code is deployed.
+- Fresh Production probe: all four services active; `/api/v1/health/ready` = `db=ok/schema=ok/ready=true/status=ready`; `/api/v1/health/live` = `service=pvnaive-api/status=ok`; 45-minute critical journal scan = zero matches.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
+- Task16 draft PR #81 / issue #79 has genuine pre-implementation RED evidence.
 
 ## Task accounting
 
@@ -23,32 +21,31 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 - Task14: **DONE / Production**, schema19.
 - Task15: **DONE / Production**, schema20.
 - Task35 security P0: **DONE in main**.
-- Task13 exact-session kill: **IN PROGRESS / draft PR #64 / current-main reconciled / final live proof pending**.
-- Task16 bounded session/IP history: **IN PROGRESS / schema21 / design gate pending**.
+- Task13 exact-session kill: **IN PROGRESS / draft #64 / all exact-head GitHub gates green / final real live proof pending**.
+- Task16 bounded session/IP history: **IN PROGRESS / draft #81 / issue #79 / schema21 RED established**.
 
 ## Task13 next sequence
 
-1. Keep #64 draft until all exact-head GitHub gates on `0496a554...` are green.
-2. On the first executable development Worker, run the fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving target-only kill, sibling survival, forged tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting.
-3. Merge only when both exact-head gates and the live rehearsal are green.
-4. Deploy only with fresh Production access, encrypted backup, rollback state and postflight verification.
+1. Keep #64 draft.
+2. On an executable development Worker, run a fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal on `c79f5385...` proving target-only kill, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload and exactly-once final accounting.
+3. `TrPaqet` owns this rehearsal but currently returns `upgrade_required` under the one-active-host SentinelX plan while `pv-primary` remains Production-only.
+4. Merge only after the live rehearsal is green.
+5. Deploy only after fresh encrypted Production backup + rollback state, exact artifact verification and postflight checks.
 
 ## Task16
 
-No fresh current-main Task16 delta is credited. First step remains RED tests proving callers cannot request >30 days or oversized pagination, followed by server-side enforcement and schema21/RLS/PG18/rollback proof.
+Continue from issue #79 and draft PR #81. Important correction: current CI syntax-checks `tests/db/ip_session_history_contract_test.sh` but does not invoke it in the PostgreSQL18 database test list, so generic PR #81 green CI is not Task16 GREEN proof.
+
+Next slice: wire a real schema21 PG18 integration test into CI; implement the minimal up/down pair preserving exact 30-day retention, maximum 500 server-side reads, tenant forced-RLS, trusted `direct_naive_accounting_session_peers` lineage, final-accounting-safe purge, coherent `SHA256SUMS`, and disposable rollback. Do not accept client-provided IP/session facts.
 
 ## Persistent reports
 
-`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are still S04-era (2026-08-27) and contain no current Task13/Task16 completion. Treat them as historical evidence only.
+`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain S04-era (2026-08-27) and contain no current Task13/Task16 completion.
 
 ## Worker access
 
-Three SentinelX hosts are connected: `TrPaqet`, `pv-worker-main`, `pv-primary`; Free plan permits one active host.
+- `pv-primary`: executable, **Production-only**.
+- `TrPaqet`: connected; Task13 final rehearsal assignment; currently plan-blocked.
+- `pv-worker-main`: Task16 schema21 TDD/PG18 assignment when executable.
 
-- `pv-primary`: active/executable, **Production-only**.
-- `TrPaqet`: connected/healthy, fresh execution `upgrade_required`; assignment = Task13 final HTTP1/HTTP2 rehearsal.
-- `pv-worker-main`: connected/healthy but inactive under the same one-host plan limit; assignment = Task16 RED retention/pagination lane.
-
-## Production deployment rules
-
-Before every Production mutation: fresh encrypted DB/config backup + rollback snapshot, verify artifacts, apply only intended migration/release, verify readiness + Runtime/Telemetry/Caddy/customer/accounting invariants + exact release provenance, and roll back on any failed invariant. Never use Production as a test database.
+Never use Production as a development database or test lane.
