@@ -1,0 +1,20 @@
+name: Task16 Schema21 TDD
+
+on:
+  pull_request:
+    paths:
+      - 'db/migrations/0021_*'
+      - 'tests/db/ip_session_history_contract_test.sh'
+      - '.github/workflows/task16-schema21.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract-red-green:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run schema21 contract
+        run: bash tests/db/ip_session_history_contract_test.sh
