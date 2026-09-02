@@ -6,15 +6,15 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `274979910e1845b3918105a7043f982c6a0a6e78`.
-- Exact-main push CI `33570049441`: **SUCCESS**.
-- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact published head `6011c15e1194cad2bc3a79e33315353142b3f2fa`.
-- Task13 branch reconciliation is complete without force-push/history rewrite: relative to current main, #64 is now **39 ahead / 0 behind** and its merge base is exact current main.
-- New CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs are executing for exact head `6011c15e...`; do not reuse old-head greens.
+- `main`: `c876b20343c6ae3aae27d096e9034955e88195c9`.
+- Exact-main push CI `33578213894`: **SUCCESS**.
+- Current roadmap work: draft PR #64 (`lead/task13-reconstruct-62573fee`), exact published head `64acfd2593a19cf2048e45f8a63d9a1173ad8240`.
+- Task13 is reconciled onto exact current main without force-push/history rewrite; fresh comparison reports **40 ahead / 0 behind** with merge base = exact current main.
+- New CI / WS1 Exact Accounting / WS1 Pinned Forwardproxy runs are executing for exact head `64acfd2...`; do not reuse old-head greens.
 - Task13 validated scope includes exact tuple/live CONNECT registration, Unix control lifecycle, dedicated `pvnaive-session-control` socket permissions, trusted-tuple DELETE API, per-session Web/UI kill with no credential mutation, R1 patched-Caddy packaging/rollback, and PostgreSQL18 auth/tenant proof.
 - Old draft #4 remains outside the current roadmap.
 - No Task13 runtime/schema change has been deployed; Production remains on Task15/schema20.
-- Fresh Production read-only probe at `2026-09-02T00:13:29Z`: all four PVNaive/Caddy services active; readiness `db=ok`, `schema=ok`, `ready=true`; liveness `status=ok`; inspected previous 30-minute logs contain no panic/fatal/schema-mismatch match.
+- Fresh Production read-only probe at `2026-09-02T02:11:55Z`: all four PVNaive/Caddy services active; readiness `db=ok`, `schema=ok`, `ready=true`; liveness `status=ok`; inspected previous 45-minute logs contain no panic/fatal/schema-mismatch match.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
 
 ## Task accounting
@@ -28,7 +28,7 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Task13 next sequence
 
-1. Wait only for the new exact-head GitHub gates on `6011c15e...`; keep #64 draft.
+1. Keep #64 draft until all exact-head GitHub gates on `64acfd2...` are green.
 2. On the first executable development Worker, run the fresh real HTTP/1.1 + HTTP/2 exact-kill rehearsal proving target-only kill, sibling survival, forged tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting.
 3. Merge only when both exact-head gates and the live rehearsal are green.
 4. Deploy only with fresh Production access, encrypted backup, rollback state and postflight verification.
