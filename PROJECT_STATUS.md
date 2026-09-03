@@ -30,7 +30,8 @@ Fresh read-only observation on `pv-primary` at 2026-09-03 23:11 UTC:
 - `pvnaive-telemetry-agent.service`: active;
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: HTTP 200, `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: HTTP 200, `service=pvnaive-api`, `status=ok`;
-- local HTTPS probe to `https://127.0.0.1/api/v1/health/live`: TLS alert `internal error`, HTTP 000; external HTTPS health is not claimed.
+- direct local HTTPS probe to `https://127.0.0.1/...` fails because SNI is not the production hostname (TLS alert `internal error`, HTTP 000); this is not an external-health result;
+- SNI-correct local HTTPS probe using `--resolve namir.softarg.ir:443:127.0.0.1` returns HTTP 200 for `/api/v1/health/live` and HTTP 200 for `/`.
 
 The historical S04 startup blocker is not present in this fresh read-only observation. No Production mutation, deploy, restart, reload, migration, DB write or credential change was performed in this run.
 
