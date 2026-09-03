@@ -6,12 +6,13 @@ Start here after interruption. Historical worker/stage notes are evidence only. 
 
 ## Current verified state
 
-- `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
+- `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b` (documentation-only squash merge of PR #90).
 - Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head GitHub gates green; real HTTP/1.1 + HTTP/2 rehearsal pending.
 - Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; dedicated Task16/PG18, Exact Accounting and Pinned Forwardproxy green; generic CI database job fails at `RLS coverage check failed: 43/42`.
-- Main CI `33623286003` = SUCCESS.
+- Main post-merge CI for `a5d114c9...` has not yet been observed in this cycle.
 - Production remains on Task15/schema20; no Task13/schema21 code deployed.
 - Fresh Production read-only probe on `pv-primary`: ready/live HTTP 200 and all four PVNaive services active.
+- Journal critical-pattern scan was permission-limited; no cleanliness claim is made.
 - No Production mutation/restart/reload/migration/DB write/credential change occurred.
 
 ## Task accounting

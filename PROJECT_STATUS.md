@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
+- Current `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b` (documentation-only squash merge of PR #90).
 - Task13: draft PR #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub CI, Exact Accounting and Pinned Forwardproxy are green; final real HTTP/1.1 + HTTP/2 rehearsal remains the sole merge gate.
 - Task16: draft PR #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy are green; repository-wide CI fails only in database job at `RLS coverage check failed: 43/42`.
-- Main CI run `33623286003` is green.
+- Main post-merge CI for `a5d114c9...` has not yet been observed in this cycle; do not infer green from the pre-merge run.
 
 No task becomes DONE from a local candidate, historical report or partial branch alone.
 
@@ -27,6 +27,7 @@ Fresh read-only observation on `pv-primary`:
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: HTTP 200, `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: HTTP 200, `service=pvnaive-api`, `status=ok`;
 - systemd active: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`.
+- journal critical-pattern scan was permission-limited (`No journal files were opened due to insufficient permissions`), so no claim is made about journal cleanliness.
 
 No Production mutation, deploy, restart, reload, migration, DB write or credential change was performed.
 
