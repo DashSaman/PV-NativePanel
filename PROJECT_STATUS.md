@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-03 07:40 Asia/Tehran.
 
 This file is current repository + Production truth. Historical stage notes and worker reports are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
-- Task13: draft PR #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub CI, Exact Accounting and Pinned Forwardproxy are green; final real HTTP/1.1 + HTTP/2 rehearsal remains the sole merge gate.
-- Task16: draft PR #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy are green; repository-wide CI fails only in database job at `RLS coverage check failed: 43/42`.
-- Main CI run `33623286003` is green.
+- Current `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b`.
+- Task13: draft PR #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub CI, Exact Accounting and Pinned Forwardproxy are green; final real HTTP/1.1 + HTTP/2 rehearsal remains pending.
+- Task16: draft PR #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy are green; repository-wide CI fails only in database job. Latest recorded blocker is a schema21/latest-schema assertion mismatch; do not bulk-change schema20-specific Task15 fixtures.
+- No workflow runs are currently associated with the post-merge `main` commit `a5d114c9...`; do not infer post-merge CI from pre-merge runs.
 
 No task becomes DONE from a local candidate, historical report or partial branch alone.
 
@@ -22,11 +22,11 @@ No task becomes DONE from a local candidate, historical report or partial branch
 
 Production remains on Task15/schema20; no Task13 or schema21 code has been deployed.
 
-Fresh read-only observation on `pv-primary`:
+Fresh read-only observation on `pv-primary` at 2026-09-03 04:10:56Z:
 
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: HTTP 200, `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: HTTP 200, `service=pvnaive-api`, `status=ok`;
-- systemd active: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`.
+- Docker inventory was not available to the SentinelX execution user due to Docker socket permission denied, so no container-state claim is made from that probe.
 
 No Production mutation, deploy, restart, reload, migration, DB write or credential change was performed.
 
@@ -38,9 +38,9 @@ All exact-head GitHub gates are green on `3fc14825...`. The sole merge gate is a
 
 ## Task16 — bounded IP/session history / schema21
 
-Issue #79 and draft PR #81 are the active execution ledger. The dedicated PG18 Task16 workflow is green, but generic repository CI remains blocked by the RLS assertion that still expects 42 policies after schema21; the actual migration state exposes 43 covered relations. Do not bulk-change schema20-specific Task15 fixtures.
+Issue #79 and draft PR #81 are the active execution ledger. The dedicated PG18 Task16 workflow, Exact Accounting and Pinned Forwardproxy are green on `3c431033...`; generic repository CI is red in the database job. The latest CI evidence shows a latest-schema assertion mismatch; keep schema20-specific Task15 fixtures pinned to schema20 and patch only the schema21-aware generic expectation.
 
-The required next change is a narrowly-scoped schema21-aware health assertion plus a fresh repository-wide CI run. The `tests/db/ip_session_history_contract_test.sh` integration test must remain explicitly executed in CI.
+The required next change is a narrowly-scoped schema21-aware assertion fix plus a fresh repository-wide CI run. Keep `tests/db/ip_session_history_contract_test.sh` explicitly executed in CI.
 
 ## Persistent worker reports
 
@@ -56,5 +56,5 @@ The required next change is a narrowly-scoped schema21-aware health assertion pl
 
 1. Keep #64 and #81 draft.
 2. On the first executable development Worker, run the final exact-head Task13 live rehearsal.
-3. On the development lane, patch only the schema21-aware RLS expectation and rerun all Task16 gates.
+3. On the development lane, patch only the schema21-aware generic assertion and rerun all Task16 gates.
 4. If and only if Task13 live proof and Task16 full gates pass, perform fresh encrypted backup + rollback preparation and then consider promotion.
