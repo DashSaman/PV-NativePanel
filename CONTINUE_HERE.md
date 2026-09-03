@@ -1,18 +1,18 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 Start here after interruption. Historical worker/stage notes are evidence only. Always re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before mutation.
 
 ## Current verified state
 
-- `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
-- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head GitHub gates green; real HTTP/1.1 + HTTP/2 rehearsal pending.
-- Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; dedicated Task16/PG18, Exact Accounting and Pinned Forwardproxy green; generic CI database job fails at `RLS coverage check failed: 43/42`.
-- Main CI `33623286003` = SUCCESS.
+- `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b`.
+- No workflow run or status row is currently visible for this exact docs-only `main` commit.
+- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head GitHub gates and focused tests green; real HTTP/1.1 + HTTP/2 rehearsal pending.
+- Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; dedicated PG18/Exact Accounting/Pinned Forwardproxy green; generic repository CI still needs the narrow schema21-aware RLS expectation fix and rerun.
 - Production remains on Task15/schema20; no Task13/schema21 code deployed.
-- Fresh Production read-only probe on `pv-primary`: ready/live HTTP 200 and all four PVNaive services active.
-- No Production mutation/restart/reload/migration/DB write/credential change occurred.
+- Fresh `pv-primary` read-only probe: all four PVNaive services active; localhost readiness/liveness HTTP 200; local HTTPS probe fails with TLS alert `internal error` (HTTP 000), so external HTTPS health is not claimed.
+- The historical S04 startup blocker is not present in the fresh probe.
 
 ## Task accounting
 
