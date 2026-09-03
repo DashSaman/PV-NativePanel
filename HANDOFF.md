@@ -1,23 +1,25 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-03
+Last updated: 2026-09-03 15:41 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
+- Current `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b`.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`, GitHub gates green, real HTTP1/HTTP2 proof pending.
-- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; dedicated PG18, Exact Accounting and Pinned Forwardproxy green; generic CI database job fails at `RLS coverage check failed: 43/42`.
+- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; dedicated gates green; generic CI database job fails at `RLS coverage check failed: 43/42`.
 - Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
+- No post-merge workflow run is visible for the current `main` commit.
 
 ## Production state
 
 Fresh read-only evidence on `pv-primary`:
 
-- `/api/v1/health/ready` HTTP 200: `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
-- `/api/v1/health/live` HTTP 200: `service=pvnaive-api`, `status=ok`;
-- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`: active.
+- `http://127.0.0.1:8080/api/v1/health/ready` HTTP 200: `db=ok`, `schema=ok`, `ready=true`;
+- `http://127.0.0.1:8080/api/v1/health/live` HTTP 200: `service=pvnaive-api`, `status=ok`;
+- `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`: active;
+- direct local HTTPS probe returned TLS internal error / HTTP 000, so external HTTPS health is not claimed.
 
 No Production mutation, restart, reload, migration, DB write, credential rotation or deployment occurred.
 
@@ -33,8 +35,10 @@ No Production mutation, restart, reload, migration, DB write, credential rotatio
 
 ## Worker capacity / assignments
 
+All three SentinelX hosts are connected; current plan exposes one executable slot, used by `pv-primary` for read-only verification in this run.
+
 - `pv-primary`: executable; Production-only.
-- `TrPaqet`: connected but inactive; Task13 rehearsal when executable.
-- `pv-worker-main`: connected but inactive; Task16 CI fix and rerun when executable.
+- `TrPaqet`: connected; Task13 rehearsal when executable development capacity is available.
+- `pv-worker-main`: connected; Task16 CI fix and rerun when executable development capacity is available.
 
 No development/testing on Production. Keep truthful accounting/session semantics under retry, race, kill and disconnect.
