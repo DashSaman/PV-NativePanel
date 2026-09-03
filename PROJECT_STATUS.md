@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-03 08:43 Asia/Tehran
 
 This file is current repository + Production truth. Historical stage notes and worker reports are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
-- Task13: draft PR #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub CI, Exact Accounting and Pinned Forwardproxy are green; final real HTTP/1.1 + HTTP/2 rehearsal remains the sole merge gate.
-- Task16: draft PR #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy are green; repository-wide CI fails only in database job at `RLS coverage check failed: 43/42`.
-- Main CI run `33623286003` is green.
+- Current `main`: `a5d114c9cc74bcd0ef1ae9d27badbda3d493053b`.
+- Main post-merge workflow runs for this docs-only commit: **none observed**.
+- Task13: draft PR #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub gates are green, but a fresh real HTTP/1.1 + HTTP/2 rehearsal remains the sole merge gate.
+- Task16: draft PR #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; Task16 PG18, Exact Accounting and Pinned Forwardproxy are green; repository-wide CI remains blocked in the database job at `RLS coverage check failed: 43/42`.
 
 No task becomes DONE from a local candidate, historical report or partial branch alone.
 
@@ -22,39 +22,31 @@ No task becomes DONE from a local candidate, historical report or partial branch
 
 Production remains on Task15/schema20; no Task13 or schema21 code has been deployed.
 
-Fresh read-only observation on `pv-primary`:
+Fresh read-only observation on `pv-primary` at 2026-09-03 08:43 Asia/Tehran:
 
 - `GET http://127.0.0.1:8080/api/v1/health/ready`: HTTP 200, `db=ok`, `schema=ok`, `ready=true`, `status=ready`;
 - `GET http://127.0.0.1:8080/api/v1/health/live`: HTTP 200, `service=pvnaive-api`, `status=ok`;
-- systemd active: `pvnaive-api`, `caddy-naive`, `pvnaive-runtime-agent`, `pvnaive-telemetry-agent`.
+- `systemctl is-active pvnaive-api`: active;
+- `systemctl is-active caddy`: inactive;
+- Docker inventory could not be read because the execution context lacks permission for `/var/run/docker.sock`.
 
 No Production mutation, deploy, restart, reload, migration, DB write or credential change was performed.
 
-## Task13 — exact live-session kill
-
-All exact-head GitHub gates are green on `3fc14825...`. The sole merge gate is a fresh real HTTP/1.1 + HTTP/2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting.
-
-`TrPaqet` is connected but inactive under the one-active-host SentinelX plan. Production must not be used as the rehearsal lane.
-
-## Task16 — bounded IP/session history / schema21
-
-Issue #79 and draft PR #81 are the active execution ledger. The dedicated PG18 Task16 workflow is green, but generic repository CI remains blocked by the RLS assertion that still expects 42 policies after schema21; the actual migration state exposes 43 covered relations. Do not bulk-change schema20-specific Task15 fixtures.
-
-The required next change is a narrowly-scoped schema21-aware health assertion plus a fresh repository-wide CI run. The `tests/db/ip_session_history_contract_test.sh` integration test must remain explicitly executed in CI.
-
 ## Persistent worker reports
 
-`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain historical S04-era ledgers last updated 2026-08-27 and contain no newer Task13/Task16 completion. They do not override the canonical files.
+`AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` on `/opt/pvnaive-backup-hotfix` remain historical S04-era ledgers (last updated 2026-08-27 / 2026-08-29 in the observed worktrees) and contain no newer validated Task13/Task16 completion. They do not override this file.
 
 ## Worker / orchestration capacity
 
-- `pv-primary`: executable; **Production-only**.
-- `TrPaqet`: connected but inactive; assignment = Task13 final HTTP1/HTTP2 rehearsal when executable.
-- `pv-worker-main`: connected but inactive; assignment = Task16 schema21 CI fix and rerun when executable.
+Three SentinelX hosts are connected: `TrPaqet`, `pv-worker-main`, and `pv-primary`. All are currently connected; development work remains subject to the available execution slot and must not use Production as a test lane.
+
+- `TrPaqet`: Task13 final HTTP/1.1 + HTTP/2 rehearsal.
+- `pv-worker-main`: schema21-aware RLS assertion fix and full Task16 gate rerun.
+- `pv-primary`: Production-only audit, backup, rollback and deploy lane.
 
 ## Immediate execution order
 
 1. Keep #64 and #81 draft.
-2. On the first executable development Worker, run the final exact-head Task13 live rehearsal.
+2. On the first executable development worker, run the final exact-head Task13 live rehearsal.
 3. On the development lane, patch only the schema21-aware RLS expectation and rerun all Task16 gates.
 4. If and only if Task13 live proof and Task16 full gates pass, perform fresh encrypted backup + rollback preparation and then consider promotion.
