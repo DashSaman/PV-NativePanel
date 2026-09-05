@@ -1,13 +1,13 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 01:42 Asia/Tehran
+Last updated: 2026-09-06 02:43 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `c7e940a587de96cc3efc29acf96f6866310b3322`.
-- No combined status rows or workflow runs were returned for the exact head; post-merge CI is not credited.
+- Current `main` at inspection: `53dd2e8007eaa60d413846ea5c85f3e6048fa158`; docs refresh commits advanced it to `89ad9601bad2c20801208e7218a6454407914d6e`.
+- No combined status rows or workflow runs were returned for the exact inspected head; post-merge CI is not credited.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; published task gates are green, but the fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
 - Task16: draft #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the PR body references historical `b96c659...` and stale base metadata; fresh exact-head repository-wide green evidence remains pending.
 - Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
@@ -29,10 +29,10 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. The latest corroborated plan keeps `TrPaqet` for Task13 development and `pv-primary` Production-only when the single executable slot is available.
 
-## This run — 2026-09-06 01:42 Asia/Tehran
+## This run — 2026-09-06 02:43 Asia/Tehran
 
 - Verified current main ref, open PRs, exact-head status/workflow presence, and persistent coordinator/worker reports.
-- Refreshed canonical repository documents to the exact current main state.
+- Refreshed canonical documentation to the verified state.
 - No worker completion was creditable.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
