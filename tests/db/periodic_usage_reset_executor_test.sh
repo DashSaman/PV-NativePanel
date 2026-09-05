@@ -29,7 +29,7 @@ mkdir -p "$tmp/migrations"
 cp "${repo_root}/db/migrations/"[0-9][0-9][0-9][0-9]_*.sql "$tmp/migrations/"
 ( cd "$tmp/migrations" && sha256sum *.sql > SHA256SUMS )
 PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/migrate.sh" >/dev/null
-[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 20 ]]
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 21 ]]
 
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 INSERT INTO pvnaive.actors(id,tenant_id,actor_role,email,display_name,status)
@@ -75,7 +75,6 @@ VALUES
  ('d9260000-0000-0000-0000-000000000002',10,20,5,true);
 SQL
 
-# Both schedules are already overdue: one succeeds, one defers on reservation.
 first="$(psql_admin -d "$test_db" -At -F'|' <<'SQL'
 SET ROLE pvnaive_app;
 SELECT processed,succeeded,deferred,skipped FROM pvnaive.execute_due_scheduled_usage_resets(10);
@@ -128,10 +127,10 @@ third="$(printf '%s\n' "$third" | grep -E '^[0-9]+\|' | tail -n1)"
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT next_due_at-anchor_at=interval '1 day' AND retry_after_at IS NULL AND consecutive_failures=0 FROM pvnaive.service_term_reset_schedules WHERE service_term_id='d9260000-0000-0000-0000-000000000002'")" =~ ^(t|true)$ ]]
 [[ "$(psql_admin -d "$test_db" -Atc "SELECT count(*) FROM pvnaive.direct_naive_accounting_reset_events WHERE reason='scheduled'")" == 1 ]]
 
-# Schema20, schema19, schema18 and schema17 are additive for this fixture.
-# Step back 20 -> 19 -> 18 -> 17 -> 16, then prove immutable scheduler history still prevents
+# Schema21 through schema17 are additive for this fixture.
+# Step back 21 -> 20 -> 19 -> 18 -> 17 -> 16, then prove immutable scheduler history still prevents
 # the destructive schema16 rollback exactly as this regression test originally intended.
-for want in 19 18 17 16; do
+for want in 20 19 18 17 16; do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION PVNAIVE_MIGRATIONS_DIR="$tmp/migrations" "${repo_root}/scripts/db/rollback.sh" >/dev/null
   [[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == "$want" ]]
 done
