@@ -1,17 +1,17 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-05 15:42 Asia/Tehran
+Last updated: 2026-09-05 17:45 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- `main` is `423896d534e1c3830541fedd15a6c05fec401f59` (latest canonical docs reconciliation advanced it to `5fec44b8c06ddf92034da13c2b12e062dc432dd2`).
-- No workflow run is currently associated with the exact `main` head; post-merge CI is not credited.
+- `main` is `f6b699064e0beb1e925792882bafae0af30d6acb` (latest canonical status reconciliation).
+- No workflow run or commit status is currently associated with this exact main head; post-merge CI is not credited.
 - Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; historical focused gates are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; body/base still reference stale history; exact-head fresh repository-wide promotion evidence is not complete.
+- Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; body/base still reference stale history; exact-head fresh repository-wide promotion evidence is not complete.
 - Production remains on Task15/schema20; no Task13/schema21 code deployed.
-- No fresh command-level Production health was credited because `pv-primary` is connected but inactive under the one-active-host SentinelX limit. Visible fleet inventory reports core services active, but that is not a command-level health pass.
+- Only `TrPaqet` is currently connected to SentinelX; no fresh command-level Production health is credited in this run.
 
 ## Task accounting
 
@@ -22,21 +22,20 @@ Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head
 - Task13: IN PROGRESS / draft #64 / live proof pending.
 - Task16: IN PROGRESS / draft #81 / exact-head reconciliation and fresh full gates pending.
 
+## This run — 2026-09-05 17:45 Asia/Tehran
+
+- Verified current `main=e16592496a26a275148a7ff66b42d2d0328f94e3`; no exact-head workflow run/status before documentation reconciliation.
+- Verified open PR inventory and stale blockers for #64/#81 plus old docs PRs.
+- Verified clean Task13 checkout `/opt/pvnaive-task13-run11` at exact head `3fc14825...`.
+- `git diff --check` and all discovered shell-script syntax checks passed.
+- Focused Task13 shell tests were attempted and blocked by the vendored forwardproxy `go.mod` (`go 1.21.0` and `toolchain` directive rejected by the installed Go toolchain). No test pass was credited.
+- Verified only `TrPaqet` is connected; no fresh Production command-level audit, backup, rollback, or mutation performed.
+- Canonical status was updated on `main` in commit `f6b699064e0beb1e925792882bafae0af30d6acb`.
+
 ## Next execution
 
-- Finish the pending CGO-enabled Task13 race-test job and consume its result.
-- Obtain a clean exact-head Task13 checkout and run the real HTTP/1.1 + HTTP/2 rehearsal outside Production.
+- Resolve the isolated Task13 toolchain mismatch without changing production semantics, then rerun focused tests and the real HTTP/1.1 + HTTP/2 rehearsal outside Production.
 - Obtain a clean exact-head Task16 checkout, reconcile the generic schema21-aware fixture path without modifying schema20-specific Task15 fixtures, and rerun all Task16 gates on one published SHA.
-- `pv-primary`: Production-only audit, encrypted backup, rollback and deploy lane; do not use it as a development database/test lane.
-
-## This run — 2026-09-05 15:42 Asia/Tehran
-
-- Verified current `main=423896d534e1c3830541fedd15a6c05fec401f59`; no exact-head workflow run.
-- Verified open PR inventory and stale blockers for #64/#81.
-- Verified Task13 candidate shell syntax and diff checks passed; `go test -race` was blocked first by missing Go, then by CGO disabled; CGO-enabled rerun was started in background and is pending.
-- Verified worker capacity: 3 connected, 1 active; active lane `pv-worker-main`.
-- Verified persistent checkout remains dirty/stale: HEAD `d8c85225ab87`, 11 unstaged, 3 untracked, 149 behind.
-- Verified visible Production fleet inventory only; no fresh command-level audit or mutation.
-- No merges, deployments or other Production mutations performed.
+- Keep `pv-primary` as the Production-only audit/backup/rollback/deploy lane when it becomes available.
 
 Never claim completion from stale worker reports or partial evidence. No merge/deploy until all exact-head gates and safety prerequisites are green.
