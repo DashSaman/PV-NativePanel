@@ -1,15 +1,15 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-05 10:40 Asia/Tehran
+Last updated: 2026-09-05 12:43 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- `main`: `58719b1f4c662b75a2db132bea6fa048838fdff6` at the start of this turn; canonical status refresh commit is `f956bf868c2e951d64706815d65c07eb937ce864`.
+- `main` at the start of this turn: `fa0c7ae8ed11bf8cbfa5b8489f8265b5badf8b8d`.
 - No workflow runs or status rows are visible for the docs-only main head; post-merge CI is not proven.
 - Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; historical focused receipts are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; body/base remain stale. Exact-head snapshot: Task16 Schema21 TDD SUCCESS, WS1 Exact Accounting SUCCESS, WS1 Pinned Forwardproxy SUCCESS, generic CI FAILURE (`33678134360`). Failed generic CI jobs were re-run in this turn; result is pending.
+- Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS, generic CI `33626300697` failed in `database` and its failed jobs were re-run this turn; rerun result is pending.
 - Production remains on Task15/schema20; no Task13/schema21 code deployed.
 - No fresh Production command-level health was credited this turn because `pv-primary` was inactive under the one-active-host SentinelX limit.
 
