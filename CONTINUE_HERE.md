@@ -1,12 +1,12 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-05 23:38 Asia/Tehran
+Last updated: 2026-09-06 00:43 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- Current `main` after this run's status refresh: `787d15da0a605b37b24d6d8645350220cea3943b`.
+- Current `main` after this run's status refresh: `69a0ebb28401a8832c19b936b5b19a477d86503f`.
 - This docs head has no combined commit status rows and no workflow runs returned for the exact head; post-merge CI is not credited.
 - Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; published gates are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
 - Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; fresh exact-head all-green proof and metadata reconciliation remain pending.
@@ -22,10 +22,10 @@ Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head
 - Task13: IN PROGRESS / draft #64 / live protocol proof pending.
 - Task16: IN PROGRESS / draft #81 / exact-head reconciliation and fresh full gates pending.
 
-## This run — 2026-09-05 23:38 Asia/Tehran
+## This run — 2026-09-06 00:43 Asia/Tehran
 
-- Verified current main ref, open PRs, exact-head CI/status presence, and latest persistent PR/worker reports.
-- Reconciled canonical docs to the actual `main` ref and preserved the rule that historical worker reports are not completion evidence.
+- Verified current main ref, open PRs, exact-head CI/status presence, and persistent coordinator/worker reports.
+- Reconciled current truth: `main=66d91abe...` at inspection; canonical status update committed as `69a0ebb28401a8832c19b936b5b19a477d86503f`.
 - No worker completion was creditable.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
