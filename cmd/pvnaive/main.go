@@ -20,6 +20,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/sessioncontrol"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -119,6 +120,11 @@ func run() error {
 		return err
 	}
 	readinessProbe := httpapi.NewDBReadinessProbe(db, expectedSchema)
+	sessionControlSocket := strings.TrimSpace(os.Getenv("PVNAIVE_SESSION_CONTROL_SOCKET"))
+	if sessionControlSocket == "" {
+		sessionControlSocket = sessioncontrol.DefaultSocketPath
+	}
+	sessionController := sessioncontrol.NewClient(sessionControlSocket)
 
 	var periodicResetConfig *periodicUsageResetConfig
 	if customerService != nil {
@@ -136,6 +142,7 @@ func run() error {
 		RuntimeService:        runtimeService,
 		CustomerService:       customerService,
 		AccountingStore:       accountingStore,
+		SessionController:     sessionController,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
 		SystemStatus:          systemStatus,

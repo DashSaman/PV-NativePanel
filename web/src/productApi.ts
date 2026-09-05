@@ -437,3 +437,23 @@ export async function listProductCustomerSessions(id: string, fetcher: Fetcher =
     observed_at: typeof body.observed_at === "string" ? body.observed_at : new Date().toISOString(),
   };
 }
+
+export type ProductSessionKillResponse = {
+  status: string;
+  found: boolean;
+  killed: boolean;
+  session_id: string;
+  credential_mutated: false;
+};
+
+export async function killProductCustomerSession(id: string, sessionID: string, fetcher: Fetcher = fetch): Promise<ProductSessionKillResponse> {
+  const body = await requestJSON(`/api/v1/users/${encodeURIComponent(id)}/sessions/${encodeURIComponent(sessionID)}`, {
+    method: "DELETE", headers: csrfHeaders(),
+  }, fetcher);
+  return body as ProductSessionKillResponse;
+}
+
+export async function killProductCustomerSessionAndReload(id: string, sessionID: string, fetcher: Fetcher = fetch): Promise<ProductActiveSessionResponse> {
+  await killProductCustomerSession(id, sessionID, fetcher);
+  return listProductCustomerSessions(id, fetcher);
+}

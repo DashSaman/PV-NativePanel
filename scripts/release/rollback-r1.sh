@@ -16,6 +16,8 @@ telemetry_service_backup="$backup/pvnaive-telemetry-agent.service.before"
 [[ -f "$telemetry_binary_backup" ]] || { echo 'ERROR: telemetry binary rollback asset missing' >&2; exit 1; }
 [[ -f "$telemetry_service_backup" || -f "$backup/pvnaive-telemetry-agent.service.missing" ]] || { echo 'ERROR: telemetry service rollback state missing' >&2; exit 1; }
 [[ -f "$backup/web.before" && -f "$backup/preview.before" && -f "$backup/db.before" ]] || { echo 'ERROR: rollback target metadata missing' >&2; exit 1; }
+[[ -f "$backup/caddy-before" ]] || { echo 'ERROR: prior Caddy binary rollback asset missing' >&2; exit 1; }
+[[ -f "$backup/20-pvnaive-accounting.conf.before" || -f "$backup/20-pvnaive-accounting.conf.missing" ]] || { echo 'ERROR: prior Caddy drop-in rollback state missing' >&2; exit 1; }
 
 web_before="$(cat "$backup/web.before")"
 preview_before="$(cat "$backup/preview.before")"
@@ -29,6 +31,13 @@ caddy_pid="$(systemctl show caddy-naive.service -p MainPID --value)"
 caddy_restarts="$(systemctl show caddy-naive.service -p NRestarts --value)"
 
 systemctl stop pvnaive-api.service pvnaive-runtime-agent.service pvnaive-telemetry-agent.service || true
+install -o root -g root -m 0755 "$backup/caddy-before" /usr/local/bin/caddy
+install -d -o root -g root -m 0755 /etc/systemd/system/caddy-naive.service.d
+if [[ -f "$backup/20-pvnaive-accounting.conf.before" ]]; then
+  install -o root -g root -m 0644 "$backup/20-pvnaive-accounting.conf.before" /etc/systemd/system/caddy-naive.service.d/20-pvnaive-accounting.conf
+else
+  rm -f -- /etc/systemd/system/caddy-naive.service.d/20-pvnaive-accounting.conf
+fi
 for name in pvnaive pvnaive-password pvnaive-runtime-agent pvnaive-telemetry-agent; do
   install -o root -g pvnaive -m 0750 "$backup/$name.before" "/opt/pvnaive/bin/$name"
 done
@@ -78,6 +87,7 @@ fi
 
 systemctl daemon-reload
 systemctl restart pvnaive-telemetry-agent.service
+systemctl restart caddy-naive.service
 systemctl restart pvnaive-runtime-agent.service
 systemctl restart pvnaive-api.service
 for _ in $(seq 1 30); do
@@ -91,8 +101,8 @@ if [[ -n "$web_before" ]]; then [[ "$(readlink -f /opt/pvnaive/web/current)" == 
 if [[ -n "$preview_before" ]]; then [[ "$(readlink -f /var/www/pvnaive-preview/current)" == "$preview_before" ]]; fi
 if [[ -n "$db_before" ]]; then [[ "$(readlink -f /opt/pvnaive/db/current)" == "$db_before" ]]; fi
 [[ "$(sha256sum /etc/caddy/Caddyfile | awk '{print $1}')" == "$caddy_sha" ]]
-[[ "$(systemctl show caddy-naive.service -p MainPID --value)" == "$caddy_pid" ]]
-[[ "$(systemctl show caddy-naive.service -p NRestarts --value)" == "$caddy_restarts" ]]
+[[ "$(sha256sum /usr/local/bin/caddy | awk '{print $1}')" == "$(sha256sum "$backup/caddy-before" | awk '{print $1}')" ]]
+systemctl is-active --quiet caddy-naive.service
 
 echo 'PVNAIVE_R1_ROLLBACK_RESULT=PASSED'
-echo 'PVNAIVE_R1_CADDY_ACTION=NONE'
+echo 'PVNAIVE_R1_CADDY_ACTION=RESTORED_PRIOR_BINARY_RESTART'
