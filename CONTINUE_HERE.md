@@ -1,15 +1,15 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-05 07:43 Asia/Tehran
+Last updated: 2026-09-05 09:43 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- `main`: `365eb9a09d56a70ea31b77e81bdca3681331f525` at the start of this turn; canonical status refresh commit is now `d8f9efe9ae43b82624b08803f47ad99f61e77072`.
+- `main`: `365eb9a09d56a70ea31b77e81bdca3681331f525` at the start of this turn; canonical status refresh commit is `8a7c7d94913e2f657260d2ba79643134e346395f`.
 - No workflow runs or status rows are visible for the docs-only main heads; post-merge CI is not proven.
-- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical receipts are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; body/base are stale. Dedicated Task16/Exact Accounting/Pinned Forwardproxy workflows are green, but generic CI run `33678134360` fails in `database` with latest-schema mismatch `schema version=21, want=20`.
+- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; historical focused receipts are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
+- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; body/base remain stale. Historical dedicated receipts are not re-credited to this exact head; generic CI remains blocked by the schema21/latest-schema fixture mismatch documented in PR evidence.
 - Production remains on Task15/schema20; no Task13/schema21 code deployed.
 - No fresh Production command-level health was credited this turn because `pv-primary` was inactive under the one-active-host SentinelX limit.
 
@@ -24,8 +24,8 @@ Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head
 
 ## Next execution
 
-- Worker lane: obtain a clean development checkout and fix/validate the schema21-aware generic database fixture path; do not modify Task15 schema20-specific fixtures.
-- Worker lane: run the final exact-head Task13 HTTP/1.1 + HTTP/2 rehearsal with PostgreSQL 18 and compatible Go/jq tooling.
+- Worker lane: obtain a clean exact-head development checkout; narrowly fix/validate the schema21-aware generic database fixture path without modifying Task15 schema20-specific fixtures, then rerun the generic database gate and all Task16 gates on one published SHA.
+- Worker lane: run the final exact-head Task13 HTTP/1.1 + HTTP/2 rehearsal outside Production with PostgreSQL 18 and compatible Go/jq tooling.
 - `pv-primary`: Production-only audit, encrypted backup, rollback and deploy lane; do not use it as a development database/test lane.
 
 Never claim completion from stale worker reports or partial evidence. No merge/deploy until all exact-head gates and safety prerequisites are green.
