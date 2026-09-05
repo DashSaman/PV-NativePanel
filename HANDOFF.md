@@ -1,15 +1,15 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-05 23:38 Asia/Tehran
+Last updated: 2026-09-06 01:42 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` after this run's docs refresh: `c0891228e15dfab380b5f574dbe7240a0b67b8ae`.
-- No combined status rows or workflow runs were returned for the exact docs head; post-merge CI is not credited.
+- Current `main`: `c7e940a587de96cc3efc29acf96f6866310b3322`.
+- No combined status rows or workflow runs were returned for the exact head; post-merge CI is not credited.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; published task gates are green, but the fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; fresh exact-head repository-wide green evidence and metadata reconciliation remain pending.
+- Task16: draft #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the PR body references historical `b96c659...` and stale base metadata; fresh exact-head repository-wide green evidence remains pending.
 - Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
 
 ## Production state
@@ -29,10 +29,17 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. The latest corroborated plan keeps `TrPaqet` for Task13 development and `pv-primary` Production-only when the single executable slot is available.
 
+## This run — 2026-09-06 01:42 Asia/Tehran
+
+- Verified current main ref, open PRs, exact-head status/workflow presence, and persistent coordinator/worker reports.
+- Refreshed canonical repository documents to the exact current main state.
+- No worker completion was creditable.
+- No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
+
 ## Next assignments
 
-- Task13: on the next executable development slot, reconstruct the validated delta onto exact current main and run the fresh HTTP/1.1 + HTTP/2 rehearsal outside Production.
-- Task16: independently obtain a clean checkout, reconcile only generic schema21 fixtures, preserve schema20 Task15 fixtures, align PR metadata and rerun all four gates on one SHA.
+- Task13: reconstruct the validated delta onto exact current main and run a fresh HTTP/1.1 + HTTP/2 rehearsal outside Production.
+- Task16: obtain a clean checkout from current main, reconcile only generic schema21 fixtures, preserve schema20 Task15 fixtures, align PR metadata and rerun all four gates on one SHA.
 - Production: remain read-only until both task lanes are fully green; then perform fresh encrypted backup and rollback preflight before any promotion.
 
 Keep truthful accounting/session semantics under retry, race, kill and disconnect.
