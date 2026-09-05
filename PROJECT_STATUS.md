@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-05 09:43 Asia/Tehran
+Last updated: 2026-09-05 10:40 Asia/Tehran
 
 This file records verified repository and Production truth. Historical worker/stage notes are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `365eb9a09d56a70ea31b77e81bdca3681331f525`.
-- No workflow runs or status rows are visible for this docs-only `main` head; post-merge CI is not proven.
+- Current `main`: `58719b1f4c662b75a2db132bea6fa048838fdff6` (`docs: refresh continuation handoff for automation turn 11`).
+- `main` has no visible workflow runs or status rows; post-merge CI is not proven.
 - Task13: draft PR #64, exact GitHub head `3fc14825e1b164bad558decaef47f56b792e81af`; historical focused gates are supplemental only. Fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Task16: draft PR #81, exact GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body/base remain stale. Historical dedicated Task16/Exact Accounting/Pinned Forwardproxy receipts are not re-credited to this exact head; generic CI remains blocked by the schema21/latest-schema fixture mismatch documented in PR evidence.
+- Task16: draft PR #81, exact GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body/base remain stale. Exact-head workflow snapshot: Task16 Schema21 TDD SUCCESS, WS1 Exact Accounting SUCCESS, WS1 Pinned Forwardproxy SUCCESS, generic CI FAILURE (`33678134360`). Failed generic CI jobs were re-run during this turn; result is pending.
 - No task becomes DONE from a local candidate, historical report or partial branch alone.
 
 ## Production truth
@@ -35,7 +35,7 @@ No deploy, migration, restart, reload, DB write, credential change, backup mutat
 ## Immediate execution order
 
 1. Keep #64 and #81 draft / DO NOT MERGE.
-2. Obtain a clean exact-head development checkout; narrowly repair the generic schema21/latest-schema fixture path only, preserving Task15 schema20-specific tests, then rerun the generic database gate and all Task16 gates on one exact published SHA.
-3. On a clean compatible development worker, run the final exact-head Task13 HTTP/1.1 + HTTP/2 rehearsal outside Production with PostgreSQL 18 and compatible Go/jq tooling.
+2. Wait for the fresh generic-CI rerun result on PR #81; if it fails, repair only schema21-aware generic fixtures on a clean exact-head branch, preserving Task15 schema20 fixtures.
+3. Obtain a clean exact-head development checkout and run the final exact-head Task13 HTTP/1.1 + HTTP/2 rehearsal outside Production with PostgreSQL 18 and compatible Go/jq tooling.
 4. Re-run all four Task16 promotion gates on the same exact SHA; do not mix historical receipts.
 5. Only if Task13 live proof and Task16 full gates pass: create a fresh encrypted Production backup + rollback state, then consider promotion.
