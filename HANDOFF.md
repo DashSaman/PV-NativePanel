@@ -1,20 +1,20 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-05 19:38 Asia/Tehran
+Last updated: 2026-09-05 22:39 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` after this run's docs commits: `091a1b1dd7b3cbb908f2ecb5c68b65b24e0e4e0f`.
-- The inspected pre-run main head had no workflow run or status row; post-merge CI is not credited for that head.
-- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; focused tests and shell validation pass, but real rehearsal fails before assertions because PostgreSQL rejects `security_invoker`.
-- Task16: draft #81, GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body/base metadata is stale and fresh exact-head repository-wide green evidence is incomplete.
+- Current `main` after this run's docs refresh: `4ab8c6068df2738d4a775d114f9c75da0ef0bae4`.
+- No combined status rows or workflow runs were returned for the exact docs head; post-merge CI is not credited.
+- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head GitHub gates are green, but the fresh real rehearsal failed before assertions because PostgreSQL rejected `security_invoker`.
+- Task16: draft #81, current GitHub head `b96c65903e5fc314284ea777ceea236913a03842`; fresh exact-head repository-wide green evidence and metadata reconciliation remain pending.
 - Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
 
 ## Production state
 
-Only one SentinelX host (`TrPaqet`) was connected during this run. No fresh command-level Production audit was possible and no Production health claim is credited. No external HTTPS health claim is made.
+Only one SentinelX host (`TrPaqet`) was connected during this run. Fresh read-only inspection confirmed a clean Task13 checkout and a rehearsal failure in the development lane; it did not produce a Production health pass. `pv-primary` was not available.
 
 No Production mutation, restart, reload, migration, DB write, credential rotation, backup mutation, rollback mutation or deployment occurred.
 
@@ -23,11 +23,11 @@ No Production mutation, restart, reload, migration, DB write, credential rotatio
 - Do not merge #64 until a fresh exact-head HTTP/1.1 + HTTP/2 rehearsal proves target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, no kill-triggered restart/reload and exactly-once accounting.
 - Do not merge #81 until generic CI, Task16 PG18, Exact Accounting and Pinned Forwardproxy all pass on one exact published SHA, with schema20-specific fixtures preserved.
 - Do not deploy without fresh encrypted backup, rollback state, exact artifact provenance and postflight verification.
-- Current Task13 rehearsal blocker: `ERROR: unrecognized parameter "security_invoker"`.
+- Current Task13 rehearsal blocker: `psql: ERROR: unrecognized parameter "security_invoker"` (return code 3).
 
 ## Persistent reports / worker capacity
 
-Persistent worker reports are historical unless corroborated by exact GitHub state and fresh receipts. One active SentinelX slot was available; Task13 lane used `/opt/pvnaive-task13-run11` and was clean at exact head `3fc14825...`. There was no active Production lane in this run.
+Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. One active SentinelX slot was available; Task13 lane used `/opt/pvnaive-task13-run11` and was clean at exact head `3fc14825...`. There was no active Production lane in this run.
 
 ## Next assignments
 
