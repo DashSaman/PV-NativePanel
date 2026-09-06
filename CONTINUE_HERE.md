@@ -1,29 +1,31 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-06 10:39 Asia/Tehran
+Last updated: 2026-09-06 11:39 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- Current `main`: `27188aef3645a45991c0fa14d7893cddb2b87eac`; canonical status was refreshed in this run.
+- Current `main` before this docs refresh: `8d8c92226053fbca6bc458c73b823414a450cbec`.
 - Exact main head has no combined status rows and no workflow runs; post-merge CI is not credited.
-- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates are supplemental only, and fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Draft Task16 PR #81 exact head: `b96c65903e5fc314284ea777ceea236913a03842`; historical Task16 TDD, Exact Accounting and Pinned Forwardproxy evidence exists, while repository CI previously failed in the database job because a generic fixture expected schema20 after schema21 migration. No fresh exact-head full-green proof is present.
+- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
+- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical gates are supplemental, generic CI remains blocked by schema21/latest-schema fixture/RLS drift, and PR metadata/body are stale.
 - Draft PR #4 exact head: `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; real Karing client smoke remains pending.
+- Documentation-only PRs #91–#95 are stale/open and not promotion authority.
 - No fresh Production health pass or worker completion receipt was obtained in this run.
 
-## This run — 2026-09-06 10:39 Asia/Tehran
+## This run — 2026-09-06 11:39 Asia/Tehran
 
-- Re-verified current main, open PRs #4/#64/#81, exact main status/workflow evidence and persistent reports.
-- Corrected canonical status to the actual current main; no runtime/schema work integrated.
+- Re-verified current repository, open PRs, exact main status/workflow evidence and persistent reports.
+- Confirmed no new validated worker completion or fresh Production receipt.
+- Updated canonical status directly on `main`; no runtime/schema work integrated.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
 ## Next execution
 
-- Task16: correct only the remaining generic latest-schema expectation, preserve schema20-specific Task15 fixtures, and rerun all four exact-head gates.
-- Task13: reconstruct validated work onto current main and run fresh HTTP/1.1 + HTTP/2 proof outside Production.
-- PR #4: obtain real Karing client smoke evidence.
+- Task16: reconcile a clean branch to current main, correct only generic schema21/latest-schema expectations, preserve schema20-specific Task15 fixtures, align PR metadata, and rerun normal CI + Task16 PG18 + Exact Accounting + Pinned Forwardproxy on one exact published SHA.
+- Task13: reconstruct validated work onto current main and run fresh HTTP/1.1 + HTTP/2 proof outside Production using PostgreSQL18 and a compatible Go toolchain.
+- PR #4: obtain real Karing client smoke evidence with version/platform/import/parse/connect/cleanup.
 - Independent review: inspect Task13/Task16 diffs for security, accounting, RLS and rollback regressions.
 - Production-only lane: read-only health first; only after all gates pass, create fresh encrypted backup + rollback snapshot and then consider deployment.
 
