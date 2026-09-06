@@ -1,24 +1,23 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-06 08:42 Asia/Tehran
+Last updated: 2026-09-06 09:42 Asia/Tehran
 
 Start here after interruption. Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
 ## Current verified state
 
-- Current `main`: `81cc22e49d6b0b5f164f6689b4b35d5263c0b8be`; the latest canonical status refresh is `b037df9caa37063d85b9f27f1a3aac83be1cdca2`.
+- Current `main`: `efffcf5bedc139d0a7ee4a9c3a927e0b75e3bf6`; canonical status was refreshed in this run.
 - Exact main head has no combined status rows and no workflow runs; post-merge CI is not credited.
-- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates pass, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
-- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 TDD, Exact Accounting and Pinned Forwardproxy are green on exact head, but normal CI fails in the database job because `tests/db/periodic_usage_reset_executor_test.sh` still expects schema 20 after schema21 migration. Go/web passed; rehearsal/bundle skipped.
+- Draft Task13 PR #64 exact head: `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates are supplemental only, and fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
+- Draft Task16 PR #81 exact head: `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 TDD, Exact Accounting and Pinned Forwardproxy are historical-success evidence, while repository CI previously failed in the database job because a generic fixture expected schema20 after schema21 migration. No fresh exact-head full-green proof is present.
 - Draft PR #4 exact head: `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; real Karing client smoke remains pending.
 - No fresh Production health pass or worker completion receipt was obtained in this run.
 
-## This run — 2026-09-06 08:42 Asia/Tehran
+## This run — 2026-09-06 09:42 Asia/Tehran
 
-- Verified current main, open PRs, exact-head workflow runs, job-level failure and failure logs.
-- Confirmed Task16 database failure is a generic schema21 fixture mismatch, not a PostgreSQL18 migration failure.
-- Refreshed `PROJECT_STATUS.md`.
-- No runtime/schema work was integrated; no merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
+- Re-verified current main, open PRs #4/#64/#81, latest commit history and persistent reports.
+- Confirmed no new validated worker completion and no fresh Production evidence.
+- Refreshed `PROJECT_STATUS.md`; no runtime/schema work integrated; no merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
 ## Next execution
 
