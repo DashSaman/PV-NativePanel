@@ -1,13 +1,13 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-06 18:42 Asia/Tehran
+Last updated: 2026-09-06 19:41 Asia/Tehran
 
 Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
-- `main` start: `e76147775e9c99f878e23bfc252cfa0b5a45efac`; no combined status rows for exact head.
-- #64 Task13 DRAFT head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh HTTP/1.1 + HTTP/2 proof pending.
-- #81 Task16 DRAFT head `3c4310335ab4907d28bac995bba1be3545e14f6e`; specialized gates passed, repository CI failed on generic periodic schema expectation (`21` vs `20`); failed jobs re-run, pending.
-- #4 Karing DRAFT head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real client smoke pending.
-- No fresh Production health pass or worker completion receipt. No merge/deploy or mutation occurred.
+- `main` current exact head at inspection: `d9595ce4e5f45f0c74147cc73604a78227f633bd`; exact-head workflow lookup returned no runs, so post-merge CI is not credited for this docs-only head.
+- #64 Task13 OPEN/DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused gates are green, fresh HTTP/1.1 + HTTP/2 proof pending.
+- #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; specialized gates are green, repository CI `33678134360` failed in the database job on generic schema expectation (`21` vs `20`), so exact-head full-green is not credited.
+- #4 Karing OPEN/DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is green, real client smoke pending.
+- No fresh Production health/backup/rollback evidence or worker completion receipt was available. No merge/deploy or Production mutation occurred.
 
-Next: observe #81 rerun; preserve Task15 schema20 fixtures; run Task13 rehearsal; obtain Karing smoke; only then backup/rollback preflight and promotion.
+Next: advance Task16 with a minimal generic-fixture fix, run all four gates on one SHA; obtain Task13 live protocol rehearsal and Karing smoke; only then execute backup/rollback preflight and consider promotion.
