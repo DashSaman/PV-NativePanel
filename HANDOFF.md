@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 12:39 Asia/Tehran
+Last updated: 2026-09-06 13:41 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `dba9bceea003ab0f6422944cb6e313477c9122c6`.
+- Current `main` at start of this run: `0aac4359993f5e56011da029ba28b62a7d968bd9`; canonical refresh commits in this run: `6d49bf14e6804abfdc5489d0fba845bb18fe1e26` and `099adcc7bfb2e0e312082919e40f6176c63b86f0`.
 - No combined status rows or workflow runs were returned for the exact main head; post-merge CI is not credited.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending and PR base metadata is stale.
 - Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical gates exist, but no fresh exact-head full-green proof is present and PR base/body metadata are stale.
@@ -31,9 +31,9 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
 
-## This run — 2026-09-06 12:39 Asia/Tehran
+## This run — 2026-09-06 13:41 Asia/Tehran
 
-- Re-verified current repository branch ref, open PRs #4/#64/#81 plus docs PRs #91–#95, exact main/PR status responses and persistent reports.
+- Re-verified current repository branch ref, open PRs #4/#64/#81 plus docs PRs #91–#95, exact main status/workflow responses and persistent reports.
 - Confirmed no new validated worker completion or fresh Production receipt.
 - Refreshed canonical status/continuation/handoff docs on `main`; no unvalidated runtime/schema work integrated.
 - No merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
