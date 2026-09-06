@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-06 12:39 Asia/Tehran
+Last updated: 2026-09-06 13:41 Asia/Tehran
 
 This file records verified repository truth and bounded Production truth. Historical worker/stage notes are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,9 +11,9 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `dba9bceea003ab0f6422944cb6e313477c9122c6` (verified from GitHub branch ref).
+- Current `main` at start of this run: `0aac4359993f5e56011da029ba28b62a7d968bd9` (verified from GitHub branch ref).
 - Exact `main` combined status: no status rows returned; exact-head workflow runs: none. Post-merge CI is not credited.
-- Task13: draft PR #64, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates and local race/shell checks are supplemental only. Fresh real HTTP/1.1 + HTTP/2 rehearsal is still incomplete; current PR metadata still references an older base SHA.
+- Task13: draft PR #64, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates and local race/shell checks are supplemental only. Fresh real HTTP/1.1 + HTTP/2 rehearsal is still incomplete; PR base metadata is stale at `0b921abe9b2bd1d827023f494fda11a407fe34d3`.
 - Task16: draft PR #81, head `3c4310335ab4907d28bac995bba1be3545e14f6e`, stale base/body references. Dedicated historical gates exist, but no fresh exact-head full-green proof is present and combined status is empty.
 - PR #4 (Karing export): draft, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; no reproducible real Karing client smoke evidence is attached.
 - Documentation-only PRs #91–#95 remain open/stale and are not promotion authority; canonical docs are updated directly on `main` in this run.
@@ -31,11 +31,11 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 - Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when executable access is available.
 - Persistent evidence also records a one-active-host SentinelX limit; connected workers can be inactive and therefore cannot be treated as executable.
 
-## This run — 2026-09-06 12:39 Asia/Tehran
+## This run — 2026-09-06 13:41 Asia/Tehran
 
-- Re-verified current repository branch ref, open PRs, exact main/PR status responses and persistent coordinator/worker reports.
+- Re-verified current repository branch ref, open PRs, exact main status/workflow responses and persistent coordinator/worker reports.
 - Confirmed no new validated worker completion or fresh Production receipt.
-- Corrected canonical documentation to the verified `main` commit `dba9bce...`; no runtime/schema work integrated.
+- Updated canonical documentation directly on `main`; no runtime/schema work integrated.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
 ## Immediate execution order
