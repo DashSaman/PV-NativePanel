@@ -1,15 +1,15 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 02:43 Asia/Tehran
+Last updated: 2026-09-06 03:38 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` at inspection: `53dd2e8007eaa60d413846ea5c85f3e6048fa158`; docs refresh commits advanced it to `89ad9601bad2c20801208e7218a6454407914d6e`.
+- Current `main` at inspection: `6108a43a9c4c2297eb1cde7606ba05a67261876e`; canonical docs refresh commits advanced it to `a4d4f3967d169309b673fea094eb1261f89856da` after the inspection snapshot.
 - No combined status rows or workflow runs were returned for the exact inspected head; post-merge CI is not credited.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; published task gates are green, but the fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- Task16: draft #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the PR body references historical `b96c659...` and stale base metadata; fresh exact-head repository-wide green evidence remains pending.
+- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR base metadata still points at stale `0b921abe...`; fresh exact-head repository-wide green evidence remains pending.
 - Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
 
 ## Production state
@@ -29,9 +29,9 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. The latest corroborated plan keeps `TrPaqet` for Task13 development and `pv-primary` Production-only when the single executable slot is available.
 
-## This run — 2026-09-06 02:43 Asia/Tehran
+## This run — 2026-09-06 03:38 Asia/Tehran
 
-- Verified current main ref, open PRs, exact-head status/workflow presence, and persistent coordinator/worker reports.
+- Verified current main ref `6108a43...`, open PRs, exact-head status/workflow presence, and persistent coordinator/worker reports.
 - Refreshed canonical documentation to the verified state.
 - No worker completion was creditable.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
@@ -39,7 +39,7 @@ Persistent coordinator/worker reports are historical unless corroborated by exac
 ## Next assignments
 
 - Task13: reconstruct the validated delta onto exact current main and run a fresh HTTP/1.1 + HTTP/2 rehearsal outside Production.
-- Task16: obtain a clean checkout from current main, reconcile only generic schema21 fixtures, preserve schema20 Task15 fixtures, align PR metadata and rerun all four gates on one SHA.
+- Task16: obtain a clean checkout from current main, reconcile only generic schema21 fixtures, preserve schema20 Task15 fixtures, align PR base metadata and rerun all four gates on one SHA.
 - Production: remain read-only until both task lanes are fully green; then perform fresh encrypted backup and rollback preflight before any promotion.
 
 Keep truthful accounting/session semantics under retry, race, kill and disconnect.
