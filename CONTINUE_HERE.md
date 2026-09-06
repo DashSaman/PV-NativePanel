@@ -1,28 +1,13 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-06 17:40 Asia/Tehran
+Last updated: 2026-09-06 18:42 Asia/Tehran
 
 Re-read exact GitHub `main`, open PRs, exact-head CI and fresh Production health before any mutation.
 
-## Current verified state
+- `main` start: `e76147775e9c99f878e23bfc252cfa0b5a45efac`; no combined status rows for exact head.
+- #64 Task13 DRAFT head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh HTTP/1.1 + HTTP/2 proof pending.
+- #81 Task16 DRAFT head `3c4310335ab4907d28bac995bba1be3545e14f6e`; specialized gates passed, repository CI failed on generic periodic schema expectation (`21` vs `20`); failed jobs re-run, pending.
+- #4 Karing DRAFT head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real client smoke pending.
+- No fresh Production health pass or worker completion receipt. No merge/deploy or mutation occurred.
 
-- Current `main` at inspection start: `5765147021072a68c96d29399b619632a011148c`.
-- No combined status rows and no pull-request workflow runs were returned for that exact main head; post-merge CI is not credited.
-- #64 Task13 draft head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal pending.
-- #81 Task16 draft current head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head status is empty and observed workflow evidence targets older heads; current exact-head all-green is unproven.
-- #4 Karing draft head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI 402 is green, real Karing smoke pending.
-- Documentation PRs #91–#95 remain stale/open and are not promotion authority.
-- No fresh Production health pass or worker completion receipt was obtained.
-
-## This run
-
-- Verified repository, current main, open PRs, current exact-head statuses, and persistent reports.
-- Updated canonical docs on main; no runtime/schema work integrated.
-- No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
-
-## Next execution
-
-- Reconcile #81 current head with fresh exact-head CI; do not reuse older-head evidence.
-- Keep #64/#81/#4 draft until all required evidence gates are complete.
-- Run Task13 protocol rehearsal outside Production, obtain real Karing smoke, and keep Production lane read-only until gates pass.
-- Assign independent review and Production-only lanes with fresh receipts when executable capacity exists.
+Next: observe #81 rerun; preserve Task15 schema20 fixtures; run Task13 rehearsal; obtain Karing smoke; only then backup/rollback preflight and promotion.
