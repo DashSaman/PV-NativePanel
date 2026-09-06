@@ -1,51 +1,29 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-06 17:40 Asia/Tehran
+Last updated: 2026-09-06 18:42 Asia/Tehran
 
-This file records verified repository truth and bounded Production truth. Historical worker/stage notes are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
-
-## Safety invariants
-
-PVNaive remains standalone-first. Never fabricate usage/online/IP/session history. Never rotate credentials/tokens from read-only flows. Production changes require a fresh encrypted backup + rollback state, intended migrations only, exact artifact provenance and postflight verification.
-
-## Repository truth
-
-- Repository: `DashSaman/PV-NativePanel`.
-- Current `main` at start of this run: `5765147021072a68c96d29399b619632a011148c` (verified directly from GitHub).
-- No combined status rows and no pull-request workflow runs were returned for that exact main head; post-merge CI is therefore not credited for this docs-only head.
-- Task13: draft PR #64, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains incomplete.
-- Task16: draft PR #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head status is empty and observed evidence is attached to older heads, so current exact-head all-green is not proven.
-- PR #4 (Karing export): draft, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; historical CI run 402 is SUCCESS, but no reproducible real Karing client smoke evidence is attached.
-- Documentation-only PRs #91–#95 remain open/stale and are not promotion authority; canonical docs are updated directly on `main`.
+## Verified state
+- `main` at start: `e76147775e9c99f878e23bfc252cfa0b5a45efac`; no combined status rows for this exact head, so post-merge CI is not credited.
+- PR #64 Task13: DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh HTTP/1.1 + HTTP/2 rehearsal pending.
+- PR #81 Task16: DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 PG18, Exact Accounting and Pinned Forwardproxy succeeded; repository CI `33678134360` failed in `periodic_usage_reset_executor_test.sh` with `schema version=21, want=20`. Failed jobs were re-run; outcome pending and not credited.
+- PR #4 Karing: DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI 402 succeeded; real Karing smoke pending.
 
 ## Production truth
+No fresh command-level Production audit was executable. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation or rollback mutation occurred.
 
-- No fresh command-level Production audit was executable in this run. Historical read-only evidence is not re-credited as a fresh pass.
-- No Task13, Task16 or PR #4 code is authorized as deployed from current evidence.
-- No deploy, migration, restart, reload, DB write, credential change, backup mutation or rollback mutation was performed.
+## Worker truth
+Persistent reports are historical unless corroborated by exact GitHub state and fresh receipts. No fresh completion receipt tied to the current PR heads was available. One-active-host limitations mean connected workers may be inactive.
 
-## Persistent worker state
+## This run
+- Inspected main, PRs, exact-head CI, failed database logs and persistent reports.
+- Re-ran only failed jobs for CI run `33678134360`.
+- Posted bounded assignments to #81, #64 and #4; all remain DRAFT / DO NOT MERGE.
+- No runtime/schema work integrated.
 
-- Persistent reports were searched; they are historical unless corroborated by exact GitHub state and fresh receipts.
-- No fresh worker completion receipt tied to the current heads was available for reconciliation.
-- Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 exact-head reconciliation and CI fix verification; independent worker → regression/security review; `pv-primary` → Production-only when executable access is available.
-- Persistent evidence records a one-active-host SentinelX limit; connected workers can be inactive and therefore cannot be treated as executable.
+## Next gates
+1. Observe Task16 rerun; fix only generic latest-schema expectations if still failing, preserving schema20 Task15 fixtures, then run all four gates on one SHA.
+2. Run fresh Task13 HTTP/1.1 + HTTP/2 rehearsal outside Production.
+3. Obtain reproducible real Karing smoke.
+4. Only after all gates pass, create fresh encrypted backup + rollback state and consider promotion.
 
-## This run — 2026-09-06 17:40 Asia/Tehran
-
-- Re-verified the repository default branch, current `main`, open PRs #4/#64/#81 and documentation PRs #91–#95.
-- Verified no combined status rows and no pull-request workflow runs for exact main head `5765147021072a68c96d29399b619632a011148c`.
-- Checked exact-head workflow evidence: #81 current head still has no credited exact-head status; #64 still lacks fresh protocol rehearsal; #4 still lacks real Karing smoke.
-- Confirmed no new validated worker completion or fresh Production receipt.
-- Updated canonical documentation directly on `main`; no runtime/schema work integrated.
-- No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
-
-## Immediate execution order
-
-1. Task16: run the full four-gate suite on one exact current SHA; if CI fails, fix only generic latest-schema/RLS expectations and preserve schema20-specific Task15 fixtures.
-2. Task13: reconstruct validated work onto current main and run fresh HTTP/1.1 + HTTP/2 proof outside Production.
-3. PR #4: obtain one reproducible real Karing client smoke with version/platform/import/connect evidence.
-4. Independent review: inspect Task13/Task16 diffs for security, accounting, RLS and rollback regressions.
-5. Only after required evidence is green: obtain fresh encrypted Production backup + rollback state, then consider promotion.
-
-Never claim completion from stale worker reports or partial evidence. No merge/deploy until all exact-head gates and safety prerequisites are green.
+Never claim completion from stale reports or partial evidence.
