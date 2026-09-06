@@ -1,15 +1,15 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 16:38 Asia/Tehran
+Last updated: 2026-09-06 17:40 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `d3319d29d6a868e482a8f37bac97a84f99b279b7` at inspection start; documentation reconciliation commits from this run follow it.
-- Post-merge CI for exact main head `d3319d29...` is SUCCESS: run `34032536681`.
+- Current `main` at inspection start: `5765147021072a68c96d29399b619632a011148c`; docs reconciliation commits from this run follow it.
+- No combined status rows and no pull-request workflow runs were returned for that exact main head; post-merge CI is not credited for this docs-only head.
 - #64 Task13 draft head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- #81 Task16 draft current head `3c4310335ab4907d28bac995bba1be3545e14f6e`; observed workflow evidence targets older head `b96c65903e5fc314284ea777ceea236913a03842`; current exact-head all-green is unproven.
+- #81 Task16 draft current head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head status is empty and observed workflow evidence targets older heads; current exact-head all-green is unproven.
 - #4 Karing draft head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI 402 is green, but real Karing smoke is pending.
 - #91–#95 are stale documentation PRs and not promotion authority.
 
@@ -25,10 +25,10 @@ No fresh command-level Production audit was executable in this run. No Productio
 - Promotion requires fresh encrypted backup, rollback state, exact artifact provenance and postflight verification.
 - Persistent reports are historical unless corroborated by exact GitHub state and fresh receipts; worker capacity is bounded by the one-active-host limit.
 
-## This run — 2026-09-06 16:38 Asia/Tehran
+## This run — 2026-09-06 17:40 Asia/Tehran
 
-- Verified current main, open PRs, exact-main CI, current PR heads and persistent coordinator/worker reports.
-- Confirmed exact-main CI success on run `34032536681` for `d3319d29...`.
+- Verified current main, open PRs, exact-main status/workflow state, current PR heads and persistent coordinator/worker reports.
+- Confirmed no combined status rows and no pull-request workflow runs for exact main head `5765147021072a68c96d29399b619632a011148c`.
 - Found no fresh worker completion receipt tied to current PR heads.
 - Updated canonical status/continuation/handoff docs directly on main; no runtime/schema work was integrated.
 - No merge or deploy occurred.
