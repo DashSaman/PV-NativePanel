@@ -1,16 +1,16 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 08:42 Asia/Tehran
+Last updated: 2026-09-06 09:42 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `81cc22e49d6b0b5f164f6689b4b35d5263c0b8be`.
+- Current `main`: `4ff8fc399a47adb521da766e5f08f8ff364fa845`.
 - No combined status rows or workflow runs were returned for the exact main head; post-merge CI is not credited.
-- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; focused/exact-head gates are historical-success evidence, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 TDD `33678134359`, Exact Accounting `33678134326`, and Pinned Forwardproxy `33678134350` succeeded. Normal CI `33678134360` failed only in database job at `tests/db/periodic_usage_reset_executor_test.sh` with `ERROR: schema version=21, want=20`; Go/web passed and rehearsal/bundle were skipped.
-- PR #4: draft Karing export, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; keep pending until one real Karing client smoke is captured.
+- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
+- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; historical Task16/Accounting/Pinned gates succeeded, but normal CI previously failed in the database job on a generic schema20 expectation. No fresh exact-head all-green proof is present.
+- PR #4: draft Karing export, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; keep pending until one reproducible real Karing client smoke is captured.
 - Documentation-only PRs are not promotion authority.
 
 ## Production state
@@ -31,10 +31,10 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Latest bounded plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
 
-## This run — 2026-09-06 08:42 Asia/Tehran
+## This run — 2026-09-06 09:42 Asia/Tehran
 
-- Verified current main ref, open PRs #4/#64/#81, exact-head workflow evidence and the latest Task16 database failure logs.
-- Confirmed Task16 failure is a generic schema21 fixture expectation mismatch, not a migration failure; no green promotion gate exists.
+- Re-verified current main ref, open PRs #4/#64/#81, latest commit history and persistent reports.
+- Confirmed no new validated worker completion or fresh Production evidence.
 - Refreshed canonical status and continuation documentation; no unvalidated runtime/schema work integrated.
 - No merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
 
