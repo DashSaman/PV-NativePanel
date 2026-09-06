@@ -1,16 +1,16 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 06:43 Asia/Tehran
+Last updated: 2026-09-06 07:39 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` at inspection: `453c2fa7159014b8ffcac5545e43da8b6c736c9d`.
-- No combined status rows or workflow runs were returned for that exact main head; post-merge CI is not credited.
-- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; documented exact-head/focused gates pass, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending. PR base/body metadata is stale.
-- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; documented PG18/Exact Accounting/Pinned Forwardproxy gates pass, but repository-wide database CI previously failed and no fresh all-green proof was observed.
-- PR #4: draft Karing export; keep pending until one real Karing client smoke is captured.
+- Current `main`: `cf8e90298ad3c0dca20fb1010ce12fe763f84df6`.
+- No combined status rows were returned for the exact main head; post-merge CI is not credited.
+- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; documented focused/exact-head gates pass, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending. PR base/body metadata is stale.
+- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; historical PG18/Exact Accounting/Pinned Forwardproxy evidence exists, but fresh all-green proof on one exact published SHA was not observed.
+- PR #4: draft Karing export, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; keep pending until one real Karing client smoke is captured.
 - Documentation-only PRs are not promotion authority.
 
 ## Production state
@@ -29,13 +29,13 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 ## Persistent reports / worker capacity
 
-Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. Latest corroborated plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 fixture/CI reconciliation; independent worker → regression/security review; pv-primary → Production-only when the executable slot is available.
+Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Latest bounded plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 fixture/CI reconciliation; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
 
-## This run — 2026-09-06 06:43 Asia/Tehran
+## This run — 2026-09-06 07:39 Asia/Tehran
 
-- Verified current main ref, open PRs, exact-head status presence and current GitHub evidence.
+- Verified current main ref, open PRs #4/#64/#81, exact-head status presence and current GitHub evidence.
 - Confirmed no fresh CI evidence for the exact inspected main head.
-- Reconciled that no worker completion can be credited from historical reports.
+- Reconciled that no historical worker completion can be credited.
 - Refreshed canonical status and continuation documentation; no unvalidated runtime/schema work integrated.
 - No merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
 
