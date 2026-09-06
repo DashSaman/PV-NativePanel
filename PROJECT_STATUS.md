@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-06 16:38 Asia/Tehran
+Last updated: 2026-09-06 17:40 Asia/Tehran
 
 This file records verified repository truth and bounded Production truth. Historical worker/stage notes are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main` at start of this run: `d3319d29d6a868e482a8f37bac97a84f99b279b7` (verified directly from GitHub).
-- Post-merge CI for that exact main head is SUCCESS: CI run `34032536681` completed successfully on 2026-09-06 12:14–12:18Z.
+- Current `main` at start of this run: `5765147021072a68c96d29399b619632a011148c` (verified directly from GitHub).
+- No combined status rows and no pull-request workflow runs were returned for that exact main head; post-merge CI is therefore not credited for this docs-only head.
 - Task13: draft PR #64, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains incomplete.
-- Task16: draft PR #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the observed workflow evidence is attached to older head `b96c65903e5fc314284ea777ceea236913a03842`, so current exact-head all-green is not proven.
+- Task16: draft PR #81, current GitHub head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head status is empty and observed evidence is attached to older heads, so current exact-head all-green is not proven.
 - PR #4 (Karing export): draft, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; historical CI run 402 is SUCCESS, but no reproducible real Karing client smoke evidence is attached.
 - Documentation-only PRs #91–#95 remain open/stale and are not promotion authority; canonical docs are updated directly on `main`.
 
@@ -31,11 +31,11 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 - Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 exact-head reconciliation and CI fix verification; independent worker → regression/security review; `pv-primary` → Production-only when executable access is available.
 - Persistent evidence records a one-active-host SentinelX limit; connected workers can be inactive and therefore cannot be treated as executable.
 
-## This run — 2026-09-06 16:38 Asia/Tehran
+## This run — 2026-09-06 17:40 Asia/Tehran
 
 - Re-verified the repository default branch, current `main`, open PRs #4/#64/#81 and documentation PRs #91–#95.
-- Verified exact-main post-merge CI SUCCESS on run `34032536681` for `d3319d29...`.
-- Checked exact-head workflow evidence: #81 current head still differs from older green/failing evidence; #64 still lacks fresh protocol rehearsal; #4 still lacks real Karing smoke.
+- Verified no combined status rows and no pull-request workflow runs for exact main head `5765147021072a68c96d29399b619632a011148c`.
+- Checked exact-head workflow evidence: #81 current head still has no credited exact-head status; #64 still lacks fresh protocol rehearsal; #4 still lacks real Karing smoke.
 - Confirmed no new validated worker completion or fresh Production receipt.
 - Updated canonical documentation directly on `main`; no runtime/schema work integrated.
 - No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
