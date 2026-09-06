@@ -1,16 +1,16 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 04:40 Asia/Tehran
+Last updated: 2026-09-06 05:38 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` at inspection: `46d906d8ab9428d0a6b9c106f9b510e081268406`.
+- Current `main` at inspection: `ed428b69150e6e85e21aed3a93011d5e7a7e3f3f`.
 - No combined status rows or workflow runs were returned for the exact inspected main head; post-merge CI is not credited.
 - Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI / Exact Accounting / Pinned Forwardproxy pass, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; PG18 TDD, Exact Accounting and Pinned Forwardproxy pass, while repository-wide CI `33626300697` fails. PR body/base metadata is stale and must be reconciled.
-- Production remains on Task15/schema20; no Task13 or schema21 code is deployed.
+- Task16: draft #81, exact head `b96c65903e5fc314284ea777ceea236913a03842`; PG18 TDD, Exact Accounting and Pinned Forwardproxy pass, while repository-wide CI/database job `33626300697` fails. PR body/base metadata is stale and must be reconciled.
+- No promotion authority is granted by documentation-only PRs.
 
 ## Production state
 
@@ -27,19 +27,19 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 ## Persistent reports / worker capacity
 
-Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. The latest corroborated plan keeps `TrPaqet` for Task13 development and `pv-primary` Production-only when the single executable slot is available.
+Persistent coordinator/worker reports are historical unless corroborated by exact GitHub state and fresh receipts. Latest corroborated plan: `TrPaqet` for Task13 development/rehearsal and `pv-primary` Production-only when the executable Production slot is available.
 
-## This run — 2026-09-06 04:40 Asia/Tehran
+## This run — 2026-09-06 05:38 Asia/Tehran
 
-- Verified current main ref `46d906d8...`, open PRs, exact-head CI/status presence, and persistent coordinator/worker reports.
-- Reconciled Task16 CI: three exact-head gates pass; repository-wide CI fails; no completion credited.
+- Verified current main ref `ed428b691...`, open PRs, exact-head status presence and current GitHub evidence.
+- Reconciled Task16: three exact-head gates are documented successful; repository-wide CI/database gate fails; no completion credited.
 - Refreshed canonical status and continuation docs; no runtime code integrated.
-- No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
+- No worker completion, merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
 
 ## Next assignments
 
 - Task13: reconstruct the validated delta onto exact current main and run fresh HTTP/1.1 + HTTP/2 rehearsal outside Production.
 - Task16: fix generic schema21 fixture drift on a clean branch, preserve schema20 Task15 fixtures, align PR base/head metadata and rerun all four gates on one SHA.
-- Worker lanes when available: TrPaqet → Task13 protocol rehearsal; worker with PostgreSQL18 → Task16 CI/fixture reconciliation; independent worker → full regression/static/security review; Production-only lane → read-only health then backup/rollback preflight only after gates pass.
+- Worker lanes when available: TrPaqet → Task13 protocol rehearsal; PostgreSQL18-capable worker → Task16 CI/fixture reconciliation; independent worker → regression/static/security review; Production-only lane → read-only health then backup/rollback preflight only after gates pass.
 
 Keep truthful accounting/session semantics under retry, race, kill and disconnect.
