@@ -1,6 +1,6 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-06 09:42 Asia/Tehran
+Last updated: 2026-09-06 10:39 Asia/Tehran
 
 This file records verified repository truth and bounded Production truth. Historical worker/stage notes are evidence only; exact GitHub state, exact-head CI and fresh Production observations override them.
 
@@ -11,10 +11,10 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 ## Repository truth
 
 - Repository: `DashSaman/PV-NativePanel`.
-- Current `main`: `9ccbdfa421d250db0cf67761062ea462ea112ba6`.
+- Current `main`: `7146c77f80d1a32d68d4c69588b798878f3aca56`.
 - Exact `main` combined status: no status rows returned; exact-head workflow runs: none. Post-merge CI is not credited.
 - Task13: draft PR #64, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused historical gates remain supplemental only. Fresh real HTTP/1.1 + HTTP/2 rehearsal is still incomplete.
-- Task16: draft PR #81, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16/Accounting/Pinned evidence is historical-success, but normal CI previously failed in `database` because `tests/db/periodic_usage_reset_executor_test.sh` expected schema20 after schema21 migration. No fresh exact-head full-green proof is present.
+- Task16: draft PR #81, head `b96c65903e5fc314284ea777ceea236913a03842`; historical Task16/Accounting/Pinned evidence exists, but repository CI previously failed in `database` because `tests/db/periodic_usage_reset_executor_test.sh` expected schema20 after schema21 migration. No fresh exact-head full-green proof is present.
 - PR #4 (Karing export): draft, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; no real Karing client smoke evidence is attached yet.
 - Documentation-only PRs remain open/stale and are not promotion authority.
 
@@ -28,14 +28,14 @@ PVNaive remains standalone-first. Never fabricate usage/online/IP/session histor
 
 - Persistent reports were searched; they are historical unless corroborated by exact GitHub state and fresh receipts.
 - No fresh worker completion receipt tied to the current heads was available for reconciliation.
-- Bounded plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when executable access is available.
+- Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when executable access is available.
 
-## This run — 2026-09-06 09:42 Asia/Tehran
+## This run — 2026-09-06 10:39 Asia/Tehran
 
-- Re-verified current `main`, open PRs #4/#64/#81, latest commit history and persistent coordinator/worker reports.
+- Re-verified current `main`, open PRs #4/#64/#81, exact main status/workflow evidence and persistent coordinator/worker reports.
 - Confirmed no new validated worker completion or fresh Production evidence.
-- Reconciled PR #4 as still blocked on real Karing smoke; PR #64 on fresh HTTP/1.1+HTTP/2 rehearsal; PR #81 on exact-head all-green CI.
-- Refreshed canonical status without integrating unvalidated runtime/schema work.
+- Corrected canonical documentation to the actual current `main` SHA `7146c77f...`; no runtime/schema work integrated.
+- No merge/deploy/migration/restart/reload/DB write/credential/backup/rollback mutation performed.
 
 ## Immediate execution order
 
