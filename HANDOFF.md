@@ -1,15 +1,15 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 11:39 Asia/Tehran
+Last updated: 2026-09-06 12:39 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main` before this docs refresh: `8d8c92226053fbca6bc458c73b823414a450cbec`.
+- Current `main`: `dba9bceea003ab0f6422944cb6e313477c9122c6`.
 - No combined status rows or workflow runs were returned for the exact main head; post-merge CI is not credited.
-- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending and prior attempts were blocked by environment compatibility/capacity.
-- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical gates exist, but normal CI previously failed in the database job on generic schema21/latest-schema expectations. PR base/body metadata are stale.
+- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending and PR base metadata is stale.
+- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical gates exist, but no fresh exact-head full-green proof is present and PR base/body metadata are stale.
 - PR #4: draft Karing export, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; keep pending until one reproducible real Karing client smoke is captured.
 - Documentation-only PRs #91–#95 remain open/stale and are not promotion authority; canonical docs were refreshed directly on `main` in this run.
 
@@ -31,9 +31,9 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Current bounded assignments: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
 
-## This run — 2026-09-06 11:39 Asia/Tehran
+## This run — 2026-09-06 12:39 Asia/Tehran
 
-- Re-verified current repository, open PRs #4/#64/#81 plus docs PRs #91–#95, exact main status/workflow evidence, latest commit history and persistent reports.
+- Re-verified current repository branch ref, open PRs #4/#64/#81 plus docs PRs #91–#95, exact main/PR status responses and persistent reports.
 - Confirmed no new validated worker completion or fresh Production receipt.
 - Refreshed canonical status/continuation/handoff docs on `main`; no unvalidated runtime/schema work integrated.
 - No merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
