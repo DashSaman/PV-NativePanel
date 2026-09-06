@@ -1,44 +1,28 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 17:40 Asia/Tehran
+Last updated: 2026-09-06 18:42 Asia/Tehran
 
-Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older worker checkpoints are historical evidence.
+## Current truth
+- `main` start: `e76147775e9c99f878e23bfc252cfa0b5a45efac`; exact-head combined status empty.
+- #64 Task13 DRAFT `3fc14825e1b164bad558decaef47f56b792e81af`; fresh HTTP/1.1 + HTTP/2 rehearsal required.
+- #81 Task16 DRAFT `3c4310335ab4907d28bac995bba1be3545e14f6e`; PG18/Exact Accounting/Pinned Forwardproxy succeeded, normal CI failed at `periodic_usage_reset_executor_test.sh` (`schema version=21, want=20`); failed jobs re-run and not yet credited.
+- #4 Karing DRAFT `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real Karing smoke required.
 
-## Repository / release truth
+## Production
+No fresh command-level audit was executable. No merge, deploy, migration, restart/reload, DB write, credential change, backup mutation or rollback mutation occurred.
 
-- Current `main` at inspection start: `5765147021072a68c96d29399b619632a011148c`; docs reconciliation commits from this run follow it.
-- No combined status rows and no pull-request workflow runs were returned for that exact main head; post-merge CI is not credited for this docs-only head.
-- #64 Task13 draft head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
-- #81 Task16 draft current head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head status is empty and observed workflow evidence targets older heads; current exact-head all-green is unproven.
-- #4 Karing draft head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI 402 is green, but real Karing smoke is pending.
-- #91–#95 are stale documentation PRs and not promotion authority.
+## Worker/release rules
+Persistent reports are historical without exact-head corroboration and fresh receipts. Do not integrate worker-only output. Promotion requires all exact-head gates green, fresh encrypted backup, rollback state, provenance and postflight verification.
 
-## Production state
-
-No fresh command-level Production audit was executable in this run. No Production health pass is claimed. No restart, reload, migration, DB write, credential rotation, backup mutation, rollback mutation or deployment occurred.
-
-## Gates and blockers
-
-- #64: require fresh exact-head HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, no restart/reload and exactly-once accounting.
-- #81: require all four gates on one exact current SHA; never reuse older-head green runs.
-- #4: require reproducible real Karing client smoke.
-- Promotion requires fresh encrypted backup, rollback state, exact artifact provenance and postflight verification.
-- Persistent reports are historical unless corroborated by exact GitHub state and fresh receipts; worker capacity is bounded by the one-active-host limit.
-
-## This run — 2026-09-06 17:40 Asia/Tehran
-
-- Verified current main, open PRs, exact-main status/workflow state, current PR heads and persistent coordinator/worker reports.
-- Confirmed no combined status rows and no pull-request workflow runs for exact main head `5765147021072a68c96d29399b619632a011148c`.
-- Found no fresh worker completion receipt tied to current PR heads.
-- Updated canonical status/continuation/handoff docs directly on main; no runtime/schema work was integrated.
-- No merge or deploy occurred.
+## This run
+- Inspected GitHub main, PRs, exact-head workflows/jobs/logs and persistent reports.
+- Re-ran failed database jobs for CI run `33678134360`.
+- Posted assignments to #81, #64 and #4; all remain DRAFT / DO NOT MERGE.
+- Updated canonical status/continuation/handoff documentation; no runtime/schema work integrated.
 
 ## Next assignments
-
-- Task16 lane: reconcile branch/current head, run normal CI + Task16 PG18 + Exact Accounting + Pinned Forwardproxy on one exact SHA, preserve Task15 schema20 fixtures.
-- Task13 lane: run fresh HTTP/1.1 + HTTP/2 rehearsal on exact head outside Production with full session/accounting receipt.
-- Karing lane: execute real client smoke and attach reproducible import/connect evidence.
-- Independent review lane: security/RLS/accounting/rollback review for #64/#81.
-- Production-only lane: read-only health first; only after all gates pass, create encrypted backup + rollback state and consider deploy.
-
-Keep truthful accounting/session semantics under retry, race, kill and disconnect.
+1. Task16: observe rerun; if needed fix only generic latest-schema expectations, preserve schema20 Task15 fixtures, then run four gates on one exact SHA.
+2. Task13: fresh HTTP/1.1 + HTTP/2 rehearsal outside Production with exact accounting/session receipt.
+3. Karing: reproducible real client import/parse/connect/cleanup smoke.
+4. Independent review: security, RLS, accounting and rollback.
+5. Production-only: read-only health first; backup/rollback then promotion only after gates are green.
