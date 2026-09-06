@@ -1,15 +1,15 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-06 07:39 Asia/Tehran
+Last updated: 2026-09-06 08:42 Asia/Tehran
 
 Resume from this file plus `CONTINUE_HERE.md`, `PROJECT_STATUS.md`, exact GitHub `main`, open PRs, newest evidence and fresh Production health. Older stage/worker checkpoints are historical evidence.
 
 ## Repository / release truth
 
-- Current `main`: `cf8e90298ad3c0dca20fb1010ce12fe763f84df6`.
-- No combined status rows were returned for the exact main head; post-merge CI is not credited.
-- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; documented focused/exact-head gates pass, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending. PR base/body metadata is stale.
-- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; historical PG18/Exact Accounting/Pinned Forwardproxy evidence exists, but fresh all-green proof on one exact published SHA was not observed.
+- Current `main`: `81cc22e49d6b0b5f164f6689b4b35d5263c0b8be`.
+- No combined status rows or workflow runs were returned for the exact main head; post-merge CI is not credited.
+- Task13: draft #64, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; focused/exact-head gates are historical-success evidence, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still pending.
+- Task16: draft #81, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 TDD `33678134359`, Exact Accounting `33678134326`, and Pinned Forwardproxy `33678134350` succeeded. Normal CI `33678134360` failed only in database job at `tests/db/periodic_usage_reset_executor_test.sh` with `ERROR: schema version=21, want=20`; Go/web passed and rehearsal/bundle were skipped.
 - PR #4: draft Karing export, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, base `s04-auth`; keep pending until one real Karing client smoke is captured.
 - Documentation-only PRs are not promotion authority.
 
@@ -29,20 +29,19 @@ No restart, reload, migration, DB write, credential rotation, backup mutation, r
 
 ## Persistent reports / worker capacity
 
-Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Latest bounded plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 fixture/CI reconciliation; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
+Persistent coordinator/worker reports were searched. They remain historical unless corroborated by exact GitHub state and fresh receipts. Latest bounded plan: TrPaqet → Task13 rehearsal; PostgreSQL18-capable worker → Task16 generic fixture correction; independent worker → regression/security review; `pv-primary` → Production-only when an executable slot is available.
 
-## This run — 2026-09-06 07:39 Asia/Tehran
+## This run — 2026-09-06 08:42 Asia/Tehran
 
-- Verified current main ref, open PRs #4/#64/#81, exact-head status presence and current GitHub evidence.
-- Confirmed no fresh CI evidence for the exact inspected main head.
-- Reconciled that no historical worker completion can be credited.
+- Verified current main ref, open PRs #4/#64/#81, exact-head workflow evidence and the latest Task16 database failure logs.
+- Confirmed Task16 failure is a generic schema21 fixture expectation mismatch, not a migration failure; no green promotion gate exists.
 - Refreshed canonical status and continuation documentation; no unvalidated runtime/schema work integrated.
 - No merge, deploy, migration, restart/reload, DB write, credential, backup or rollback mutation performed.
 
 ## Next assignments
 
+- Task16: update only the remaining generic latest-schema expectation in `tests/db/periodic_usage_reset_executor_test.sh`; preserve schema20-specific Task15 fixtures; rerun all four gates.
 - Task13: reconstruct validated delta onto current main and run fresh HTTP/1.1 + HTTP/2 rehearsal outside Production.
-- Task16: fix generic schema21 fixture drift on a clean branch, preserve schema20 Task15 fixtures, align PR metadata and rerun all four gates on one SHA.
 - PR #4: run a real Karing client smoke and attach reproducible evidence.
 - Independent review: inspect Task13/Task16 diffs for security, accounting, RLS and rollback regressions.
 - Production-only lane: read-only health first; only after all gates pass, create fresh encrypted backup + rollback snapshot and then consider deployment.
