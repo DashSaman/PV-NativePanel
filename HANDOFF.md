@@ -1,13 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 08:41 Asia/Tehran
+Last updated: 2026-09-07 09:43 Asia/Tehran
 
 ## Current truth
-- GitHub verified `main` at `fb561a8414b4052d266c5786a3a9da8a19d824e6` before this refresh; this run adds documentation only. Combined status for that exact docs-only head is empty and no post-merge CI is credited.
-- Canonical docs were refreshed sequentially in this run; the resulting docs-only tip is not considered CI-verified until GitHub reports a run for its exact SHA.
+- GitHub verified `main` at `56ec23b99a3cd14a8571f24630703699aa2d277f` before this refresh; this run adds documentation only. The resulting docs-only tip is `3c6f5fefb655d300a0ab44ab96ec84c8b48a928f`; combined status for the verified pre-refresh head was empty and no post-merge CI is credited for the new tip.
 - #64 Task13 OPEN/DRAFT/mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; older dedicated PostgreSQL18 success and stale-fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
-- #4 Karing OPEN/DRAFT; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
+- #4 Karing OPEN/DRAFT/mergeable=true; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
 - Stale documentation PRs remain non-canonical and were not merged.
 
 ## Production
@@ -17,9 +16,9 @@ No connected Production command/deploy lane or fresh command-level audit was ava
 Worker output is creditable only when tied to an exact GitHub head and fresh receipt. Dirty/stale worktrees are not completion evidence. Do not integrate worker-only output. Use disposable credentials and isolated canaries. Promotion requires all exact-head gates green, a fresh encrypted backup, independent rollback state, provenance and postflight verification.
 
 ## Actions in this run
-- Re-verified current GitHub `main`, PR #64/#81/#4, exact-head combined status availability and persistent coordinator/worker reports.
+- Re-verified current GitHub `main`, PR #64/#81/#4, exact-head combined-status availability and persistent coordinator/worker reports.
 - Confirmed no validated worker completion was available for integration.
-- Refreshed `PROJECT_STATUS.md`, `CONTINUE_HERE.md` and this handoff to the actual current GitHub state.
+- Corrected canonical `PROJECT_STATUS.md`, `CONTINUE_HERE.md` and this handoff to the actual verified GitHub state.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
