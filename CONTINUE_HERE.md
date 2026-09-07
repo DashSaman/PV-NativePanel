@@ -1,14 +1,14 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-07 03:40 Asia/Tehran
+Last updated: 2026-09-07 04:42 Asia/Tehran
 
-Re-read exact GitHub `main`, open PRs, exact-head CI, Production health, and persistent reports before any mutation.
+Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- `main` exact head after this docs-only refresh: `21ef1fbad2810457ecb4234e020e53578ac13b98`; no post-merge CI is credited for this head.
-- #64 Task13 OPEN/DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status is empty and fresh real HTTP/1.1 + HTTP/2 proof is still pending.
-- #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status is empty; historical receipts are not a current single-SHA four-gate proof.
-- #4 Karing OPEN/DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is green, real-client smoke is pending.
-- Stale documentation PRs #85/#86/#87/#88/#89/#91/#92/#93/#94/#95 were not merged because their bases/claims are behind current `main`.
-- No connected Production command/deploy lane was available in this run; no fresh Production audit, backup, rollback, deploy, or postflight is claimed. No Production mutation occurred.
+- Latest verified `main` tip before this docs refresh: `27e8c291d2fde20f7cd90f939414d6e09f396306`; this run adds documentation only. No post-merge CI is credited for the new docs head until observed.
+- #64 Task13 OPEN/DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 proof pending.
+- #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; generic schema21/latest-schema fixture reconciliation and a fresh single-SHA four-gate run pending; Task15 schema20-specific fixtures must remain pinned.
+- #4 Karing OPEN/DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is green; real-client smoke pending.
+- Stale docs PRs #85/#86/#87/#88/#89/#91/#92/#93/#94/#95 remain non-canonical.
+- No connected Production command/deploy lane was available in this run. No fresh Production audit, backup, rollback, deploy or postflight is claimed; no Production mutation occurred.
 
-Next: use the first executable development slot for a clean Task16 reconciliation/rerun, keep Task13 and Karing independent, and require fresh exact-head gates plus backup/rollback evidence before promotion.
+Next executable slot: use a clean current-main-derived development checkout for Task16 reconciliation/rerun; keep Task13 and Karing independent. Require fresh exact-head gates, backup and rollback evidence before any promotion.
