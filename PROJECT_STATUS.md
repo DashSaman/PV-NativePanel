@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-07 19:40 Asia/Tehran
+Last updated: 2026-09-07 20:41 Asia/Tehran
 
 ## Verified GitHub state
-- Current `main` tip from GitHub: `59e4b6444abcf7964a4c2de56810e0e89c21ecdf` (docs-only reconciliation commit). Exact-head combined status is empty; no post-merge CI green is claimed.
+- Current `main` tip from GitHub: `86e0caf45ec61c5697d08e52704938e64ddc52cf` (docs-only reconciliation commit). Exact-head combined status is empty; no post-merge CI green is claimed.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`. Historical CI/focused tests are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body cites `b96c65903e5fc314284ea777ceea236913a03842` as intended exact head. This discrepancy is unresolved. Combined status for `b96c659...` is empty in the current connector view. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body cites `b96c65903e5fc314284ea777ceea236913a03842` as intended exact head. This discrepancy is unresolved. Combined status for `b96c659...` is not green evidence. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI/curl evidence is supplemental; reproducible real-client smoke remains missing.
 
 ## Worker / coordinator truth
@@ -18,7 +18,7 @@ Last updated: 2026-09-07 19:40 Asia/Tehran
 
 ## Actions in this run
 - Re-verified current `main`, PR #64/#81/#4 metadata, exact-head status availability, and persistent reports.
-- Added fresh reconciliation/dispatch comments to PR #64, #81, and #4.
+- Added fresh reconciliation comments to PR #64 and #81.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
