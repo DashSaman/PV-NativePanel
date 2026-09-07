@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 19:40 Asia/Tehran
+Last updated: 2026-09-07 20:41 Asia/Tehran
 
 ## Current truth
-- GitHub `main` verified at `59e4b6444abcf7964a4c2de56810e0e89c21ecdf` before this documentation update; this run added only a docs reconciliation commit. Exact-head combined status is absent; no post-merge CI green is claimed.
+- GitHub `main` verified at `86e0caf45ec61c5697d08e52704938e64ddc52cf`; this run added only a docs reconciliation commit `b3935b0dfcf3a43abc43a01ddb23e7197618cae8`. Exact-head combined status is absent; no post-merge CI green is claimed.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body cites `b96c65903e5fc314284ea777ceea236913a03842`, creating an unresolved head discrepancy. Combined status for `b96c659...` is empty.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body cites `b96c65903e5fc314284ea777ceea236913a03842`, creating an unresolved head discrepancy. Do not credit historical or mixed-head gates.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client smoke remains pending.
 
 ## Worker and Production
@@ -14,7 +14,7 @@ Last updated: 2026-09-07 19:40 Asia/Tehran
 
 ## Actions in this run
 - Re-verified current main, PR metadata, exact-head status availability, and persistent reports.
-- Posted fresh reconciliation/dispatch comments to #64, #81, and #4.
+- Posted fresh reconciliation comments to #64 and #81.
 - Updated canonical project status and this handoff.
 - No runtime/schema/Production change was integrated.
 
