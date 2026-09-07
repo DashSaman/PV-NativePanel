@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-07 21:42 Asia/Tehran
+Last updated: 2026-09-07 22:39 Asia/Tehran
 
 ## Verified GitHub state
-- Current `main` tip from GitHub: `ea61ea455897b93be01bd6653df0edf858d3d966` (docs-only reconciliation commit). Exact-head combined status is empty; no post-merge CI green is claimed.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`. Historical CI/focused tests are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; prior body/history references older heads and are not current proof. Current exact-head four-gate evidence is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
+- Current `main` tip from GitHub: `45aa9b7beb6c5c1d3e31ff482314047616e66556` (latest ref verification). Exact-head combined status is empty; no post-merge CI green is claimed.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; historical CI/focused tests are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body references older heads and is not current proof. Current exact-head four-gate evidence is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI/curl evidence is supplemental; reproducible real-client smoke remains missing.
 
 ## Worker / coordinator truth
@@ -17,7 +17,7 @@ Last updated: 2026-09-07 21:42 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified current `main`, open PR metadata, exact-head status availability, latest PR comments, and persistent-report truth.
+- Re-verified current `main` ref, open PR metadata, exact-head status availability, latest PR discussion state, and persistent-report truth.
 - Posted fresh autonomous dispatch/reconciliation comments to PR #64, #81, and #4.
 - Updated canonical project status, continue-here, and handoff files.
 - No runtime/schema/Production change was integrated.
