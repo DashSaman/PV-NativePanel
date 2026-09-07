@@ -1,9 +1,10 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 07:43 Asia/Tehran
+Last updated: 2026-09-07 08:41 Asia/Tehran
 
 ## Current truth
-- GitHub verifies `main` at `761fd0ad7ba2dd8ca08f32654a64b58f720e9c4b`; this run adds documentation only. Combined status for that exact head is empty and no post-merge CI is credited.
+- GitHub verified `main` at `fb561a8414b4052d266c5786a3a9da8a19d824e6` before this refresh; this run adds documentation only. Combined status for that exact docs-only head is empty and no post-merge CI is credited.
+- Canonical docs were refreshed sequentially in this run; the resulting docs-only tip is not considered CI-verified until GitHub reports a run for its exact SHA.
 - #64 Task13 OPEN/DRAFT/mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; older dedicated PostgreSQL18 success and stale-fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
 - #4 Karing OPEN/DRAFT; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
@@ -16,9 +17,10 @@ No connected Production command/deploy lane or fresh command-level audit was ava
 Worker output is creditable only when tied to an exact GitHub head and fresh receipt. Dirty/stale worktrees are not completion evidence. Do not integrate worker-only output. Use disposable credentials and isolated canaries. Promotion requires all exact-head gates green, a fresh encrypted backup, independent rollback state, provenance and postflight verification.
 
 ## Actions in this run
-- Re-verified latest GitHub `main`, PR #64/#81/#4, exact-head combined status availability and persistent coordinator/worker reports.
-- Added exact next-step comments: #81 comment `5564919591`; #64 comment `5564920028`; #4 comment `5564920491`.
-- Updated canonical documentation only; no runtime/schema change was integrated.
+- Re-verified current GitHub `main`, PR #64/#81/#4, exact-head combined status availability and persistent coordinator/worker reports.
+- Confirmed no validated worker completion was available for integration.
+- Refreshed `PROJECT_STATUS.md`, `CONTINUE_HERE.md` and this handoff to the actual current GitHub state.
+- No runtime/schema/Production change was integrated.
 
 ## Next assignments
 1. Task16/schema lane: from latest exact `main`, narrow-fix generic schema21/latest-schema expectations only, keep Task15 schema20 fixtures unchanged, then run normal CI + Task16 PostgreSQL18 + Exact Accounting + Pinned Forwardproxy on one SHA.
