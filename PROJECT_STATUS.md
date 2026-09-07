@@ -1,28 +1,29 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-07 20:41 Asia/Tehran
+Last updated: 2026-09-07 21:42 Asia/Tehran
 
 ## Verified GitHub state
-- Current `main` tip from GitHub: `86e0caf45ec61c5697d08e52704938e64ddc52cf` (docs-only reconciliation commit). Exact-head combined status is empty; no post-merge CI green is claimed.
+- Current `main` tip from GitHub: `ea61ea455897b93be01bd6653df0edf858d3d966` (docs-only reconciliation commit). Exact-head combined status is empty; no post-merge CI green is claimed.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`. Historical CI/focused tests are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; PR body cites `b96c65903e5fc314284ea777ceea236913a03842` as intended exact head. This discrepancy is unresolved. Combined status for `b96c659...` is not green evidence. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; prior body/history references older heads and are not current proof. Current exact-head four-gate evidence is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI/curl evidence is supplemental; reproducible real-client smoke remains missing.
 
 ## Worker / coordinator truth
-- Persistent reports were searched. No fresh completion receipt tied to the current PR heads was found. Worker-only, stale, dirty, or mixed-head output is uncredited.
-- TrPaqet remains the documented active executable slot. Worker-local PostgreSQL 14.x is not PostgreSQL18 evidence.
+- Persistent reports and latest PR receipts were rechecked. No fresh completion receipt tied to the current PR heads was found. Worker-only, stale, dirty, or mixed-head output is uncredited.
+- The documented active executable slot remains TrPaqet; worker-local PostgreSQL 14.x is not PostgreSQL18 evidence. Tooling/capacity limits remain active.
 
 ## Production truth
 - No fresh command-level Production audit, encrypted backup preflight, independent rollback snapshot, deploy, or postflight was available in this run. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified current `main`, PR #64/#81/#4 metadata, exact-head status availability, and persistent reports.
-- Added fresh reconciliation comments to PR #64 and #81.
+- Re-verified current `main`, open PR metadata, exact-head status availability, latest PR comments, and persistent-report truth.
+- Posted fresh autonomous dispatch/reconciliation comments to PR #64, #81, and #4.
+- Updated canonical project status, continue-here, and handoff files.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
-1. Task16: reconcile API head vs PR-body head, then produce one exact SHA with normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy all SUCCESS.
+1. Task16: create one clean current-main-derived head; reconcile branch/body/head; update only generic latest-schema expectations; run normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy on one exact SHA.
 2. Task13: fresh isolated HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
