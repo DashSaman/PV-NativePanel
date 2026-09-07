@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 05:43 Asia/Tehran
+Last updated: 2026-09-07 06:39 Asia/Tehran
 
 ## Current truth
-- GitHub recent history verifies `main` at `183c914976ff2e56523a1dea70e543bc17d1cd9d` before this documentation refresh. The refresh commits are documentation-only; combined status for the new head is empty and no post-merge CI is credited until observed.
+- GitHub recent history verifies `main` at `49fe611b848bcda7015c1193fe86b3360c0dd4fe` before this documentation refresh. This run is documentation-only; combined status for that exact head was empty and no post-merge CI is credited.
 - #64 Task13 OPEN/DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; older dedicated PostgreSQL18 success and stale-fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
 - #4 Karing OPEN/DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI success is not real-client proof; import/parse/connect/cleanup smoke remains pending.
@@ -14,6 +14,11 @@ No connected Production command/deploy lane or fresh command-level audit was ava
 
 ## Worker/release rules
 Worker output is creditable only when tied to an exact GitHub head and fresh receipt. Dirty/stale worktrees are not completion evidence. Do not integrate worker-only output. Use disposable credentials and isolated canaries. Promotion requires all exact-head gates green, a fresh encrypted backup, independent rollback state, provenance and postflight verification.
+
+## Actions in this run
+- Re-verified latest GitHub `main`, PR heads/bodies, exact-head combined status availability and persistent coordinator/worker reports.
+- Added exact next-step comments to PRs #81, #64 and #4.
+- Updated canonical status documentation only; no runtime/schema change was integrated.
 
 ## Next assignments
 1. Task16/schema lane: from latest exact `main`, narrow-fix generic schema21/latest-schema expectations only, keep Task15 schema20 fixtures unchanged, then run normal CI + Task16 PostgreSQL18 + Exact Accounting + Pinned Forwardproxy on one SHA.
