@@ -1,12 +1,12 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-07 08:41 Asia/Tehran
+Last updated: 2026-09-07 09:43 Asia/Tehran
 
 ## Verified state
-- Current `main` tip from GitHub: `fb561a8414b4052d266c5786a3a9da8a19d824e6` (`docs: refresh canonical handoff after automation turn 11`). Combined status for this exact docs-only head is empty; do not claim post-merge CI green.
+- Current `main` tip from GitHub: `56ec23b99a3cd14a8571f24630703699aa2d277f` (`docs: refresh canonical handoff after automation turn 11`). Combined status for this exact docs-only head is empty; do not claim post-merge CI green.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status is empty. Historical focused gates are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status is empty. Older PostgreSQL18 and stale-fixture evidence is supplemental only; no current single-SHA four-gate proof exists. Preserve schema20-specific Task15 fixtures.
-- PR #4 Karing: OPEN / DRAFT; historical CI is not real-client proof. Reproducible real-client import/parse/connect/cleanup smoke is still missing.
+- PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is not real-client proof. Reproducible real-client import/parse/connect/cleanup smoke is still missing.
 - Stale documentation PRs remain non-canonical and were not merged.
 
 ## Production truth
@@ -18,7 +18,8 @@ Persistent coordinator/worker reports were searched again. No fresh completion r
 ## Actions in this run
 - Re-verified repository metadata, current `main`, open PR #64/#81/#4, exact-head combined-status availability and persistent coordinator/worker reports.
 - Confirmed no validated worker completion was available for integration.
-- Refreshed this canonical status to the actual current `main` SHA; no runtime/schema change was integrated.
+- Corrected canonical status to the actual current `main` SHA `56ec23b99a3cd14a8571f24630703699aa2d277f`.
+- No runtime/schema change was integrated.
 
 ## Next gates
 1. Task16: clean current-main-derived branch; narrow-fix only generic schema21/latest-schema expectations; preserve Task15 schema20-specific fixtures; run normal CI + Task16 PostgreSQL18 + Exact Accounting + Pinned Forwardproxy on one exact SHA.
