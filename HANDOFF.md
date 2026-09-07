@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 04:42 Asia/Tehran
+Last updated: 2026-09-07 05:43 Asia/Tehran
 
 ## Current truth
-- GitHub recent history verifies `main` at `27e8c291d2fde20f7cd90f939414d6e09f396306` before this documentation refresh. The refresh commits are documentation-only; no post-merge CI is credited for the new head until observed.
+- GitHub recent history verifies `main` at `183c914976ff2e56523a1dea70e543bc17d1cd9d` before this documentation refresh. The refresh commits are documentation-only; combined status for the new head is empty and no post-merge CI is credited until observed.
 - #64 Task13 OPEN/DRAFT, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; prior evidence reports generic latest-schema mismatch and no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
+- #81 Task16 OPEN/DRAFT, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; older dedicated PostgreSQL18 success and stale-fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
 - #4 Karing OPEN/DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI success is not real-client proof; import/parse/connect/cleanup smoke remains pending.
 - Stale docs PRs #85/#86/#87/#88/#89/#91/#92/#93/#94/#95 were not merged.
 
