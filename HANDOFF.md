@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 11:38 Asia/Tehran
+Last updated: 2026-09-07 12:40 Asia/Tehran
 
 ## Current truth
-- GitHub verified `main` at `ae8e51eaaf1fd8e0c617cd965b8a27ac1338e5b9` before this refresh; exact-head workflow lookup returned no PR-triggered runs. This run is documentation-only; latest canonical docs updates are unverified until an exact-head run exists.
+- GitHub verified `main` at `3a97c9a79aecd5998388cb23c047550eb181537d`; exact-head combined status is empty and no post-merge CI green is claimed for this docs-only state.
 - #64 Task13 OPEN/DRAFT/mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current exact-head four-gate proof is not verified. Preserve schema20-specific Task15 fixtures.
-- #4 Karing OPEN/DRAFT; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
+- #81 Task16 OPEN/DRAFT/mergeable=false, head `b96c65903e5fc314284ea777ceea236913a03842`; current exact-head four-gate proof is not verified. Preserve schema20-specific Task15 fixtures.
+- #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
 - Stale documentation PRs remain non-canonical and were not merged.
 
 ## Production
@@ -18,6 +18,7 @@ No fresh completion receipt tied to the current PR heads was found in persistent
 ## Actions in this run
 - Re-verified current GitHub `main`, open PRs #64/#81/#4, exact-head status availability and persistent coordinator/worker reports.
 - Confirmed no validated worker completion was available for integration.
+- Dispatched fresh execution instructions to Task13, Task16 and Karing lanes.
 - Updated `PROJECT_STATUS.md`, `CONTINUE_HERE.md` and this handoff to the actual verified GitHub state.
 - No runtime/schema/Production change was integrated.
 
