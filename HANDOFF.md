@@ -1,23 +1,23 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 16:48 Asia/Tehran
+Last updated: 2026-09-07 17:45 Asia/Tehran
 
 ## Current truth
-- GitHub `main` was verified at `e500042b28bfaa6313c5fbc55cccf8e3004ac234`; canonical status reconciliation advanced it to `80a179c3a491efb51f08dc23a86374737be70498`, a docs-only head. Exact-head combined status has not been re-run after the docs commits; no post-merge CI green is claimed.
+- GitHub `main` was verified at `8d70a6ec92dac5b4117cb23701be1ac24d7c67ae`; this run adds documentation-only reconciliation commits. Exact-head combined status for the verified `main` was empty, so no post-merge CI green is claimed.
 - #64 Task13 OPEN/DRAFT/mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; focused tests are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; latest observed Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy runs are green, but repository-wide CI `33678134360` is red in database job `101509296474` at `tests/db/periodic_usage_reset_executor_test.sh` with `schema version=21, want=20`.
+- #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; latest dedicated evidence is insufficient for promotion because repository-wide CI remains blocked by the generic schema-version expectation `schema version=21, want=20`.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; import/parse/connect/cleanup smoke remains pending.
 
 ## Production
-Historical read-only health evidence exists for `pv-primary`, but no fresh command-level audit was executed in this run. No fresh backup, rollback, deploy or postflight is claimed. No merge, deploy, migration, restart/reload, DB write, credential change, backup mutation or rollback mutation occurred.
+Historical read-only health evidence exists for `pv-primary`, but no fresh command-level audit was available in this run. No fresh backup, rollback, deploy or postflight is claimed. No merge, deploy, migration, restart/reload, DB write, credential change, backup mutation or rollback mutation occurred.
 
 ## Worker/release rules
 No fresh completion receipt tied to current PR heads was found. Historical worker-only/stale/dirty work remains uncredited. Use disposable credentials and isolated canaries. Promotion requires every exact-head gate green, a fresh encrypted backup, independent rollback state, provenance and postflight verification.
 
 ## Actions in this run
-- Re-verified current `main`, open PRs #64/#81/#4, exact-head status availability, current workflow runs and the failing database job logs.
-- Reconciled Task16 as PARTIAL: three dedicated gates green, repository-wide CI red on a generic schema-version expectation.
-- Updated `PROJECT_STATUS.md`, `CONTINUE_HERE.md`, and this handoff with exact run/job identifiers and the blocker.
+- Re-verified current `main`, open PRs #64/#81/#4, exact-head status availability, canonical docs, and persistent-report search results.
+- Confirmed no validated worker completion was available for integration.
+- Updated `PROJECT_STATUS.md`, `CONTINUE_HERE.md`, and this handoff with the actual current main and evidence boundaries.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
