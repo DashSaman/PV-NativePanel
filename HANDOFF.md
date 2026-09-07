@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 21:42 Asia/Tehran
+Last updated: 2026-09-07 22:39 Asia/Tehran
 
 ## Current truth
-- GitHub `main` verified at `ea61ea455897b93be01bd6653df0edf858d3d966`; docs-only follow-ups are `9f3b60b33f7dd557a3d0dbbe0b17556464f5b505` and `b327ba6b70b9762b6c5c210e8bc34ff708170c00`. Exact-head combined status is absent; no post-merge CI green is claimed.
+- GitHub `main` ref verified at `45aa9b7beb6c5c1d3e31ff482314047616e66556`; this run added docs reconciliation commit `e0566bf691e0b770342d0a6793581928ab69b249`. Exact-head combined status is absent; no post-merge CI green is claimed.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal is mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; historical/older body heads and receipts are not current proof. Current exact-head four-gate proof is absent.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client smoke remains pending.
@@ -13,7 +13,7 @@ Last updated: 2026-09-07 21:42 Asia/Tehran
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight was available. No Production mutation occurred.
 
 ## Actions in this run
-- Re-verified current main, PR metadata, exact-head status availability, latest PR comments, and persistent-report truth.
+- Re-verified current main ref, PR metadata, exact-head status availability, latest PR discussions, and persistent-report truth.
 - Posted fresh autonomous dispatch/reconciliation comments to #64, #81, and #4.
 - Updated canonical project status, continue-here, and this handoff.
 - No runtime/schema/Production change was integrated.
