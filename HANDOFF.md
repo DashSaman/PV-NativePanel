@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-07 09:43 Asia/Tehran
+Last updated: 2026-09-07 10:44 Asia/Tehran
 
 ## Current truth
-- GitHub verified `main` at `56ec23b99a3cd14a8571f24630703699aa2d277f` before this refresh; this run adds documentation only. The resulting docs-only tip is `3c6f5fefb655d300a0ab44ab96ec84c8b48a928f`; combined status for the verified pre-refresh head was empty and no post-merge CI is credited for the new tip.
+- GitHub verified `main` at `5bd2420ea2fccb4b6e02f7dafded0a4d3dbd5f2d` before this refresh; this run adds documentation only. The resulting docs-only tip is `c2d5906b682ffca8f7cd57c2e6c49c83b970ea15`; no post-merge CI is credited for the new tip.
 - #64 Task13 OPEN/DRAFT/mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status empty; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current combined status empty; older dedicated PostgreSQL18 success and stale-fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
+- #81 Task16 OPEN/DRAFT/mergeable=false, current head `b96c65903e5fc314284ea777ceea236913a03842`; older dedicated PostgreSQL18 success and fixture corrections are supplemental only; no current single-SHA four-gate proof. Preserve schema20-specific Task15 fixtures.
 - #4 Karing OPEN/DRAFT/mergeable=true; historical CI is not real-client proof; import/parse/connect/cleanup smoke remains pending.
 - Stale documentation PRs remain non-canonical and were not merged.
 
