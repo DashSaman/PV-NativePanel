@@ -1,24 +1,25 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-07 11:38 Asia/Tehran
+Last updated: 2026-09-07 12:40 Asia/Tehran
 
 ## Verified state
-- Current `main` tip from GitHub: `ae8e51eaaf1fd8e0c617cd965b8a27ac1338e5b9` (`docs: update canonical handoff with current verified state`). `fetch_commit_workflow_runs` for this exact docs-only head returned no PR-triggered runs; do not claim post-merge CI green.
+- Current `main` tip from GitHub: `3a97c9a79aecd5998388cb23c047550eb181537d` (`docs: update canonical handoff with verified GitHub state`). Exact-head combined status is empty; no post-merge CI green is claimed for this docs-only head.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, head `3fc14825e1b164bad558decaef47f56b792e81af`; current combined status is empty. Historical exact-head gates/focused tests are supplemental only; fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, current head `3c4310335ab4907d28bac995bba1be3545e14f6e`; branch body records historical PG18 success and stale-fixture repair, but current exact-head four-gate proof is not verified. Preserve schema20-specific Task15 fixtures.
-- PR #4 Karing: OPEN / DRAFT, historical CI is not real-client proof; reproducible real-client import/parse/connect/cleanup smoke remains missing.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, current head `b96c65903e5fc314284ea777ceea236913a03842`; historical PG18 and fixture-repair evidence is mixed-head/supplemental, not current exact-head proof. Preserve schema20-specific Task15 fixtures.
+- PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI is not real-client proof; reproducible real-client import/parse/connect/cleanup smoke remains missing.
 - Stale documentation PRs remain non-canonical and were not merged.
 
 ## Production truth
 No connected Production command/deployment lane or fresh command-level audit was available to this run. No fresh health pass, encrypted backup preflight, independent rollback snapshot, deploy or postflight is claimed. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation or rollback mutation occurred.
 
 ## Worker truth
-Persistent coordinator/worker reports were searched again. No fresh completion receipt tied to the current PR heads was found. Historical, dirty or stale worker output is not credited and was not integrated. Persistent reports continue to describe limited/one-active-host development capacity and prohibit using Production services as a test lane.
+Persistent coordinator/worker reports were searched again. No fresh completion receipt tied to the current PR heads was found. Historical, dirty or stale worker output is not credited and was not integrated. Persistent reports describe limited/one-active-host development capacity and prohibit using Production services as a test lane.
 
 ## Actions in this run
 - Re-verified repository metadata, current `main`, open PR #64/#81/#4, exact-head combined-status availability and persistent coordinator/worker reports.
 - Confirmed no validated worker completion was available for integration.
-- Corrected canonical status to the actual GitHub `main` SHA `ae8e51eaaf1fd8e0c617cd965b8a27ac1338e5b9`.
+- Corrected canonical status to the actual GitHub `main` SHA `3a97c9a79aecd5998388cb23c047550eb181537d`.
+- Dispatched fresh execution instructions to Task13, Task16 and Karing lanes.
 - No runtime/schema/Production change was integrated.
 
 ## Next gates
