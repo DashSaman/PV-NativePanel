@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 21:38 Asia/Tehran
+Last updated: 2026-09-08 22:39 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `16144caf73e91ede24aafde77bdace802dc61ee4`.
-- This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
+- Authoritative GitHub `main` currently returns `478638bdd491173fb8bfd33f075eb157bc49ac3b`.
+- This head is documentation-only; combined status is empty and the PR-triggered workflow-runs endpoint returned no runs. No green post-merge CI is claimed for this head.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI `33623363327`, WS1 Exact Accounting `33623363299`, and WS1 Pinned Forwardproxy `33623363389` are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed database coverage with `ERROR: RLS coverage check failed: 43/42`. Exact-head promotion remains blocked until one clean head fixes the mismatch and all four gates pass on that same SHA; preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 and older docs-only PRs remain non-runtime evidence.
@@ -20,7 +20,7 @@ Last updated: 2026-09-08 21:38 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main`, open PRs, current combined status, and persistent reports.
-- Confirmed `main=16144caf...` has no current status checks.
+- Confirmed `main=478638bdd491173fb8bfd33f075eb157bc49ac3b` has no current status checks or PR-triggered workflow runs.
 - Reconciled this file to the actual current `main` SHA and recorded current exact-head blockers.
 - No runtime/schema/Production change was integrated.
 
