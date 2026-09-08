@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 10:39 Asia/Tehran
+Last updated: 2026-09-08 11:41 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` ref currently returns `49c0ff592df425d12a998ba6f09c8e199dfd7587`.
-- Combined status for this exact head is empty; no green post-merge CI is claimed.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI runs CI `33623363327`, WS1 Exact Accounting `33623363299`, and WS1 Pinned Forwardproxy `33623363389` are SUCCESS, but the required fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
+- Authoritative GitHub `main` ref currently returns `810b35a6d97ce58315785871f9df1a2a20421166`.
+- Combined status and PR-triggered workflow runs for this exact head are empty; no green post-merge CI is claimed.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI, Exact Accounting, and Pinned Forwardproxy are historically SUCCESS, but the required fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the documented candidate `b96c659...` is not the API head, so exact-head identity and four-gate proof remain unresolved. Preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 docs refresh remains OPEN / DRAFT and documentation-only; it is not Production evidence.
