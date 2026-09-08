@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 21:38 Asia/Tehran
+Last updated: 2026-09-08 22:39 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` at inspection: `16144caf73e91ede24aafde77bdace802dc61ee4`; this run advanced canonical `PROJECT_STATUS.md` to `b1d1a13c0224e84be7ecca515e70fa35a564a801`. No green post-merge CI is claimed for the documentation-only update; combined status is empty.
+- Verified GitHub `main` is `478638bdd491173fb8bfd33f075eb157bc49ac3b` at inspection; this run reconciled `PROJECT_STATUS.md` to the observed head and then advanced `main` with documentation-only commit `5463f8837204826ac7917a71d61d01d324e80d68`. No green post-merge CI is claimed for the docs-only updates; combined status is empty and no PR-triggered workflow run was returned for the observed docs head.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed with `ERROR: RLS coverage check failed: 43/42`. Exact-head identity and four-gate closure remain unresolved.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
@@ -16,8 +16,8 @@ Last updated: 2026-09-08 21:38 Asia/Tehran
 
 ## Actions in this run
 - Re-verified repository metadata, authoritative main ref, open PRs, current combined status, and persistent reports.
-- Confirmed `main=16144caf...` has no current status checks.
-- Reconciled `PROJECT_STATUS.md` to the actual current main SHA and recorded concrete Task13/Task16/Karing blockers.
+- Confirmed observed `main=478638bdd...` had no current status checks and no PR-triggered workflow runs.
+- Reconciled `PROJECT_STATUS.md` to the actual observed main SHA; then updated this handoff to preserve the exact blockers and safety state.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
