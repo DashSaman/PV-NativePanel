@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-09 00:42 Asia/Tehran
+Last updated: 2026-09-09 01:41 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` is `86bdd05eadbfa256b4a274416228a5d408e3addd` at inspection; this cycle added documentation-only reconciliation commit `f1d12fc7a529f69b979e94e608dae8f177102219`. No green post-merge CI is claimed for docs-only updates; combined status is empty.
+- Verified GitHub `main` is `19f322fcc5b63303990bbc8b2e0ab34f109cbe15` at inspection; this cycle added documentation-only reconciliation commit `6ed189e2f5414a77a4a8546141faf7aeb6209129`. No green post-merge CI is claimed for docs-only updates; combined status is empty.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, documented candidate `b96c65903e5fc314284ea777ceea236913a03842`; specialized gates are green, while repository-wide CI database job `101289670458` failed in run `33626300697` and was re-run this cycle. The rerun result is pending verification; no promotion is allowed until all four gates are green on one exact SHA.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842`; specialized gates are green, while repository-wide database job `102239896114` failed in run `33626300697` and was re-run in this cycle. The rerun result is pending verification; no promotion is allowed until all four gates are green on one exact SHA.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 
 ## Worker and Production
@@ -15,7 +15,7 @@ Last updated: 2026-09-09 00:42 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified repository metadata, authoritative main ref, open PRs, exact-head workflow evidence, and persistent reports.
-- Re-ran only the failed Task16 database job `101289670458` from run `33626300697`; result must be checked before crediting.
+- Re-ran only the failed Task16 database job `102239896114` from run `33626300697`; result must be checked before crediting.
 - Reconciled this handoff to current observed GitHub state. No runtime/schema/Production change was integrated.
 
 ## Next assignments
