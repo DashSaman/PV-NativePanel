@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 20:42 Asia/Tehran
+Last updated: 2026-09-08 21:38 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` at inspection: `11713b1280894dd4bbc476c951e36adf4f05097c`; this run advanced canonical `PROJECT_STATUS.md` to `cadfad8429d856c40b941b0445b9521aae995d7a`. No green post-merge CI is claimed for the documentation-only update.
+- Verified GitHub `main` at inspection: `16144caf73e91ede24aafde77bdace802dc61ee4`; this run advanced canonical `PROJECT_STATUS.md` to `b1d1a13c0224e84be7ecca515e70fa35a564a801`. No green post-merge CI is claimed for the documentation-only update; combined status is empty.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed with `ERROR: RLS coverage check failed: 43/42`. Exact-head identity and four-gate closure remain unresolved.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
@@ -15,9 +15,9 @@ Last updated: 2026-09-08 20:42 Asia/Tehran
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight was available. No Production mutation occurred.
 
 ## Actions in this run
-- Re-verified repository metadata, authoritative main ref, open PRs, exact-head workflow evidence, and persistent reports.
-- Confirmed `main=11713b128...` has no current status checks.
-- Reconciled `PROJECT_STATUS.md` to the actual current main SHA and recorded the concrete Task13/Task16/Karing blockers.
+- Re-verified repository metadata, authoritative main ref, open PRs, current combined status, and persistent reports.
+- Confirmed `main=16144caf...` has no current status checks.
+- Reconciled `PROJECT_STATUS.md` to the actual current main SHA and recorded concrete Task13/Task16/Karing blockers.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
