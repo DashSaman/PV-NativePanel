@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 03:43 Asia/Tehran
+Last updated: 2026-09-08 05:40 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` ref at inspection: `37b9b4714ee3ca8e52f7511c9b75d80ca2a8d893`. This run adds documentation-only reconciliation commit `e1b68920138ae1080d6e77aebbb9a474c25205c0`.
+- Verified GitHub `main` ref at inspection: `956636cbf896113ac540a122f9dae7fc78f4937b`. This run adds documentation-only reconciliation commit `c360d9fedf4b2846508d9fae40ba557185292eec`.
 - Exact-head combined status for the docs-only head is empty; no post-merge CI green is claimed.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; stale base versus current main. Fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older implementation heads; current exact-head four-gate proof is absent.
