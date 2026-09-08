@@ -1,9 +1,9 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 16:41 Asia/Tehran
+Last updated: 2026-09-08 17:39 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `93cca56ef5e367728af5a28392ba4621684a8698`.
+- Authoritative GitHub `main` currently returns `e1a33164b3a2b1cd38f453d6201402836e9db335`.
 - This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head historical CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized green evidence but repository-wide CI failure. Exact-head identity remains unresolved; preserve Task15 schema20-specific fixtures.
@@ -20,9 +20,8 @@ Last updated: 2026-09-08 16:41 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main`, open PRs, exact-head status, and persistent reports.
-- Confirmed `main=93cca56...` has no current status checks.
-- Confirmed Task13 remains blocked on fresh protocol rehearsal, Task16 remains split across API head/candidate with repository-wide CI failure, and Karing remains blocked on real-client smoke.
-- Reconciled this status file to the actual current `main` SHA.
+- Confirmed `main=e1a33164...` has no current status checks.
+- Reconciled this file to the actual current `main` SHA.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
