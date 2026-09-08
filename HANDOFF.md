@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 14:41 Asia/Tehran
+Last updated: 2026-09-08 15:38 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` before this handoff update: `7324392bc4bafd7737c96f304634970e62051777` (documentation reconciliation from authoritative main `3da457660...`). No green post-merge CI is claimed for the docs-only update.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; CI, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS on that exact head, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=true, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; candidate `b96c65903e5fc314284ea777ceea236913a03842` has Task16 Schema21 TDD, Exact Accounting and Pinned Forwardproxy SUCCESS, but repository-wide CI FAILURE. Exact-head identity is unresolved.
+- Verified GitHub `main` at inspection: `b4ad5caaa6c6a4afcc9810b7f8dfcaadf03fb6c3`; this run reconciled `PROJECT_STATUS.md` to `1622ecdaaeb48c29fad5040dcc7bef0710ff4517`. No green post-merge CI is claimed for the docs-only update.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is green historically, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized green evidence but repository-wide CI FAILURE. Exact-head identity is unresolved.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 - #95 and older docs refresh PRs are documentation-only and are not Production evidence.
 
@@ -15,10 +15,9 @@ Last updated: 2026-09-08 14:41 Asia/Tehran
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight was available. No Production mutation occurred.
 
 ## Actions in this run
-- Re-verified repository metadata, authoritative main ref, open PRs, exact-head workflow runs, and persistent reports.
-- Confirmed Task13 exact-head CI/Accounting/Forwardproxy SUCCESS on `3fc14825...`.
-- Confirmed Task16 split state: API head `3c431033...`; specialized green evidence on `b96c659...`; repository-wide CI FAILURE on that candidate.
-- Added reconciliation/assignment comment to PR #64.
+- Re-verified repository metadata, authoritative main ref, open PRs, current exact-head status/workflow evidence, and persistent reports.
+- Confirmed `main=b4ad5c...` has no current status checks or PR-triggered workflow runs.
+- Confirmed Task13, Task16, and Karing remain blocked by missing fresh evidence rather than by unreviewed worker claims.
 - Updated canonical status and handoff state; no runtime/schema/Production change was integrated.
 
 ## Next assignments
