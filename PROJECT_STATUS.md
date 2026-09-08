@@ -1,9 +1,9 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 18:39 Asia/Tehran
+Last updated: 2026-09-08 19:40 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `93a476f1458140e26e7ad65b14df98fdd17d613c`.
+- Authoritative GitHub `main` currently returns `07bdf8bf68dc8dc8a45341c6e26e796c7d081a4a`.
 - This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head historical CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, candidate `b96c65903e5fc314284ea777ceea236913a03842` has Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy SUCCESS, but repository-wide CI fails in the database job with `ERROR: RLS coverage check failed: 43/42` on workflow run `33626300697`. Exact-head promotion is blocked until one branch head fixes the coverage mismatch and all four gates pass on that same SHA; preserve Task15 schema20-specific fixtures.
@@ -20,7 +20,7 @@ Last updated: 2026-09-08 18:39 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main`, open PRs, exact-head status/workflow evidence, the failing Task16 database log, and persistent reports.
-- Confirmed `main=93a476f...` has no current status checks.
+- Confirmed `main=07bdf8bf...` has no current status checks.
 - Reconciled this file to the actual current `main` SHA and recorded the concrete Task16 blocker.
 - No runtime/schema/Production change was integrated.
 
