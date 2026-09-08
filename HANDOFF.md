@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 19:40 Asia/Tehran
+Last updated: 2026-09-08 20:42 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` at inspection: `07bdf8bf68dc8dc8a45341c6e26e796c7d081a4a`; this run advanced canonical `PROJECT_STATUS.md` to `e0c3e7648c1275f1b227a971bbe358eef209a5c7`. No green post-merge CI is claimed for the documentation-only update.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is historically green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, candidate `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS, but repository-wide CI run `33626300697` fails in the database job with `ERROR: RLS coverage check failed: 43/42`. Exact-head identity remains unresolved until a single clean head fixes this mismatch and reruns all four gates.
+- Verified GitHub `main` at inspection: `11713b1280894dd4bbc476c951e36adf4f05097c`; this run advanced canonical `PROJECT_STATUS.md` to `cadfad8429d856c40b941b0445b9521aae995d7a`. No green post-merge CI is claimed for the documentation-only update.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed with `ERROR: RLS coverage check failed: 43/42`. Exact-head identity and four-gate closure remain unresolved.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 - #95 and older docs refresh PRs are documentation-only and are not Production evidence.
 
@@ -15,9 +15,9 @@ Last updated: 2026-09-08 19:40 Asia/Tehran
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight was available. No Production mutation occurred.
 
 ## Actions in this run
-- Re-verified repository metadata, authoritative main ref, open PRs, exact-head status evidence, the known failing Task16 database log, and persistent reports.
-- Confirmed `main=07bdf8bf...` had no current status checks.
-- Reconciled `PROJECT_STATUS.md` to the actual current main SHA and recorded the concrete RLS coverage blocker.
+- Re-verified repository metadata, authoritative main ref, open PRs, exact-head workflow evidence, and persistent reports.
+- Confirmed `main=11713b128...` has no current status checks.
+- Reconciled `PROJECT_STATUS.md` to the actual current main SHA and recorded the concrete Task13/Task16/Karing blockers.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
