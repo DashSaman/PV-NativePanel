@@ -1,13 +1,13 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 06:41 Asia/Tehran
+Last updated: 2026-09-08 07:42 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` ref at inspection: `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`. This run added documentation-only reconciliation commit `372b3e1183bc94bcc9c5fa4c0ff9af28d3e6b0a8`.
-- Exact-head combined status for the docs-only head is empty; no post-merge CI green is claimed.
+- Verified GitHub `main` ref at inspection: `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`; this run added documentation-only status reconciliation commit `1d390e7ce88f248269cf9e9cf7b905d178995da9`.
+- Exact-head combined status for the pre-update docs head was empty and no workflow runs were returned; no post-merge CI green is claimed for the docs reconciliation.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale versus current main. Fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older implementation heads including `b96c659...`; current exact-head four-gate proof is absent.
-- #4 Karing remains OPEN/DRAFT in the project record; real-client smoke remains pending.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older implementation head `b96c659...`; current exact-head four-gate proof is absent.
+- #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 
 ## Worker and Production
 - Persistent-report search found no fresh exact-head completion receipt. Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, and independent rollback state.
@@ -16,8 +16,8 @@ Last updated: 2026-09-08 06:41 Asia/Tehran
 
 ## Actions in this run
 - Re-verified repository metadata, authoritative main ref, open PRs, exact-head status, and persistent reports.
-- Reconciled canonical docs to the actual GitHub state and recorded the new docs-only commit.
-- Reviewed Task13 and Task16 claims; neither was accepted as green because no current exact-head status objects were returned.
+- Reconciled canonical status/handoff to the actual verified GitHub state.
+- Reviewed Task13, Task16, and Karing claims; none was accepted as green because fresh exact-head/live evidence is missing.
 - No runtime/schema/Production change was integrated.
 
 ## Next assignments
