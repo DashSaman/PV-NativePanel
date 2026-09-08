@@ -1,14 +1,15 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-08 07:42 Asia/Tehran
+Last updated: 2026-09-08 08:42 Asia/Tehran
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Verified GitHub `main` at the start of this run: `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`; documentation reconciliation commits from this run are `1d390e7ce88f248269cf9e9cf7b905d178995da9` and `65d51ad57f5e8117ed91d5302763d261740d13e3`.
-- Exact-head status and workflow-run queries returned no objects for the pre-update docs head; do not claim green post-merge CI.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; stale base versus current main; reconstruct before fresh gates and live rehearsal.
-- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older heads; current exact-head four-gate proof is absent; preserve Task15 schema20 fixtures.
+- Verified GitHub `main` at inspection: `046f71769266d139178c61bf7d654adc5778df28`; this run's documentation commits are `029caa1c0e02110d9e487d12e53290e4031e5bc8` and `b3f3dad025d01f00228bdcf81328ce2511b937b7`.
+- No workflow runs were returned for the pre-update docs head; do not claim green post-merge CI.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; reconstruct from current main before fresh gates and live rehearsal.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; issue #79 cites a newer candidate head, but exact PR head identity is unresolved; preserve Task15 schema20 fixtures.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is pending.
+- #95 docs refresh OPEN/DRAFT and documentation-only.
 - Persistent reports contain no fresh exact-head completion receipt. Historical worker-only/stale/dirty/mixed-head output is not credited.
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight is claimed. Do not use Production as a test lane.
 
