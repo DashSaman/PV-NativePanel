@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 17:39 Asia/Tehran
+Last updated: 2026-09-08 18:39 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` at inspection: `e1a33164b3a2b1cd38f453d6201402836e9db335`; this run reconciled `PROJECT_STATUS.md` to `8fb6fd51939ecce977a1a4490a9f11d90d719b63`. No green post-merge CI is claimed for the documentation-only update.
+- Verified GitHub `main` at inspection: `93a476f1458140e26e7ad65b14df98fdd17d613c`; this run reconciled `PROJECT_STATUS.md` to `6a9df7fcf81c222fbfdf1b251a4eeb088edfc2c7`. No green post-merge CI is claimed for the documentation-only update.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is historically green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized green evidence but repository-wide CI FAILURE. Exact-head identity is unresolved.
+- #81 Task16 OPEN/DRAFT/mergeable=false, candidate `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy are SUCCESS, but repository-wide CI run `33626300697` fails in the database job with `ERROR: RLS coverage check failed: 43/42`. Exact-head identity remains unresolved until a single clean head fixes this mismatch and reruns all four gates.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 - #95 and older docs refresh PRs are documentation-only and are not Production evidence.
 
@@ -15,13 +15,14 @@ Last updated: 2026-09-08 17:39 Asia/Tehran
 - No fresh command-level Production audit, encrypted backup, rollback, deploy, or postflight was available. No Production mutation occurred.
 
 ## Actions in this run
-- Re-verified repository metadata, authoritative main ref, open PRs, exact-head status evidence, and persistent reports.
-- Confirmed `main=e1a33164...` had no current status checks.
-- Updated canonical status to the actual current main SHA; no runtime/schema/Production change was integrated.
+- Re-verified repository metadata, authoritative main ref, open PRs, exact-head workflow evidence, failing Task16 database logs, and persistent reports.
+- Confirmed `main=93a476f...` had no current status checks.
+- Recorded the concrete RLS coverage blocker and preserved the no-overclaim rule.
+- No runtime/schema/Production change was integrated.
 
 ## Next assignments
 1. Task13: reconstruct onto current main, then execute isolated HTTP/1.1 + HTTP/2 rehearsal with target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, no restart/reload, and exactly-once accounting.
-2. Task16: create one clean current-main-derived head, fix repository-wide CI, preserve Task15 schema20 fixtures, and rerun all four exact-head gates on one SHA.
+2. Task16: create one clean current-main-derived head, fix the repository-wide RLS coverage mismatch (`43/42`), preserve Task15 schema20 fixtures, and rerun all four exact-head gates on one SHA.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge, accounting/session lineage, and secret redaction.
 5. Production lane: read-only audit first; only after all gates are green create encrypted backup + independent rollback snapshot, then staged promotion and postflight.
