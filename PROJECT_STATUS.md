@@ -1,18 +1,18 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 02:39 Asia/Tehran
+Last updated: 2026-09-08 03:43 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` ref currently returns `31304a6cdf7f6b5772448386d36d1b201acb53b8`.
+- Authoritative GitHub `main` ref currently returns `37b9b4714ee3ca8e52f7511c9b75d80ca2a8d893`.
 - Exact-head combined status for `main` is empty; no green post-merge CI is claimed for this docs-only head.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`, base SHA `0b921abe9b2bd1d827023f494fda11a407fe34d3` is stale versus current main. Historical exact-head gates/focused tests are supplemental; fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`, stale base versus current main. Historical exact-head gates/focused tests are supplemental; fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older implementation heads including `b96c659...`; current exact-head four-gate proof is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical CI/curl evidence is supplemental; reproducible real-client smoke remains missing.
-- Open docs PRs #92–#95 are documentation-only historical refreshes with stale bases; none is treated as production evidence.
+- Open docs PRs remain documentation-only historical refreshes; none is treated as production evidence.
 
 ## Worker / coordinator truth
 - Persistent-report search returned no fresh completion receipt tied to the current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
-- Historical notes identify TrPaqet as the active executable development slot and report `upgrade_required` on inactive development workers while the slot is held by Production Primary. This is not a fresh command-level Production audit.
+- Historical notes identify TrPaqet as the active executable development slot and report inactive workers unavailable/upgrade-required while the slot is held elsewhere. This is not a fresh command-level Production audit.
 
 ## Production truth
 - No fresh command-level Production audit, encrypted backup preflight, independent rollback snapshot, deploy, or postflight was available in this run. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
@@ -20,7 +20,7 @@ Last updated: 2026-09-08 02:39 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main` ref, open PR metadata, exact-head status, and persistent worker/coordinator reports.
-- Reconciled canonical status to the actual current `main` SHA.
+- Reconciled canonical status to the actual current `main` SHA `37b9b4714ee3ca8e52f7511c9b75d80ca2a8d893`.
 - Posted fresh execution assignments to Task13, Task16, and Karing lanes.
 - No runtime/schema/Production change was integrated.
 
