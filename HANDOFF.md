@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 02:39 Asia/Tehran
+Last updated: 2026-09-08 03:43 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` ref: `31304a6cdf7f6b5772448386d36d1b201acb53b8` before this documentation refresh; new canonical status commit is `d74085b9f39162dca1f0d6c402cd944570b80222`.
+- Verified GitHub `main` ref at inspection: `37b9b4714ee3ca8e52f7511c9b75d80ca2a8d893`. This run adds documentation-only reconciliation commit `e1b68920138ae1080d6e77aebbb9a474c25205c0`.
 - Exact-head combined status for the docs-only head is empty; no post-merge CI green is claimed.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; base SHA in PR metadata is stale versus current main. Fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; stale base versus current main. Fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older implementation heads; current exact-head four-gate proof is absent.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client smoke remains pending.
 
@@ -16,7 +16,7 @@ Last updated: 2026-09-08 02:39 Asia/Tehran
 
 ## Actions in this run
 - Re-verified repository metadata, authoritative main ref, open PRs, exact-head status, and persistent reports.
-- Reconciled canonical docs to the actual GitHub state and recorded the stale Task13 base mismatch.
+- Reconciled canonical docs to the actual GitHub state.
 - Posted fresh execution assignments to #64, #81, and #4.
 - No runtime/schema/Production change was integrated.
 
