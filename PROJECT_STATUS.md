@@ -1,12 +1,12 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 09:38 Asia/Tehran
+Last updated: 2026-09-08 10:39 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` ref currently returns `44b9c76b070b0da5677659ed2b90466b8f7f72cd`.
-- This exact head is documentation-only. `fetch_commit_workflow_runs` returned no workflow runs; no green post-merge CI is claimed.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head status is empty and fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the documented candidate `b96c659...` is not the API head, so exact-head identity is unresolved. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
+- Authoritative GitHub `main` ref currently returns `49c0ff592df425d12a998ba6f09c8e199dfd7587`.
+- Combined status for this exact head is empty; no green post-merge CI is claimed.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI runs CI `33623363327`, WS1 Exact Accounting `33623363299`, and WS1 Pinned Forwardproxy `33623363389` are SUCCESS, but the required fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the documented candidate `b96c659...` is not the API head, so exact-head identity and four-gate proof remain unresolved. Preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 docs refresh remains OPEN / DRAFT and documentation-only; it is not Production evidence.
 
@@ -19,7 +19,7 @@ Last updated: 2026-09-08 09:38 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified authoritative `main` ref, open PR metadata, exact-head CI/run availability, and persistent worker/coordinator reports.
+- Re-verified authoritative `main` ref, open PRs, exact-head CI/run availability, and persistent worker/coordinator reports.
 - Reconciled this status file to the actual current `main` SHA.
 - Reviewed Task13, Task16, Karing, and docs-only PR claims; none was accepted as ready for merge or Production because required fresh exact-head/live evidence is missing.
 - No runtime/schema/Production change was integrated.
