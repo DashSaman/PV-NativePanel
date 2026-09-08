@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 10:39 Asia/Tehran
+Last updated: 2026-09-08 11:41 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` ref at the latest inspection: `49c0ff592df425d12a998ba6f09c8e199dfd7587`; this run added documentation-only status reconciliation commit `9b538cd8ee3db02cfa3812b9c3787afa6f5a7d95`.
-- Combined status for the verified main head is empty; no post-merge CI green is claimed.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; CI, Exact Accounting, and Pinned Forwardproxy runs are SUCCESS, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- Verified GitHub `main` ref at the latest inspection: `810b35a6d97ce58315785871f9df1a2a20421166`; this run added documentation-only status reconciliation commit `6cc5ecb51b1fcbfddf996967d7b634fb22c66125`.
+- Combined status and PR-triggered workflow runs for the verified main head are empty; no post-merge CI green is claimed.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; historical CI/Exact Accounting/Pinned Forwardproxy success is not enough; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c659...` is not the API head, so exact-head four-gate proof is not credited.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 - #95 docs refresh OPEN/DRAFT and documentation-only.
