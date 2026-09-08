@@ -1,12 +1,12 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-09 00:42 Asia/Tehran
+Last updated: 2026-09-09 01:41 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `86bdd05eadbfa256b4a274416228a5d408e3addd`.
+- Authoritative GitHub `main` currently returns `19f322fcc5b63303990bbc8b2e0ab34f109cbe15` (`docs: refresh continue-here with Task16 rerun and current main`).
 - This head is documentation-only; combined status is empty and no post-merge CI is claimed.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI `33623363327`, WS1 Exact Accounting `33623363299`, and WS1 Pinned Forwardproxy `33623363389` are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal remains missing.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, documented candidate `b96c65903e5fc314284ea777ceea236913a03842`; Task16 Schema21 TDD, WS1 Exact Accounting, and WS1 Pinned Forwardproxy are green, while repository-wide CI failed in database job `101289670458` on run `33626300697`. The failed database job was re-run this cycle; result is not yet verified. Preserve Task15 schema20-specific fixtures.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, while repository-wide database job `102239896114` in run `33626300697` is still failed. That failed job was re-run in this cycle; result is pending verification. Preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 and older docs-only PRs remain non-runtime evidence.
 
@@ -20,12 +20,12 @@ Last updated: 2026-09-09 00:42 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main`, open PRs, current combined status, exact-head workflow evidence, and persistent reports.
-- Identified the failing Task16 CI database job and re-ran only that failed job; outcome is pending verification.
+- Re-ran only failed Task16 database job `102239896114` from run `33626300697`; result is pending verification and is not credited yet.
 - Reconciled this file to the observed `main` SHA and current blocker state.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
-1. Task16: verify the rerun of database job `101289670458`; if green, reconcile exact-head gate evidence on one SHA, otherwise inspect the new failure and repair only on a clean current-main-derived head.
+1. Task16: verify the rerun of database job `102239896114`; if green, reconcile exact-head gate evidence on one SHA, otherwise inspect the new failure and repair only on a clean current-main-derived head.
 2. Task13: reconstruct/rehearse on exact `3fc14825...` with HTTP/1.1 + HTTP/2 target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
