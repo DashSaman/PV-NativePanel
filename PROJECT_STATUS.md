@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 15:38 Asia/Tehran
+Last updated: 2026-09-08 16:41 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `b4ad5caaa6c6a4afcc9810b7f8dfcaadf03fb6c3`.
-- This head is documentation-only; combined status is empty and PR-triggered workflow runs are empty. No green post-merge CI is claimed for this head.
+- Authoritative GitHub `main` currently returns `93cca56ef5e367728af5a28392ba4621684a8698`.
+- This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head historical CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized green evidence but repository-wide CI failure. Exact-head identity remains unresolved; preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
@@ -12,15 +12,15 @@ Last updated: 2026-09-08 15:38 Asia/Tehran
 
 ## Worker / coordinator truth
 - Persistent-report search returned no fresh completion receipt tied to the current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
-- Historical notes identify TrPaqet as the active executable development slot; other workers are inactive or upgrade-required while the slot is held elsewhere. This is not a fresh command-level Production audit.
+- Historical notes identify TrPaqet as the active executable development slot; other workers are inactive or upgrade-required. This is not a fresh command-level Production audit.
 
 ## Production truth
 - No fresh command-level Production audit, encrypted backup preflight, independent rollback snapshot, deploy, or postflight was available in this run. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified authoritative `main`, open PRs, exact-head status/workflow evidence, and persistent reports.
-- Confirmed `main=b4ad5c...` has no current status checks or PR-triggered workflow runs.
+- Re-verified authoritative `main`, open PRs, exact-head status, and persistent reports.
+- Confirmed `main=93cca56...` has no current status checks.
 - Confirmed Task13 remains blocked on fresh protocol rehearsal, Task16 remains split across API head/candidate with repository-wide CI failure, and Karing remains blocked on real-client smoke.
 - Reconciled this status file to the actual current `main` SHA.
 - No runtime/schema/Production change was integrated.
