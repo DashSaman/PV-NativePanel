@@ -1,17 +1,17 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 19:40 Asia/Tehran
+Last updated: 2026-09-08 20:42 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `07bdf8bf68dc8dc8a45341c6e26e796c7d081a4a`.
+- Authoritative GitHub `main` currently returns `11713b1280894dd4bbc476c951e36adf4f05097c`.
 - This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head historical CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, candidate `b96c65903e5fc314284ea777ceea236913a03842` has Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy SUCCESS, but repository-wide CI fails in the database job with `ERROR: RLS coverage check failed: 43/42` on workflow run `33626300697`. Exact-head promotion is blocked until one branch head fixes the coverage mismatch and all four gates pass on that same SHA; preserve Task15 schema20-specific fixtures.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is green (`33623363327`, `33623363299`, `33623363389`), but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed database coverage with `ERROR: RLS coverage check failed: 43/42`. Exact-head promotion remains blocked until one clean head fixes the mismatch and all four gates pass on that same SHA; preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 and older docs-only PRs remain non-runtime evidence.
 
 ## Worker / coordinator truth
-- Persistent-report search returned no fresh completion receipt tied to the current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
+- Persistent-report search returned no fresh completion receipt tied to current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
 - Historical notes identify TrPaqet as the active executable development slot; other workers are inactive or upgrade-required. This is not a fresh command-level Production audit.
 
 ## Production truth
@@ -19,14 +19,14 @@ Last updated: 2026-09-08 19:40 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified authoritative `main`, open PRs, exact-head status/workflow evidence, the failing Task16 database log, and persistent reports.
-- Confirmed `main=07bdf8bf...` has no current status checks.
-- Reconciled this file to the actual current `main` SHA and recorded the concrete Task16 blocker.
+- Re-verified authoritative `main`, open PRs, exact-head workflow evidence, and persistent reports.
+- Confirmed `main=11713b128...` has no current status checks.
+- Reconciled this file to the actual current `main` SHA and recorded the current exact-head blockers.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
-1. Task13: reconstruct/rehearse on exact `3fc14825...` with HTTP/1.1 + HTTP/2 target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
-2. Task16: fix the repository-wide RLS coverage mismatch (`43/42`) on a clean current-main-derived head, preserve schema20-specific Task15 fixtures, then rerun normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy on that same SHA.
+1. Task16: create one clean current-main-derived head, fix the repository-wide RLS coverage mismatch (`43/42`), preserve Task15 schema20-specific fixtures, then rerun normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy on that same SHA.
+2. Task13: reconstruct/rehearse on exact `3fc14825...` with HTTP/1.1 + HTTP/2 target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
 5. Production promotion only after all exact-head gates pass and fresh backup/rollback evidence exists.
