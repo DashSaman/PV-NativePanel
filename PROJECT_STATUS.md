@@ -1,13 +1,14 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 07:42 Asia/Tehran
+Last updated: 2026-09-08 08:42 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` ref currently returns `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`.
-- The latest main commit is documentation-only. `get_commit_combined_status` returned no status objects and `fetch_commit_workflow_runs` returned no workflow runs for this exact head; no green post-merge CI is claimed.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`, base SHA recorded as `0b921abe...`. Historical exact-head gates/focused tests are supplemental; fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`, body cites older implementation head `b96c659...`; current exact-head four-gate proof is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
+- Authoritative GitHub `main` ref currently returns `046f71769266d139178c61bf7d654adc5778df28`.
+- This exact head is documentation-only. `fetch_commit_workflow_runs` returned no workflow runs; no green post-merge CI is claimed.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; issue #79 records a newer proposed green slice on `b96c659...`, but the PR API head is different, so exact-head identity is unresolved. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
+- PR #95 docs refresh remains OPEN / DRAFT and documentation-only; it is not Production evidence.
 
 ## Worker / coordinator truth
 - Persistent-report search returned no fresh completion receipt tied to the current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
@@ -18,14 +19,14 @@ Last updated: 2026-09-08 07:42 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified authoritative `main` ref, open PR metadata, exact-head status, and persistent worker/coordinator reports.
+- Re-verified authoritative `main` ref, open PR metadata, exact-head CI/run availability, and persistent worker/coordinator reports.
 - Reconciled this status file to the actual current `main` SHA.
-- Reviewed Task13, Task16, and Karing claims; none was accepted as ready for merge or Production because required fresh exact-head/live evidence is missing.
+- Reviewed Task13, Task16, Karing, and docs-only PR claims; none was accepted as ready for merge or Production because required fresh exact-head/live evidence is missing.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
 1. Task13: rebuild/reconcile from current main, then run fresh isolated HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
-2. Task16: create one clean current-main-derived head; update only generic latest-schema expectations; run normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy on one exact SHA.
+2. Task16: reconcile the branch to one exact current-main-derived head, run normal CI + PostgreSQL18 + WS1 Exact Accounting + WS1 Pinned Forwardproxy on that same SHA, and preserve schema20-specific Task15 fixtures.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
 5. Production promotion only after all exact-head gates pass and fresh backup/rollback evidence exists.
