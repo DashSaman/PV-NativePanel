@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 20:42 Asia/Tehran
+Last updated: 2026-09-08 21:38 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative GitHub `main` currently returns `11713b1280894dd4bbc476c951e36adf4f05097c`.
+- Authoritative GitHub `main` currently returns `16144caf73e91ede24aafde77bdace802dc61ee4`.
 - This head is documentation-only; combined status is empty. No green post-merge CI is claimed for this head.
-- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is green (`33623363327`, `33623363299`, `33623363389`), but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
+- PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head CI/Exact Accounting/Pinned Forwardproxy evidence is green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still missing.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; documented candidate `b96c65903e5fc314284ea777ceea236913a03842` has specialized gates green, but repository-wide CI previously failed database coverage with `ERROR: RLS coverage check failed: 43/42`. Exact-head promotion remains blocked until one clean head fixes the mismatch and all four gates pass on that same SHA; preserve Task15 schema20-specific fixtures.
 - PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 - PR #95 and older docs-only PRs remain non-runtime evidence.
@@ -19,9 +19,9 @@ Last updated: 2026-09-08 20:42 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this run
-- Re-verified authoritative `main`, open PRs, exact-head workflow evidence, and persistent reports.
-- Confirmed `main=11713b128...` has no current status checks.
-- Reconciled this file to the actual current `main` SHA and recorded the current exact-head blockers.
+- Re-verified authoritative `main`, open PRs, current combined status, and persistent reports.
+- Confirmed `main=16144caf...` has no current status checks.
+- Reconciled this file to the actual current `main` SHA and recorded current exact-head blockers.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
