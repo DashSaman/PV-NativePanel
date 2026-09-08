@@ -1,17 +1,17 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-08 06:41 Asia/Tehran
+Last updated: 2026-09-08 07:42 Asia/Tehran
 
 ## Verified GitHub state
 - Authoritative GitHub `main` ref currently returns `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`.
-- The latest main commit is documentation-only (`docs: refresh continue-here with verified main and blockers`). No exact-head combined status is present for this head; no green post-merge CI is claimed.
+- The latest main commit is documentation-only. `get_commit_combined_status` returned no status objects and `fetch_commit_workflow_runs` returned no workflow runs for this exact head; no green post-merge CI is claimed.
 - PR #64 Task13: OPEN / DRAFT / mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`, base SHA recorded as `0b921abe...`. Historical exact-head gates/focused tests are supplemental; fresh current-main-derived real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - PR #81 Task16: OPEN / DRAFT / mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`, body cites older implementation head `b96c659...`; current exact-head four-gate proof is absent. Preserve Task15 schema20-specific fixtures and change only generic latest-schema expectations.
-- PR #4 Karing remains open/draft in the persistent project record; reproducible real-client smoke is still required before any compatibility claim.
+- PR #4 Karing: OPEN / DRAFT / mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is still required.
 
 ## Worker / coordinator truth
 - Persistent-report search returned no fresh completion receipt tied to the current PR heads. Worker-only, stale, dirty, mixed-head, or historical evidence is uncredited.
-- Historical notes identify TrPaqet as the active executable development slot and other workers as inactive/upgrade-required while the slot is held elsewhere. This is not a fresh command-level Production audit.
+- Historical notes identify TrPaqet as the active executable development slot; other workers are inactive/upgrade-required while the slot is held elsewhere. This is not a fresh command-level Production audit.
 
 ## Production truth
 - No fresh command-level Production audit, encrypted backup preflight, independent rollback snapshot, deploy, or postflight was available in this run. No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
@@ -19,8 +19,8 @@ Last updated: 2026-09-08 06:41 Asia/Tehran
 
 ## Actions in this run
 - Re-verified authoritative `main` ref, open PR metadata, exact-head status, and persistent worker/coordinator reports.
-- Reconciled canonical status to the actual current `main` SHA `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`.
-- Reviewed Task13 and Task16 exact-head claims; neither was accepted as green because the connector returned no current status objects for the exact heads.
+- Reconciled this status file to the actual current `main` SHA.
+- Reviewed Task13, Task16, and Karing claims; none was accepted as ready for merge or Production because required fresh exact-head/live evidence is missing.
 - No runtime/schema/Production change was integrated.
 
 ## Next executable gates
