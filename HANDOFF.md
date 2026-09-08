@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-08 08:42 Asia/Tehran
+Last updated: 2026-09-08 09:38 Asia/Tehran
 
 ## Current truth
-- Verified GitHub `main` ref at the latest inspection: `046f71769266d139178c61bf7d654adc5778df28`; this run added documentation-only status reconciliation commit `029caa1c0e02110d9e487d12e53290e4031e5bc8`.
+- Verified GitHub `main` ref at the latest inspection: `44b9c76b070b0da5677659ed2b90466b8f7f72cd`; this run added documentation-only status reconciliation commit `6863fba9a9277322de4714e741dc712fb1d4ec43`.
 - No workflow runs were returned for the pre-update docs head; no post-merge CI green is claimed for the docs reconciliation.
-- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; issue #79 mentions a newer candidate head but the PR API head differs, so exact-head four-gate proof is not credited.
+- #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; exact-head status is empty and fresh current-main-derived HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; the documented candidate `b96c659...` is not the API head, so exact-head four-gate proof is not credited.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains pending.
 - #95 docs refresh OPEN/DRAFT and documentation-only.
 
