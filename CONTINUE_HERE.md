@@ -1,11 +1,11 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-08 05:40 Asia/Tehran
+Last updated: 2026-09-08 07:42 Asia/Tehran
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Authoritative GitHub `main` ref at inspection: `956636cbf896113ac540a122f9dae7fc78f4937b`; this run added docs-only reconciliation commits `c360d9fedf4b2846508d9fae40ba557185292eec` and `ba335d872787c75c7d9c12e5b14f9e7b12664875`.
-- Exact-head combined status for current docs-only `main` is empty; do not claim green post-merge CI.
+- Verified GitHub `main` at the start of this run: `0c1782f56e09b40f560bee5e7dc72f2c3d083aa0`; documentation reconciliation commits from this run are `1d390e7ce88f248269cf9e9cf7b905d178995da9` and `65d51ad57f5e8117ed91d5302763d261740d13e3`.
+- Exact-head status and workflow-run queries returned no objects for the pre-update docs head; do not claim green post-merge CI.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; stale base versus current main; reconstruct before fresh gates and live rehearsal.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older heads; current exact-head four-gate proof is absent; preserve Task15 schema20 fixtures.
 - #4 Karing OPEN/DRAFT/mergeable=true, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke is pending.
