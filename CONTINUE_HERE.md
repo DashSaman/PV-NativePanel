@@ -1,10 +1,10 @@
 # CONTINUE HERE — PVNaive
 
-Last updated: 2026-09-08 03:43 Asia/Tehran
+Last updated: 2026-09-08 05:40 Asia/Tehran
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Authoritative GitHub `main` ref at inspection: `37b9b4714ee3ca8e52f7511c9b75d80ca2a8d893`; docs-only reconciliation commits from this run are `e1b68920138ae1080d6e77aebbb9a474c25205c0` and `fdf319077aa90fe36b1c40147fc6d00c9955d278`.
+- Authoritative GitHub `main` ref at inspection: `956636cbf896113ac540a122f9dae7fc78f4937b`; this run added docs-only reconciliation commits `c360d9fedf4b2846508d9fae40ba557185292eec` and `ba335d872787c75c7d9c12e5b14f9e7b12664875`.
 - Exact-head combined status for current docs-only `main` is empty; do not claim green post-merge CI.
 - #64 Task13 OPEN/DRAFT/mergeable=false, API head `3fc14825e1b164bad558decaef47f56b792e81af`; stale base versus current main; reconstruct before fresh gates and live rehearsal.
 - #81 Task16 OPEN/DRAFT/mergeable=false, API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; body cites older heads; current exact-head four-gate proof is absent; preserve Task15 schema20 fixtures.
