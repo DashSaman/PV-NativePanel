@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-10 01:37 Asia/Tehran
+Last updated: 2026-09-10 02:42 Asia/Tehran
 
 ## Current truth
-- Latest verified `main` is `8da0143dabdc8f827f8d3df17b21097492f82785`; this reconciliation is documentation-only. No PR-triggered workflow run is associated with the prior exact SHA `c5179e...`, and the new docs commit is not credited with post-merge CI until observed.
-- #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; CI, Exact Accounting, and Pinned Forwardproxy are SUCCESS, but fresh real HTTP/1.1 + HTTP/2 rehearsal is required.
-- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; persistent evidence still shows generic latest-schema fixture failure history and transient pinned-build failure history. Do not transfer green credit across heads.
+- Latest verified `main` before this documentation reconciliation was `158b8a7efc70fa70332b4ba82d4d625278fa0628`; this cycle adds documentation only. Combined status for that exact head is empty; no fresh post-merge CI is claimed.
+- #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; focused gates are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is required.
+- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; generic latest-schema fixture failures and intermittent pinned-build failures remain unresolved. Do not transfer green credit across heads.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains missing.
 - Documentation-only PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 are stale or based on older main snapshots and are not current truth without exact-base validation.
 
@@ -15,10 +15,9 @@ Last updated: 2026-09-10 01:37 Asia/Tehran
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified current main, open PRs, exact-head workflow evidence, and persistent reports.
-- Confirmed `main` advanced from `c5179e...` to `8da0143...` through documentation-only reconciliation.
-- Posted fresh exact-head dispatch instructions to PRs #81, #64, and #4.
-- Reconciled `PROJECT_STATUS.md` and this handoff to current verified truth.
+- Re-verified current main, open PRs, exact-head status, and persistent reports.
+- Posted fresh exact-head execution assignments to PRs #81, #64, and #4.
+- Reconciled `PROJECT_STATUS.md` and this handoff to the authoritative current-main checkpoint.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
 ## Next assignments
