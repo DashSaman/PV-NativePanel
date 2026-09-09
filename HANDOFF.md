@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-09 17:43 Asia/Tehran
+Last updated: 2026-09-09 18:40 Asia/Tehran
 
 ## Current truth
-- Latest verified `main` is `697a1259c6876770bcc923be0d5995ab937877cc`; latest commits are documentation-only. No runtime code was integrated in this cycle.
+- Latest verified `main` is `48eb6b971e6af87dace9f1a40c93a3a2e7e7226e`; latest commit is documentation-only. No runtime code was integrated in this cycle.
 - #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; CI, Exact Accounting, and Pinned Forwardproxy are SUCCESS, but fresh real HTTP/1.1 + HTTP/2 rehearsal is required.
-- #81 Task16 remains OPEN/DRAFT at API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; candidate `b96c65903e5fc314284ea777ceea236913a03842`. Dedicated TDD `33626300588`, Exact Accounting `33626300594`, and Pinned Forwardproxy `33626300589` are SUCCESS; repository-wide CI `33626300697` is FAILURE. Failed jobs were re-run during this cycle and are pending final result.
+- #81 Task16 remains OPEN/DRAFT at API head `3c4310335ab4907d28bac995bba1be3545e14f6e`; candidate `b96c65903e5fc314284ea777ceea236913a03842`. Dedicated TDD `33678134359`, Exact Accounting `33678134326`, and Pinned Forwardproxy `33678134350` are SUCCESS; repository-wide CI `33678134360` is FAILURE in database job `102372426913` due to the generic latest-schema expectation. Failed jobs were re-run in this cycle; no green credit until completion is observed.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains missing.
 
 ## Worker and Production
@@ -15,7 +15,8 @@ Last updated: 2026-09-09 17:43 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current main, open PRs, exact-head workflow runs, and persistent reports.
-- Re-ran failed jobs for Task16 repository-wide CI run `33626300697`; no green credit until completion is observed.
+- Re-ran failed jobs for Task16 repository-wide CI run `33678134360`; no green credit until completion is observed.
+- Added exact-head execution dispatch comments to PRs #81, #64, and #4.
 - Updated canonical documentation on main; no unvalidated code was integrated.
 
 ## Next assignments
