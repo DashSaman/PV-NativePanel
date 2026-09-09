@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-09 23:40 Asia/Tehran
+Last updated: 2026-09-10 01:37 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main` currently resolves to `00682962487cff594a26031f07736afcd2eb7453`; latest commit is documentation-only. `fetch_commit_workflow_runs` for this exact SHA returned no PR-triggered workflow run, so no fresh post-merge CI result is claimed.
+- Authoritative `main` currently resolves to `c5179e016c6d339de92d49c43f6080a64f31c2f0`; latest commit is documentation-only. `fetch_commit_workflow_runs` for this exact SHA returned no PR-triggered workflow run, so no fresh post-merge CI result is claimed.
 - PR #64 Task13: OPEN / DRAFT, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; CI, Exact Accounting, and Pinned Forwardproxy are SUCCESS. Fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory before merge or promotion.
-- PR #81 Task16: OPEN / DRAFT, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated Task16 TDD, Exact Accounting, and Pinned Forwardproxy evidence exists on prior exact heads, but repository-wide CI remains blocked by generic latest-schema/fixture expectations. No green credit is transferred across heads.
+- PR #81 Task16: OPEN / DRAFT, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; current persistent evidence still records generic latest-schema fixture failures and transient pinned-build failures on prior exact heads. No green credit is transferred across heads.
 - PR #4 Karing: OPEN / DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client import/parse/connect/cleanup smoke remains required.
 - PRs #95, #94, #93, #92, #91, #89, #88, #87, #86 and #85 are documentation-only or stale-base reconciliation PRs; none is credited as current canonical truth without exact-base validation.
 
@@ -20,9 +20,8 @@ Last updated: 2026-09-09 23:40 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current `main`, open PRs, exact-head workflow evidence, and persistent coordinator/worker reports.
-- Confirmed that current `main` advanced beyond the previously documented `0b921abe...` state to `006829624...` and that no PR-triggered workflow is associated with the new exact SHA.
-- Reviewed PR #81 failure history and preserved the rule that generic latest-schema fixtures may be corrected without touching Task15 schema20-specific fixtures.
-- Added fresh dispatch instructions for Task16, Task13, Karing, and stale documentation PR review lanes.
+- Confirmed `main` is `c5179e016c6d339de92d49c43f6080a64f31c2f0` and has no PR-triggered workflow run for this exact SHA.
+- Posted fresh exact-head dispatch instructions to PRs #81, #64, and #4 with no-Production-mutation constraints.
 - Reconciled canonical documentation to current verified truth.
 
 ## Next executable gates
