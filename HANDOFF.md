@@ -1,13 +1,13 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 00:41 Asia/Tehran
+Last updated: 2026-09-11 01:38 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection start: `227de46d5ba0ae0e5c74e605c7863c582d565fd5`; latest docs-only status commit is `e92930b6db56a0f5a0a186a13689ce52268c6222`.
-- Current main push CI `34524852973` / run 1670 is SUCCESS.
+- Verified `main` at inspection: `49be527e0c63ed0295414a63213dd9071fbde87b`; this cycle's docs reconciliation commit is `025ce4a4ad9e231f36ed482ca900b33e696667b7`.
+- No fresh post-update CI result is visible for the new docs commit through the connected GitHub workflow view.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused evidence is supplemental, while the fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical checks are not enough because fresh same-head repository-wide four-gate closure is not verified.
-- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run number 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
+- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; fresh same-head repository-wide four-gate closure remains unverified; generic schema21 fixture mismatch remains the blocker in persistent evidence.
+- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
 
 ## Worker and Production
 - No fresh exact-head worker completion receipt was found for Task13, Task16, or Karing. Historical/stale/dirty/mixed-head output is not credited.
@@ -16,14 +16,13 @@ Last updated: 2026-09-11 00:41 Asia/Tehran
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified current `main`, open PRs, exact published heads, current main CI, PR #4 CI, persistent reports, and available Production evidence.
-- Posted fresh exact-head dispatch comments to PRs #81, #64, and #4.
-- Reconciled `PROJECT_STATUS.md` on `main` in commit `e92930b6db56a0f5a0a186a13689ce52268c6222`.
+- Re-verified current `main`, open PRs, exact published heads, workflow visibility, persistent reports, and available Production evidence.
+- Reconciled `PROJECT_STATUS.md` on `main` in commit `025ce4a4ad9e231f36ed482ca900b33e696667b7`.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
 ## Next assignments
-1. Task16: obtain a fresh exact-head four-gate result; if database remains red, correct only generic latest-schema fixture expectation(s), preserve Task15 schema20-specific fixtures, and rerun normal CI + Task16 TDD + Exact Accounting + Pinned Forwardproxy.
+1. Task16: obtain fresh exact-head four-gate results; correct only generic latest-schema fixture expectation(s), preserve Task15 schema20-specific fixtures, and rerun normal CI + Task16 TDD + Exact Accounting + Pinned Forwardproxy.
 2. Task13: isolated real HTTP/1.1 + HTTP/2 rehearsal with target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge, accounting/session lineage, and secret redaction.
