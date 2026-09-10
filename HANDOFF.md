@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-10 05:41 Asia/Tehran
+Last updated: 2026-09-10 06:40 Asia/Tehran
 
 ## Current truth
-- Verified `main` at the start of this cycle: `b72444b090d67f0479fcafd1da91def5a4449ae3`; commit-specific workflow-runs query returned no runs. This cycle is documentation-only.
-- #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; focused gates are supplemental, fresh real HTTP/1.1 + HTTP/2 rehearsal is required.
-- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; repository-wide database validation is unresolved. No green credit is claimed without same-head success.
-- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; reproducible real-client smoke remains missing.
+- Verified `main` at inspection start: `6abe00f083313b44f3853fe972cf6fb18c1adaca`; commit-specific workflow-runs query returned no runs. Documentation-only reconciliation was performed in this cycle.
+- #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; CI `33623363327`, Exact Accounting `33623363299`, and Pinned Forwardproxy `33623363389` are SUCCESS. Fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
+- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; Task16 TDD `33678134359`, Exact Accounting `33678134326`, and Pinned Forwardproxy `33678134350` are SUCCESS, but repository-wide CI `33678134360` is FAILURE in the database path. No green credit is claimed without same-head success.
+- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; CI `33209239812` is SUCCESS, but independently reproduced real-client smoke remains missing.
 - Documentation-only PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 are stale or historical reconciliation attempts and are not current truth without exact-base validation.
 
 ## Worker and Production
@@ -15,7 +15,7 @@ Last updated: 2026-09-10 05:41 Asia/Tehran
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified GitHub repository state, current main, open PRs, exact heads, commit-specific CI state, and persistent reports.
+- Re-verified GitHub repository state, current main, open PRs, exact heads, exact-head CI state, and persistent reports.
 - Posted fresh exact-head execution assignments to Task16, Task13, and Karing PRs.
 - Updated canonical project status.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
