@@ -1,12 +1,12 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-10 19:43 Asia/Tehran
+Last updated: 2026-09-10 20:38 Asia/Tehran
 
 ## Verified GitHub state
-- `main` at inspection start/end: `34f2bb2a968dcdb6ca82c8c75cf49783b81ea1ad`.
+- `main` at inspection start: `5bb410bccb74b53288f4a8378e67c04d34d4a466`; after this cycle's documentation reconciliation, `main` is expected to advance through the handoff/status commits recorded below.
 - This cycle performed documentation reconciliation only; no runtime, schema, credential, Caddy, backup, rollback, or Production mutation was integrated.
 - PR #64 Task13: OPEN / DRAFT, exact published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT, exact published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated Task16 TDD/accounting/pinned evidence is historical exact-head evidence; repository-wide same-head closure is still not verified.
+- PR #81 Task16: OPEN / DRAFT, exact published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated Task16 TDD/accounting/pinned evidence is historical exact-head evidence; repository-wide same-head closure is still not verified. Failed jobs for normal CI `33678134360` were re-run this cycle; no green rerun is claimed.
 - PR #4 Karing: OPEN / DRAFT, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; CI run `33209239812` / run number `402` is SUCCESS across web, Go, DB, S04R rehearsal and production bundle, but real Karing-client import/parse/connect/cleanup proof is still missing.
 - Documentation-only PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 remain stale-base or historical reconciliation attempts and are not current truth without exact-base validation.
 
@@ -20,7 +20,7 @@ Last updated: 2026-09-10 19:43 Asia/Tehran
 - Persistent-report search found no fresh exact-head completion receipt for Task13, Task16, or Karing.
 - Historical worker-only, stale, dirty, mixed-head, and unpushed output remains uncredited.
 - Persistent material identifies TrPaqet as the active executable slot; other lanes are inactive or upgrade-required under the connected one-active-host constraint.
-- Fresh dispatch comments from the prior cycle remain the latest recorded assignments; this cycle revalidated those assignments against current PR heads.
+- Fresh dispatch comments posted this cycle: Task16 `5622504366`, Task13 `5622505075`, Karing `5622505912`.
 
 ## Production truth
 - No fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deploy, or postflight was available through the connected state.
@@ -28,7 +28,7 @@ Last updated: 2026-09-10 19:43 Asia/Tehran
 - Production is not a test lane. Promotion requires green exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Next executable gates
-1. Task16: obtain a fresh exact-head four-gate result; if database remains red, fix only generic latest-schema fixture expectations and preserve Task15 schema20-specific fixtures.
+1. Task16: observe the rerun; if database remains red, fix only generic latest-schema fixture expectations and preserve Task15 schema20-specific fixtures, then rerun normal CI + Task16 Schema21 TDD + Exact Accounting + Pinned Forwardproxy on one exact SHA.
 2. Task13: isolated HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
