@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-10 09:41 Asia/Tehran
+Last updated: 2026-09-10 10:41 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection start: `ce3ef1732b67b1a33a31bcb9814454bc5e63eed6`; this cycle added documentation only.
+- Verified `main` at inspection start: `975e92f3386bb3e41bc3d3e01185f84292864f95`; this cycle added documentation only.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; later worker commits in the PR body are not present on the published branch. Failed jobs for repository-wide CI run `33653351652` were rerun this cycle; no green credit until completion on the same exact head.
+- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; failed jobs for repository-wide CI run `33678134360` were re-run this cycle; no green credit until completion on the same exact head and all four gates are green.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; CI/body evidence is not a substitute for independent real-client smoke.
 - Documentation PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 remain stale or historical reconciliation attempts.
 
@@ -16,8 +16,8 @@ Last updated: 2026-09-10 09:41 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current main, open PRs, exact published heads, CI/status visibility, and persistent reports.
-- Re-ran failed jobs for Task16 repository-wide CI run `33653351652`.
-- Posted fresh exact-head assignments to Task16, Task13, and Karing PRs.
+- Re-ran failed jobs for Task16 repository-wide CI run `33678134360`.
+- Posted fresh exact-head assignments to Task16, Task13, and Karing PRs (comments `5614625117`, `5614625752`, `5614626406`).
 - Updated canonical project status.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
