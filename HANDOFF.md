@@ -1,11 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-10 10:41 Asia/Tehran
+Last updated: 2026-09-10 11:41 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection start: `975e92f3386bb3e41bc3d3e01185f84292864f95`; this cycle added documentation only.
+- Verified `main` at inspection start: `fa04da0d60d944ddcc1c196ba493ae1d59551c3c`; this cycle added documentation only.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; failed jobs for repository-wide CI run `33678134360` were re-run this cycle; no green credit until completion on the same exact head and all four gates are green.
+- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; latest recorded repository-wide failures remain schema21 generic-fixture/RLS-path failures on prior exact heads; no current green credit without same-head four-gate proof.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; CI/body evidence is not a substitute for independent real-client smoke.
 - Documentation PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 remain stale or historical reconciliation attempts.
 
@@ -16,14 +16,13 @@ Last updated: 2026-09-10 10:41 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current main, open PRs, exact published heads, CI/status visibility, and persistent reports.
-- Re-ran failed jobs for Task16 repository-wide CI run `33678134360`.
-- Posted fresh exact-head assignments to Task16, Task13, and Karing PRs (comments `5614625117`, `5614625752`, `5614626406`).
+- Posted fresh exact-head assignments to Task16, Task13, and Karing for the current published heads.
 - Updated canonical project status.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
 ## Next assignments
-1. Task16: observe rerun; if red, repair only generic latest-schema/RLS fixture expectations, preserve Task15 schema20 fixtures, and rerun all four gates on one exact SHA.
+1. Task16: repair only generic latest-schema/RLS fixture expectations, preserve Task15 schema20-specific fixtures, and rerun all four gates on one exact SHA.
 2. Task13: isolated real HTTP/1.1 + HTTP/2 rehearsal with target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge, accounting/session lineage, and secret redaction.
