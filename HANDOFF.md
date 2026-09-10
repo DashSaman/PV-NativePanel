@@ -1,10 +1,10 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-10 23:40 Asia/Tehran
+Last updated: 2026-09-11 00:41 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection start: `f0a0157868dfd12ff45ede8be7c0f88911ac1c3c`; latest docs-only status commit is `3a3b0c9732d661d8fc58d9ab6007fdc22eb6a864`.
-- Current main push CI `34519124546` / run 1667 is SUCCESS.
+- Verified `main` at inspection start: `227de46d5ba0ae0e5c74e605c7863c582d565fd5`; latest docs-only status commit is `e92930b6db56a0f5a0a186a13689ce52268c6222`.
+- Current main push CI `34524852973` / run 1670 is SUCCESS.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused evidence is supplemental, while the fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
 - #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated historical checks are not enough because fresh same-head repository-wide four-gate closure is not verified.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run number 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
@@ -17,7 +17,8 @@ Last updated: 2026-09-10 23:40 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current `main`, open PRs, exact published heads, current main CI, PR #4 CI, persistent reports, and available Production evidence.
-- Reconciled `PROJECT_STATUS.md` on `main` in commit `3a3b0c9732d661d8fc58d9ab6007fdc22eb6a864`.
+- Posted fresh exact-head dispatch comments to PRs #81, #64, and #4.
+- Reconciled `PROJECT_STATUS.md` on `main` in commit `e92930b6db56a0f5a0a186a13689ce52268c6222`.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
