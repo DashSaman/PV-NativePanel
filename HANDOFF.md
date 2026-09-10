@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 01:38 Asia/Tehran
+Last updated: 2026-09-11 02:42 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection: `49be527e0c63ed0295414a63213dd9071fbde87b`; this cycle's docs reconciliation commit is `025ce4a4ad9e231f36ed482ca900b33e696667b7`.
-- No fresh post-update CI result is visible for the new docs commit through the connected GitHub workflow view.
+- Verified `main` at inspection: `a75e5750421524d25c3402cd0d5d8fc63e30ffd7`; this cycle's docs reconciliation commit is `532bb2808bad0a6ce46582280426fe019313b793`.
+- Connected GitHub workflow lookup returned no PR-triggered runs for the inspected `main` SHA; no fresh post-update CI result is visible.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused evidence is supplemental, while the fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; fresh same-head repository-wide four-gate closure remains unverified; generic schema21 fixture mismatch remains the blocker in persistent evidence.
+- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; mergeable=false and fresh same-head repository-wide four-gate closure remains unverified; generic schema21/latest-schema fixture mismatch remains the blocker in persistent evidence.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
 
 ## Worker and Production
@@ -17,7 +17,7 @@ Last updated: 2026-09-11 01:38 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current `main`, open PRs, exact published heads, workflow visibility, persistent reports, and available Production evidence.
-- Reconciled `PROJECT_STATUS.md` on `main` in commit `025ce4a4ad9e231f36ed482ca900b33e696667b7`.
+- Reconciled `PROJECT_STATUS.md` on `main` in commit `532bb2808bad0a6ce46582280426fe019313b793`.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
