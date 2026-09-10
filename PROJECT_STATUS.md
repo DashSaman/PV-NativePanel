@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-10 03:42 Asia/Tehran
+Last updated: 2026-09-10 04:37 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main` currently resolves to `4f52fcd5ba540b08d0b97a2bdbe59d3b29c4fd99`; this cycle remains documentation-only. Combined status is empty, so no fresh post-merge CI result is claimed for this exact docs head.
+- Authoritative `main` currently resolves to `e9d8b6f9b711bab714639ce3016c25910057ab35`; this cycle remains documentation-only. Combined status is empty, so no fresh post-merge CI result is claimed for this exact docs head.
 - PR #64 Task13: OPEN / DRAFT, exact head `3fc14825e1b164bad558decaef47f56b792e81af`; focused gates are green, but fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory before merge or promotion.
-- PR #81 Task16: OPEN / DRAFT, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated TDD, accounting, and pinned-forwardproxy runs are green, while repository-wide CI run `33678134360` is red on the database path. Failed jobs were rerun in this cycle; no green credit is claimed until the rerun completes successfully on the same head.
+- PR #81 Task16: OPEN / DRAFT, exact head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated TDD, accounting, and pinned-forwardproxy runs are green, while repository-wide CI run `33678134360` is red on the database path. Failed jobs were rerun previously; no green credit is claimed until a same-head successful rerun is observed.
 - PR #4 Karing: OPEN / DRAFT, head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client import/parse/connect/cleanup smoke remains required.
 - Documentation-only PRs #95, #94, #93, #92, #91, #89, #88, #87, #86 and #85 are stale-base or historical reconciliation attempts; none is credited as current canonical truth without exact-base validation.
 
@@ -19,13 +19,13 @@ Last updated: 2026-09-10 03:42 Asia/Tehran
 - Production must not be used as a test lane. Promotion requires green exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
 ## Actions in this cycle
-- Re-verified current `main`, open PRs, exact-head workflow runs, and persistent coordinator/worker reports.
-- Reran failed jobs for Task16 CI run `33678134360`.
-- Posted fresh exact-head execution assignments to PRs #81, #64, and #4 with no-Production-mutation constraints.
-- Reconciled this canonical status to authoritative `main` SHA `4f52fcd5...`.
+- Re-verified current `main`, open PRs, exact-head workflow state, and persistent coordinator/worker reports.
+- Confirmed current `main` ref directly from GitHub (`e9d8b6f9...`).
+- Updated this canonical status to remove stale main references and preserve truthful gate/accounting/Production state.
+- No runtime changes were integrated because no validated exact-head completion receipt was available.
 
 ## Next executable gates
-1. Task16: observe the failed-job rerun; if still red, correct only generic latest-schema fixture/DB expectations, preserve Task15 schema20 fixtures, then rerun all four gates on one exact SHA.
+1. Task16: obtain one clean exact-head repair for generic latest-schema fixture/DB expectations, preserve Task15 schema20 fixtures, then rerun all four gates on one exact SHA.
 2. Task13: isolated HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction.
