@@ -1,29 +1,28 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-10 22:42 Asia/Tehran
+Last updated: 2026-09-10 23:40 Asia/Tehran
 
 ## Verified GitHub state
-- `main` at inspection start: `4c5a9c17e166c0764fab81b768d95ed4ed0dcde3`.
-- This cycle performed verification and documentation reconciliation only; no runtime, schema, credential, Caddy, backup, rollback, or Production mutation was integrated.
+- `main` at inspection start and end: `f0a0157868dfd12ff45ede8be7c0f88911ac1c3c` before this docs-only update.
+- Current `main` push CI run `34519124546` / run 1667: SUCCESS.
 - PR #64 Task13: OPEN / DRAFT, exact published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #81 Task16: OPEN / DRAFT, exact published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; exact-head Task16 TDD `33678134359`, Exact Accounting `33678134326`, and Pinned Forwardproxy `33678134350` are SUCCESS, but repository-wide CI `33678134360` is FAILED in the database job; web and Go passed, rehearsal/bundle skipped. No four-gate same-head closure is credited.
-- PR #4 Karing: OPEN / DRAFT, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run number `402` is SUCCESS across web, Go, DB, S04R rehearsal and production bundle, but real Karing-client import/parse/connect/cleanup proof is still missing.
+- PR #81 Task16: OPEN / DRAFT, exact published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; dedicated checks are historically green, but repository-wide four-gate closure is not currently verified on one fresh published head.
+- PR #4 Karing: OPEN / DRAFT, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run 402 is SUCCESS across web, Go, DB, rehearsal and production bundle, but real Karing-client import/parse/connect/cleanup proof remains missing.
 - Documentation-only PRs #95/#94/#93/#92/#91/#89/#88/#87/#86/#85 remain stale-base or historical reconciliation attempts and are not current truth without exact-base validation.
 
 ## CI truth
-- Current `main` is documentation-only; no post-merge workflow run is exposed for this head.
-- Task16 database failure remains the active merge blocker; dedicated Task16 checks are not enough without repository-wide green CI on the same published head.
-- PR #4 repository CI is green on its exact head, but compatibility evidence is incomplete.
-- No safe merge gate is green in this run.
+- Current `main` documentation-only push CI is green.
+- Task16 remains blocked on fresh same-head repository-wide closure, with the known database-fixture/RLS expectation issue not yet independently cleared.
+- No runtime merge gate is green for promotion in this cycle.
 
 ## Worker / coordinator truth
 - Persistent-report search found no fresh exact-head completion receipt for Task13, Task16, or Karing.
 - Historical worker-only, stale, dirty, mixed-head, and unpushed output remains uncredited.
-- Persistent material identifies TrPaqet as the active executable slot; other lanes are inactive or upgrade-required under the connected one-active-host constraint.
-- Fresh assignments were re-issued in this cycle: Task16 PR #81, Task13 PR #64, and Karing PR #4; no completion receipt was available to reconcile.
+- Persistent material identifies TrPaqet as the active executable development slot; other lanes are inactive or upgrade-required under the one-active-host constraint.
+- Fresh assignments were re-issued for Task16, Task13, Karing, independent review, and the Production audit lane; no completion receipt was available to reconcile.
 
 ## Production truth
-- No fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deploy, or postflight was available through the connected state.
+- Public panel health could not be independently verified through the connected web path, and no fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deploy, or postflight was available through connected tools.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 - Production is not a test lane. Promotion requires green exact-head gates, fresh encrypted backup, independent rollback state, staged deploy, and postflight verification.
 
