@@ -1,23 +1,24 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 03:41 Asia/Tehran
+Last updated: 2026-09-11 04:38 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection: `3626550ea092f4eab5f845eb5befb6899ebc8edf`; this cycle's status reconciliation commit is `a4e71664453fc0a41cb562e85dec3b1afeb20c49`.
-- Connected GitHub workflow lookup returned no PR-triggered runs for the inspected `main` SHA; no fresh post-update CI result is visible.
+- Verified `main` at inspection: `04b20542d8433ce5ee64ca40a1437f2504f87e83`; this cycle reconciled `PROJECT_STATUS.md` in commit `b725457d8b343511350c76f9a57299a70f809883`.
+- Combined status for the inspected main SHA returned no status entries; no fresh post-update CI result is claimed.
 - #64 Task13 remains OPEN/DRAFT at published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused evidence is supplemental, while the fresh real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; mergeable=false and fresh same-head repository-wide four-gate closure remains unverified; generic schema21/latest-schema fixture mismatch remains the blocker in persistent evidence.
-- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head CI run `33209239812` / run 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
+- #81 Task16 remains OPEN/DRAFT at published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; GitHub currently reports mergeable=true, but the required fresh same-head repository-wide four-gate closure remains unverified; generic schema21/latest-schema fixture mismatch remains the blocker in persistent evidence.
+- #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; historical exact-head CI run `33209239812` / run 402 is green, but independent real-client import/parse/connect/cleanup proof is still required.
+- #95 is documentation-only and based on an older main; do not treat it as current truth without rebase and fresh validation.
 
 ## Worker and Production
 - No fresh exact-head worker completion receipt was found for Task13, Task16, or Karing. Historical/stale/dirty/mixed-head output is not credited.
-- TrPaqet remains the only active executable development slot in persistent material; other lanes are inactive or upgrade-required.
-- Public panel health could not be independently verified through the connected web path. No fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, rollback snapshot, staged deploy, or postflight was available. No Production mutation occurred.
+- TrPaqet remains the active executable development slot in persistent material; other lanes are inactive or upgrade-required.
+- No fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, rollback snapshot, staged deploy, or postflight was available. No Production mutation occurred.
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified current `main`, open PRs, exact published heads, workflow visibility, persistent reports, and available Production evidence.
-- Reconciled `PROJECT_STATUS.md` on `main` in commit `a4e71664453fc0a41cb562e85dec3b1afeb20c49`.
+- Re-verified current `main`, open PRs, exact published heads, current commit status, persistent reports, and available Production evidence.
+- Updated `PROJECT_STATUS.md` on `main` in commit `b725457d8b343511350c76f9a57299a70f809883`.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
