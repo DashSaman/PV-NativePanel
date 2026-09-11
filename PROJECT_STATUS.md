@@ -1,17 +1,17 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-11 23:40 Asia/Tehran
+Last updated: 2026-09-12 00:41 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main`: `d768b4b5a6618133a92b41657d2ac0e678d97eaa` at inspection; this cycle only reconciles documentation.
-- `main` combined status for the inspected checkpoint returned zero published status entries; no fresh post-update green CI claim is made.
+- Authoritative `main` at inspection: `39914e4f63466dd2a04a75fcf1ac7f05ba255649`.
+- `main` combined status query returned zero published status entries for this docs checkpoint; no fresh green CI claim is made.
 - Task16 / schema21 remains the last validated runtime integration: merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after four required exact-head gates passed.
-- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
+- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; branch/base is stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
 - PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, not current `main`; independent real-client smoke is still mandatory.
 - PRs #85–#95 are stale-base or documentation reconciliation attempts and are not current runtime truth.
 
 ## Worker / coordinator truth
-- No fresh exact-head completion receipt was found for Task13 or Karing in the persistent reports inspected this cycle.
+- No fresh exact-head completion receipt was found for Task13 or Karing in the persistent reports/comments inspected this cycle.
 - Historical, stale, dirty, mixed-head, and unpushed output remains uncredited.
 - Persistent capacity notes identify TrPaqet as the active executable development slot; other lanes are inactive or upgrade-required under the one-active-host constraint.
 
