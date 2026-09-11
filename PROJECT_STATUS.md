@@ -1,13 +1,13 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 01:43 Asia/Tehran
+Last updated: 2026-09-12 02:41 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main` at inspection: `b5f31fdc3d62e8c1c52d19a0175667e582fa4b21`.
-- `main` combined status query returned zero published status entries for this docs checkpoint; no fresh green CI claim is made.
+- Authoritative `main`: `40d45f95126961dca12e1bef103fd062ce35eb73`.
+- Latest inspected workflow run for the prior docs checkpoint: `34632054189`; database, web, Go, rehearsal, and bundle jobs all completed SUCCESS.
 - Task16 / schema21 remains the last validated runtime integration: merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after four required exact-head gates passed.
-- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; branch/base is stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
-- PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, not current `main`; independent real-client smoke is still mandatory.
+- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
+- PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`; independent real-client smoke is still mandatory.
 - PRs #85–#95 are stale-base or documentation reconciliation attempts and are not current runtime truth.
 
 ## Worker / coordinator truth
@@ -21,8 +21,8 @@ Last updated: 2026-09-12 01:43 Asia/Tehran
 - Promotion remains gated by read-only audit, fresh encrypted backup, exact SHA lock, staged promotion, health/postflight, and rollback readiness.
 
 ## Actions this cycle
-- Re-verified authoritative main, open PR metadata, exact PR heads/bases, combined status, recent PR discussion, persistent reports, and available Production evidence.
-- Posted fresh exact-head dispatches to PR #64 and PR #4.
+- Re-verified current `main`, open PRs, exact PR heads/bases, recent PR discussion, persistent reports, and available Production evidence.
+- Confirmed workflow run `34632054189` is fully green for database, web, Go, rehearsal, and bundle jobs.
 - Reconciled canonical documentation only; no runtime merge or Production deployment was justified.
 
 ## Next executable gates
