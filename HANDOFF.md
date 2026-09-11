@@ -1,13 +1,13 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 22:43 Asia/Tehran
+Last updated: 2026-09-11 23:40 Asia/Tehran
 
 ## Current truth
-- Authoritative `main` at start of this cycle: `5067bd40b05d50c22998ba98a3769569490823d5`; documentation reconciliation is being committed on `main` without runtime changes.
+- Authoritative `main` at inspection: `d768b4b5a6618133a92b41657d2ac0e678d97eaa`; this cycle updates documentation only.
 - Current `main` combined status query returned zero published status entries; no fresh post-update green claim is made for the docs checkpoint.
 - Task16 / schema21 remains validated and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` after four exact-head green gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
-- Task13 / PR #64 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; its base is stale and its live HTTP/1.1 + HTTP/2 rehearsal is still the release blocker.
-- Karing / PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; its base is `s04-auth`, not current `main`, and independent real-client smoke is still the release blocker.
+- Task13 / PR #64 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale and live HTTP/1.1 + HTTP/2 rehearsal is still the release blocker.
+- Karing / PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, not current `main`, and independent real-client smoke is still the release blocker.
 
 ## Worker and Production
 - No fresh exact-head completion receipt was found for Task13 or Karing in persistent reports.
@@ -15,9 +15,9 @@ Last updated: 2026-09-11 22:43 Asia/Tehran
 - No current connected command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deployment, or postflight evidence was available. Production was not mutated.
 
 ## Actions this cycle
-- Re-verified authoritative main, open PR metadata, current combined status, persistent reports, and available Production evidence.
-- Updated canonical status documentation on `main`; no runtime merge or Production deployment was justified.
+- Re-verified authoritative main, open PR metadata, combined status, persistent reports, and available Production evidence.
 - Renewed exact-head dispatches to PR #64 and PR #4, explicitly requiring current-main reconciliation before integration.
+- No runtime merge or Production deployment was justified.
 
 ## Next assignments
 1. Task13: rebase/republish from current `main`, then run isolated real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
