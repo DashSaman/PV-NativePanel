@@ -1,13 +1,13 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-11 22:43 Asia/Tehran
+Last updated: 2026-09-11 23:40 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main`: `5067bd40b05d50c22998ba98a3769569490823d5`.
-- Current `main` combined status query returned zero published status entries; no fresh post-update green CI claim is made for this docs checkpoint.
+- Authoritative `main`: `d768b4b5a6618133a92b41657d2ac0e678d97eaa` at inspection; this cycle only reconciles documentation.
+- `main` combined status for the inspected checkpoint returned zero published status entries; no fresh post-update green CI claim is made.
 - Task16 / schema21 remains the last validated runtime integration: merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after four required exact-head gates passed.
-- PR #64 / Task13 remains OPEN / DRAFT, exact head `3fc14825e1b164bad558decaef47f56b792e81af`, stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
-- PR #4 / Karing remains OPEN / DRAFT, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, based on `s04-auth` rather than current `main`; independent real-client smoke is still mandatory.
+- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
+- PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, not current `main`; independent real-client smoke is still mandatory.
 - PRs #85–#95 are stale-base or documentation reconciliation attempts and are not current runtime truth.
 
 ## Worker / coordinator truth
