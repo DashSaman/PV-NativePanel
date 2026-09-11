@@ -2,10 +2,10 @@
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Fresh inspection on 2026-09-11 16:42 Asia/Tehran found `main` at `a0036ad53cc14752815a29d002e8493f24ed196f` after documentation reconciliation.
+- Fresh inspection on 2026-09-11 17:43 Asia/Tehran found `main` at `9e5944a5c79f36041b49e903218547aa2cb6a8ba` after documentation reconciliation.
 - Task16 PR #81 was validated on `904e17c4a013e3adb5fb349c70f254ab59c925f8` with four green gates and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e`.
 - Green exact-head runs: CI `34587866885`; Task16 Schema21 TDD `34587866720`; WS1 Exact Accounting `34587866787`; WS1 Pinned Forwardproxy `34587866795`.
-- Current main has no published combined status entries yet; do not claim fresh post-refresh CI.
+- Current main has no published combined status entries; do not claim fresh post-refresh CI.
 - Task13 PR #64 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
 - Karing PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; real-client smoke remains pending.
 - Persistent reports contain no fresh exact-head completion receipt for Task13 or Karing; stale/dirty/mixed-head output is not credited.
