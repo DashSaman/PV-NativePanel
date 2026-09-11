@@ -1,12 +1,12 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 10:38 Asia/Tehran
+Last updated: 2026-09-11 11:42 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection: `ca50bed72e6bf21874a1bf8a3f16d6723c15c5bb`.
-- No workflow runs are currently exposed for this docs-only checkpoint; no fresh post-update CI is claimed.
+- Verified `main` at inspection: `40aced11fd99792f78f440cfcd4234b09e32440e`.
+- No fresh post-update CI is claimed for the docs-only checkpoint.
 - #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; fresh same-head repository-wide closure remains unverified.
+- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; three dedicated exact-head gates are green, but repository CI `33678134360` fails in the database job.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client proof is still required.
 - #95 and other documentation-only PRs are stale-base reconciliation branches and are not current truth without rebase and fresh validation.
 
@@ -17,14 +17,15 @@ Last updated: 2026-09-11 10:38 Asia/Tehran
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified current `main`, open PRs, current CI visibility, persistent reports, and available Production evidence.
-- Updated `PROJECT_STATUS.md` and `CONTINUE_HERE.md` with the verified `main` SHA and the absence of fresh post-update CI.
+- Re-verified current `main`, open PRs, exact-head CI, persistent reports, and available Production evidence.
+- Confirmed Task16 exact-head dedicated gates green and repository-wide CI database failure.
 - Posted fresh exact-head assignments on PRs #81, #64, and #4.
+- Updated canonical status and continue-here documentation.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
 ## Next assignments
-1. Task16: fix only generic latest-schema/RLS fixture expectations, preserve Task15 schema20-specific fixtures, publish one exact head, and rerun all four required gates.
+1. Task16: inspect CI `33678134360`, fix only generic latest-schema/RLS fixture expectations, preserve Task15 schema20-specific fixtures, publish one exact head, and rerun all four gates.
 2. Task13: run isolated real HTTP/1.1 + HTTP/2 rehearsal with target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 3. Karing: run real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 4. Independent review: RLS, privilege separation, retention/purge, accounting/session lineage, and secret redaction.
