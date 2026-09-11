@@ -1,10 +1,10 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-12 01:43 Asia/Tehran
+Last updated: 2026-09-12 02:41 Asia/Tehran
 
 ## Current truth
-- Authoritative `main` at inspection: `b5f31fdc3d62e8c1c52d19a0175667e582fa4b21` before this documentation refresh; current docs-only checkpoint advances from there.
-- Current `main` combined status query returned zero published status entries; no fresh post-update green claim is made for the docs checkpoint.
+- Authoritative `main` at inspection: `40d45f95126961dca12e1bef103fd062ce35eb73`; documentation refresh commit is `9dcdb05eac0ffa43504a3951632e45de20818726`.
+- Latest inspected workflow run `34632054189` is fully green across database, web, Go, rehearsal, and bundle jobs.
 - Task16 / schema21 remains validated and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` after four exact-head green gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 - Task13 / PR #64 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale relative to current `main` and live HTTP/1.1 + HTTP/2 rehearsal is still the release blocker.
 - Karing / PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, not current `main`, and independent real-client smoke is still the release blocker.
@@ -15,7 +15,8 @@ Last updated: 2026-09-12 01:43 Asia/Tehran
 - No current connected command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deployment, or postflight evidence was available. Production was not mutated.
 
 ## Actions this cycle
-- Re-verified authoritative main, open PR metadata, exact PR heads/bases, combined status, recent PR discussion, persistent reports, and available Production evidence.
+- Re-verified authoritative main, open PR metadata, exact PR heads/bases, CI, recent PR discussion, persistent reports, and available Production evidence.
+- Confirmed workflow run `34632054189` fully green.
 - Posted fresh exact-head dispatches to PR #64 and PR #4.
 - Reconciled canonical documentation only; no runtime merge or Production deployment was justified.
 
