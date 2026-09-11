@@ -2,7 +2,7 @@
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Fresh inspection on 2026-09-11 15:41 Asia/Tehran found `main` at `173cd4b33d52049f77f3085227413806a3424889` after documentation reconciliation.
+- Fresh inspection on 2026-09-11 16:42 Asia/Tehran found `main` at `a0036ad53cc14752815a29d002e8493f24ed196f` after documentation reconciliation.
 - Task16 PR #81 was validated on `904e17c4a013e3adb5fb349c70f254ab59c925f8` with four green gates and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e`.
 - Green exact-head runs: CI `34587866885`; Task16 Schema21 TDD `34587866720`; WS1 Exact Accounting `34587866787`; WS1 Pinned Forwardproxy `34587866795`.
 - Current main has no published combined status entries yet; do not claim fresh post-refresh CI.
