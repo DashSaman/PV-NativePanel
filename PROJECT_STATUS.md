@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-11 02:42 Asia/Tehran
+Last updated: 2026-09-11 03:41 Asia/Tehran
 
 ## Verified GitHub state
-- `main` at inspection: `a75e5750421524d25c3402cd0d5d8fc63e30ffd7`.
-- Connected GitHub workflow lookup returned no PR-triggered runs for this SHA; no fresh post-update CI result is claimed.
+- `main` at inspection: `3626550ea092f4eab5f845eb5befb6899ebc8edf`.
+- Connected workflow lookup returned no PR-triggered runs for this SHA; no fresh post-update CI result is claimed.
 - PR #64 Task13: OPEN / DRAFT, exact published head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - PR #81 Task16: OPEN / DRAFT, exact published head `3c4310335ab4907d28bac995bba1be3545e14f6e`; mergeable=false; fresh same-head repository-wide four-gate closure remains pending. Persistent evidence still identifies generic schema21/latest-schema fixture mismatch as the database blocker.
 - PR #4 Karing: OPEN / DRAFT, exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; exact-head workflow `33209239812` / run 402 is SUCCESS, but independent real-client import/parse/connect/cleanup proof remains missing.
