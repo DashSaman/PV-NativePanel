@@ -1,0 +1,62 @@
+name: Task16 Schema21 TDD
+
+on:
+  pull_request:
+    paths:
+      - 'db/migrations/0021_*'
+      - 'tests/db/ip_session_history_contract_test.sh'
+      - 'tests/db/migration_test.sh'
+      - 'tests/stages/S04_db_env_version_test.sh'
+      - 'scripts/db/purge_session_history.sh'
+      - '.github/workflows/task16-schema21.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract-red-green:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record schema21 checksums
+        run: sha256sum db/migrations/0021_ip_session_history.up.sql db/migrations/0021_ip_session_history.down.sql
+      - name: Start PostgreSQL 18
+        run: |
+          set -Eeuo pipefail
+          docker pull postgres:18-bookworm
+          docker run --detach \
+            --name pvnaive-task16-postgres18 \
+            --network host \
+            --env POSTGRES_PASSWORD=pvnaive-ci-only \
+            postgres:18-bookworm
+          for i in $(seq 1 60); do
+            if docker exec pvnaive-task16-postgres18 pg_isready --username postgres --dbname postgres >/dev/null 2>&1; then
+              echo 'TASK16_POSTGRES18_READY=PASSED'
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs pvnaive-task16-postgres18
+          exit 1
+      - name: Run schema21 PostgreSQL18 contract
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --env GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
+            --env GITHUB_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT}" \
+            --volume "${GITHUB_WORKSPACE}:/repo" \
+            --workdir /repo \
+            postgres:18-bookworm \
+            bash tests/db/ip_session_history_contract_test.sh
+      - name: PostgreSQL 18 logs on failure
+        if: failure()
+        run: docker logs pvnaive-task16-postgres18 || true
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-task16-postgres18 >/dev/null 2>&1 || true
