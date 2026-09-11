@@ -1,10 +1,10 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 19:41 Asia/Tehran
+Last updated: 2026-09-11 20:38 Asia/Tehran
 
 ## Current truth
-- Authoritative `main`: `3e569ca7c43132d8618a4ac30d0117a26bb9230f`; docs reconciliation commit: `3e2cbc6105170f991cd9cf260662c84b766f1643`.
-- No published combined status or workflow runs are visible for the current docs checkpoint; no fresh CI green claim is made.
+- Authoritative `main` at inspection: `972fd921565731e54a0e9305bfa5fc50dec47a39`; this cycle's docs commit is recorded separately in Git history.
+- No published combined status or workflow runs are visible for the inspected docs checkpoint; no fresh CI green claim is made.
 - Task16 / PR #81 remains validated and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` after four exact-head green gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 - Task13 / PR #64 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; live HTTP/1.1 + HTTP/2 rehearsal is the release blocker.
 - Karing / PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client smoke is the release blocker.
@@ -15,8 +15,8 @@ Last updated: 2026-09-11 19:41 Asia/Tehran
 - No current connected command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deployment, or postflight evidence was available. Production was not mutated.
 
 ## Actions this cycle
-- Re-verified authoritative main, open PRs, exact-head status/workflow visibility, and persistent report truth.
-- Posted fresh exact-head dispatches to PR #64 and PR #4.
+- Re-verified authoritative main, open PRs, exact-head status visibility, and persistent report truth.
+- Renewed exact-head dispatches to PR #64 and PR #4.
 - Reconciled canonical docs directly on `main`; no runtime merge or Production deployment was justified.
 
 ## Next assignments
