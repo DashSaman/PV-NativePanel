@@ -1,7 +1,7 @@
 # PVNaive — Continue Here
 
 ## Verified checkpoint
-- Start-of-cycle `main`: `39914e4f63466dd2a04a75fcf1ac7f05ba255649`.
+- Start-of-cycle `main`: `b5f31fdc3d62e8c1c52d19a0175667e582fa4b21`.
 - This cycle updated canonical documentation only; no runtime, schema, credential, Caddy, Production, backup, rollback, or deployment mutation was performed.
 - The current docs-only `main` checkpoint has no published combined CI status entries; do not claim it green until a workflow result is observed.
 
