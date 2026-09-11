@@ -1,12 +1,11 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 11:42 Asia/Tehran
+Last updated: 2026-09-11 12:39 Asia/Tehran
 
 ## Current truth
-- Verified `main` at inspection: `40aced11fd99792f78f440cfcd4234b09e32440e`.
-- No fresh post-update CI is claimed for the docs-only checkpoint.
+- Verified `main` at inspection: `40aced11fd99792f78f440cfcd4234b09e32440e`; status/workflow lookup for the docs-only checkpoint is empty, so no fresh post-update CI is claimed.
 - #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; real HTTP/1.1 + HTTP/2 rehearsal remains required.
-- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; three dedicated exact-head gates are green, but repository CI `33678134360` fails in the database job.
+- #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; three dedicated exact-head gates are green, but repository CI `33678134360` still fails in the database job on the generic latest-schema fixture/assertion path.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client proof is still required.
 - #95 and other documentation-only PRs are stale-base reconciliation branches and are not current truth without rebase and fresh validation.
 
@@ -18,9 +17,9 @@ Last updated: 2026-09-11 11:42 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current `main`, open PRs, exact-head CI, persistent reports, and available Production evidence.
-- Confirmed Task16 exact-head dedicated gates green and repository-wide CI database failure.
+- Confirmed Task16 dedicated gates green and repository-wide CI database failure remains unresolved.
 - Posted fresh exact-head assignments on PRs #81, #64, and #4.
-- Updated canonical status and continue-here documentation.
+- Refreshed canonical status and continue-here documentation with the current verification timestamp.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
