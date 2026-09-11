@@ -2,8 +2,8 @@
 
 Before any mutation, re-read current GitHub `main`, open PRs, exact-head CI, Production evidence and persistent reports.
 
-- Verified `main` at inspection: `a75e5750421524d25c3402cd0d5d8fc63e30ffd7`.
-- This automation cycle reconciled canonical docs only; latest documented commits are `532bb2808bad0a6ce46582280426fe019313b793` (`PROJECT_STATUS.md`) and `79deb4bc2eb58014a9a25868ca63f79169554173` (`HANDOFF.md`).
+- Verified `main` at inspection: `3626550ea092f4eab5f845eb5befb6899ebc8edf`.
+- This automation cycle reconciled canonical docs only; latest documented commits are `a4e71664453fc0a41cb562e85dec3b1afeb20c49` (`PROJECT_STATUS.md`) and `4f824394675c25234eab0deb4cb7f3be2f20162c` (`HANDOFF.md`).
 - Connected workflow lookup returned no PR-triggered runs for the inspected `main` SHA; no fresh post-update CI result is claimed.
 - #64 Task13 OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; focused CI is supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains pending.
 - #81 Task16 OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; mergeable=false; fresh same-head repository-wide four-gate closure remains pending; persistent evidence still cites generic schema21/latest-schema fixture mismatch.
