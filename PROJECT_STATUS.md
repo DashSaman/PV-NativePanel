@@ -1,14 +1,13 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-11 16:42 Asia/Tehran
+Last updated: 2026-09-11 17:43 Asia/Tehran
 
 ## Verified GitHub state
-- `main` after this refresh: `db4b84fd2ee37b243047147deea3d737bc8a3922`.
-- The latest verified runtime merge remains Task16 PR #81, merged as squash commit `7efa359ccc5745c548cda9590bc5c516e9d5aa9e`.
-- Exact Task16 gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8` were all SUCCESS: CI `34587866885`, Task16 Schema21 TDD `34587866720`, WS1 Exact Accounting `34587866787`, WS1 Pinned Forwardproxy `34587866795`.
-- Current `main` combined status currently returns no entries; no fresh post-refresh CI green result is claimed.
-- PR #64 Task13 remains OPEN / DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
-- PR #4 Karing remains OPEN / DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client import/parse/connect/cleanup proof remains missing.
+- `main` at start of this cycle: `13224b558d15ec045a6abc7c99bfc58261f076cb`.
+- Task16 PR #81 is merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` after four exact-head green gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
+- Current main combined status returns no entries; no fresh post-refresh CI green result is claimed for the docs-only checkpoint.
+- PR #64 Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
+- PR #4 Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client import/parse/connect/cleanup proof remains missing.
 - Documentation PRs #95 and older remain stale-base reconciliation attempts; keep uncredited unless rebased and freshly validated.
 
 ## Worker / coordinator truth
@@ -16,7 +15,7 @@ Last updated: 2026-09-11 16:42 Asia/Tehran
 - No fresh exact-head completion receipt was found for Task13 or Karing in the persistent reports.
 - Historical worker-only, stale, dirty, mixed-head, and unpushed output remains uncredited.
 - Persistent material identifies TrPaqet as the active executable development slot; other lanes are inactive or upgrade-required under the one-active-host constraint.
-- Fresh dispatches were renewed on PR #64 and PR #4 with exact-head evidence requirements.
+- Fresh dispatches were renewed on PR #64 and PR #4; independent review remains queued after Task16 merge.
 
 ## Production truth
 - No fresh command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deploy, or postflight was available through connected tools in this cycle.
