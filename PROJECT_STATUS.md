@@ -1,11 +1,12 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-11 14:41 Asia/Tehran
+Last updated: 2026-09-11 15:41 Asia/Tehran
 
 ## Verified GitHub state
-- `main` before this refresh: `b60f990ec4a422e0fbc82603dce4f6fd641f08ce`.
+- `main` after this refresh: `fdc3134383722cf8c16621f2ce8454052165673a`.
 - Task16 PR #81 was validated and merged as squash commit `7efa359ccc5745c548cda9590bc5c516e9d5aa9e`.
 - Exact Task16 gates on `904e17c4a013e3adb5fb349c70f254ab59c925f8` were all SUCCESS: CI `34587866885`, Task16 Schema21 TDD `34587866720`, WS1 Exact Accounting `34587866787`, WS1 Pinned Forwardproxy `34587866795`.
+- Current main has no published combined status entries yet; no fresh post-refresh CI green result is claimed.
 - PR #64 Task13 remains OPEN / DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; focused checks are supplemental; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - PR #4 Karing remains OPEN / DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client import/parse/connect/cleanup proof remains missing.
 - Documentation PRs #95 and older remain stale-base reconciliation attempts; keep uncredited unless rebased and freshly validated.
