@@ -1,9 +1,9 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 15:41 Asia/Tehran
+Last updated: 2026-09-11 16:42 Asia/Tehran
 
 ## Current truth
-- Current `main` checkpoint: `6c74ae705b7f22815b872999037527d28d68e819` after this documentation reconciliation.
+- Current `main` checkpoint: `718568bc750cef187b05f37c411880fe0a8d75f9` after this documentation reconciliation.
 - Task16 PR #81 was validated on exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e`.
 - Exact gates passed on that head: CI `34587866885`, Task16 Schema21 TDD `34587866720`, WS1 Exact Accounting `34587866787`, WS1 Pinned Forwardproxy `34587866795`.
 - Current main has no published combined status entries yet; no fresh post-refresh CI green result is claimed.
@@ -19,8 +19,8 @@ Last updated: 2026-09-11 15:41 Asia/Tehran
 
 ## Actions in this cycle
 - Re-verified current GitHub main, open PRs, exact-head CI visibility, persistent reports, and Production evidence.
+- Renewed exact-head dispatches for Task13 and Karing.
 - Reconciled documentation on main only; no runtime integration or deployment was justified.
-- Posted/renewed next assignments for Task13, Karing, independent security/accounting review, and Production audit readiness.
 
 ## Next assignments
 1. Task13: run the exact-head real HTTP/1.1 + HTTP/2 rehearsal with target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
