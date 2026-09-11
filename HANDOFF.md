@@ -1,10 +1,10 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-11 09:43 Asia/Tehran
+Last updated: 2026-09-11 10:38 Asia/Tehran
 
 ## Current truth
-- Verified `main` before this documentation reconciliation: `c24a569284b1902d3a7d291752a4e00682acf701`.
-- `main` push CI run `34564969365` (run #1698) completed SUCCESS on 2026-09-11.
+- Verified `main` at inspection: `ca50bed72e6bf21874a1bf8a3f16d6723c15c5bb`.
+- No workflow runs are currently exposed for this docs-only checkpoint; no fresh post-update CI is claimed.
 - #64 Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; real HTTP/1.1 + HTTP/2 rehearsal remains required.
 - #81 Task16 remains OPEN/DRAFT at `3c4310335ab4907d28bac995bba1be3545e14f6e`; fresh same-head repository-wide closure remains unverified.
 - #4 Karing remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client proof is still required.
@@ -17,8 +17,9 @@ Last updated: 2026-09-11 09:43 Asia/Tehran
 - Preserve disposable credentials, isolated canaries, redacted logs, backup-before-promotion, independent rollback state, and truthful accounting/session lineage.
 
 ## Actions in this cycle
-- Re-verified `main`, open PRs, current CI, persistent reports, and available Production evidence.
-- Updated `PROJECT_STATUS.md` and `CONTINUE_HERE.md` with the verified `main` SHA and successful main CI run.
+- Re-verified current `main`, open PRs, current CI visibility, persistent reports, and available Production evidence.
+- Updated `PROJECT_STATUS.md` and `CONTINUE_HERE.md` with the verified `main` SHA and the absence of fresh post-update CI.
+- Posted fresh exact-head assignments on PRs #81, #64, and #4.
 - No runtime work was integrated because no validated exact-head completion receipt was available.
 - No merge, deploy, migration, restart/reload, DB write, credential mutation, backup mutation, or rollback mutation occurred.
 
