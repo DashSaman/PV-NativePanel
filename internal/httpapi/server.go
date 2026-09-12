@@ -10,6 +10,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
+	"github.com/DashSaman/PV-NaivePanel/internal/sessionkill"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
 )
@@ -17,6 +18,10 @@ import (
 const defaultReadyTimeout = 2 * time.Second
 
 type envelope map[string]any
+
+type SessionController interface {
+	Kill(context.Context, sessionkill.Key) (sessionkill.KillResult, error)
+}
 
 type ServerConfig struct {
 	AuthService           *auth.Service
@@ -27,6 +32,7 @@ type ServerConfig struct {
 	SubscriptionProxyHost string
 	CustomerService       *customer.Service
 	AccountingStore       telemetry.AccountingStore
+	SessionController     SessionController
 	SystemStatus          func(*http.Request) (any, error)
 	ReadinessProbe        ReadinessProbeFunc
 	ReadyTimeout          time.Duration
@@ -349,18 +355,10 @@ func (buf *responseBuffer) commitToClient() {
 	}
 }
 
-// transactionCommit is the minimal interface required by finalize to
-// commit a database transaction. This allows tests to inject a fake
-// whose Commit returns a controlled error.
 type transactionCommit interface {
 	Commit() error
 }
 
-// finalize commits tx through the minimal transactionCommit interface.
-// On success it flushes the buffered response to the underlying writer.
-// On failure it discards the buffer and writes a 500 commit-failed
-// response directly to the underlying writer so the client never
-// observes the buffered success body or headers.
 func finalize(tx transactionCommit, buf *responseBuffer, w http.ResponseWriter) error {
 	if err := tx.Commit(); err != nil {
 		buf.Discard()

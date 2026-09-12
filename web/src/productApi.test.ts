@@ -4,6 +4,8 @@ import {
   getProductSubscription,
   listProductCustomers,
   listProductPlans,
+  killProductCustomerSession,
+  killProductCustomerSessionAndReload,
   previewProductBulk,
   reissueProductSubscription,
   renewProductCustomer,
@@ -139,6 +141,34 @@ describe("WS2 product API client", () => {
     expect(calls[4][0]).toBe("/api/v1/users/user%201/suspend");
     expect(calls[5][0]).toBe("/api/v1/users/user%201/revoke");
     expect((calls[1][1]?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
+  });
+
+  it("kills exactly one selected active session with CSRF and no tuple fields", async () => {
+    installCSRF();
+    const fetcher = vi.fn(async () => jsonResponse({ status: "completed", found: true, killed: true, session_id: "session 1", credential_mutated: false }));
+
+    const result = await killProductCustomerSession("user 1", "session 1", fetcher as typeof fetch);
+
+    const [path, init] = callsOf(fetcher)[0];
+    expect(path).toBe("/api/v1/users/user%201/sessions/session%201");
+    expect(init?.method).toBe("DELETE");
+    expect(init?.body).toBeUndefined();
+    expect((init?.headers as Record<string, string>)["X-CSRF-Token"]).toBe("csrf-product-test");
+    expect(result).toEqual({ status: "completed", found: true, killed: true, session_id: "session 1", credential_mutated: false });
+  });
+
+  it("reloads active sessions only after the selected session kill completes", async () => {
+    installCSRF();
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(async () => jsonResponse({ status: "completed", found: true, killed: true, session_id: "s1", credential_mutated: false }))
+      .mockImplementationOnce(async () => jsonResponse({ sessions: [{ session_id: "s2" }], observed_at: "2026-09-01T19:00:00Z" }));
+
+    const result = await killProductCustomerSessionAndReload("u1", "s1", fetcher as typeof fetch);
+
+    const calls = callsOf(fetcher);
+    expect(calls.map(([path]) => path)).toEqual(["/api/v1/users/u1/sessions/s1", "/api/v1/users/u1/sessions"]);
+    expect(result.sessions).toEqual([{ session_id: "s2" }]);
   });
 
   it("reuses exactly the preview idempotency key for bulk execute", async () => {

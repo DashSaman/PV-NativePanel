@@ -66,7 +66,7 @@ var Routes = []Route{
 	{"POST", "/api/v1/users/{id}/credentials/{credentialId}/rotate", "credentials.rotate", Reseller, false},
 	{"DELETE", "/api/v1/users/{id}/credentials/{credentialId}", "credentials.delete", Reseller, false},
 	{"GET", "/api/v1/users/{id}/sessions", "users.sessions.index", Reseller, false},
-	{"DELETE", "/api/v1/users/{id}/sessions/{sessionId}", "users.sessions.delete", Reseller, false},
+	{"DELETE", "/api/v1/users/{id}/sessions/{sessionId}", "users.sessions.delete", Reseller, true},
 	{"GET", "/api/v1/resellers", "resellers.index", Admin, false},
 	{"POST", "/api/v1/resellers", "resellers.create", Admin, false},
 	{"GET", "/api/v1/resellers/{id}", "resellers.show", Admin, false},

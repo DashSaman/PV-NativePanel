@@ -98,6 +98,7 @@ jobs:
               bash tests/stages/S04R_upgrade_contract_test.sh
               bash tests/stages/S05_upgrade_contract_test.sh
               bash tests/stages/S06_owner_upgrade_contract_test.sh
+              bash tests/release/Task13_api_kill_ci_contract_test.sh
               bash tests/db/lib_test.sh
               bash tests/db/migration_test.sh
               bash tests/db/auth_refresh_reuse_test.sh
@@ -220,8 +221,9 @@ jobs:
             bash -lc '
               set -Eeuo pipefail
               apt-get update >/dev/null
-              apt-get install --yes --no-install-recommends curl jq >/dev/null
+              apt-get install --yes --no-install-recommends curl jq python3 >/dev/null
               bash tests/stages/S04R_full_rehearsal.sh
+              bash tests/stages/Task13_api_session_kill_rehearsal.sh
             '
       - name: PostgreSQL 18 logs on failure
         if: failure()
