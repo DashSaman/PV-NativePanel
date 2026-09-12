@@ -1,9 +1,9 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 07:40 Asia/Tehran
+Last updated: 2026-09-12 08:41 Asia/Tehran
 
 ## Verified GitHub state
-- Current authoritative `main`: `2118ee70031c40122421090ce871bef2608f24aa` (latest observed GitHub branch head in this cycle).
+- Current authoritative `main`: `96bc28c661b349cf4b95c4822f2807151a7da7b9`.
 - No published combined CI status entries were returned for this exact SHA; no current-main green CI claim is made.
 - Task16 / schema21 remains the last validated runtime integration, merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after recorded exact-head gates.
 - PR #64 / Task13 remains OPEN / DRAFT / non-mergeable at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
@@ -21,9 +21,9 @@ Last updated: 2026-09-12 07:40 Asia/Tehran
 - Promotion remains gated by read-only audit, fresh backup, exact SHA lock, staged promotion, health/postflight, and rollback readiness.
 
 ## Actions this cycle
-- Re-verified repository metadata, current `main`, open PRs, PR heads/bases, current-main CI visibility, PR4/PR64 status, and persistent report availability.
-- Reviewed current PR evidence and confirmed it is not sufficient for merge: PR #4 still lacks independent Karing client evidence; PR #64 still lacks the required real protocol rehearsal.
-- Reissued execution assignments for Task13, Karing, security/accounting review, and Production audit/rollback readiness.
+- Re-verified repository metadata, current `main`, open PRs, exact PR heads/bases, current-main workflow visibility, PR4/PR64 evidence, and persistent report availability.
+- Confirmed PR #64 still lacks the required real protocol rehearsal and PR #4 still lacks independent real-client evidence.
+- Reissued the next executable assignments to Task13, Karing, issue #99, issue #100, and current-main CI publication.
 - Updated canonical documentation only; no runtime or Production mutation.
 
 ## Next executable gates
