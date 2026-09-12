@@ -1,17 +1,17 @@
 # PVNaive — Canonical Handoff
 
-Last updated: 2026-09-12 09:43 Asia/Tehran
+Last updated: 2026-09-12 10:38 Asia/Tehran
 
 ## Current truth
-- Current authoritative `main` before this documentation commit was `fa9607d44e6578aeccb39923f55604a40b64d262`; this cycle adds documentation-only reconciliation.
-- No GitHub Actions workflow run is published for exact `fa9607d44e6578aeccb39923f55604a40b64d262`; do not claim current-main green.
+- Current authoritative `main` at verification start was `a3787fb42654b64cc2cec9d7248decaeb1289b77`; this cycle adds documentation-only reconciliation.
+- No published combined status entries or workflow runs were available for exact `a3787fb42654b64cc2cec9d7248decaeb1289b77`; do not claim current-main green.
 - Task16 / schema21 is validated and merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after recorded exact-head gates.
 - Task13 / PR #64 remains OPEN/DRAFT/non-mergeable at `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale and a fresh live HTTP/1.1 + HTTP/2 rehearsal is still required.
 - Karing / PR #4 remains OPEN/DRAFT at `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base `s04-auth`; independent real-client smoke is still required.
 
 ## Worker and Production
 - No fresh exact-head completion receipt was found for Task13, Karing, issue #99, or issue #100.
-- TrPaqet remains the only identified executable development slot; other worker lanes are inactive or upgrade-required under the one-active-host constraint.
+- TrPaqet remains the only identified executable development slot; `pv-primary` and `pv-worker-main` are connected but inactive under the one-active-host constraint.
 - No fresh connected command-level Production audit, deployed SHA/schema verification, encrypted backup, independent rollback snapshot, staged deployment, or postflight evidence was available. Production was not mutated.
 
 ## Next assignments
