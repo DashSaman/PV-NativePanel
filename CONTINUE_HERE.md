@@ -1,7 +1,7 @@
 # PVNaive — Continue Here
 
 ## Verified checkpoint
-- Current `main`: `85a174ec9b077a93d88b81a9d7854edc516fd35c` after documentation-only reconciliation from verified tree `8eb34a056a16dddbd1a22372126d6c5fc0876fdc`.
+- Current `main` before this docs refresh: `2239ca96c76fba55786b4e3f55711e9e91f86b4f`; this refresh is documentation-only.
 - No published CI result is available for the exact current docs checkpoint; it is not claimed green.
 - No runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment mutation was performed.
 
