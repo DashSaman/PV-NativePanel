@@ -1,9 +1,9 @@
 # PVNaive — Continue Here
 
 ## Verified checkpoint
-- Current `main` before this documentation cycle: `fa9607d44e6578aeccb39923f55604a40b64d262`.
+- Current `main` at verification start: `a3787fb42654b64cc2cec9d7248decaeb1289b77`.
 - This cycle adds documentation-only reconciliation; no runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment mutation.
-- No GitHub Actions workflow run is published for the exact pre-cycle SHA; it is not claimed green.
+- No published combined status entries or workflow runs were available for exact `a3787fb42654b64cc2cec9d7248decaeb1289b77`; it is not claimed green.
 
 ## Open work
 - Task13 / PR #64: exact head `3fc14825e1b164bad558decaef47f56b792e81af`; branch base is stale; missing fresh real HTTP/1.1 + HTTP/2 rehearsal and exact accounting proof.
