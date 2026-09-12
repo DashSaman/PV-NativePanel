@@ -1,12 +1,12 @@
 # PVNaive — Continue Here
 
 ## Verified checkpoint
-- Current `main` before this docs refresh: `2239ca96c76fba55786b4e3f55711e9e91f86b4f`; this refresh is documentation-only.
+- Current `main` before this docs refresh: `dc7994c090b5db77e8999ac9670e737b3c3d708d`; this refresh is documentation-only.
 - No published CI result is available for the exact current docs checkpoint; it is not claimed green.
 - No runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment mutation was performed.
 
 ## Open work
-- Task13 / PR #64: exact head `3fc14825e1b164bad558decaef47f56b792e81af`; stale relative to current main; missing fresh real HTTP/1.1 + HTTP/2 rehearsal and exact accounting proof.
+- Task13 / PR #64: exact head `3fc14825e1b164bad558decaef47f56b792e81af`; missing fresh real HTTP/1.1 + HTTP/2 rehearsal and exact accounting proof.
 - Karing / PR #4: exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; based on `s04-auth`; missing independent real-client smoke.
 - Independent review / issue #99: pending clean-worktree security, accounting, RLS, retention, and redaction review.
 - Production lane / issue #100: pending connected read-only audit and rollback-readiness inventory.
