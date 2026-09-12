@@ -1,13 +1,13 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 14:43 Asia/Tehran
+Last updated: 2026-09-12 15:39 Asia/Tehran
 
 ## Verified GitHub state
-- Current authoritative `main`: `667c6ce2b39cbf68f2f5030590fb7bc46d924be6`.
-- This cycle verified repository metadata, open PRs, CI visibility, and persistent project reports. The current tip is documentation-only; no runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment state was changed.
-- The inspected prior checkpoint `d2098ebd0d09dc78b77a78c8d636d85ca9fc62da` had a successful GitHub Actions run `34685323713` / run `1786` completed on 2026-09-12 09:18Z. The new tip `667c6ce2b39cbf68f2f5030590fb7bc46d924be6` has not yet produced a published CI result in the available lookup, so current-tip CI is not claimed green.
-- Task16/schema21 PR #81 is merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`. Historical gate receipts remain tied to their original heads.
-- PR #64 / Task13 remains OPEN/DRAFT/non-mergeable at exact head `3fc14825e1b164bad558decaef47f56b792e81af`, with stale base `0b921abe9b2bd1d827023f494fda11a407fe34d3`; fresh real HTTP/1.1 + HTTP/2 rehearsal and exact accounting proof are still mandatory.
+- Current authoritative `main`: `3456f28c2f5c6680accbca694038e0b159b4c4c0`.
+- This cycle re-verified repository metadata, open PRs, CI visibility, and persistent project reports. Documentation reconciliation is the only change made in this cycle; no runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment state was changed.
+- Current-tip combined CI lookup returned no published statuses for `3456f28c2f5c6680accbca694038e0b159b4c4c0`; current-tip CI is not claimed green.
+- The prior validated runtime integration remains Task16/schema21, merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
+- PR #64 / Task13 remains OPEN/DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`, based on stale `0b921abe9b2bd1d827023f494fda11a407fe34d3`; focused tests are supplemental and the fresh real HTTP/1.1 + HTTP/2 rehearsal plus exact accounting proof remain mandatory.
 - PR #4 / Karing remains OPEN/DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, based on `s04-auth`; independent real-client smoke remains mandatory.
 
 ## Worker / coordinator truth
