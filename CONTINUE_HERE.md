@@ -1,19 +1,19 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-13 01:41 Asia/Tehran
+Verified checkpoint: 2026-09-13 02:40 Asia/Tehran
 
-Pre-cycle `main`: `655526a5a572f8d62bc33319d7f1e2c9705bd57b`. Its combined status was pending with zero published statuses and commit-specific workflow lookup returned no runs. This cycle refreshed canonical docs, closed completed Task16 issue #79, and removed duplicate follow-up issues #97/#98. Re-read `main` before binding any runtime work.
+Pre-cycle `main`: `7bfadac0878c37369636536e95103e4bb9701513`. Its combined status was pending with zero published statuses and commit-specific workflow lookup returned no runs. Re-read `main` before binding runtime work because canonical docs advance during this cycle.
 
 Do not merge or deploy yet. Open gates:
-- Task13 PR #64 exact head `3fc14825e1b164bad558decaef47f56b792e81af`: reconstruct/rebase from current `main` without force-rewriting validated history, rerun exact-head CI/accounting/pinned-forwardproxy/focused gates, then run the real isolated pinned-Caddy HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload, and exactly-once accounting.
-- Karing PR #4 exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`: reconcile the export change from current `main`, rerun exact-head CI, then run real import/parse/connect/cleanup smoke using disposable credentials and a non-Production target; record exact profile hash, client/platform/version and redacted logs.
+- Task13 PR #64 exact head `3fc14825e1b164bad558decaef47f56b792e81af`: current-main compare is diverged 45 ahead / 515 behind from merge base `0b921abe9b2bd1d827023f494fda11a407fe34d3`. Reconstruct/rebase from current `main` without force-rewriting validated history, rerun exact-head CI/accounting/pinned-forwardproxy/focused gates, then run the real isolated pinned-Caddy HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload, and exactly-once accounting.
+- Karing PR #4 exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`: base was retargeted from obsolete `s04-auth` to `main` this cycle; GitHub now reports non-mergeable. The current-main comparison is diverged 3 ahead / 1294 behind, and the delta remains limited to `web/src/RuntimeNaive.tsx`, `web/src/runtime.test.ts`, and `web/src/runtime.ts`. Reconstruct those changes on a clean current-main branch, rerun exact-head CI, then run real import/parse/connect/cleanup smoke using disposable credentials and a non-Production target; record exact profile hash, client/platform/version and redacted logs.
 - Security/accounting issue #99: independent clean current-main review of merged Task16/schema21 for RLS fail-closed behavior, app/maintenance privilege separation, bounded retention/purge safety, trusted lineage, commit-before-HTTP-success semantics and redaction.
 - Production issue #100: connected read-only audit must precede any backup/deploy activity. Record exact host/time, deployed SHA/schema, services/readiness/listeners, Caddy binary/pinned SHA/MainPID/NRestarts, session-control socket permissions, backup inventory/freshness/encryption, rollback snapshot availability, disk/capacity and postflight prerequisites.
 
 Current worker lanes:
 - TrPaqet: Task13 current-main reconstruction plus isolated rehearsal only; preserve co-hosted Paqet/Xray/OpenVPN/WaterWall/OV services.
 - Security review lane: issue #99 exact-main clean-worktree review; any fix goes to a separate PR.
-- Compatibility lane: PR #4 current-main-derived Karing export plus independent real-client smoke.
+- Compatibility lane: PR #4 clean current-main Karing export reconstruction plus independent real-client smoke.
 - Production lane: issue #100 read-only audit/rollback-readiness inventory only; no mutation until all runtime gates are green.
 
 Repository truth:
