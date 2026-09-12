@@ -1,14 +1,14 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 16:41 Asia/Tehran
+Last updated: 2026-09-12 17:40 Asia/Tehran
 
 ## Verified GitHub state
-- Current authoritative `main`: `4ae645f5516632f9ab3d63bcf900a75ab3fbff6e`.
-- Exact-main CI is green: GitHub Actions CI run `34692962963` / run `1795`, completed successfully on 2026-09-12 12:14:39Z.
+- Current authoritative `main`: `74067b2f2e652c7e929ce3dc0f4ecd9161896e2d`.
+- No published combined status entries or workflow runs were returned for this exact `main` SHA in the current inspection; CI is therefore **not claimed green** for this checkpoint.
 - The last validated runtime integration remains Task16/schema21, merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 - PR #64 / Task13 remains OPEN/DRAFT/non-mergeable at exact head `3fc14825e1b164bad558decaef47f56b792e81af`, based on stale `0b921abe9b2bd1d827023f494fda11a407fe34d3`; focused tests are supplemental and the fresh real HTTP/1.1 + HTTP/2 rehearsal plus exact accounting proof remain mandatory.
 - PR #4 / Karing remains OPEN/DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, based on `s04-auth`; independent real-client smoke remains mandatory.
-- PR #95 is OPEN/DRAFT documentation-only and stale relative to current `main`; it is not treated as a validated runtime or Production change.
+- PRs #95 and earlier documentation-only drafts are stale relative to current `main` and are not treated as validated runtime or Production changes.
 
 ## Worker / coordinator truth
 - No fresh exact-head completion receipt was found for Task13, Karing, issue #99, or issue #100.
