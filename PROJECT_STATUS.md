@@ -1,11 +1,11 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 22:40 Asia/Tehran
+Last updated: 2026-09-12 23:37 Asia/Tehran
 
 ## Verified GitHub state
 - Repository `DashSaman/PV-NativePanel` is accessible; `main` is the default branch.
-- Current authoritative `main`: `010d2ed1de8ed7ef09a0e98b0f80067734dca8d2` (documentation checkpoint verified this cycle).
-- Exact-main workflow lookup for this SHA returned no workflow runs; CI is therefore **not claimed green** for this checkpoint.
+- Current authoritative `main`: `f4f32154fb4081cf5e06efb93c7d4c6706fab8c7` (latest verified docs checkpoint).
+- Exact-main combined status lookup returned no statuses and commit-specific workflow lookup returned no workflow runs for this checkpoint; CI is therefore **not claimed green**.
 - The last validated runtime integration remains Task16/schema21, merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 - PR #64 / Task13 remains OPEN/DRAFT/non-mergeable at exact head `3fc14825e1b164bad558decaef47f56b792e81af`, based on stale history; fresh pinned-Caddy HTTP/1.1 + HTTP/2 rehearsal and exact accounting proof remain mandatory.
 - PR #4 / Karing remains OPEN/DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; independent real-client import/parse/connect/cleanup smoke remains mandatory.
