@@ -1,8 +1,8 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-12 22:40 Asia/Tehran
+Verified checkpoint: 2026-09-12 23:37 Asia/Tehran
 
-Current `main`: `1aa058fc1955699b7284547ab45ba79228c177c0` after documentation-only reconciliation. CI for the preceding verified tip `010d2ed1de8ed7ef09a0e98b0f80067734dca8d2` returned no workflow runs; do not claim the current tip green until its own CI is observed.
+Latest verified `main` before this documentation cycle: `f4f32154fb4081cf5e06efb93c7d4c6706fab8c7`. Exact-main status/workflow lookup returned no CI evidence; do not claim the current tip green until a published run is observed.
 
 Do not merge or deploy yet. Open gates:
 - Task13 PR #64 exact head `3fc14825e1b164bad558decaef47f56b792e81af`: rebase/republish from current `main`, rerun exact-head CI/accounting/forwardproxy gates, then run the real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload, and exactly-once accounting.
