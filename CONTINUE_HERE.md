@@ -1,9 +1,9 @@
 # PVNaive — Continue Here
 
 ## Verified checkpoint
-- Current `main` at inspection: `d2098ebd0d09dc78b77a78c8d636d85ca9fc62da`.
-- This cycle adds documentation-only reconciliation; no runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment mutation.
-- GitHub Actions CI run `34685323713` / run `1786` for the exact inspected `main` SHA completed successfully on 2026-09-12 09:18Z.
+- Current `main` after this cycle's documentation reconciliation: `44a9972395416d620b9cd0060d672bb7914964eb`.
+- This cycle verified current GitHub state, open PRs, CI visibility, and persistent coordinator/worker reports. Changes are documentation-only; no runtime, schema, credential, Caddy, Production, backup, rollback, merge, or deployment mutation.
+- The prior checkpoint `d2098ebd0d09dc78b77a78c8d636d85ca9fc62da` had successful GitHub Actions CI run `34685323713` / run `1786` completed on 2026-09-12 09:18Z. The new docs tip has no published CI result in the available lookup.
 - Task16/schema21 PR #81 is merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 
 ## Open work
@@ -16,7 +16,7 @@
 1. Task13: rebase/republish from current main, run exact-head gates, then isolated HTTP/1.1 + HTTP/2 rehearsal.
 2. Karing: rebase/republish if needed, then real import/parse/connect/cleanup smoke with exact profile hash and redacted logs.
 3. Security/accounting review: inspect merged schema21 without changing Production.
-4. CI: preserve the green current-main documentation checkpoint and obtain same-head green CI for candidate integration.
+4. CI: obtain published same-head green CI for the new main tip and any candidate integration.
 5. Production: only after runtime gates are complete, read-only audit → encrypted backup → exact SHA lock → staged promotion → postflight → rollback readiness.
 
 ## Truth rule
