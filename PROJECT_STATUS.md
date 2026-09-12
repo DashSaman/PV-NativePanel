@@ -1,17 +1,19 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 02:41 Asia/Tehran
+Last updated: 2026-09-12 03:38 Asia/Tehran
 
 ## Verified GitHub state
-- Authoritative `main`: `40d45f95126961dca12e1bef103fd062ce35eb73`.
-- Latest inspected workflow run for the prior docs checkpoint: `34632054189`; database, web, Go, rehearsal, and bundle jobs all completed SUCCESS.
-- Task16 / schema21 remains the last validated runtime integration: merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after four required exact-head gates passed.
-- PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
-- PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`; independent real-client smoke is still mandatory.
+- Authoritative `main`: `2628920846c7a1809fb622ff967a1586c458005c`.
+- The latest inspected `main` combined status returned no published status entries; no fresh post-update green CI result is claimed for this docs checkpoint.
+- `fetch_commit_workflow_runs` for `2628920846...` returned no workflow runs.
+- Task16 / schema21 is merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`; its recorded PostgreSQL18, exact-accounting, pinned-forwardproxy, and repository CI gates were green at the time of validation.
+- PR #64 / Task13 remains OPEN / DRAFT / mergeable=false at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; base is stale (`0b921abe...`), and the fresh real HTTP/1.1 + HTTP/2 rehearsal is still mandatory.
+- PR #4 / Karing remains OPEN / DRAFT / mergeable=true at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`; base is `s04-auth`, and independent real-client smoke is still mandatory.
+- PR #81 is CLOSED/MERGED and remains the last validated runtime integration.
 - PRs #85–#95 are stale-base or documentation reconciliation attempts and are not current runtime truth.
 
 ## Worker / coordinator truth
-- No fresh exact-head completion receipt was found for Task13 or Karing in the persistent reports/comments inspected this cycle.
+- Persistent reports and current PR discussions contain no fresh exact-head completion receipt for Task13 or Karing.
 - Historical, stale, dirty, mixed-head, and unpushed output remains uncredited.
 - Persistent capacity notes identify TrPaqet as the active executable development slot; other lanes are inactive or upgrade-required under the one-active-host constraint.
 
@@ -21,8 +23,8 @@ Last updated: 2026-09-12 02:41 Asia/Tehran
 - Promotion remains gated by read-only audit, fresh encrypted backup, exact SHA lock, staged promotion, health/postflight, and rollback readiness.
 
 ## Actions this cycle
-- Re-verified current `main`, open PRs, exact PR heads/bases, recent PR discussion, persistent reports, and available Production evidence.
-- Confirmed workflow run `34632054189` is fully green for database, web, Go, rehearsal, and bundle jobs.
+- Re-verified repository, current main, open PRs, exact heads/bases, CI visibility, persistent reports, and available Production evidence.
+- Found no fresh completion evidence that justifies integrating Task13 or Karing.
 - Reconciled canonical documentation only; no runtime merge or Production deployment was justified.
 
 ## Next executable gates
@@ -31,4 +33,4 @@ Last updated: 2026-09-12 02:41 Asia/Tehran
 3. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction after Task16 merge.
 4. Production: read-only audit, then backup/rollback/staged promotion only after runtime evidence is complete.
 
-Never claim completion from stale reports, older heads, partial evidence, mixed-head proofs, or dirty worktrees.
+Never claim completion from stale reports, older heads, partial evidence, mixed-head proofs, dirty worktrees, or absent CI.
