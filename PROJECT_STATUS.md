@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-12 05:41 Asia/Tehran
+Last updated: 2026-09-12 06:41 Asia/Tehran
 
 ## Verified GitHub state
-- Current authoritative `main`: `f763fe4a6072ab33d1571292b32640349023221e`.
-- Current-main combined status and workflow lookup show no published CI result for this exact docs checkpoint. No fresh green CI claim is made.
+- Current authoritative `main`: `2239ca96c76fba55786b4e3f55711e9e91f86b4f`.
+- Current-main combined status is empty and the workflow lookup for this exact SHA returned no runs. No fresh green CI claim is made.
 - Task16 / schema21 remains the last validated runtime integration, merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8` after recorded exact-head gates.
 - PR #64 / Task13 remains OPEN / DRAFT at exact head `3fc14825e1b164bad558decaef47f56b792e81af`; stale relative to current `main`; fresh real HTTP/1.1 + HTTP/2 rehearsal remains mandatory.
 - PR #4 / Karing remains OPEN / DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`, based on `s04-auth`; independent real-client smoke remains mandatory.
@@ -24,7 +24,7 @@ Last updated: 2026-09-12 05:41 Asia/Tehran
 
 ## Actions this cycle
 - Re-verified repository metadata, current `main`, open PRs, exact PR heads/bases, CI visibility, persistent reports, and available Production evidence.
-- Reviewed current PR #64 and PR #4 state; no validated exact-head completion evidence was available to integrate.
+- Reviewed current PR #64 and PR #4; no validated exact-head completion evidence was available to integrate.
 - Reaffirmed worker assignments on PR #64, PR #4, issue #99, and issue #100.
 - Reconciled canonical documentation only; no runtime merge or Production deployment was justified.
 
@@ -32,7 +32,7 @@ Last updated: 2026-09-12 05:41 Asia/Tehran
 1. Task13: rebase/republish from current `main`, then run isolated real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no restart/reload, and exactly-once accounting.
 2. Karing: rebase/republish from current `main`, then run real import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version, and redacted logs.
 3. Independent review: RLS, privilege separation, retention/purge safety, accounting/session lineage, and secret redaction after Task16 merge.
-4. CI: obtain a published workflow result for exact `main` `f763fe4a6072ab33d1571292b32640349023221e`.
+4. CI: obtain a published workflow result for exact `main` `2239ca96c76fba55786b4e3f55711e9e91f86b4f`.
 5. Production: read-only audit first; only after runtime evidence is complete create encrypted backup + independent rollback snapshot, then staged promotion and postflight.
 
 Never claim completion from stale reports, older heads, partial evidence, mixed-head proofs, dirty worktrees, absent CI, or historical Production records.
