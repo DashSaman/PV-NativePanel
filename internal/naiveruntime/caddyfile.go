@@ -167,6 +167,20 @@ type byteRange struct {
 	end   int
 }
 
+// CredentialsMatch reports whether the input config's forward_proxy
+// credential block already renders exactly the desired active credential set
+// (same usernames and passwords, same order-insensitive set). It is the
+// no-op fast path for boot-time reconciliation: callers can skip candidate
+// rendering, validation and the atomic swap when the on-disk config already
+// matches the database truth.
+func CredentialsMatch(input []byte, desired []runtimecred.DesiredCredential) (bool, error) {
+	inspection, err := InspectCaddyfile(input)
+	if err != nil {
+		return false, err
+	}
+	return equivalentActiveCredentials(desired, inspection.credentials), nil
+}
+
 func syncPVNaiveAccountingMappings(input []byte, active []runtimecred.DesiredCredential) ([]byte, error) {
 	tokens, err := lexCaddyfile(input)
 	if err != nil {

@@ -1,0 +1,40 @@
+# PVNaive — one-line Docker stack (PostgreSQL 18 + API + agents + accounting Caddy)
+#
+#   PVNAIVE_DOMAIN=panel.example.com bash install.sh
+#
+# Data lives in the ./data directory (bind mount). Override with PVNAIVE_DATA_DIR.
+name: pvnaive
+
+services:
+  pvnaive:
+    image: ghcr.io/dashsaman/pvnaive:${PVNAIVE_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: pvnaive
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${PVNAIVE_DATA_DIR:-./data}/postgres:/var/lib/postgresql/data
+      - ${PVNAIVE_DATA_DIR:-./data}/secrets:/var/lib/pvnaive/secrets
+      - ${PVNAIVE_DATA_DIR:-./data}/caddy:/etc/caddy
+    environment:
+      PVNAIVE_DOMAIN: ${PVNAIVE_DOMAIN:-localhost}
+      PVNAIVE_PROXY_USER: ${PVNAIVE_PROXY_USER:?set PVNAIVE_PROXY_USER}
+      PVNAIVE_PROXY_PASSWORD: ${PVNAIVE_PROXY_PASSWORD:?set PVNAIVE_PROXY_PASSWORD}
+      PVNAIVE_OWNER_EMAIL: ${PVNAIVE_OWNER_EMAIL:-}
+      PVNAIVE_OWNER_PASSWORD: ${PVNAIVE_OWNER_PASSWORD:-}
+      PVNAIVE_NAIVE_PUBLIC_HOST: ${PVNAIVE_NAIVE_PUBLIC_HOST:-${PVNAIVE_DOMAIN:-localhost}}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/v1/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

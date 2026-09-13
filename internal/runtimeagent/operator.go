@@ -26,6 +26,13 @@ const (
 	productionServiceName   = "caddy-naive.service"
 	productionBackupRoot    = "/var/backups/pvnaive/caddy"
 	commandTimeout          = 20 * time.Second
+	// ReloadModeSystemd drives the proxy through the caddy-naive systemd
+	// unit (bare-metal installs). ReloadModeCaddyAdmin drives it through
+	// the pinned binary's admin-API reload (all-in-one Docker, where no
+	// PID 1 systemd exists); the CLI itself adapts the Caddyfile and
+	// atomically POSTs /load, keeping the running config on failure.
+	ReloadModeSystemd    = "systemd"
+	ReloadModeCaddyAdmin = "caddy-admin"
 )
 
 type commandRunner interface {
@@ -48,6 +55,7 @@ type operatorConfig struct {
 	caddyBinary   string
 	serviceName   string
 	backupRoot    string
+	reloadMode    string
 }
 
 type FixedOperator struct {
@@ -69,17 +77,39 @@ type serviceSnapshot struct {
 }
 
 func NewOperator() (*FixedOperator, error) {
+	reloadMode := os.Getenv("PVNAIVE_RUNTIME_RELOAD_MODE")
+	if reloadMode == "" {
+		reloadMode = ReloadModeSystemd
+	}
+	if reloadMode != ReloadModeSystemd && reloadMode != ReloadModeCaddyAdmin {
+		return nil, fmt.Errorf("runtimeagent: unsupported PVNAIVE_RUNTIME_RELOAD_MODE %q", reloadMode)
+	}
+	caddyBinary := os.Getenv("PVNAIVE_RUNTIME_CADDY_BINARY")
+	if caddyBinary == "" {
+		caddyBinary = productionCaddyBinary
+	}
+	caddyfilePath := os.Getenv("PVNAIVE_RUNTIME_CADDYFILE_PATH")
+	if caddyfilePath == "" {
+		caddyfilePath = productionCaddyfilePath
+	}
 	return newOperator(operatorConfig{
-		caddyfilePath: productionCaddyfilePath,
-		caddyBinary:   productionCaddyBinary,
+		caddyfilePath: caddyfilePath,
+		caddyBinary:   caddyBinary,
 		serviceName:   productionServiceName,
 		backupRoot:    productionBackupRoot,
+		reloadMode:    reloadMode,
 	}, execCommandRunner{}, time.Now, rand.Reader)
 }
 
 func newOperator(config operatorConfig, runner commandRunner, now func() time.Time, random io.Reader) (*FixedOperator, error) {
 	if config.caddyfilePath == "" || config.caddyBinary == "" || config.serviceName == "" || config.backupRoot == "" {
 		return nil, errors.New("runtimeagent: incomplete fixed operator config")
+	}
+	if config.reloadMode == "" {
+		config.reloadMode = ReloadModeSystemd
+	}
+	if config.reloadMode != ReloadModeSystemd && config.reloadMode != ReloadModeCaddyAdmin {
+		return nil, errors.New("runtimeagent: invalid reload mode")
 	}
 	if !filepath.IsAbs(config.caddyfilePath) || !filepath.IsAbs(config.caddyBinary) || !filepath.IsAbs(config.backupRoot) {
 		return nil, errors.New("runtimeagent: operator paths must be absolute")
@@ -413,6 +443,13 @@ func (o *FixedOperator) backupPath(backupID string) (string, error) {
 }
 
 func (o *FixedOperator) snapshotService(ctx context.Context) (serviceSnapshot, error) {
+	if o.config.reloadMode == ReloadModeCaddyAdmin {
+		// No systemd unit exists in the all-in-one container. The
+		// synthetic stable snapshot lets the PID/restart invariants
+		// hold trivially while the real verification happens through
+		// the admin-API reload exit status.
+		return serviceSnapshot{mainPID: 1, nRestarts: 0}, nil
+	}
 	active, err := o.runSystemctl(ctx, "is-active", o.config.serviceName)
 	if err != nil || strings.TrimSpace(string(active)) != "active" {
 		return serviceSnapshot{}, errors.New("runtimeagent: Caddy service is not active")
@@ -437,6 +474,15 @@ func (o *FixedOperator) snapshotService(ctx context.Context) (serviceSnapshot, e
 }
 
 func (o *FixedOperator) reloadAndVerify(ctx context.Context, before serviceSnapshot) (serviceSnapshot, error) {
+	if o.config.reloadMode == ReloadModeCaddyAdmin {
+		commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+		defer cancel()
+		if _, err := o.runner.Run(commandCtx, o.config.caddyBinary,
+			"reload", "--config", o.config.caddyfilePath, "--adapter", "caddyfile"); err != nil {
+			return serviceSnapshot{}, errors.New("runtimeagent: Caddy admin-API reload failed")
+		}
+		return o.snapshotService(ctx)
+	}
 	if _, err := o.runSystemctl(ctx, "reload", o.config.serviceName); err != nil {
 		return serviceSnapshot{}, errors.New("runtimeagent: Caddy reload failed")
 	}
