@@ -1,37 +1,33 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-14 00:39 Asia/Tehran
+Last updated: 2026-09-14 02:32 Asia/Tehran
 
 ## Verified GitHub state
-- Current canonical `main` tip before this documentation update: `f4d3cc0b59d10c4507d27c86aabac9bd833d2898`; push CI run `34781998537` completed SUCCESS.
-- The runtime-bearing change since the prior coordinator checkpoint is `6a0258775061af70e357821dfa51cd62f74fecc0`; current main CI is green. Its actual diff is test-only (7 database/stage test files); the commit message mentions a 0022 migration/SHA manifest repair, but those files were already identical at parent `db9e394...`. Do not credit nonexistent migration-file changes to this commit.
-- PR #101 / Karing remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3`, stale/non-mergeable and still missing the required real Karing import/parse/CONNECT/cleanup receipt.
-- PR #64 is now historical/stale Task13 evidence at `3fc14825e1b164bad558decaef47f56b792e81af`.
-- Fresh Task13 reconstruction PR #107 is OPEN/DRAFT from exact current main; head `25b214cf019d3db2321d9651ab3654e46ef44342`. The prior worker reconstruction replayed without conflicts and `git diff --check` passed. Full exact-head CI/live protocol evidence is still required before merge.
+- Current canonical `main`: `879219990539b676050877023ceb68f2951f39ea`; push CI `34787434163` completed SUCCESS.
+- Batch-2 main reconciled deployed migration lineage through schema 28 (`0022..0027` preserved from Production, hardened functions added as `0028`) and upstreamed the repo-built Docker/runtime config path. `DEPLOY-001` and `LINEAGE-001` are closed by recorded live evidence; do not reopen them from older handoffs.
+- Active Task13 lane is draft PR #108 at exact head `41b7bcea78b2f3e1298077e6e7ba4d7cba724bed`, based on current main. Old PRs #64 and #107 are closed superseded, not merged.
+- PR #108 exact-head gates: CI `34788082645` SUCCESS, WS1 Exact Accounting `34788082580` SUCCESS, WS1 Pinned Forwardproxy `34788082595` SUCCESS. Independent Worker-1 checks also passed: `git diff --check`, Go 1.25 vet/test, web 19 files / 64 tests + build, session-control permission contract, CI contract and forwardproxy race/session-control test.
+- Karing PR #101 remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3`; no real Karing client acceptance receipt exists yet.
 
-## Production truth and hard gates
-- Repository live-session notes report Production domain `namir.softarg.ir`, image `pvnaive:fix2`, schema through deployed 0027, BBR/fq, live self-service account security, and a resolved readiness mismatch via compose override. These are recorded operational facts, not a fresh command-level audit from this coordinator cycle.
-- Production Primary is still not connected through the command channel; current deployed revision/schema/services/Caddy/backup/disk/rollback state therefore remains unverified this cycle.
-- `DEPLOY-001` remains issue #105: trusted all-in-one renderer/build provenance is still required before repository implementation.
-- `LINEAGE-001` remains issue #104: exact Production migration ledger/checksums plus trusted 0022..0027 artifacts are mandatory before forward-only reconciliation.
-- No Production mutation was performed this cycle: no backup creation, migration, restart/reload, credential/DB/Caddy change, deploy, or rollback-state change.
+## Production truth / safety gates
+- Batch-2 repository evidence records a repo-built live deploy, schema 28, boot reconcile `CREDENTIALS:22`, derived expected schema 28, live create-customer 201 and strict-TLS CONNECT 204 checks.
+- Fresh external read-only probe this cycle: `45.141.148.59.nip.io` returned 200 for API live, API ready (`db:ok`, `schema:ok`) and `/panel/`, with valid TLS.
+- `namir.softarg.ir` currently fails TLS handshake with server `tlsv1 alert internal error`. This matches the documented Let's Encrypt duplicate-certificate window; recorded retry-after is `2026-09-15 03:17:36 UTC`. TLS storage persistence is already fixed and the nip.io hostname is the temporary healthy path. Do not recreate/restart merely to chase certificate issuance.
+- Production Primary is not connected through the command channel. Current container/image identity, shell-level migration ledger, backup freshness/encryption, disk and rollback snapshot are therefore not freshly command-verified this cycle.
+- No Production mutation was performed by this coordinator cycle.
 
-## Work completed this cycle
-- Confirmed exact current-main CI success at `f4d3cc0...` / run `34781998537`.
-- Reconciled live worker inventory; Worker 1 / `Pak-Nasheeee-haaaaaaaaa` is online again.
-- Fetched latest main on Worker 1 and created a clean detached verification worktree. `git diff --check db9e394..f4d3cc0` passed; Go execution is unavailable on that worker (`go: command not found`).
-- Found an existing completed Task13 reconstruction worker artifact at `2c4a85b...`; replayed it cleanly onto current main and produced `25b214c...` with 34 changed files and no whitespace errors.
-- Worker OAuth refused workflow-file modification, so the code reconstruction was pushed without changing `.github/workflows/ci.yml`; GitHub PR #107 now carries the fresh reconstruction and remains draft until authorized exact-head focused gates run.
+## Remaining promotion gates
+1. Task13: obtain independent REAL HTTP/1.1 + HTTP/2 pinned-Caddy proof on PR #108 exact head: target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting.
+2. Karing: disposable real-client import → parse → CONNECT → cleanup/revoke receipt, then reconstruct on latest main if required.
+3. Production: fresh Primary read-only audit, then encrypted backup + independent rollback snapshot before any next runtime deploy.
+4. Owner-domain TLS: allow the documented ACME window to clear; verify `namir.softarg.ir` externally before switching temporary subscription host back.
 
-## Worker / coordinator allocation
-- Worker 4 / Karing: real disposable Karing import → parse → CONNECT → cleanup/revoke proof; then latest-main reconstruction if still needed.
-- Worker 3 / Task13 implementation: review PR #107 reconstruction and resolve any code-level CI findings.
-- Worker 2 / Task13 verifier: independent exact-head race/permission plus real HTTP/1.1 + HTTP/2 target-only kill/sibling/forged-tuple/idempotency/credential/accounting rehearsal.
-- Worker 1 / `Pak-Nasheeee-haaaaaaaaa`: online; evidence/diff/security review and branch preparation where installed tooling permits. It currently lacks Go.
-- Primary / Production: read-only audit only when connected.
-- Coordinator / GitHub: CI reconciliation, DEPLOY-001 provenance, LINEAGE-001 evidence coordination and safe integration only.
+## Worker allocation
+- Worker 4: real Karing acceptance and cleanup/revoke evidence.
+- Worker 3: PR #108 implementation review/fix only if a new exact-head finding appears.
+- Worker 2: independent real HTTP/1.1 + HTTP/2 Task13 protocol/accounting proof.
+- Worker 1 / `Pak-Nasheeee-haaaaaaaaa`: online; exact-head static/Go-via-Docker/web/forwardproxy verification and safe branch preparation.
+- Primary: read-only Production audit when connected.
+- Coordinator: CI reconciliation, safe integration, canonical docs and promotion gates.
 
-## Promotion order
-Reconcile DEPLOY-001 + LINEAGE-001 → Karing real-client receipt → PR #107 exact-head CI and live Task13 proof → fresh Production read-only audit → fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
-
-Never credit assignment-only, stale-head, static-only, historical, missing-tool or inferred evidence as completion.
+Never credit stale-head, assignment-only, static-only, inferred or missing-tool evidence as completion.

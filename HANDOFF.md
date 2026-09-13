@@ -1,22 +1,21 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-14 00:39 Asia/Tehran
+Checkpoint: 2026-09-14 02:32 Asia/Tehran
 
-- Verified pre-doc-update `main`: `f4d3cc0b59d10c4507d27c86aabac9bd833d2898`; push CI `34781998537` SUCCESS.
-- `6a025877...` is test-only despite a broader commit message; migration 0022/SHA files were already identical at its parent. Preserve truthful change accounting.
-- Karing PR #101 remains OPEN/DRAFT/stale at `216d53670066033403fe95f61b0402bb710186a3`; real disposable Karing import/parse/CONNECT/cleanup evidence is still mandatory.
-- Old Task13 PR #64 remains historical/stale. Fresh current-main reconstruction is PR #107 at head `25b214cf019d3db2321d9651ab3654e46ef44342`; replay was conflict-free and `git diff --check` passed. Keep DRAFT until exact-head CI plus real HTTP/1.1 + HTTP/2 session/accounting rehearsal are green.
-- Worker 1 / `Pak-Nasheeee-haaaaaaaaa` is online again but lacks Go. It can prepare branches and perform static/evidence review, not Go acceptance.
-- Production Primary remains unavailable to this coordinator. Repository live notes record domain `namir.softarg.ir`, image `pvnaive:fix2`, deployed schema through 0027 and resolved readiness mismatch, but a fresh command-level health/backup/rollback audit is still missing.
-- DEPLOY-001 #105 and LINEAGE-001 #104 remain hard deploy blockers. Do not infer renderer source or rewrite applied Production migration history.
-- Production remained untouched this cycle.
+- Verified `main`: `879219990539b676050877023ceb68f2951f39ea`; CI `34787434163` SUCCESS.
+- Batch-2 closed the prior renderer/build-provenance and migration-lineage blockers with recorded live evidence: repo lineage is 0001..0028, Production schema 28, boot credential reconciliation preserves 22 active credentials, Docker uses caddy-admin reload, and TLS storage is persistent.
+- Active Task13 is draft PR #108, exact head `41b7bcea78b2f3e1298077e6e7ba4d7cba724bed` on current main. CI `34788082645`, Exact Accounting `34788082580`, and Pinned Forwardproxy `34788082595` are SUCCESS. Worker-1 Go/web/contracts/forwardproxy validation is also green. PRs #64/#107 were closed superseded.
+- Task13 is NOT merge-ready until an independent real HTTP/1.1 + HTTP/2 pinned-Caddy kill/accounting rehearsal proves target-only termination, sibling survival, forged-tuple rejection, idempotent repeat kill, credential survival, unchanged Caddy lifecycle and exactly-once final accounting.
+- Karing PR #101 remains draft and blocked only on a real disposable Karing import/parse/CONNECT/cleanup receipt; static/unit/build evidence is insufficient.
+- Fresh external Production probe: nip.io live/ready/panel are 200 and TLS-valid. `namir.softarg.ir` currently fails TLS handshake, consistent with the documented Let's Encrypt duplicate limit; recorded retry-after is 2026-09-15 03:17:36 UTC. Do not restart/recreate to force issuance.
+- Production Primary is not connected, so shell-level deployed identity, backup freshness/encryption and rollback snapshot still need a fresh read-only audit. No Production mutation was performed this cycle.
 
 Execution allocation:
-- Worker 4: Karing real-client smoke + cleanup/revoke evidence and latest-main reconstruction if required.
-- Worker 3: review/fix PR #107 reconstruction findings.
-- Worker 2: independent exact-head Task13 race/permission/HTTP1+HTTP2/accounting validation.
-- Worker 1: static/evidence/security review and safe branch preparation; no Go acceptance claim.
-- Primary: read-only Production audit when connected.
-- Coordinator: CI reconciliation, DEPLOY-001 provenance and LINEAGE-001 evidence coordination.
+- Worker 4 → Karing real-client acceptance.
+- Worker 3 → PR #108 review/fixes only for new exact-head findings.
+- Worker 2 → real Task13 HTTP1/HTTP2 protocol + accounting proof.
+- Worker 1 → exact-head verification / safe branch prep.
+- Primary → read-only Production audit.
+- Coordinator → CI, integration, docs and promotion safety.
 
-Promotion order: DEPLOY-001 + LINEAGE-001 → Karing proof → PR #107 exact-head/live proof → fresh Production audit → encrypted backup + rollback snapshot → exact deploy SHA → staged deploy → postflight.
+Next runtime promotion requires the missing real Task13 proof, fresh Production audit, encrypted backup and rollback snapshot. Keep rollback retained through postflight.
