@@ -1,48 +1,48 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-13 16:41 Asia/Tehran
+Last updated: 2026-09-13 18:40 Asia/Tehran
 
 ## Verified GitHub state
-- Verified pre-refresh `main`: `140daa0d3f4b7cbfc3998f7df038033e232127a8`.
-- Push CI run `34756371335` for that exact SHA completed SUCCESS.
-- The latest main advance remained documentation-only; no newer runtime-bearing merge was found this cycle.
-- Task16/schema21 remains the last validated merged runtime integration: PR #81 merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
-- PR #64 / Task13 remains OPEN/DRAFT at stale exact head `3fc14825e1b164bad558decaef47f56b792e81af`; latest-main reconstruction and isolated protocol/session/accounting validation remain mandatory before merge.
-- PR #101 / Karing remains OPEN/DRAFT at exact head `216d53670066033403fe95f61b0402bb710186a3`.
-- Open non-PR execution issue #100 remains the read-only Production status lane.
+- Verified pre-refresh `main`: `0ef7100eb0948235cd0c00f53b994f9df370db01`.
+- Push CI run `34759233025` for that exact SHA completed SUCCESS.
+- Compare from Karing PR #101 base `7ab4d8a8...` to verified main is 41 commits ahead and changes only `PROJECT_STATUS.md`, `HANDOFF.md`, and `CONTINUE_HERE.md`; there is no runtime drift on main relative to the reviewed Karing base.
+- Last validated merged runtime integration remains Task16/schema21 PR #81.
+- PR #64 / Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af` and is mechanically mergeable, but its explicit live-validation contract remains unsatisfied.
+- PR #101 / Karing remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3` and is mechanically mergeable, but its real-client validation gate remains unsatisfied.
+- Issue #100 remains the read-only Production status lane.
 
 ## Karing verification
-- Fresh check-run inspection confirms exact-head repository gates on `216d5367...` remain SUCCESS, including CI, accounting, forwardproxy, rehearsal and bundle jobs.
-- No independent real Karing import/parse/connect/cleanup receipt has arrived after the 15:38 dispatch; therefore PR #101 remains DRAFT and unmerged.
-- No newer runtime-bearing main change invalidating the reviewed Karing delta was found this cycle.
+- Exact-head repository gates previously recorded for `216d5367...` remain green: CI `34732580376`, Exact Accounting `34732580468`, and Pinned Forwardproxy `34732580377`.
+- Fresh patch review confirms the implementation delta is limited to a sing-box Naive profile builder, separate Karing/Naive copy actions, and tests; no accounting/session/credential mutation path is introduced by this PR.
+- Static schema compatibility was rechecked against the current official sing-box Naive outbound structure: the emitted `type`, `server`, `server_port`, `username`, `password`, `insecure_concurrency`, `udp_over_tcp`, `quic`, and `tls` shape is compatible.
+- The only currently connected remote worker visible to the coordinator is Worker 1 `Pak-Nasheeee-haaaaaaaaa`; a filesystem search found no Karing executable/files on that host. Static compatibility review therefore passes, but it is not credited as the required real Karing import/parse/connect/cleanup smoke.
+- No independent real-client receipt has appeared after the 17:37 dispatch; PR #101 stays DRAFT and unmerged.
 
 ## Task13 verification
-- PR #64 remains at stale exact head `3fc14825...`; historical exact-head repository greens and focused tests are supplemental only.
-- No current-main reconstruction or fresh pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal receipt arrived after the 15:38 dispatch.
+- PR #64 remains at stale exact head `3fc14825...`; historical exact-head repository greens/focused tests remain supplemental only.
+- No reconstructed latest-main exact head or fresh pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal receipt appeared after the 17:37 dispatch.
 - Required proof remains target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting on the reconstructed exact head.
 
 ## Worker / coordinator reconciliation
-- No fresh completion receipt arrived for Task13 reconstruction/rehearsal, Karing real-client validation/review, or issue #100 before this checkpoint.
-- Persistent `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain 2026-08-27 historical ledgers where they conflict with current exact-SHA evidence.
-- Five-server pool allocation remains: Worker 3 / `TrPaqet` owns Task13 current-main reconstruction; Worker 2 / `RoboT` owns independent Task13 verification/rehearsal after a new exact head exists; Worker 4 / `ubuntu-4gb-hel1-1` owns the real Karing client smoke; Worker 1 / `Pak-Nasheeee-haaaaaaaaa` owns independent Karing profile/cleanup evidence review and compatibility preflight; Primary / `testAmir5-3` remains Production-safe orchestration plus read-only Production audit only.
-- One writer per worktree and independent verification on a different worker remain mandatory; unrelated host services must not be modified.
-- Never credit stale, dirty, mixed-head, unpushed, historical, or absent-CI evidence.
+- GitHub worker receipts after 17:37 contain assignments only; no completion receipt arrived for Karing, Task13, or Production.
+- Remote worker discovery currently exposes Worker 1 `Pak-Nasheeee-haaaaaaaaa` online. It has been used for independent Karing environment/static compatibility review; no Karing client is installed there.
+- Queued lane ownership remains: Worker 3 / `TrPaqet` → Task13 reconstruction; Worker 2 / `RoboT` → independent Task13 exact-head verification/rehearsal; Worker 4 / `ubuntu-4gb-hel1-1` → real Karing client smoke when available; Worker 1 → independent Karing compatibility/evidence review; Primary / `testAmir5-3` → read-only Production audit only.
+- One writer per worktree, independent verification on a different worker, and no unrelated host changes remain mandatory.
+- Persistent `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are still dated 2026-08-27 and are historical where they conflict with current exact-SHA evidence.
 
 ## Production truth
-- Issue #100 still has no fresh connected command-level Production status receipt after the 15:38 dispatch.
-- Current deployed SHA/schema, service/readiness/Caddy lifecycle state, session-control socket state, backup freshness/encryption, and rollback snapshot remain unverified for this cycle.
-- Production was not mutated.
-- Promotion remains blocked until the outstanding runtime validation and complete safety sequence are satisfied.
+- No connected Production host is currently exposed through the remote-command channel, and issue #100 has no fresh returned command-level receipt after 17:37.
+- Current deployed SHA/schema, service/readiness/listeners, Caddy lifecycle/build identity, session-control socket state, backup freshness/encryption, and rollback snapshot therefore remain unverified this cycle.
+- Production was not mutated. No backup, migration, restart/reload, credential/DB/Caddy change, or deploy was performed.
 
 ## Actions completed this cycle
-- Re-inspected current main, open PRs, exact-main CI, PR worker reports, issue #100, and persistent handoff/deployment ledgers.
-- Confirmed exact `main` CI run `34756371335` is SUCCESS.
-- Freshly confirmed Karing exact-head checks remain successful.
-- Confirmed no new worker completion receipt exists after the 15:38 dispatches.
-- Confirmed no runtime PR has all required evidence for merge and no Production promotion gate is satisfied.
-- Reaffirmed all five documented execution lanes on non-conflicting work for the next wave.
+- Re-inspected exact main, open PRs, latest main CI, post-dispatch worker comments, canonical handoff files, and historical deployment ledgers.
+- Confirmed `0ef7100e...` CI run `34759233025` SUCCESS.
+- Confirmed Karing main drift remains docs-only and independently re-reviewed the PR implementation shape.
+- Checked the currently connected worker and established that it cannot perform the missing real Karing smoke because no Karing installation is present.
+- Confirmed no runtime PR meets every promotion gate and no Production safety gate permits mutation.
 
 ## Next executable gates
-1. Worker 4 + Worker 1: PR #101 real Karing import/parse/connect/cleanup on exact `216d5367...`, then independent evidence review; if both pass, reconcile with latest main and review for merge.
-2. Worker 3 + Worker 2: reconstruct Task13 from verified current main, publish a new exact head, rerun repository/race/permission gates, then independently execute the pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal on that same head.
-3. Primary / issue #100: obtain a fresh read-only Production command-level status receipt. Only after runtime gates are green may the lane proceed to fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
+1. Worker 4 when available: run real Karing import/parse/connect/cleanup on exact `216d5367...` using disposable non-Production credentials; Worker 1 independently verifies the receipt and cleanup.
+2. Worker 3 + Worker 2 when available: reconstruct Task13 from verified current main, publish a new exact head, rerun repository/race/permission gates, then execute the pinned-Caddy HTTP/1.1 + HTTP/2 session/accounting rehearsal on that same exact head.
+3. Primary when connected: return fresh read-only Production status. Only after both runtime lanes are green: fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
