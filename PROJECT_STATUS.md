@@ -1,38 +1,38 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-13 21:40 Asia/Tehran
+Last updated: 2026-09-13 23:30 Asia/Tehran
 
 ## Verified GitHub state
-- Exact pre-refresh `main`: `507f074d234d6548fbbda21e06b3365353f996be`.
-- Push CI run `34771275246` for that exact SHA completed SUCCESS.
-- Latest main changes remain documentation-only; last validated merged runtime integration remains Task16/schema21 PR #81.
-- PR #64 / Task13 remains OPEN/DRAFT at `3fc14825e1b164bad558decaef47f56b792e81af`; GitHub currently reports `mergeable=false` and the exact-head live protocol/accounting gate is unsatisfied.
-- PR #101 / Karing remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3`; GitHub currently reports `mergeable=false`; repository/unit/build evidence is green but the real-client gate is unsatisfied.
-- Issue #100 remains the read-only Production status lane.
+- Exact verified runtime-bearing `main`: `f0cdab3eda205eecb3285577ec5df32f45d0ddb7`.
+- Push CI run `34779141898` for that exact SHA completed SUCCESS, including web, Go, PostgreSQL 18 database gates, runtime rehearsal, and bundle.
+- PR #102 / schema22 self-service auth context is MERGED. Before merge its exact head `9975bde902d6b53946485c36d8b766c014266580` passed full CI plus the dedicated Schema22 Auth Context, Task16 Schema21 TDD, WS1 Exact Accounting, and WS1 Pinned Forwardproxy workflows.
+- Schema22 repository contract is now internally consistent: latest-schema migration/health/backup/customer/reset fixtures are at 22; rollback metadata/checksum/bookkeeping are valid; self-service actor mutation is bound to authenticated request context.
+- PR #101 / Karing remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3`; repository/unit/build evidence exists, but real Karing import/parse/CONNECT/cleanup evidence is still required.
+- PR #64 / Task13 remains OPEN/DRAFT on a stale pre-current-main head and must be reconstructed before any merge consideration.
 
-## Fresh independent work this cycle
-- Remote inventory still exposes only Worker 1 / `Pak-Nasheeee-haaaaaaaaa`; Production Primary and Workers 2/3/4 are not connected.
-- Worker 1 ran a clean exact-main Task16/schema21 PostgreSQL 18 contract in a disposable container. `tests/db/ip_session_history_contract_test.sh` returned `TASK16_IP_SESSION_HISTORY_PG18=PASSED`; the container was removed afterward.
-- Static review reconfirmed schema21 ENABLE+FORCE RLS, base-table revoke from app/public, fixed-search-path SECURITY DEFINER functions, bounded read permission for the app role, maintenance-only sync permission, explicit purge confirmation, owner-role requirement, advisory lock, single-transaction purge, and strict `final_at < observed_at - interval '30 days'` retention semantics.
-- The rollback script emitted PostgreSQL warnings that `SET LOCAL` can only be used in transaction blocks, but the contract assertions still passed through rollback to schema20 with the history table absent. This warning is recorded for cleanup review and is not misreported as a failed rollback.
-- Selected schema21/purge/test secret scan found identifiers only and no embedded credential values.
-
-## Runtime gates
-- Karing #101: exact head `216d5367...`; existing exact-head GitHub workflows and fresh Worker-1 `git diff --check`, `npm test` (19 files / 63 tests), and `npm run build` remain valid. Missing: real Karing import/parse/connect/cleanup receipt with disposable non-Production credentials, profile SHA-256, redacted connection evidence, and cleanup/revoke proof.
-- Task13 #64: stale head `3fc14825...`; Worker 1 lacks Go and cannot supply the required race/session-control or pinned-Caddy rehearsal. Missing: current-main reconstruction plus independent exact-head HTTP/1.1 + HTTP/2 proof of target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy lifecycle action, and exactly-once final accounting.
-
-## Worker / coordinator allocation
-- Worker 1 / `Pak-Nasheeee-haaaaaaaaa`: online; independent repository/security/accounting review and evidence verification only. Continue issue #99 with static/source review of commit-before-HTTP-success and redaction paths while blocked runtime lanes wait for capable hosts.
-- Worker 4 / `ubuntu-4gb-hel1-1`: real Karing smoke when connected.
-- Worker 3 / `TrPaqet`: Task13 reconstruction from latest verified main when connected.
-- Worker 2 / `RoboT`: independent Task13 exact-head race/permission/protocol/accounting rehearsal when connected.
-- Primary / `testAmir5-3`: read-only Production audit only when connected.
-- One writer per worktree; independent verifier on a different worker; no unrelated host changes.
-
-## Production truth
-- Production Primary is not connected and issue #100 has no fresh command-level receipt.
-- Deployed SHA/schema, service/readiness/listeners, Caddy lifecycle/build identity, session-control socket, backup freshness/encryption, and rollback snapshot remain unverified this cycle.
+## Production truth and hard gates
+- No Production host is currently connected through the command channel, so there is no fresh command-level deployed SHA/schema/service/Caddy/backup/rollback receipt in this cycle.
+- Repository operator records contain last-recorded live evidence from the later Super-Z batch, but that history is not being promoted to a fresh health assertion.
+- `DEPLOY-001` remains OPEN/P0: the boot Caddyfile renderer can drop active customer credentials during recreate/restart unless credential-preserving rendering is proven.
+- `LINEAGE-001` remains OPEN/P1: Production migration lineage is recorded ahead/different from current repository schema numbering and must be reconciled before any repository-built deployment.
 - Production was not mutated. No backup, migration, restart/reload, credential/DB/Caddy change, deploy, or rollback-state change was performed.
 
+## Work completed this cycle
+- Reconciled the newer schema22 security lane and treated its failing full database CI as the immediate integration blocker.
+- Repaired stale latest-schema assertions across the generic migration contract, refresh-reuse fixture, health gate, backup/restore gate, customer lifecycle fixture, and periodic reset executor fixture.
+- Repaired schema22 rollback metadata, checksum manifest, and rollback bookkeeping so one-step rollback removes schema22 from `schema_migrations` transactionally.
+- Re-ran exact-head CI repeatedly until the full PostgreSQL 18 suite, runtime rehearsal, bundle, dedicated auth-context security test, Task16, accounting, and pinned-forwardproxy workflows were green.
+- Marked PR #102 ready only after exact-head gates were green, merged it with an expected-head SHA lock, then verified merged-main push CI green.
+
+## Worker / coordinator allocation
+- Remote inventory currently has no online executable PVNaive worker; previous Worker 1 is offline and Primary is absent.
+- Worker 4 / Karing lane: queued for disposable real-client import → parse → CONNECT → cleanup/revoke proof on PR #101 when connected.
+- Worker 3 / Task13 implementation: queued to reconstruct from current verified main after schema22 integration.
+- Worker 2 / Task13 verifier: queued for independent exact-head race/permission/HTTP1+HTTP2/accounting rehearsal after reconstruction.
+- Primary / Production: queued for read-only audit only when connected.
+- Coordinator / GitHub lane: continue repository-safe work on `DEPLOY-001` credential-preserving renderer and `LINEAGE-001` lineage reconciliation without touching Production.
+
 ## Promotion order
-Karing real-client receipt and independent review → Task13 current-main reconstruction and exact-head live proof → fresh Production read-only audit → fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
+Resolve `DEPLOY-001` + `LINEAGE-001` in repository and independently validate → Karing real-client receipt → Task13 reconstructed exact-head live proof → fresh Production read-only audit → fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
+
+Never credit assignment-only, stale-head, static-only, historical, or missing-tool evidence as completion.
