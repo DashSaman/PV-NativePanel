@@ -1,0 +1,45 @@
+name: Schema22 Auth Context
+
+on:
+  pull_request:
+    paths:
+      - 'db/migrations/0022_auth_actor_credential_mutations.*.sql'
+      - 'db/migrations/SHA256SUMS'
+      - 'tests/db/auth_actor_credential_mutations_migration_test.sh'
+      - '.github/workflows/schema22-auth-context.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  postgres18:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL 18
+        run: |
+          set -Eeuo pipefail
+          docker run --detach --name pvnaive-auth22-postgres18 --network host --env POSTGRES_PASSWORD=pvnaive-ci-only postgres:18-bookworm
+          for i in $(seq 1 60); do
+            docker exec pvnaive-auth22-postgres18 pg_isready --username postgres --dbname postgres >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          docker logs pvnaive-auth22-postgres18
+          exit 1
+      - name: Prove self-service mutations are bound to the signed actor context
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            --env PGPASSWORD=pvnaive-ci-only \
+            --env PVNAIVE_DB_HOST=127.0.0.1 \
+            --env PVNAIVE_DB_PORT=5432 \
+            --env PVNAIVE_DB_USER=postgres \
+            --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo \
+            postgres:18-bookworm bash tests/db/auth_actor_credential_mutations_migration_test.sh
+      - name: PostgreSQL logs on failure
+        if: failure()
+        run: docker logs pvnaive-auth22-postgres18 || true
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-auth22-postgres18 >/dev/null 2>&1 || true

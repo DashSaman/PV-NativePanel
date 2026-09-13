@@ -13,6 +13,10 @@ SECURITY DEFINER
 SET search_path = pg_catalog, pvnaive
 AS $$
 BEGIN
+    IF NOT pvnaive.has_valid_context()
+       OR pvnaive.current_actor_id() IS DISTINCT FROM p_actor_id THEN
+        RAISE EXCEPTION 'authentication context required' USING ERRCODE = '42501';
+    END IF;
     IF p_password_hash IS NULL OR p_password_hash NOT LIKE '$argon2id$%' THEN
         RAISE EXCEPTION 'auth_update_actor_password: password hash format rejected';
     END IF;
@@ -33,6 +37,10 @@ SECURITY DEFINER
 SET search_path = pg_catalog, pvnaive
 AS $$
 BEGIN
+    IF NOT pvnaive.has_valid_context()
+       OR pvnaive.current_actor_id() IS DISTINCT FROM p_actor_id THEN
+        RAISE EXCEPTION 'authentication context required' USING ERRCODE = '42501';
+    END IF;
     UPDATE pvnaive.actors
        SET email = COALESCE(NULLIF(p_email, ''), email),
            display_name = COALESCE(NULLIF(p_display_name, ''), display_name),

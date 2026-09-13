@@ -105,6 +105,7 @@ jobs:
               bash tests/db/backup_restore_test.sh
               bash tests/db/backup_collision_test.sh
               bash tests/db/auth_migration_test.sh
+              bash tests/db/auth_actor_credential_mutations_migration_test.sh
               bash tests/db/naive_runtime_migration_test.sh
               bash tests/db/customer_lifecycle_migration_test.sh
               bash tests/db/direct_naive_accounting_migration_test.sh
