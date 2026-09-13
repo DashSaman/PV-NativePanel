@@ -32,6 +32,8 @@ var Routes = []Route{
 	{"GET", "/api/v1/subscriptions/{token}/info", "subscriptions.info", Public, false},
 	{"GET", "/api/v1/subscriptions/{token}/usage", "subscriptions.usage", Public, false},
 	{"GET", "/api/v1/me", "me.show", Authenticated, false},
+	{"POST", "/api/v1/me/password", "me.password.update", Authenticated, true},
+	{"PATCH", "/api/v1/me/profile", "me.profile.update", Authenticated, true},
 	{"GET", "/api/v1/me/notifications", "me.notifications.index", Authenticated, false},
 	{"PATCH", "/api/v1/me/notification-preferences", "me.notifications.preferences", Authenticated, false},
 	{"GET", "/api/v1/me/sessions", "me.sessions.index", Authenticated, false},

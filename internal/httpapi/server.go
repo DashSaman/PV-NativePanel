@@ -117,6 +117,14 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.me)
 			}
+		case "me.password.update":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.mePasswordUpdate)
+			}
+		case "me.profile.update":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.meProfileUpdate)
+			}
 		case "me.sessions.index":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.sessions)

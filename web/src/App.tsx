@@ -6,6 +6,7 @@ import { ProductCatalog } from "./ProductCatalog";
 import { ProductCustomers } from "./ProductCustomers";
 import { RuntimeAdoption } from "./RuntimeAdoption";
 import { RuntimeNaive } from "./RuntimeNaive";
+import { SettingsSecurity } from "./SettingsSecurity";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { assertRouteManifest } from "./routes";
 
@@ -13,13 +14,14 @@ assertRouteManifest();
 
 type Theme = "system" | "dark" | "light";
 type AuthState = "loading" | "anonymous" | "authenticated";
-type View = "dashboard" | "customers" | "catalog" | "runtime-adoption" | "runtime-naive";
+type View = "dashboard" | "customers" | "catalog" | "runtime-adoption" | "runtime-naive" | "settings-security";
 
 export function currentView(hash = window.location.hash): View {
   if (hash === "#/customers") return "customers";
   if (hash === "#/catalog" || hash === "#/plans") return "catalog";
   if (hash === "#/customers/runtime-adoption") return "runtime-adoption";
   if (hash === "#/runtime/naive") return "runtime-naive";
+  if (hash === "#/settings/security") return "settings-security";
   return "dashboard";
 }
 
@@ -49,7 +51,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Princip
 function Sidebar({ principal, view, signOut }: { principal: Principal; view: View; signOut: () => Promise<void> }) {
   const product = canUseCustomerProduct(principal.role); const runtime = canUseRawRuntime(principal.role);
   const linkClass = (active: boolean) => active ? "nav-link active" : "nav-link";
-  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="42" height="42"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a className={linkClass(view === "dashboard")} href="/panel/"><b>⌂</b><span>داشبورد</span></a>{product && <><a className={linkClass(view === "customers")} href="/panel/#/customers"><b>♙</b><span>کاربران</span></a><a className={linkClass(view === "catalog")} href="/panel/#/catalog"><b>▦</b><span>پلن‌ها و دسته‌بندی</span></a></>}{runtime && <a className={linkClass(view === "runtime-naive" || view === "runtime-adoption")} href="/panel/#/runtime/naive"><b>⚙</b><span>سیستم / Runtime</span></a>}</nav><div className="sidebar-footer"><ThemeSwitch/><button className="logout-button" onClick={signOut}>⇥ <span>خروج امن</span></button><small>{principal.display_name || principal.email}</small></div></aside>;
+  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="42" height="42"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a className={linkClass(view === "dashboard")} href="/panel/"><b>⌂</b><span>داشبورد</span></a>{product && <><a className={linkClass(view === "customers")} href="/panel/#/customers"><b>♙</b><span>کاربران</span></a><a className={linkClass(view === "catalog")} href="/panel/#/catalog"><b>▦</b><span>پلن‌ها و دسته‌بندی</span></a></>}{runtime && <a className={linkClass(view === "runtime-naive" || view === "runtime-adoption")} href="/panel/#/runtime/naive"><b>⚙</b><span>سیستم / Runtime</span></a>}{principal.role === "owner" && <a className={linkClass(view === "settings-security")} href="/panel/#/settings/security"><b>✚</b><span>امنیت و حساب</span></a>}</nav><div className="sidebar-footer"><ThemeSwitch/><button className="logout-button" onClick={signOut}>⇥ <span>خروج امن</span></button><small>{principal.display_name || principal.email}</small></div></aside>;
 }
 
 function MobileNav({ principal, view, signOut }: { principal: Principal; view: View; signOut: () => Promise<void> }) {
@@ -74,5 +76,6 @@ export function App() {
   else if (view === "catalog" && product) content = <ProductCatalog role={principal.role}/>;
   else if (view === "runtime-adoption" && runtime) content = <RuntimeAdoption/>;
   else if (view === "runtime-naive" && runtime) content = <RuntimeNaive/>;
+  else if (view === "settings-security") content = <SettingsSecurity principal={principal}/>;
   return <ErrorBoundary><Shell principal={principal} view={view} signOut={signOut}>{content}</Shell></ErrorBoundary>;
 }
