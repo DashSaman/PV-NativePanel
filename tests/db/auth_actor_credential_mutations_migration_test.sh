@@ -52,7 +52,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
   'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == "22" ]] || { echo "ERROR: schema version=${schema_version}, want=22" >&2; exit 1; }
+[[ "${schema_version}" == "28" ]] || { echo "ERROR: schema version=${schema_version}, want=28" >&2; exit 1; }
 
 psql_admin --dbname "${test_db}" <<SQL >/dev/null
 INSERT INTO pvnaive.actors (id, tenant_id, actor_role, email, display_name, password_hash, status)

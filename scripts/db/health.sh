@@ -94,7 +94,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 21)); then
+if ((expected_version >= 28)); then
+  [[ "${rls_tables}" == "44" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/44"
+elif ((expected_version >= 21)); then
   [[ "${rls_tables}" == "43" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/43"
 elif ((expected_version >= 17)); then
   [[ "${rls_tables}" == "42" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/42"
