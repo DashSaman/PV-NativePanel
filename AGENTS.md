@@ -1,6 +1,6 @@
 # AGENTS.md — PVNaive mandatory agent instructions
 
-Last reconciled: 2026-08-31
+Last reconciled: 2026-09-13
 
 ## Mission
 
@@ -170,6 +170,19 @@ No agent may say only “Done”. Final DONE transition belongs to Lead/Agent-RE
 - Do not blind-merge stale PR #16 or old S04/S05 branches.
 - Do not reset/force-push main to reconcile branch history.
 - Do not copy GPL/AGPL competitor code without explicit license-compatibility review.
+
+## Live environment & client facts (verified 2026-09-13)
+
+Hard-won operational truths from debugging the live deployment and strict clients. Re-verify on latest main/live server before relying on them.
+
+- **Subscription URI must carry the port**: `naive+https://user:pass@host:443`. `PVNAIVE_NAIVE_PUBLIC_HOST` (derived from `PVNAIVE_DOMAIN`) must include `:443`; repo contract tests enforce it. Bare-host URIs fail to import in strict clients such as Karing.
+- **TLS and bare IPs do not mix**: a deployment addressed by bare IPv4 gets Caddy `tls internal` (self-signed). Chromium-based clients (Android Karing) then fail with `handshake failed ... net_error -202` (= `ERR_CERT_AUTHORITY_INVALID`). Serving the same stack behind a resolvable hostname gives a real Let's Encrypt certificate automatically (currently a `<ip>.nip.io` wildcard in the test deployment; prefer an Owner-owned domain for release).
+- **Caddyfile lifecycle**: the entrypoint renders `/etc/caddy/Caddyfile` ONLY when the file is absent (it is bind-mounted under the data dir and therefore persists across restarts). Regenerating it is a deliberate, backed-up operation, never a casual restart.
+- **`probe_resistance` masks auth failures**: unauthorized `CONNECT` attempts to `forward_proxy` return a disguised 404. A 404 from the proxy port does NOT mean the route is missing — retest with valid customer credentials before diagnosing.
+- **Database schema layout**: all panel tables live in the `pvnaive` PostgreSQL schema, not `public`.
+- **Auth cookies**: session cookie `__Host-pvnaive_session`; CSRF cookie ends with `pvnaive_csrf`. Mutating API calls require the `X-CSRF-Token` header; customer creation additionally requires an `Idempotency-Key` and `validity.mode: on_creation`.
+- **Karing diagnostics**: "no server available" means the subscription downloaded but parsed 0 nodes (check URI format/User-Agent); TLS `net_error -202` means an untrusted certificate (self-signed/bare IP), not a malformed URI.
+- **Readiness gate**: readiness compares the compose-provided `PVNAIVE_EXPECTED_SCHEMA_VERSION` with the live database schema version; a mismatch marks the stack not-ready. Align the env whenever the schema version is bumped.
 
 ## Customer / Subscription invariants
 
