@@ -1,15 +1,15 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-13 13:39 Asia/Tehran
+Verified checkpoint: 2026-09-13 14:40 Asia/Tehran
 
-Verified pre-refresh `main`: `0cfd5707e48aa3382e404a90a41bcc565ff4bea5`; push CI run `34749174164` completed SUCCESS. Drift from prior verified checkpoint `1c7365aba8bdaa179413721f9f282bd5b91cc67f` is documentation-only.
+Verified pre-refresh `main`: `24229de505b76713b044de435398960a41779f51`; push CI run `34751205133` completed SUCCESS. No newer runtime-bearing merge was found before this checkpoint.
 
 Do not promote yet. Current executable lanes:
-- **Karing PR #101**: exact head `216d53670066033403fe95f61b0402bb710186a3`; repository CI/accounting/forwardproxy gates are green. Remaining gate is independent real-client import/parse/connect/cleanup validation. Fresh assignment comment: `5652631315`.
-- **Task13 PR #64**: OPEN/DRAFT/non-mergeable at stale `3fc14825e1b164bad558decaef47f56b792e81af`. Rebuild from latest `main`, rerun exact-head repository checks, and complete the required isolated HTTP/1.1 + HTTP/2 protocol/session/accounting validation before merge. Existing development-lane assignment remains active; no completion receipt has arrived.
-- **Production issue #100**: read-only status lane. No fresh connected command-level receipt has returned. Existing Production-lane assignment remains active. Do not infer present Production health from historical ledgers.
+- **Karing PR #101**: exact head `216d53670066033403fe95f61b0402bb710186a3`; repository CI/accounting/forwardproxy gates are green. Worker 4 owns the real non-Production Karing import/parse/connect/cleanup smoke; Worker 1 independently reviews the generated profile/evidence and cleanup proof. Keep DRAFT until both receipts exist.
+- **Task13 PR #64**: OPEN/DRAFT at stale `3fc14825e1b164bad558decaef47f56b792e81af`. Worker 3 owns reconstruction from latest verified main in an isolated worktree. Worker 2 independently owns exact-head repository/race/permission verification and the pinned-Caddy HTTP/1.1 + HTTP/2 protocol/session/accounting rehearsal once a new head is published.
+- **Production issue #100**: Primary owns read-only status only. No fresh connected command-level receipt has returned. Do not infer present Production health from historical ledgers and do not mutate Production.
 
-Worker truth: no fresh completion receipt was available before this checkpoint for Task13, Karing real-client validation, or Production status. TrPaqet/next executable development lane owns Task13; `pv-primary`/next connected Production executor owns the Production safety/status lane; Karing real-client validation remains independent. Historical `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are 2026-08-27 records and must not override fresh exact-SHA evidence.
+Worker truth: all five documented execution lanes now have non-conflicting work. Preserve one writer per worktree, use a different worker for important verification, keep unrelated host services untouched, and push/record all important results rather than leaving evidence only on a temporary host. Historical `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain 2026-08-27 records and must not override fresh exact-SHA evidence.
 
 Promotion safety sequence, only after runtime gates are green: fresh connected read-only audit → fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → health/postflight → retain rollback.
 
