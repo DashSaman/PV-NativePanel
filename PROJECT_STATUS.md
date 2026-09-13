@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-13 15:38 Asia/Tehran
+Last updated: 2026-09-13 16:41 Asia/Tehran
 
 ## Verified GitHub state
-- Verified pre-refresh `main`: `2c6344a9f3de23927ac4d901ad7ed64cf0a90c74`.
-- Push CI run `34753856100` for that exact SHA completed SUCCESS.
+- Verified pre-refresh `main`: `140daa0d3f4b7cbfc3998f7df038033e232127a8`.
+- Push CI run `34756371335` for that exact SHA completed SUCCESS.
 - The latest main advance remained documentation-only; no newer runtime-bearing merge was found this cycle.
 - Task16/schema21 remains the last validated merged runtime integration: PR #81 merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
 - PR #64 / Task13 remains OPEN/DRAFT at stale exact head `3fc14825e1b164bad558decaef47f56b792e81af`; latest-main reconstruction and isolated protocol/session/accounting validation remain mandatory before merge.
@@ -12,13 +12,13 @@ Last updated: 2026-09-13 15:38 Asia/Tehran
 - Open non-PR execution issue #100 remains the read-only Production status lane.
 
 ## Karing verification
-- Exact-head repository gates on `216d5367...` remain SUCCESS: CI `34732580376`, WS1 Exact Accounting `34732580468`, and WS1 Pinned Forwardproxy `34732580377`.
-- No independent real Karing import/parse/connect/cleanup receipt has arrived after the 14:40 dispatch; therefore PR #101 remains DRAFT and unmerged.
+- Fresh check-run inspection confirms exact-head repository gates on `216d5367...` remain SUCCESS, including CI, accounting, forwardproxy, rehearsal and bundle jobs.
+- No independent real Karing import/parse/connect/cleanup receipt has arrived after the 15:38 dispatch; therefore PR #101 remains DRAFT and unmerged.
 - No newer runtime-bearing main change invalidating the reviewed Karing delta was found this cycle.
 
 ## Task13 verification
 - PR #64 remains at stale exact head `3fc14825...`; historical exact-head repository greens and focused tests are supplemental only.
-- No current-main reconstruction or fresh pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal receipt arrived after the 14:40 dispatch.
+- No current-main reconstruction or fresh pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal receipt arrived after the 15:38 dispatch.
 - Required proof remains target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting on the reconstructed exact head.
 
 ## Worker / coordinator reconciliation
@@ -29,15 +29,16 @@ Last updated: 2026-09-13 15:38 Asia/Tehran
 - Never credit stale, dirty, mixed-head, unpushed, historical, or absent-CI evidence.
 
 ## Production truth
-- Issue #100 still has no fresh connected command-level Production status receipt after the 14:40 dispatch.
+- Issue #100 still has no fresh connected command-level Production status receipt after the 15:38 dispatch.
 - Current deployed SHA/schema, service/readiness/Caddy lifecycle state, session-control socket state, backup freshness/encryption, and rollback snapshot remain unverified for this cycle.
 - Production was not mutated.
 - Promotion remains blocked until the outstanding runtime validation and complete safety sequence are satisfied.
 
 ## Actions completed this cycle
-- Re-inspected current main, open PRs, exact-main CI, PR worker reports, issue #100, and canonical status/handoff files.
-- Confirmed exact `main` CI run `34753856100` is SUCCESS.
-- Confirmed no new worker completion receipt exists after the 14:40 dispatches.
+- Re-inspected current main, open PRs, exact-main CI, PR worker reports, issue #100, and persistent handoff/deployment ledgers.
+- Confirmed exact `main` CI run `34756371335` is SUCCESS.
+- Freshly confirmed Karing exact-head checks remain successful.
+- Confirmed no new worker completion receipt exists after the 15:38 dispatches.
 - Confirmed no runtime PR has all required evidence for merge and no Production promotion gate is satisfied.
 - Reaffirmed all five documented execution lanes on non-conflicting work for the next wave.
 
