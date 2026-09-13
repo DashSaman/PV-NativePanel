@@ -211,3 +211,17 @@ Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reo
 - The live database contains migrations up to 0027 (self-service credential SECURITY DEFINER functions deployed as 0027 because server numbering 0022/0023 was already taken), while the public repo lineage stops at 0021 (repo's own 0022 is a different change).
 - The self-service feature code IS on `main` (commits `feat(panel) account security`, `fix(auth) SECURITY DEFINER migration`), but its migration file carries the repo-side number.
 - Done gate: reconcile numbering before the next repo-built deploy (deployed 0022..0027 must be byte-equivalent or superseded by repo files), so a fresh install from repo reaches the same schema as production.
+
+### RESOLVED (2026-09-14) — readiness 503 / container unhealthy after fix2 deploy
+
+- Symptom: from the fix2 deploy (18:23Z) the container healthcheck returned 503 on `/api/v1/health/ready` (`{"db":"error","ready":false,"schema":"error"}`) for ~2h; the panel SPA itself kept serving 200 through the reverse proxy, so the outage was silent from the outside.
+- Root cause: the deployed image bakes `PVNAIVE_EXPECTED_SCHEMA_VERSION=23` into its Docker ENV while the live database is at schema **27** (deployed lineage 0001..0027). The Go readiness gate refuses to report ready on the mismatch (fail-closed, by design).
+- Fix applied live: compose override `/opt/pvnaive/docker-compose.override.yml` sets `PVNAIVE_EXPECTED_SCHEMA_VERSION: "27"`; `docker compose up -d --force-recreate`; container went **healthy** within 30s; Caddyfile untouched (22 customer entries intact); customer strict-TLS CONNECT verified 204 after recreate.
+- Repo-side done gate: `PVNAIVE_EXPECTED_SCHEMA_VERSION` must be rendered from the built-in migration lineage (count of migrations in the image) instead of a hardcoded Dockerfile ENV, so image and DB can never disagree again.
+
+### RESOLVED (2026-09-14) — pvbootstrap is obsolete in the runtime-mapped proxy architecture
+
+- The custom `forward_proxy` Caddy module now REQUIRES a runtime UUID mapping (DB-backed identity) for every `basic_auth` user; adding the bootstrap account without a mapping is rejected at config load: `missing or invalid runtime UUID mapping for configured user "pvbootstrap"`.
+- The live Caddyfile intentionally contains only customer credentials (22 entries); `pvbootstrap` cannot proxy and must not be re-added to the rendered Caddyfile.
+- Docs that still advertise the `pvbootstrap`/`Bt7xKp9mVq2wRt8z` proxy account are stale — treat the installer bootstrap account as API/owner bootstrap only.
+- Note for agents: never attempt to reload a Caddyfile containing unmapped users — validate first (`caddy validate`), and remember the running config survives a failed reload.
