@@ -1,24 +1,22 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-13 23:35 Asia/Tehran
+Checkpoint: 2026-09-14 00:39 Asia/Tehran
 
-- Current canonical `main`: `61c613777ec2dcf3f1559cbb8b8df80f8e389af0`; push CI `34779414593` SUCCESS.
-- Verified runtime-bearing baseline: `f0cdab3eda205eecb3285577ec5df32f45d0ddb7`; schema22 is canonical and merged-main CI is green.
-- Karing PR #101 remains OPEN/DRAFT at `216d53670066033403fe95f61b0402bb710186a3`; exact-head repository gates are green but branch drift plus missing disposable real-client import/parse/CONNECT/cleanup evidence block merge.
-- Task13 PR #64 remains OPEN/DRAFT at stale `3fc14825e1b164bad558decaef47f56b792e81af`; reconstruct from current main, then independently prove HTTP/1.1 + HTTP/2 target kill, sibling survival, forged-tuple rejection, repeated-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting.
-- Remote inventory has no online executable PVNaive worker. Production Primary is absent, so issue #100 has no fresh command-level audit receipt.
-- DEPLOY-001 is tracked canonically in #105; #103 is closed duplicate. Recover the exact trusted all-in-one renderer/build context before implementation; do not guess or recreate source from Production behavior.
-- LINEAGE-001 remains #104; obtain exact read-only Production migration ledger/checksums and trusted 0022..0027 artifacts before a forward-only compatibility fixture can be accepted.
-- Production remained untouched: no backup creation, deploy, migration, restart/reload, DB/credential/Caddy write or rollback-state change.
+- Verified pre-doc-update `main`: `f4d3cc0b59d10c4507d27c86aabac9bd833d2898`; push CI `34781998537` SUCCESS.
+- `6a025877...` is test-only despite a broader commit message; migration 0022/SHA files were already identical at its parent. Preserve truthful change accounting.
+- Karing PR #101 remains OPEN/DRAFT/stale at `216d53670066033403fe95f61b0402bb710186a3`; real disposable Karing import/parse/CONNECT/cleanup evidence is still mandatory.
+- Old Task13 PR #64 remains historical/stale. Fresh current-main reconstruction is PR #107 at head `25b214cf019d3db2321d9651ab3654e46ef44342`; replay was conflict-free and `git diff --check` passed. Keep DRAFT until exact-head CI plus real HTTP/1.1 + HTTP/2 session/accounting rehearsal are green.
+- Worker 1 / `Pak-Nasheeee-haaaaaaaaa` is online again but lacks Go. It can prepare branches and perform static/evidence review, not Go acceptance.
+- Production Primary remains unavailable to this coordinator. Repository live notes record domain `namir.softarg.ir`, image `pvnaive:fix2`, deployed schema through 0027 and resolved readiness mismatch, but a fresh command-level health/backup/rollback audit is still missing.
+- DEPLOY-001 #105 and LINEAGE-001 #104 remain hard deploy blockers. Do not infer renderer source or rewrite applied Production migration history.
+- Production remained untouched this cycle.
 
-Execution allocation when hosts reconnect:
-- Worker 4: Karing disposable real-client smoke and cleanup/revoke evidence; reconstruct on current main if still stale.
-- Worker 3: Task13 current-main reconstruction.
-- Worker 2: independent Task13 exact-head race/permission/protocol/accounting verification.
-- Worker 1: independent evidence/security/accounting review only where installed tooling is sufficient.
-- Primary: read-only Production audit only until all promotion gates are green.
-- Coordinator: DEPLOY-001 source provenance and LINEAGE-001 non-destructive reconciliation.
+Execution allocation:
+- Worker 4: Karing real-client smoke + cleanup/revoke evidence and latest-main reconstruction if required.
+- Worker 3: review/fix PR #107 reconstruction findings.
+- Worker 2: independent exact-head Task13 race/permission/HTTP1+HTTP2/accounting validation.
+- Worker 1: static/evidence/security review and safe branch preparation; no Go acceptance claim.
+- Primary: read-only Production audit when connected.
+- Coordinator: CI reconciliation, DEPLOY-001 provenance and LINEAGE-001 evidence coordination.
 
-Promotion order: DEPLOY-001 + LINEAGE-001 → Karing real-client proof → Task13 exact-head proof → fresh Production audit → encrypted backup + independent rollback snapshot → exact deploy-SHA lock → staged deploy → postflight with rollback retained.
-
-Never credit stale, mixed-head, assignment-only, static-only, missing-tool, historical or inferred evidence as completion.
+Promotion order: DEPLOY-001 + LINEAGE-001 → Karing proof → PR #107 exact-head/live proof → fresh Production audit → encrypted backup + rollback snapshot → exact deploy SHA → staged deploy → postflight.
