@@ -1,13 +1,18 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-13 21:40 Asia/Tehran
+Verified checkpoint: 2026-09-13 23:30 Asia/Tehran
 
-Verified runtime-free `main` before this docs refresh: `507f074d234d6548fbbda21e06b3365353f996be`; push CI `34771275246` completed SUCCESS.
+Verified runtime-bearing `main`: `f0cdab3eda205eecb3285577ec5df32f45d0ddb7`; push CI run `34779141898` completed SUCCESS.
 
-Do not promote yet. Current executable lanes:
-- **Karing PR #101**: exact head `216d53670066033403fe95f61b0402bb710186a3`; DRAFT/non-mergeable. Repository/unit/build evidence is green, but real Karing import/parse/connect/cleanup proof is still missing. Worker 4 owns that lane when connected; Worker 1 independently reviews its receipt.
-- **Task13 PR #64**: exact stale head `3fc14825e1b164bad558decaef47f56b792e81af`; DRAFT/non-mergeable. Worker 3 must reconstruct from latest verified main; Worker 2 must independently run exact-head race/permission checks and pinned-Caddy HTTP/1.1+HTTP/2 session/accounting rehearsal. Worker 1 has no Go and is not credited for these gates.
-- **Independent Task16/schema21 review #99**: Worker 1 freshly passed the PostgreSQL18 history contract on exact pre-refresh main and reconfirmed RLS/privilege/purge boundaries. Continue static/source review of commit-before-HTTP-success and redaction paths; rollback `SET LOCAL` warnings are noted for cleanup review even though rollback assertions pass.
-- **Production issue #100**: read-only status only. Production Primary is not connected and no fresh command-level receipt has returned. Do not infer current health from historical evidence and do not mutate Production.
+Schema22 security repair PR #102 is merged. Its exact pre-merge head `9975bde902d6b53946485c36d8b766c014266580` was green across full CI, Schema22 Auth Context, Task16 Schema21 TDD, WS1 Exact Accounting and WS1 Pinned Forwardproxy. Repository latest-schema fixtures, rollback metadata/checksum/bookkeeping, and authenticated self-service actor mutation semantics are reconciled at schema22.
 
-Promotion sequence remains: Karing real-client proof → Task13 exact-head live proof → fresh Production audit → encrypted backup + independent rollback snapshot → exact deploy-SHA lock → staged deploy → postflight with rollback retained.
+Do not deploy yet. Current executable lanes:
+- **DEPLOY-001 / P0**: repository-only fix/proof that boot/recreate Caddy rendering preserves the full active customer credential set. This may advance without Production access, but deployment remains prohibited until it is independently validated.
+- **LINEAGE-001 / P1**: reconcile the recorded Production migration lineage with repository schema numbering/content without rewriting applied Production history. Produce an explicit forward/compatibility plan before any repo-built migration/deploy.
+- **Karing PR #101**: exact head `216d53670066033403fe95f61b0402bb710186a3`; real Karing import → parse → CONNECT → cleanup/revoke proof with disposable credentials is still missing.
+- **Task13 PR #64**: stale head; reconstruct from current verified main, then independently prove HTTP/1.1 + HTTP/2 target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle, and exactly-once final accounting.
+- **Production issue #100**: read-only only. Primary is not connected and no fresh command-level receipt exists. Do not infer current health from last-recorded operator evidence.
+
+Remote inventory currently has no online executable PVNaive worker. Queue Worker 4 for Karing, Worker 3 for Task13 reconstruction, Worker 2 for independent Task13 verification, Worker 1 for independent evidence/security review, and Primary for read-only Production audit when each reconnects.
+
+Promotion sequence: DEPLOY-001 + LINEAGE-001 repository resolution → Karing real-client proof → Task13 exact-head proof → fresh Production audit → encrypted backup + independent rollback snapshot → exact deploy-SHA lock → staged deploy → postflight with rollback retained.
