@@ -1,24 +1,15 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-13 02:40 Asia/Tehran
+Verified checkpoint: 2026-09-13 03:41 Asia/Tehran
 
-Pre-cycle `main`: `7bfadac0878c37369636536e95103e4bb9701513`. Its combined status was pending with zero published statuses and commit-specific workflow lookup returned no runs. Re-read `main` before binding runtime work because canonical docs advance during this cycle.
+Pre-docs `main`: `7ab4d8a8bbb5af7ecef1135743bda40ef7bfa472`. Exact combined status was pending with zero statuses and no commit-specific workflow runs.
 
-Do not merge or deploy yet. Open gates:
-- Task13 PR #64 exact head `3fc14825e1b164bad558decaef47f56b792e81af`: current-main compare is diverged 45 ahead / 515 behind from merge base `0b921abe9b2bd1d827023f494fda11a407fe34d3`. Reconstruct/rebase from current `main` without force-rewriting validated history, rerun exact-head CI/accounting/pinned-forwardproxy/focused gates, then run the real isolated pinned-Caddy HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload, and exactly-once accounting.
-- Karing PR #4 exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`: base was retargeted from obsolete `s04-auth` to `main` this cycle; GitHub now reports non-mergeable. The current-main comparison is diverged 3 ahead / 1294 behind, and the delta remains limited to `web/src/RuntimeNaive.tsx`, `web/src/runtime.test.ts`, and `web/src/runtime.ts`. Reconstruct those changes on a clean current-main branch, rerun exact-head CI, then run real import/parse/connect/cleanup smoke using disposable credentials and a non-Production target; record exact profile hash, client/platform/version and redacted logs.
-- Security/accounting issue #99: independent clean current-main review of merged Task16/schema21 for RLS fail-closed behavior, app/maintenance privilege separation, bounded retention/purge safety, trusted lineage, commit-before-HTTP-success semantics and redaction.
-- Production issue #100: connected read-only audit must precede any backup/deploy activity. Record exact host/time, deployed SHA/schema, services/readiness/listeners, Caddy binary/pinned SHA/MainPID/NRestarts, session-control socket permissions, backup inventory/freshness/encryption, rollback snapshot availability, disk/capacity and postflight prerequisites.
+Do not deploy yet. Current executable lanes:
+- **Karing PR #101**: clean current-main reconstruction. RED commit `95768324b5f5dd43ddaf153c0b115678fa24a49e` added only the regression test and correctly failed the web `npm test` gate. GREEN commit `6168c8445ce5b9358c9cbae12be98951d3153845` adds the minimal profile builder; web tests and build pass. Next: preserve current-main `RuntimeNaive.tsx` behavior while wiring the Karing copy action, then require all exact-head workflows green and run an independent real Karing import/parse/connect/cleanup smoke with disposable credentials, exact profile hash, client/platform/version and redacted logs. Keep DRAFT. Legacy PR #4 stays open until #101 fully supersedes it.
+- **Task13 PR #64**: OPEN/DRAFT/non-mergeable at `3fc14825e1b164bad558decaef47f56b792e81af`. Reconstruct validated delta from current `main`, rerun exact-head CI/accounting/pinned-forwardproxy/focused gates, then isolated real HTTP/1.1 + HTTP/2 rehearsal proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload and exactly-once accounting.
+- **Security/accounting issue #99**: independent clean current-main review of merged schema21 for RLS fail-closed behavior, privilege separation, bounded retention/purge safety, trusted lineage, commit-before-HTTP-success and redaction. Any fix goes to a separate PR.
+- **Production issue #100**: read-only audit only. Record exact host/time, deployed SHA/schema, service/readiness/listeners, Caddy binary/pinned SHA/MainPID/NRestarts, session-control socket mode/ownership, disk/capacity, backup inventory/freshness/encryption, independent rollback snapshot availability and postflight prerequisites.
 
-Current worker lanes:
-- TrPaqet: Task13 current-main reconstruction plus isolated rehearsal only; preserve co-hosted Paqet/Xray/OpenVPN/WaterWall/OV services.
-- Security review lane: issue #99 exact-main clean-worktree review; any fix goes to a separate PR.
-- Compatibility lane: PR #4 clean current-main Karing export reconstruction plus independent real-client smoke.
-- Production lane: issue #100 read-only audit/rollback-readiness inventory only; no mutation until all runtime gates are green.
+Worker truth: no new completion receipt arrived after the prior dispatches. TrPaqet remains the persisted isolated Task13 rehearsal lane. Historical `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are S04-era records from 2026-08-27 and must not override fresh exact-SHA evidence.
 
-Repository truth:
-- Task16/schema21 PR #81 is merged and issue #79 is closed completed.
-- Duplicate worker issues #97/#98 are closed as superseded by #99/#100.
-- Historical `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` are S04-era records from 2026-08-27 and must not override fresh GitHub state or these canonical files.
-
-Use exact-head evidence only. Never credit stale, dirty, mixed-head, unpushed, historical, or absent-CI evidence as completion. Production promotion remains read-only audit → fresh encrypted backup → independent rollback snapshot → exact SHA lock → staged promotion → health/postflight → retained rollback.
+Use exact-head evidence only. Never credit stale, dirty, mixed-head, unpushed, historical or absent-CI evidence. Production promotion remains read-only audit → fresh encrypted backup → independent rollback snapshot → exact SHA lock → staged promotion → health/postflight → retained rollback.
