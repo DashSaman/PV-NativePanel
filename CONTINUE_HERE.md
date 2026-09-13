@@ -1,16 +1,15 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-13 23:35 Asia/Tehran
+Verified checkpoint: 2026-09-14 02:32 Asia/Tehran
 
-Current canonical `main`: `61c613777ec2dcf3f1559cbb8b8df80f8e389af0`; push CI `34779414593` SUCCESS. Verified runtime-bearing baseline remains `f0cdab3eda205eecb3285577ec5df32f45d0ddb7` with schema22 merged and green.
+Current canonical `main`: `879219990539b676050877023ceb68f2951f39ea`; push CI `34787434163` SUCCESS. Batch-2 has already reconciled migration lineage to schema 28, upstreamed the Docker renderer/build path, added boot credential reconciliation and caddy-admin reload, and persisted TLS storage. Older handoffs that call DEPLOY-001 or LINEAGE-001 open are superseded.
 
-Do not deploy yet. Current executable lanes:
-- **DEPLOY-001 / #105 / P0**: authoritative all-in-one boot/recreate renderer source is not in this repository. Recover trusted source/build provenance first, then RED multi-credential preservation regression, implementation, idempotent recreate/restart rehearsal and pinned-Caddy validation. #103 is closed duplicate.
-- **LINEAGE-001 / #104 / P1**: obtain exact read-only Production migration ledger/checksums plus trusted 0022..0027 artifacts; then design forward-only compatibility without rewriting applied history.
-- **Karing PR #101**: head `216d53670066033403fe95f61b0402bb710186a3`; repository gates are green but the branch is stale/non-mergeable and real disposable import → parse → CONNECT → cleanup/revoke evidence is still missing.
-- **Task13 PR #64**: stale head `3fc14825e1b164bad558decaef47f56b792e81af`; reconstruct from current main, then independently prove HTTP/1.1 + HTTP/2 target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting.
-- **Production #100**: read-only only. Primary is offline and no fresh command-level health/backup/rollback receipt exists.
+Active work:
+- **Task13 PR #108**: exact head `41b7bcea78b2f3e1298077e6e7ba4d7cba724bed` on current main. Exact CI `34788082645`, Exact Accounting `34788082580`, Pinned Forwardproxy `34788082595` all SUCCESS; independent Go/web/contracts/forwardproxy checks pass. Keep DRAFT until Worker 2 supplies the REAL HTTP/1.1 + HTTP/2 target-only kill/sibling/forged/idempotency/credential/Caddy/exactly-once-accounting receipt.
+- **Karing PR #101**: still DRAFT; requires real disposable Karing import → parse → CONNECT → cleanup/revoke. Do not substitute unit/static evidence.
+- **Production #100**: nip.io live/ready/panel externally 200 with valid TLS. `namir.softarg.ir` currently fails TLS handshake under the documented Let's Encrypt duplicate limit; recorded retry-after 2026-09-15 03:17:36 UTC. Do not restart/recreate to force issuance.
+- **Primary audit**: still required because Production Primary is not connected; capture deployed identity/schema/services/Caddy, backup freshness/encryption, disk and rollback snapshot read-only before the next deploy.
 
-Remote inventory currently has no online executable PVNaive worker. Queue Worker 4 for Karing, Worker 3 for Task13 reconstruction, Worker 2 for independent Task13 verification, Worker 1 for evidence/security review, and Primary for read-only Production audit when each reconnects.
+Worker queue: Worker 4 Karing; Worker 3 Task13 review/fix; Worker 2 real Task13 protocol/accounting; Worker 1 independent verification/security work; Primary read-only Production audit.
 
-Promotion sequence: recover/validate DEPLOY-001 + reconcile LINEAGE-001 → Karing real-client proof → Task13 exact-head proof → fresh Production audit → encrypted backup + independent rollback snapshot → exact deploy-SHA lock → staged deploy → postflight with rollback retained.
+No Production mutation unless exact runtime gates are complete and fresh encrypted backup + rollback snapshot are ready.
