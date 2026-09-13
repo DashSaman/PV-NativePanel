@@ -322,3 +322,9 @@ client compatibility campaign (43), load/capacity campaign (44). Cite row number
 3. R1 PR: forwardproxy TCP_INFO sampling → `session_network_samples` → aggregates (STEER-001).
 4. Live-ops parallel lane: after LE window (2026-09-15 03:26 UTC) flip domain back to
    `namir.softarg.ir` (Section 6 row 2); then traffic-accounting truth probe (row 6).
+
+## 2026-09-14 02:53 coordinator checkpoint
+- Verified canonical main `3b49e0b9dd10cd720dbbf33be50361f3ec003dce`; push CI `34789203279` SUCCESS.
+- Task13 PR #108 refreshed by fast-forwarding its exact implementation history with current docs/spec main; new head `d42f1db4112fe43e71f4cd1b7feff941d78094af`, GitHub mergeable. Independent `git diff --check`, Docker Go 1.25 gofmt/vet/test and web 19/64 + build PASS. Fresh exact-head CI/accounting/forwardproxy are running; real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains mandatory.
+- Production remains mutation-free. Latest fresh external read-only probe: nip.io live/ready/panel healthy; `namir.softarg.ir` still inside documented Let's Encrypt retry window. Primary shell-level deployed identity/backups/rollback remain unverified.
+- Opened #109 as the independent next roadmap lane: R1 / STEER-001 trusted-boundary network telemetry. Worker 3=forwardproxy sampling, Worker 2=DB/ingest/replay semantics, Worker 1=independent schema/CI/test-harness review, Worker 4=E2E rehearsal, Primary=read-only Production.

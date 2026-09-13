@@ -193,3 +193,9 @@ Every transition records date, exact commit/source, what changed, tests/CI, Prod
 - Active independent work: BUG-001 refresh reuse DB proof; Task13 exact kill-session; Task14/15 deterministic race RED proof; Task16 bounded privacy-aware history proof.
 - Task15 unit/model candidate is not promotable until real PostgreSQL concurrency proof passes. Task16 is not promotable until migration numbering is reconciled after the P0 BUG-001 schema change and PG18/retention proof passes.
 - Next release action: publish the exact Task12 tree, run exact-head GitHub CI including schema17 and pinned forwardproxy/Caddy, then guarded Production backup → schema16→17 → API/web/Caddy rollout → postflight.
+
+## 2026-09-14 02:53 coordinator checkpoint
+- Verified canonical main `3b49e0b9dd10cd720dbbf33be50361f3ec003dce`; push CI `34789203279` SUCCESS.
+- Task13 PR #108 refreshed by fast-forwarding its exact implementation history with current docs/spec main; new head `d42f1db4112fe43e71f4cd1b7feff941d78094af`, GitHub mergeable. Independent `git diff --check`, Docker Go 1.25 gofmt/vet/test and web 19/64 + build PASS. Fresh exact-head CI/accounting/forwardproxy are running; real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains mandatory.
+- Production remains mutation-free. Latest fresh external read-only probe: nip.io live/ready/panel healthy; `namir.softarg.ir` still inside documented Let's Encrypt retry window. Primary shell-level deployed identity/backups/rollback remain unverified.
+- Opened #109 as the independent next roadmap lane: R1 / STEER-001 trusted-boundary network telemetry. Worker 3=forwardproxy sampling, Worker 2=DB/ingest/replay semantics, Worker 1=independent schema/CI/test-harness review, Worker 4=E2E rehearsal, Primary=read-only Production.
