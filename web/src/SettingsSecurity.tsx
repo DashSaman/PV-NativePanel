@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import type { Principal } from "./auth";
 import { readCookie } from "./auth";
+import { Icon } from "./ui";
 
 type Props = { principal: Principal };
 
@@ -84,7 +85,7 @@ export function SettingsSecurity({ principal }: Props) {
     <header className="dashboard-hero"><div><p className="eyebrow">Account</p><h1>امنیت و حساب</h1><p>مدیریت رمز عبور و مشخصات ورود حساب شما.</p></div></header>
     <div className="dashboard-grid">
       <section className="dashboard-card" aria-labelledby="pw-title">
-        <div className="dashboard-card-head"><h2 id="pw-title">تغییر رمز عبور</h2></div>
+        <div className="dashboard-card-head"><h2 id="pw-title"><Icon name="key" size={17}/> تغییر رمز عبور</h2></div>
         <form className="auth-form" onSubmit={submitPassword}>
           <label>رمز عبور فعلی<input type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required disabled={passwordBusy}/></label>
           <label>رمز عبور جدید (حداقل ۱۴ نویسه)<input type="password" autoComplete="new-password" minLength={14} maxLength={1024} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required disabled={passwordBusy}/></label>
@@ -95,7 +96,7 @@ export function SettingsSecurity({ principal }: Props) {
         </form>
       </section>
       <section className="dashboard-card" aria-labelledby="id-title">
-        <div className="dashboard-card-head"><h2 id="id-title">مشخصات ورود</h2></div>
+        <div className="dashboard-card-head"><h2 id="id-title"><Icon name="users" size={17}/> مشخصات ورود</h2></div>
         <p className="auth-copy">حساب فعلی: <strong>{principal.email}</strong>{principal.display_name ? ` — ${principal.display_name}` : ""}</p>
         <form className="auth-form" onSubmit={submitProfile}>
           <label>ایمیل جدید (خالی = بدون تغییر)<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={profileBusy}/></label>

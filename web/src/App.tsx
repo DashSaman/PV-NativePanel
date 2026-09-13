@@ -9,6 +9,7 @@ import { RuntimeNaive } from "./RuntimeNaive";
 import { SettingsSecurity } from "./SettingsSecurity";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { assertRouteManifest } from "./routes";
+import { Icon } from "./ui";
 
 assertRouteManifest();
 
@@ -33,7 +34,8 @@ function ThemeSwitch() {
     localStorage.setItem("pvnaive.theme", theme);
   }, [theme]);
   const next = theme === "system" ? "dark" : theme === "dark" ? "light" : "system";
-  return <button className="theme-switch" onClick={() => setTheme(next)} aria-label="تغییر پوسته">◐ <span>{theme === "dark" ? "تیره" : theme === "light" ? "روشن" : "سیستم"}</span></button>;
+  const glyph = theme === "dark" ? "moon" : theme === "light" ? "sun" : "monitor";
+  return <button className="theme-switch" onClick={() => setTheme(next)} aria-label="تغییر پوسته"><Icon name={glyph} size={16}/><span>{theme === "dark" ? "تیره" : theme === "light" ? "روشن" : "سیستم"}</span></button>;
 }
 
 function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Principal) => void }) {
@@ -45,13 +47,13 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Princip
     catch (cause) { const error = cause as AuthError; if (error.code === "mfa_required") { setRequiresMFA(true); setMessage("کد شش‌رقمی برنامه احراز هویت را وارد کنید."); } else setMessage("ورود انجام نشد. اطلاعات ورود را بررسی کنید."); }
     finally { setSubmitting(false); }
   }
-  return <main className="auth-page"><section className="auth-card" aria-labelledby="login-title"><div className="brand auth-brand"><img src="/pvnaive-mark.svg" alt="" width="48" height="48"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><p className="eyebrow">Secure Control Panel</p><h1 id="login-title">ورود به پنل</h1><p className="auth-copy">مدیریت امن سرویس و کاربران</p><form className="auth-form" onSubmit={submit}><label>ایمیل<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={submitting}/></label><label>رمز عبور<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={submitting}/></label>{requiresMFA && <label>کد TOTP<input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))} required disabled={submitting}/></label>}{message && <p className="auth-message">{message}</p>}<button type="submit" disabled={submitting || (requiresMFA && totpCode.length !== 6)}>{submitting ? "در حال بررسی…" : "ورود"}</button></form></section></main>;
+  return <main className="auth-page"><section className="auth-card" aria-labelledby="login-title"><div className="brand auth-brand"><img src="/pvnaive-mark.svg" alt="" width="48" height="48"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><p className="eyebrow"><Icon name="activity" size={12}/> Secure Control Panel</p><h1 id="login-title">ورود به پنل</h1><p className="auth-copy">مدیریت امن سرویس و کاربران</p><form className="auth-form" onSubmit={submit}><label>ایمیل<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={submitting}/></label><label>رمز عبور<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={submitting}/></label>{requiresMFA && <label>کد TOTP<input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))} required disabled={submitting}/></label>}{message && <p className="auth-message">{message}</p>}<button type="submit" disabled={submitting || (requiresMFA && totpCode.length !== 6)}><Icon name="lock" size={16}/>{submitting ? "در حال بررسی…" : "ورود امن"}</button></form></section></main>;
 }
 
 function Sidebar({ principal, view, signOut }: { principal: Principal; view: View; signOut: () => Promise<void> }) {
   const product = canUseCustomerProduct(principal.role); const runtime = canUseRawRuntime(principal.role);
   const linkClass = (active: boolean) => active ? "nav-link active" : "nav-link";
-  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="42" height="42"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a className={linkClass(view === "dashboard")} href="/panel/"><b>⌂</b><span>داشبورد</span></a>{product && <><a className={linkClass(view === "customers")} href="/panel/#/customers"><b>♙</b><span>کاربران</span></a><a className={linkClass(view === "catalog")} href="/panel/#/catalog"><b>▦</b><span>پلن‌ها و دسته‌بندی</span></a></>}{runtime && <a className={linkClass(view === "runtime-naive" || view === "runtime-adoption")} href="/panel/#/runtime/naive"><b>⚙</b><span>سیستم / Runtime</span></a>}{principal.role === "owner" && <a className={linkClass(view === "settings-security")} href="/panel/#/settings/security"><b>✚</b><span>امنیت و حساب</span></a>}</nav><div className="sidebar-footer"><ThemeSwitch/><button className="logout-button" onClick={signOut}>⇥ <span>خروج امن</span></button><small>{principal.display_name || principal.email}</small></div></aside>;
+  return <aside className="sidebar"><div className="brand"><img src="/pvnaive-mark.svg" alt="" width="42" height="42"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><nav aria-label="ناوبری اصلی"><a className={linkClass(view === "dashboard")} href="/panel/"><b><Icon name="dashboard" size={17}/></b><span>داشبورد</span></a>{product && <><a className={linkClass(view === "customers")} href="/panel/#/customers"><b><Icon name="users" size={17}/></b><span>کاربران</span></a><a className={linkClass(view === "catalog")} href="/panel/#/catalog"><b><Icon name="plans" size={17}/></b><span>پلن‌ها و دسته‌بندی</span></a></>}{runtime && <a className={linkClass(view === "runtime-naive" || view === "runtime-adoption")} href="/panel/#/runtime/naive"><b><Icon name="system" size={17}/></b><span>سیستم / Runtime</span></a>}{principal.role === "owner" && <a className={linkClass(view === "settings-security")} href="/panel/#/settings/security"><b><Icon name="shield" size={17}/></b><span>امنیت و حساب</span></a>}</nav><div className="sidebar-footer"><ThemeSwitch/><button className="logout-button" onClick={signOut}><Icon name="logout" size={16}/><span>خروج امن</span></button><small>{principal.display_name || principal.email}</small></div></aside>;
 }
 
 function MobileNav({ principal, view, signOut }: { principal: Principal; view: View; signOut: () => Promise<void> }) {
