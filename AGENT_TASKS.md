@@ -1,5 +1,11 @@
 # PVNaive — Agent / Workstream Task Board
 
+> **[2026-09-14] SUPERSEDED as execution queue:** the canonical consolidated board —
+> including the owner's Master Upgrade Pack R1→R8 (steering, pool manager, cover site,
+> panel access, command-center UI) and the live-ops batch status — now lives in
+> **`docs/AGENT_TASKS.md`**. Keep this file for its historical worker-allocation record.
+> DEPLOY-001 / LINEAGE-001 were CLOSED on 2026-09-14 (see KNOWN_ISSUES.md CLOSED section).
+
 Last updated: 2026-09-14 02:32 Asia/Tehran
 
 ## Shared rules
