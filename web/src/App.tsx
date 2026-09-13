@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from "react";
-import { AuthError, login, logout, me, Principal, readCookie } from "./auth";
+import { useEffect, useState } from "react";
+import { AuthError, logout, me, Principal, readCookie } from "./auth";
 import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ProductCatalog } from "./ProductCatalog";
@@ -7,6 +7,7 @@ import { ProductCustomers } from "./ProductCustomers";
 import { RuntimeAdoption } from "./RuntimeAdoption";
 import { RuntimeNaive } from "./RuntimeNaive";
 import { SettingsSecurity } from "./SettingsSecurity";
+import { StealthLogin } from "./StealthLogin";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { assertRouteManifest } from "./routes";
 import { Icon } from "./ui";
@@ -39,15 +40,9 @@ function ThemeSwitch() {
 }
 
 function LoginScreen({ onAuthenticated }: { onAuthenticated: (principal: Principal) => void }) {
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [totpCode, setTotpCode] = useState("");
-  const [requiresMFA, setRequiresMFA] = useState(false); const [submitting, setSubmitting] = useState(false); const [message, setMessage] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSubmitting(true); setMessage("");
-    try { await login({ email, password, totpCode: requiresMFA ? totpCode : undefined }); setPassword(""); setTotpCode(""); onAuthenticated(await me()); }
-    catch (cause) { const error = cause as AuthError; if (error.code === "mfa_required") { setRequiresMFA(true); setMessage("کد شش‌رقمی برنامه احراز هویت را وارد کنید."); } else setMessage("ورود انجام نشد. اطلاعات ورود را بررسی کنید."); }
-    finally { setSubmitting(false); }
-  }
-  return <main className="auth-page"><section className="auth-card" aria-labelledby="login-title"><div className="brand auth-brand"><img src="/pvnaive-mark.svg" alt="" width="48" height="48"/><div><strong>PVNaive</strong><span>PVNETWORK</span></div></div><p className="eyebrow"><Icon name="activity" size={12}/> Secure Control Panel</p><h1 id="login-title">ورود به پنل</h1><p className="auth-copy">مدیریت امن سرویس و کاربران</p><form className="auth-form" onSubmit={submit}><label>ایمیل<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={submitting}/></label><label>رمز عبور<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={submitting}/></label>{requiresMFA && <label>کد TOTP<input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))} required disabled={submitting}/></label>}{message && <p className="auth-message">{message}</p>}<button type="submit" disabled={submitting || (requiresMFA && totpCode.length !== 6)}><Icon name="lock" size={16}/>{submitting ? "در حال بررسی…" : "ورود امن"}</button></form></section></main>;
+  // R8 stealth login: animated, hover/focus-revealed fields. The previous
+  // static form logic moved into StealthLogin (same auth contract).
+  return <StealthLogin onAuthenticated={onAuthenticated}/>;
 }
 
 function Sidebar({ principal, view, signOut }: { principal: Principal; view: View; signOut: () => Promise<void> }) {
