@@ -21,7 +21,7 @@ release="PVNaive-R1-${stamp}-${commit:0:12}"
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 bundle="$tmp/$release"
-mkdir -p "$bundle"/{bin,web,db/migrations,scripts/db,scripts/ops,scripts/release,systemd,tmpfiles,sbom}
+mkdir -p "$bundle"/{bin,web,db/migrations,scripts/db,scripts/ops,scripts/release,systemd/caddy-naive.service.d,tmpfiles,sbom,caddy}
 
 cd "$root"
 test -z "$(gofmt -l .)"
@@ -47,6 +47,25 @@ cp -a scripts/db/. "$bundle/scripts/db/"
 cp -a scripts/ops/. "$bundle/scripts/ops/"
 cp -a scripts/release/*.sh scripts/release/*.py "$bundle/scripts/release/" 2>/dev/null || true
 cp -a ops/systemd/pvnaive-*.service ops/systemd/pvnaive-*.timer "$bundle/systemd/" 2>/dev/null || true
+cp -a ops/systemd/caddy-naive.service.d/20-pvnaive-accounting.conf "$bundle/systemd/caddy-naive.service.d/20-pvnaive-accounting.conf"
+
+# Task13 changes the Caddy data plane, so an R1 release must carry the exact
+# reproducible candidate that passed the pinned forwardproxy gate.
+caddy_src="$root/dist/ws1-accounting/caddy-pvnaive-accounting"
+[[ -x "$caddy_src" ]] || { echo 'ERROR: pinned Task13 Caddy candidate missing; run scripts/build/build-pinned-accounting-caddy.sh first' >&2; exit 1; }
+for proof in caddy-pvnaive-accounting.sha256 caddy.version.txt caddy.buildinfo.txt PROVENANCE.txt; do
+  [[ -f "$root/dist/ws1-accounting/$proof" ]] || { echo "ERROR: pinned Task13 Caddy proof missing: $proof" >&2; exit 1; }
+done
+cp -a "$caddy_src" "$bundle/caddy/caddy-pvnaive-accounting"
+cp -a "$root/dist/ws1-accounting/caddy-pvnaive-accounting.sha256" "$bundle/caddy/"
+cp -a "$root/dist/ws1-accounting/caddy.version.txt" "$bundle/caddy/"
+cp -a "$root/dist/ws1-accounting/caddy.buildinfo.txt" "$bundle/caddy/"
+cp -a "$root/dist/ws1-accounting/PROVENANCE.txt" "$bundle/caddy/"
+chmod 0755 "$bundle/caddy/caddy-pvnaive-accounting"
+caddy_sha="$(sha256sum "$bundle/caddy/caddy-pvnaive-accounting" | awk '{print $1}')"
+grep -Fq "binary_sha256=$caddy_sha" "$bundle/caddy/PROVENANCE.txt" || { echo 'ERROR: Task13 Caddy provenance mismatch' >&2; exit 1; }
+grep -Fq 'reproducibility_verified=true' "$bundle/caddy/PROVENANCE.txt" || { echo 'ERROR: Task13 Caddy reproducibility proof missing' >&2; exit 1; }
+
 cp -a ops/tmpfiles/. "$bundle/tmpfiles/"
 
 if git grep -n -E -- '-----BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY-----' -- ':!**/*_test.go' ':!docs/**' ':!**/*.md'; then
@@ -63,7 +82,9 @@ cat >"$bundle/RELEASE.json" <<JSON
   "schema_version": $latest_schema,
   "standalone_required": true,
   "fleet_controller_required": false,
-  "caddy_mutation_required": false,
+  "caddy_mutation_required": true,
+  "caddy_runtime_action": "one-controlled-binary-swap-restart",
+  "task13_caddy_sha256": "$caddy_sha",
   "artifact_signed": false,
   "signature_note": "No signing key supplied; checksums and source provenance are authoritative."
 }

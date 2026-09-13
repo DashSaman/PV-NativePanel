@@ -39,6 +39,9 @@ chmod -R go-rwx "${backup_dir}"
 if ! getent group pvnaive >/dev/null; then
   groupadd --system pvnaive
 fi
+if ! getent group pvnaive-session-control >/dev/null; then
+  groupadd --system pvnaive-session-control
+fi
 if ! id pvnaive >/dev/null 2>&1; then
   useradd --system --gid pvnaive --home-dir "${base}" --shell /usr/sbin/nologin pvnaive
 fi
