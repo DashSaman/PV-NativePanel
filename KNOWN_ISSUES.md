@@ -196,3 +196,18 @@ Current main contains these product capabilities. Do not recreate them from old 
 ### CLOSED — Exact multiple Naive basic_auth syntax proof
 
 Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reopen only on a real version/module regression.
+
+## Open infrastructure issues (2026-09-14 live-server batch)
+
+### OPEN — DEPLOY-001 (P0): boot Caddyfile renderer drops active customer credentials
+
+- The deployed all-in-one image's entrypoint renders the reverse-proxy config from the DB on boot, but its query path selects only the `pvbootstrap` basic-auth credential and ignores active customer credentials (observed: re-render produced 1 basic_auth entry while the DB had 21 active ones).
+- Consequence: every container recreate/restart can silently break customer proxy auth unless the config file is repaired post-boot.
+- Current live mitigation (2026-09-14): merged config restored from backup (22 entries) + `validate` + reload after each boot; deployed image `pvnaive:fix2` still carries the buggy renderer.
+- Done gate: the entrypoint (all-in-one build context) must reconcile rendered `basic_auth` blocks with active DB credentials on every boot (merge, not replace), must be covered by a test, and the fixed image must be deployed. The boot renderer currently lives in the build context outside this repo — upstream it into the repo.
+
+### OPEN — LINEAGE-001 (P1): deployed migration lineage (0001..0027) ahead of repo lineage (0001..0021)
+
+- The live database contains migrations up to 0027 (self-service credential SECURITY DEFINER functions deployed as 0027 because server numbering 0022/0023 was already taken), while the public repo lineage stops at 0021 (repo's own 0022 is a different change).
+- The self-service feature code IS on `main` (commits `feat(panel) account security`, `fix(auth) SECURITY DEFINER migration`), but its migration file carries the repo-side number.
+- Done gate: reconcile numbering before the next repo-built deploy (deployed 0022..0027 must be byte-equivalent or superseded by repo files), so a fresh install from repo reaches the same schema as production.

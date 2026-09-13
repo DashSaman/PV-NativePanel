@@ -259,3 +259,16 @@ A feature is not DONE unless all applicable Owner DoD items are satisfied, inclu
 ## Context recovery
 
 If context may be lost, update repository state first. A new Chat/Agent must be able to continue from canonical files without the old conversation or historical stage runbooks.
+
+## Live session results (2026-09-14, agent Super-Z)
+
+Facts other agents can rely on; re-verify anything you mutate:
+
+- **GitHub push is unblocked.** The fine-grained PAT now has real Contents:write (Git Data blob probe returned 201 — always verify with the blob probe, never trust the `/repos` permissions JSON). Five commits pushed to `main` as `0c245b5..dbbcb98`; another bot's docs-refresh commits were rebased on cleanly.
+- **Production domain is `namir.softarg.ir`** (A record → 45.141.148.59). Let's Encrypt cert issued and auto-renews. `.env` keys: `PVNAIVE_DOMAIN=namir.softarg.ir`, `PVNAIVE_NAIVE_PUBLIC_HOST=namir.softarg.ir:443`. All subscription URIs are domain-based now — existing Karing clients must re-import their subscription once.
+- **BBR + fq are live on the host** via `/etc/sysctl.d/99-pvnaive-tuning.conf` (bbr, fq, 64MB rmem/wmem, mtu probing, fastopen, backlog/somaxconn) plus `tc qdisc replace dev eth0 root fq`. Verified cubic→bbr. This file is host-side, not in the repo.
+- **Self-service account security is live** (deployed image `pvnaive:fix2`): `POST /api/v1/me/password` + `PATCH /api/v1/me/profile`, store layer `store_me.go`, SECURITY DEFINER functions via deployed migration 0027, UI `web/src/SettingsSecurity.tsx` (owner nav item "امنیت و حساب" → `#/settings/security`). Live 7-step E2E passed (change→login new→restore; 401 wrong-current; 400 short).
+- **UI/UX overhaul "Amber Command Deck" merged to `main`** (not yet in the deployed image): self-hosted Vazirmatn (`@fontsource/vazirmatn`), SVG icon set in `web/src/ui.tsx`, full design-system rewrite of `web/src/styles.css` (glass surfaces, aurora background, luminous borders, entrance animations, focus rings, reduced-motion safe, light+dark), iconified sidebar/login/dashboard, honest cumulative expiry sparkline. All 61 web tests + typecheck + build green locally.
+- **Competitor research moved into the repo**: `docs/competitor/3xui-v3-release-notes.md` (full v3.0→v3.7 release notes). Numbered remaining-work ledger lives at the end of `ROADMAP.md`.
+- **Two open infra issues are documented in `KNOWN_ISSUES.md`**: DEPLOY-001 (boot config renderer drops active credentials — P0) and LINEAGE-001 (deployed migrations 0022..0027 vs repo 0021 — reconcile before next repo-built deploy).
+- Live login (owner): `https://namir.softarg.ir/panel/` with `admin@pvnaive.local` / password in `/opt/pvnaive/.env` on the server. Server root access: see `scripts/ssh_run.py` in the agent workspace (password list maintained there).
