@@ -3,6 +3,13 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+
+# Derive the supported schema range from the real lineage so this test survives new migrations.
+max_schema="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${max_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+max_schema="$((10#${max_schema}))"
+prev_schema="$((max_schema - 1))"
+unsupported_schema="$((max_schema + 1))"
 temp_root="$(mktemp -d)"
 trap 'rm -rf -- "${temp_root}"' EXIT
 
@@ -30,22 +37,18 @@ PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-sch
 grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=19' "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
-PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 20 >/dev/null
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=20' "${env_file}"
+PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" "${prev_schema}" >/dev/null
+grep -Fqx "PVNAIVE_EXPECTED_SCHEMA_VERSION=${prev_schema}" "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
-PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 21 >/dev/null
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=21' "${env_file}"
+PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" "${max_schema}" >/dev/null
+grep -Fqx "PVNAIVE_EXPECTED_SCHEMA_VERSION=${max_schema}" "${env_file}"
 [[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
 
-PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 22 >/dev/null
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=22' "${env_file}"
-[[ "$(grep -c '^PVNAIVE_EXPECTED_SCHEMA_VERSION=' "${env_file}")" == "1" ]]
-
-if PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" 23 >/dev/null 2>&1; then
+if PVNAIVE_DB_ENV_FILE="${env_file}" bash "${repo_root}/scripts/db/set-expected-schema-version.sh" "${unsupported_schema}" >/dev/null 2>&1; then
   echo 'ERROR: unsupported schema version was accepted' >&2
   exit 1
 fi
 
-grep -Fqx 'PVNAIVE_EXPECTED_SCHEMA_VERSION=22' "${env_file}"
+grep -Fqx "PVNAIVE_EXPECTED_SCHEMA_VERSION=${max_schema}" "${env_file}"
 echo 'S04_DB_ENV_VERSION_TEST=PASSED'

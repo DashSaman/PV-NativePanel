@@ -3,6 +3,10 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+# Derive the expected schema version from the real lineage so this test survives new migrations.
+expected_schema="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${expected_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema="$((10#${expected_schema}))"
 : "${PVNAIVE_DB_HOST:=127.0.0.1}"
 : "${PVNAIVE_DB_PORT:=5432}"
 : "${PVNAIVE_DB_USER:=postgres}"
@@ -44,7 +48,7 @@ export PVNAIVE_DB_NAME="${test_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 
 version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${version}" == "22" ]] || { echo "ERROR: schema version=${version}, want=22" >&2; exit 1; }
+[[ "${version}" == "${expected_schema}" ]] || { echo "ERROR: schema version=${version}, want=${expected_schema}" >&2; exit 1; }
 
 contract="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "
 SELECT
@@ -130,8 +134,8 @@ second_primary_rc=$?
 set -e
 [[ "${second_primary_rc}" -ne 0 ]] || { echo 'ERROR: second active primary binding was accepted' >&2; exit 1; }
 
-# Exercise rollback in order from the latest schema through the lifecycle foundation boundary.
-for want in 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3; do
+# Exercise rollback in order down to v3, then destructive steps are covered below.
+for want in $(seq "$((expected_schema - 1))" -1 3); do
   PVNAIVE_DISPOSABLE_DB=1 PVNAIVE_ALLOW_DESTRUCTIVE_ROLLBACK=ROLLBACK_ONE_MIGRATION "${repo_root}/scripts/db/rollback.sh" >/dev/null
   got="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
   [[ "${got}" == "${want}" ]] || { echo "ERROR: rollback schema=${got}, want=${want}" >&2; exit 1; }

@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 umask 077
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+# Derive the expected schema version from the real lineage so this test survives new migrations.
+expected_schema="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${expected_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema="$((10#${expected_schema}))"
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
 test_db="pvnaive_auth_refresh_reuse_${test_suffix,,}"
@@ -19,7 +23,7 @@ CREATE ROLE pvnaive_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NO
 SQL
 createdb -h "$PVNAIVE_DB_HOST" -p "$PVNAIVE_DB_PORT" -U "$PVNAIVE_DB_USER" --owner pvnaive_owner --encoding UTF8 --template template0 "$test_db"
 "$repo_root/scripts/db/migrate.sh" >/dev/null
-[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == 22 ]]
+[[ "$(psql_admin -d "$test_db" -Atc 'select max(version) from pvnaive.schema_migrations')" == "${expected_schema}" ]]
 psql_admin -d "$test_db" <<'SQL' >/dev/null
 INSERT INTO pvnaive.tenants(id,tenant_type,slug,display_name) VALUES ('18180000-0000-0000-0000-000000000001','reseller','reuse','Reuse');
 INSERT INTO pvnaive.actors(id,tenant_id,actor_role,email,display_name,status) VALUES ('18180000-0000-0000-0000-000000000002','18180000-0000-0000-0000-000000000001','reseller','reuse@example.invalid','Reuse','active');
