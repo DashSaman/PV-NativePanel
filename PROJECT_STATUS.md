@@ -1,14 +1,14 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-13 13:39 Asia/Tehran
+Last updated: 2026-09-13 14:40 Asia/Tehran
 
 ## Verified GitHub state
-- Verified pre-refresh `main`: `0cfd5707e48aa3382e404a90a41bcc565ff4bea5`.
-- Push CI run `34749174164` for that exact SHA completed SUCCESS.
-- The three commits from prior verified checkpoint `1c7365aba8bdaa179413721f9f282bd5b91cc67f` to `0cfd5707...` changed only `PROJECT_STATUS.md`, `HANDOFF.md`, and `CONTINUE_HERE.md`; no runtime drift was introduced.
+- Verified pre-refresh `main`: `24229de505b76713b044de435398960a41779f51`.
+- Push CI run `34751205133` for that exact SHA completed SUCCESS.
+- The previous main advance remained documentation-only; no newer runtime-bearing merge was found this cycle.
 - Task16/schema21 remains the last validated merged runtime integration: PR #81 merged as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
-- PR #64 / Task13 remains OPEN/DRAFT/non-mergeable at stale exact head `3fc14825e1b164bad558decaef47f56b792e81af`; latest-main reconstruction and isolated protocol/session/accounting validation remain mandatory before merge.
-- PR #101 / Karing remains OPEN/DRAFT/non-mergeable at exact head `216d53670066033403fe95f61b0402bb710186a3`.
+- PR #64 / Task13 remains OPEN/DRAFT at stale exact head `3fc14825e1b164bad558decaef47f56b792e81af`; latest-main reconstruction and isolated protocol/session/accounting validation remain mandatory before merge.
+- PR #101 / Karing remains OPEN/DRAFT at exact head `216d53670066033403fe95f61b0402bb710186a3`.
 - Open non-PR execution issue #100 remains the read-only Production status lane.
 
 ## Karing verification
@@ -19,13 +19,13 @@ Last updated: 2026-09-13 13:39 Asia/Tehran
 ## Task13 verification
 - PR #64 remains at stale exact head `3fc14825...`; historical exact-head repository greens and focused tests are supplemental only.
 - No current-main reconstruction or fresh pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal receipt arrived this cycle.
-- The required isolated validation contract remains unchanged and must be satisfied on the reconstructed exact head before merge.
+- Required proof remains target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no kill-triggered Caddy restart/reload, and exactly-once final accounting on the reconstructed exact head.
 
 ## Worker / coordinator reconciliation
 - No fresh completion receipt arrived for Task13, Karing real-client validation, or issue #100 before this checkpoint.
 - Persistent `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain 2026-08-27 historical ledgers where they conflict with current exact-SHA evidence.
-- TrPaqet/next executable development lane owns Task13 reconstruction + rehearsal; `pv-primary`/next connected Production executor owns the read-only Production audit; Karing real-client validation remains an independent non-Production lane.
-- Fresh Karing assignment was posted at 13:39 Asia/Tehran to PR #101; Task13 and Production existing assignments remain active with no returned completion receipt.
+- Five-server pool allocation for the next execution wave: Worker 3 / `TrPaqet` owns Task13 current-main reconstruction; Worker 2 / `RoboT` owns independent Task13 verification/rehearsal after a new exact head exists; Worker 4 / `ubuntu-4gb-hel1-1` owns the real Karing client smoke; Worker 1 / `Pak-Nasheeee-haaaaaaaaa` owns independent Karing profile/cleanup evidence review and compatibility preflight; Primary / `testAmir5-3` remains Production-safe orchestration plus read-only Production audit only.
+- One writer per worktree and independent verification on a different worker remain mandatory; unrelated host services must not be modified.
 - Never credit stale, dirty, mixed-head, unpushed, historical, or absent-CI evidence.
 
 ## Production truth
@@ -35,13 +35,13 @@ Last updated: 2026-09-13 13:39 Asia/Tehran
 - Promotion remains blocked until the outstanding runtime validation and complete safety sequence are satisfied.
 
 ## Actions completed this cycle
-- Re-verified current main, open PRs, current comments, issue #100, and persistent reports.
-- Confirmed exact `main` CI run `34749174164` is SUCCESS.
-- Confirmed the latest three main commits are documentation-only.
+- Re-inspected current main, open PRs, exact-main CI, PR worker reports, issue #100, canonical status files, AGENTS policy and the five-server worker pool.
+- Confirmed exact `main` CI run `34751205133` is SUCCESS.
+- Confirmed no new worker completion receipt exists after the 13:39 dispatches.
 - Confirmed no runtime PR has all required evidence for merge and no Production promotion gate is satisfied.
-- Refreshed canonical continuation material and kept all independent lanes assigned.
+- Reallocated all five documented execution lanes to non-conflicting work for the next wave.
 
 ## Next executable gates
-1. PR #101: independent real Karing client validation on exact `216d5367...`; then reconcile against latest main and review for merge.
-2. PR #64: rebuild the validated Task13 delta on latest main, rerun exact-head repository checks, and attach the required isolated protocol/session/accounting validation evidence.
-3. Issue #100: obtain a fresh read-only Production command-level status receipt. Only after runtime gates are green may the lane proceed to fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
+1. Worker 4 + Worker 1: PR #101 real Karing import/parse/connect/cleanup on exact `216d5367...`, then independent evidence review; if both pass, reconcile with latest main and review for merge.
+2. Worker 3 + Worker 2: reconstruct Task13 from verified current main, publish a new exact head, rerun repository/race/permission gates, then independently execute the pinned-Caddy HTTP/1.1 + HTTP/2 session-control/accounting rehearsal on that same head.
+3. Primary / issue #100: obtain a fresh read-only Production command-level status receipt. Only after runtime gates are green may the lane proceed to fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → postflight with rollback retained.
