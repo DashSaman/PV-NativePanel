@@ -199,25 +199,21 @@ Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reo
 
 ## Open infrastructure issues (2026-09-14 live-server batch)
 
-### OPEN — DEPLOY-001 (P0): boot Caddyfile renderer drops active customer credentials
 
-- The deployed all-in-one image's entrypoint renders the reverse-proxy config from the DB on boot, but its query path selects only the `pvbootstrap` basic-auth credential and ignores active customer credentials (observed: re-render produced 1 basic_auth entry while the DB had 21 active ones).
-- Consequence: every container recreate/restart can silently break customer proxy auth unless the config file is repaired post-boot.
-- Current live mitigation (2026-09-14): merged config restored from backup (22 entries) + `validate` + reload after each boot; deployed image `pvnaive:fix2` still carries the buggy renderer.
-- Done gate: the entrypoint (all-in-one build context) must reconcile rendered `basic_auth` blocks with active DB credentials on every boot (merge, not replace), must be covered by a test, and the fixed image must be deployed. The boot renderer currently lives in the build context outside this repo — upstream it into the repo.
+### CLOSED (2026-09-14) — DEPLOY-001: boot config renderer drops active customer credentials
 
-### OPEN — LINEAGE-001 (P1): deployed migration lineage (0001..0027) ahead of repo lineage (0001..0021)
+- Closed by `internal/runtimeconfig.ReconcileRuntimeConfigFile` + the `pvnaive reconcile-runtime-config` subcommand: the all-in-one entrypoint now reconciles the rendered config's credential block with active DB credentials on EVERY boot (superuser snapshot over the local socket, production renderer, pinned-binary validation, atomic swap; failure is non-fatal with a loud warning). Zero-active is a no-op (fresh-install seed).
+- The `docker/` build context (Dockerfile, entrypoint, template, compose, installer) is upstreamed into the repo and the deployed image `pvnaive:repo-live` was built from the repo tree. Live evidence: boot log `RECONCILE_RESULT=CHANGED:false CREDENTIALS:22` after recreate.
+- TLS storage persistence added at the same time (`XDG_DATA_HOME=/var/lib/pvnaive/tls-data` + `./data/tls` compose volume) — recreates no longer re-obtain certificates (the cause of the 2026-09-14 Let's Encrypt rate-limit outage; see AGENTS.md batch-2 notes for the dual-name interim state and the namir auto-retry window).
 
-- The live database contains migrations up to 0027 (self-service credential SECURITY DEFINER functions deployed as 0027 because server numbering 0022/0023 was already taken), while the public repo lineage stops at 0021 (repo's own 0022 is a different change).
-- The self-service feature code IS on `main` (commits `feat(panel) account security`, `fix(auth) SECURITY DEFINER migration`), but its migration file carries the repo-side number.
-- Done gate: reconcile numbering before the next repo-built deploy (deployed 0022..0027 must be byte-equivalent or superseded by repo files), so a fresh install from repo reaches the same schema as production.
+### CLOSED (2026-09-14) — LINEAGE-001: deployed migration lineage ahead of repo lineage
 
-### RESOLVED (2026-09-14) — readiness 503 / container unhealthy after fix2 deploy
+- Repo `db/migrations` is now `0001..0028`: deployed server files 0022..0027 upstreamed byte-identical (UP-file checksums are immutable in `schema_migrations`), server down files normalized to repo convention (version header + transactional/destructive markers + self-delete; 0024..0027 lacked the self-delete and broke `rollback.sh`), manifest regenerated.
+- The hardened self-service functions are new **0028_auth_actor_credential_mutations_hardened** (authentication-context guard over the deployed 0027 bodies; CREATE OR REPLACE upgrades live in place). `tests/db/auth_actor_credential_mutations_migration_test.sh` now asserts schema 28. Full 35-gate CI database suite green.
 
-- Symptom: from the fix2 deploy (18:23Z) the container healthcheck returned 503 on `/api/v1/health/ready` (`{"db":"error","ready":false,"schema":"error"}`) for ~2h; the panel SPA itself kept serving 200 through the reverse proxy, so the outage was silent from the outside.
-- Root cause: the deployed image bakes `PVNAIVE_EXPECTED_SCHEMA_VERSION=23` into its Docker ENV while the live database is at schema **27** (deployed lineage 0001..0027). The Go readiness gate refuses to report ready on the mismatch (fail-closed, by design).
-- Fix applied live: compose override `/opt/pvnaive/docker-compose.override.yml` sets `PVNAIVE_EXPECTED_SCHEMA_VERSION: "27"`; `docker compose up -d --force-recreate`; container went **healthy** within 30s; Caddyfile untouched (22 customer entries intact); customer strict-TLS CONNECT verified 204 after recreate.
-- Repo-side done gate: `PVNAIVE_EXPECTED_SCHEMA_VERSION` must be rendered from the built-in migration lineage (count of migrations in the image) instead of a hardcoded Dockerfile ENV, so image and DB can never disagree again.
+### CLOSED (2026-09-14) — readiness 503 / baked PVNAIVE_EXPECTED_SCHEMA_VERSION
+
+- The image no longer bakes the expected schema: `docker/entrypoint.sh` derives it from the bundled migration count (operator override still wins). Live boot: `derived PVNAIVE_EXPECTED_SCHEMA_VERSION=28`, readiness `{"ready":true,"schema":"ok"}` without any override env.
 
 ### RESOLVED (2026-09-14) — pvbootstrap is obsolete in the runtime-mapped proxy architecture
 
