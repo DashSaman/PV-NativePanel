@@ -69,6 +69,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
 				handler = http.HandlerFunc(s.publicSubscription)
 			}
+		case "subscriptions.info":
+			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
+				handler = http.HandlerFunc(s.publicSubscriptionInfo)
+			}
 		case "customers.index":
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.listCustomers)
