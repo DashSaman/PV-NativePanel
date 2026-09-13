@@ -54,8 +54,11 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
   --owner pvnaive_owner --encoding UTF8 --template template0 "${test_db}"
 PVNAIVE_DB_NAME="${test_db}" PVNAIVE_MIGRATIONS_DIR="${repo_root}/db/migrations" \
   "${repo_root}/scripts/db/migrate.sh" >/dev/null
+expected_schema="$(find "${repo_root}/db/migrations" -maxdepth 1 -type f -name '????_*.up.sql' -printf '%f\n' | cut -c1-4 | sort -n | tail -n1)"
+[[ "${expected_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema="$((10#${expected_schema}))"
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == 20 ]] || { echo "ERROR: Task13 rehearsal expected schema20, got ${schema_version}" >&2; exit 1; }
+[[ "${schema_version}" == "${expected_schema}" ]] || { echo "ERROR: Task13 rehearsal expected schema${expected_schema}, got ${schema_version}" >&2; exit 1; }
 
 tenant_a='17170000-0000-0000-0000-000000001002'
 tenant_b='17170000-0000-0000-0000-000000001003'
@@ -174,7 +177,7 @@ PVNAIVE_DB_HOST="${PVNAIVE_DB_HOST}" PVNAIVE_DB_PORT="${PVNAIVE_DB_PORT}" PVNAIV
 PVNAIVE_DB_USER=pvnaive_app PVNAIVE_DB_CONNECT_TIMEOUT=5 PGPASSWORD="${app_password}" PGSSLMODE=disable \
 PVNAIVE_AUTH_KEY_FILE="${tmpdir}/auth.key" PVNAIVE_RUNTIME_KEY_FILE="${tmpdir}/runtime.key" PVNAIVE_RUNTIME_KEY_ID=runtime-task13-v1 \
 PVNAIVE_RUNTIME_AGENT_SOCKET="${runtime_socket}" PVNAIVE_SESSION_CONTROL_SOCKET="${control_socket}" \
-PVNAIVE_NAIVE_PUBLIC_HOST="naive-task13.example.invalid:443" PVNAIVE_EXPECTED_SCHEMA_VERSION=20 PVNAIVE_LISTEN="127.0.0.1:${api_port}" \
+PVNAIVE_NAIVE_PUBLIC_HOST="naive-task13.example.invalid:443" PVNAIVE_EXPECTED_SCHEMA_VERSION="${expected_schema}" PVNAIVE_LISTEN="127.0.0.1:${api_port}" \
   "${api_binary}" >"${tmpdir}/api.log" 2>&1 &
 api_pid=$!
 for _ in $(seq 1 30); do
