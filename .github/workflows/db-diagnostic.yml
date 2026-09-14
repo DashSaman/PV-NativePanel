@@ -6,9 +6,6 @@ on:
 permissions:
   contents: read
 
-env:
-  APP_PASSWORD: pvnaive-health-diag-only
-
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -24,29 +21,19 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Build schema29 health fixture
+      - name: Capture health test output
         run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env APP_PASSWORD="${APP_PASSWORD}" --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --env PVNAIVE_DB_NAME=pvnaive_health_diag --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE pvnaive_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS" -c "CREATE ROLE pvnaive_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD '\''${APP_PASSWORD}'\''" -c "ALTER ROLE pvnaive_app SET row_security = on"
-            createdb -h 127.0.0.1 -U postgres --owner pvnaive_owner pvnaive_health_diag
-            bash scripts/db/migrate.sh >/dev/null
-          '
-      - name: Export health catalog facts
-        run: |
-          set -Eeuo pipefail
-          {
-            printf 'RLS_COUNT='
-            docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='pvnaive' AND c.relkind='r' AND c.relrowsecurity"
-            printf 'COVER_RELATIONS=' 
-            docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "SELECT string_agg(c.relname || ':' || c.relkind || ':' || c.relrowsecurity::text, ',' ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='pvnaive' AND c.relname LIKE 'cover_%'"
-            printf 'COVER_PRIVS='
-            docker run --rm --network host --env PGPASSWORD="${APP_PASSWORD}" postgres:18-bookworm psql -h 127.0.0.1 -U pvnaive_app -d pvnaive_health_diag -Atc "SELECT has_table_privilege(current_user,'pvnaive.cover_nodes','SELECT')::text || '|' || has_table_privilege(current_user,'pvnaive.cover_content','SELECT')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_latest(text,integer)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_health(text)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_persona(text)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_ensure_partition(date)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_replace_snapshot(text,text,jsonb)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_set_persona(text,text)','EXECUTE')::text"
-          } > db-health-facts.txt
+          set +e
+          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash tests/db/health_test.sh > health-output.txt 2>&1
+          rc=$?
+          echo "$rc" > health-rc.txt
+          exit 0
       - uses: actions/upload-artifact@v4
         with:
-          name: db-health-facts
-          path: db-health-facts.txt
+          name: db-health-output
+          path: |
+            health-output.txt
+            health-rc.txt
       - name: Stop PostgreSQL 18
         if: always()
         run: docker rm --force pvnaive-dbdiag >/dev/null 2>&1 || true
