@@ -39,3 +39,11 @@ Concrete progress this checkpoint: post-merge main CI was verified green; STEER-
 - Karing PR #101 remains DRAFT; real Karing import -> parse -> CONNECT -> cleanup/revoke is still mandatory.
 - Production Primary is not present in fresh connected-device inventory. No deploy/migration/restart/reload/DB/Caddy/credential/backup/rollback mutation was performed; last recorded Production receipt remains the truth ceiling until a fresh read-only audit.
 - R1 / STEER-001 remains independent: any new migration is strictly >0030; telemetry stays separate from quota/exact byte-accounting truth.
+
+## Coordinator checkpoint — 2026-09-14 19:5x Asia/Tehran
+
+- One execution worker is online again; the second known registration remains offline. Production Primary is still absent from fresh inventory.
+- Task13 PR #108 refreshed exact head: `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`; local exact-tree diff/vet/test PASS. Fresh WS1 Exact Accounting `34867408480` SUCCESS; CI `34867408371` and Pinned Forwardproxy `34867408392` were still in progress at this checkpoint. Real HTTP/1.1 + HTTP/2 pinned-Caddy acceptance remains mandatory before merge.
+- Karing PR #101 refreshed exact head: `6691392639be9fae4656a861db4a6d16580f850d`; local exact-tree diff/vet/test PASS. Fresh exact-head CI/Accounting/Pinned workflows are running. Real Karing import -> parse -> CONNECT -> cleanup/revoke remains mandatory before merge.
+- R1 / STEER-001 was redispatched across trusted TCP_INFO, >0030 ingest/replay/idempotency, independent security/schema/accounting review, and later disposable E2E. Network telemetry remains outside quota/exact byte-accounting truth.
+- No Production mutation was performed. On Primary reconnect, perform read-only live image/schema/backup/disk/rollback audit before any deploy decision.
