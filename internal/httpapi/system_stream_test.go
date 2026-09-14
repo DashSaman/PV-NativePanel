@@ -6,11 +6,48 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 )
+
+// synchronizedRecorder wraps httptest.ResponseRecorder for streaming tests.
+// ResponseRecorder's Body is not safe for concurrent writes and reads, while
+// an SSE handler writes in one goroutine as the test observes frames in another.
+type synchronizedRecorder struct {
+	*httptest.ResponseRecorder
+	mu sync.Mutex
+}
+
+func newSynchronizedRecorder() *synchronizedRecorder {
+	return &synchronizedRecorder{ResponseRecorder: httptest.NewRecorder()}
+}
+
+func (r *synchronizedRecorder) WriteHeader(statusCode int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ResponseRecorder.WriteHeader(statusCode)
+}
+
+func (r *synchronizedRecorder) Write(p []byte) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.ResponseRecorder.Write(p)
+}
+
+func (r *synchronizedRecorder) Flush() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ResponseRecorder.Flush()
+}
+
+func (r *synchronizedRecorder) bodyString() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.Body.String()
+}
 
 func TestResolveStreamIntervalBounds(t *testing.T) {
 	cases := []struct {
@@ -105,7 +142,7 @@ func TestSystemStreamEmitsStatusFrames(t *testing.T) {
 	req = withAuthenticatedRequest(req, &auth.AuthenticatedTx{
 		Principal: auth.Principal{ActorID: "operator-1", Role: "operator"},
 	}, "session-token")
-	res := httptest.NewRecorder()
+	res := newSynchronizedRecorder()
 
 	done := make(chan struct{})
 	go func() {
@@ -116,7 +153,7 @@ func TestSystemStreamEmitsStatusFrames(t *testing.T) {
 	deadline := time.Now().Add(2 * time.Second)
 	var body string
 	for {
-		body = res.Body.String()
+		body = res.bodyString()
 		if strings.Count(body, "event: status") >= 2 {
 			break
 		}
@@ -178,7 +215,7 @@ func TestSystemStreamEmitsErrorFramesButStaysOpen(t *testing.T) {
 	req = withAuthenticatedRequest(req, &auth.AuthenticatedTx{
 		Principal: auth.Principal{ActorID: "operator-1", Role: "operator"},
 	}, "session-token")
-	res := httptest.NewRecorder()
+	res := newSynchronizedRecorder()
 
 	done := make(chan struct{})
 	go func() {
@@ -189,7 +226,7 @@ func TestSystemStreamEmitsErrorFramesButStaysOpen(t *testing.T) {
 	deadline := time.Now().Add(2 * time.Second)
 	var body string
 	for {
-		body = res.Body.String()
+		body = res.bodyString()
 		if strings.Count(body, "event: error") >= 2 {
 			break
 		}
@@ -223,7 +260,7 @@ func TestSystemStreamFinalizesAuthTransactionBeforeStreaming(t *testing.T) {
 	req = withAuthenticatedRequest(req, bound, "session-token")
 	recorded, _ := authenticatedFromRequest(req)
 	_ = recorded
-	res := httptest.NewRecorder()
+	res := newSynchronizedRecorder()
 
 	done := make(chan struct{})
 	go func() {
@@ -231,7 +268,7 @@ func TestSystemStreamFinalizesAuthTransactionBeforeStreaming(t *testing.T) {
 		close(done)
 	}()
 	deadline := time.Now().Add(2 * time.Second)
-	for strings.Count(res.Body.String(), "event: status") < 1 && time.Now().Before(deadline) {
+	for strings.Count(res.bodyString(), "event: status") < 1 && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	cancel()
