@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { dependencyEntries, fetchSystemStatus, formatBytes, formatRate, formatUptime, SystemStatus } from "./systemStatus";
+import { dependencyEntries, fetchSystemStatus, formatBytes, formatRate, formatUptime, normalizeSystemStatus, SystemStatus } from "./systemStatus";
+import { connectSystemStream } from "./systemStream";
+import { appendLivePoint, livePointFromStatus, LivePoint } from "./systemLive";
 
-type HistoryPoint = { cpu: number; memory: number; rx: number; tx: number };
+type HistoryPoint = LivePoint;
 
 function percent(value: number): string {
   return Number.isFinite(value) ? `${value.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}%` : "—";
 }
 
-function SparkBars({ values, max }: { values: number[]; max: number }) {
-  const safeMax = Math.max(max, ...values, 1);
-  return <div className="system-spark" aria-hidden="true">{values.map((value, index) => <i key={index} style={{ height: `${Math.max(4, Math.min(100, value / safeMax * 100))}%` }} />)}</div>;
+function SparkBars({ values, max }: { values: Array<number | null>; max: number }) {
+  const finite = values.filter((value): value is number => value !== null);
+  const safeMax = Math.max(max, ...finite, 1);
+  return <div className="system-spark" aria-hidden="true">{values.map((value, index) => value === null ? <i key={index} className="gap" /> : <i key={index} style={{ height: `${Math.max(4, Math.min(100, value / safeMax * 100))}%` }} />)}</div>;
 }
 
 export function SystemDashboard() {
@@ -20,31 +23,37 @@ export function SystemDashboard() {
 
   useEffect(() => {
     let active = true;
-    let timer = 0;
-    const poll = async () => {
-      try {
-        const next = await fetchSystemStatus();
-        if (!active) return;
-        setStatus(next);
-        setUpdatedAt(new Date());
-        setError("");
-        setHistory((current) => [...current, {
-          cpu: next.sample.cpu_percent,
-          memory: next.sample.memory_used_percent,
-          rx: next.sample.rate_available ? next.sample.rx_bytes_per_second : 0,
-          tx: next.sample.rate_available ? next.sample.tx_bytes_per_second : 0,
-        }].slice(-24));
-      } catch {
-        if (active) setError("خواندن وضعیت زنده سرور ناموفق بود؛ داده ساختگی نمایش داده نمی‌شود.");
-      } finally {
-        if (active) timer = window.setTimeout(poll, 5000);
-      }
+
+    const accept = (next: SystemStatus) => {
+      if (!active) return;
+      setStatus(next);
+      setUpdatedAt(new Date());
+      setError("");
+      setHistory((current) => appendLivePoint(current, livePointFromStatus(next)));
     };
-    void poll();
-    return () => { active = false; window.clearTimeout(timer); };
+
+    // Bootstrap once from the ordinary endpoint so the dashboard still paints
+    // when EventSource startup is delayed. Steady-state updates come from SSE.
+    void fetchSystemStatus().then(accept).catch(() => {
+      if (active) setError("اتصال زنده در حال برقراری است؛ داده ساختگی نمایش داده نمی‌شود.");
+    });
+
+    const close = connectSystemStream({
+      onStatus: (payload) => {
+        try { accept(normalizeSystemStatus(payload)); } catch {
+          if (active) setError("نمونه نامعتبر از جریان زنده رد شد؛ آخرین داده معتبر حفظ شده است.");
+        }
+      },
+      onError: () => {
+        if (active) setError("جریان زنده قطع شده است؛ مرورگر به‌صورت خودکار دوباره متصل می‌شود.");
+      },
+    });
+
+    return () => { active = false; close(); };
   }, []);
 
-  const networkMax = useMemo(() => Math.max(1, ...history.flatMap((item) => [item.rx, item.tx])), [history]);
+  const networkValues = useMemo(() => history.flatMap((item) => [item.rx, item.tx]).filter((value): value is number => value !== null), [history]);
+  const networkMax = useMemo(() => Math.max(1, ...networkValues), [networkValues]);
 
   if (!status) {
     return <section className="dashboard-card system-monitor system-fallback" aria-live="polite">
@@ -70,6 +79,6 @@ export function SystemDashboard() {
       <article><span>Uptime</span><strong>{formatUptime(sample.uptime_seconds)}</strong></article>
       <article><span>Traffic semantics</span><strong className="system-semantics">{status.traffic_semantics}</strong><small>Accounting/Online در این کارت ساخته یا تخمین زده نمی‌شود.</small></article>
     </div>
-    <p className="sample-meta">آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
+    <p className="sample-meta">جریان SSE · آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
   </section>;
 }
