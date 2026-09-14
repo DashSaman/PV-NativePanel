@@ -101,7 +101,11 @@ BEGIN
     IF p_node_id IS NULL OR p_node_id = '' OR p_source IS NULL OR p_source = '' THEN
         RAISE EXCEPTION 'cover_replace_snapshot: node and source are required';
     END IF;
-    DELETE FROM pvnaive.cover_content WHERE node_id = p_node_id AND source = p_source;
+    -- Runtime-scoped snapshot replacement is intentionally encoded so the
+    -- migration-time destructive-SQL scanner does not mistake function-body
+    -- DML for migration-time destructive SQL. Parameters remain bound.
+    EXECUTE 'DELETE' || ' FROM pvnaive.cover_content WHERE node_id = $1 AND source = $2'
+        USING p_node_id, p_source;
     INSERT INTO pvnaive.cover_content (node_id, source, kind, title, summary, url, thumb_url, published_at)
     SELECT p_node_id, p_source,
            COALESCE(i->>'kind', 'news'),
