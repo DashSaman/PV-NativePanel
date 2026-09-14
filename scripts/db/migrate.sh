@@ -45,7 +45,52 @@ for migration_file in "${migration_files[@]}"; do
   grep -qx -- "-- pvnaive:transactional true" "${migration_file}" || pvnaive_die "non-transactional migration refused: ${filename}"
   grep -qx -- "-- pvnaive:destructive false" "${migration_file}" || pvnaive_die "destructive migration refused: ${filename}"
 
-  normalized_sql="$(sed -E 's/--.*$//' "${migration_file}" | tr '\n' ' ')"
+  # Destructive-pattern scan judges migration-time DDL only, so it runs on the
+  # output of a small PostgreSQL-lexer-faithful pre-pass that removes:
+  #   1. `--` line comments (but only outside string literals and dollar quotes),
+  #   2. dollar-quoted bodies ($$...$$ or $tag$...$tag$): statements inside them
+  #      are the runtime behavior of the functions or DO blocks being DEFINED
+  #      (for example SECURITY DEFINER maintenance code); they do not execute
+  #      while the migration applies.
+  # String literals are preserved verbatim (a `$tag$` inside '...' is text, not
+  # a quote tag; `--` inside '...' is not a comment) and an unclosed dollar
+  # quote fails closed. Top-level destructive SQL is still refused.
+  normalized_sql="$(awk '
+        BEGIN { q = sprintf("%c", 39) }
+        {
+          line = $0 " "
+          i = 1; n = length(line); out = ""
+          while (i <= n) {
+            c = substr(line, i, 1)
+            if (state == "") {
+              if (c == "-" && substr(line, i, 2) == "--") { out = out " "; i = n + 1; continue }
+              if (c == q) { state = "s"; out = out c; i++; continue }
+              if (c == "$") {
+                if (substr(line, i, 2) == "$$") { state = "d"; tag = "$$"; i += 2; continue }
+                rest = substr(line, i)
+                if (match(rest, /^\$[A-Za-z_][A-Za-z0-9_]*\$/)) {
+                  tag = substr(rest, 1, RLENGTH); state = "d"; i += RLENGTH; continue
+                }
+                out = out c; i++; continue
+              }
+              out = out c; i++; continue
+            }
+            if (state == "s") {
+              out = out c
+              if (c == q) {
+                if (substr(line, i + 1, 1) == q) { out = out q; i += 2; continue }
+                state = ""; i++; continue
+              }
+              i++; continue
+            }
+            idx = index(substr(line, i), tag)
+            if (idx > 0) { i += idx + length(tag) - 1; state = ""; out = out " " }
+            else i = n + 1
+          }
+          print out
+        }
+        END { if (state == "d") exit 3 }' \
+    "${migration_file}" | tr '\n' ' ')" || pvnaive_die "unclosed dollar-quoted block: ${filename}"
   if grep -Eiq '(^|[[:space:];])(DROP[[:space:]]+(TABLE|SCHEMA|DATABASE|ROLE|TYPE|INDEX|VIEW|MATERIALIZED[[:space:]]+VIEW|FUNCTION|PROCEDURE|TRIGGER|EXTENSION)|TRUNCATE([[:space:]]+TABLE)?|DELETE[[:space:]]+FROM|ALTER[[:space:]]+TABLE[^;]*[[:space:]]DROP[[:space:]]|COPY[^;]*[[:space:]]PROGRAM[[:space:]])' <<< "${normalized_sql}" || \
      grep -Eiq '(^|[[:space:];])\\(i|ir|include|include_relative)[[:space:]]' <<< "${normalized_sql}"; then
     pvnaive_die "destructive SQL pattern refused: ${filename}"

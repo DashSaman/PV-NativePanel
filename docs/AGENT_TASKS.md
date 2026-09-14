@@ -317,11 +317,53 @@ client compatibility campaign (43), load/capacity campaign (44). Cite row number
 
 ## Section 9 — Current execution pointer (pick up here)
 
-1. Read the doc list in the header (mandatory).
-2. Draft `docs/STEERING_SPEC_FA.md` + `docs/CAMO_ACCESS_UI_SPEC_FA.md` + design tokens doc.
-3. R1 PR: forwardproxy TCP_INFO sampling → `session_network_samples` → aggregates (STEER-001).
-4. Live-ops parallel lane: after LE window (2026-09-15 03:26 UTC) flip domain back to
-   `namir.softarg.ir` (Section 6 row 2); then traffic-accounting truth probe (row 6).
+DONE (2026-09-14 Super-Z session, all CI-mirror verified): spec docs (STEERING_SPEC_FA +
+CAMO_ACCESS_UI_SPEC_FA), R2 engine (`internal/steering`), R3 renderer
+(`internal/subscription/render.go`), R4 manifest (`internal/fleet/manifest.go`),
+R6 coverd core + migration 0029 (`internal/coverd`, routing OFF), R8 design tokens +
+stealth login (`web/src`). See WORKLOG.md 2026-09-14 entry for main hashes.
+
+NEXT (in order):
+1. R1 PR: forwardproxy TCP_INFO sampling → `session_network_samples` → aggregates
+   (STEER-001; worker split in issue #109 — claim via issue before starting).
+2. R7 PR: panel_settings model + base-path/port transactional apply + recovery CLI (ACCESS-001..004).
+3. R8 PR: live-charts streaming backend (WS/SSE ring buffers, RBAC stream auth) + per-user/per-node cards.
+4. R5 PR: pool manager UI on top of R4 manifest + R2 TopK (add-node wizard, drain, STEER-006 rehearsal).
+5. R6 integration: coverd scheduler + Caddy routing flip behind a default-OFF flag → live CAMO gates.
+6. Wire R2+R3 to live R1 aggregates (TopK into renderer, phase scheduler into /sub).
+Live-ops lane: after LE window (2026-09-15 03:26 UTC) flip domain back to `namir.softarg.ir`
+(Section 6 row 2); then traffic-accounting truth probe (row 6).
+
+## 2026-09-14 01:24 UTC — production finalized on nip.io (owner instruction: domain flip moved to tomorrow)
+- Owner instructed to finalize the panel on `https://45.141.148.59.nip.io/panel/` and postpone the
+  `namir.softarg.ir` flip to the next day. LE 429 window unchanged (retry-after 2026-09-15 03:21 UTC).
+- Built `pvnaive:repo-live2` (image `76c10697a03b`) on the server from canonical main `a4edea6`
+  (clones at build time; content assertions: reconcile/R2/R3/R4/R6/R7/R8 present, migrations=30,
+  SHA256SUMS verified). First deploy attempt exposed a real defect: the migration guard refused
+  0029 (`DELETE FROM` inside a `$$` SECURITY DEFINER body) → container restart-loop → production
+  was immediately rolled back to `pvnaive:repo-live` (schema stayed 28, data untouched, downtime
+  ~4 minutes). Two fixes pushed and verified:
+  - `6b361ff` (superseded by parallel fix `2168777` from the other coordinator lane, both compatible):
+    migration destructive guard now lexes like PostgreSQL — dollar-quoted function bodies excluded
+    from the migration-time scan, string literals preserved, unclosed dollar quotes fail closed;
+    regression tests in `tests/db/migration_test.sh`; `tests/db/migration_test.sh` PASSED inside
+    pvnaive-postgres18 against fresh main + patch.
+  - `a4edea6` `internal/customer/validity.go`: `ValidityInput` JSON tags (mode/duration_days/expires_at).
+    Live E2E caught `POST /api/v1/users` rejecting every payload with `validity.duration_days`
+    (400 invalid_request) because `decodeRuntimeJSON` runs with `DisallowUnknownFields` and the
+    struct was untagged — broke the UI timed-validity creation path. golang:1.25 CI-mirror:
+    gofmt clean, vet ok, customer+httpapi tests ok; decode-contract regression tests added.
+- Final deploy `repo-live2` healthy: schema 28→30 (0029 cover_site + 0030 panel_access applied,
+  forward-only ledger), owner intact, credentials reconciled, readiness ready:true.
+- Full external E2E **ALL_GREEN** (scripts/e2e_final_nip.py): strict-TLS LE cert for
+  `45.141.148.59.nip.io`; panel 200; owner login 200; create customer 201 via `/api/v1/users`;
+  subscription 200 with `Profile-Update-Interval: 4` + `Subscription-Userinfo` (R3 headers live);
+  UA negotiation clash/sing-box/v2rayNG all 200; strict-TLS CONNECT through the proxy
+  gstatic 204 + cloudflare 204.
+- Cleanup: 7 e2e test customers revoked (200, history preserved). Note: customer lifecycle
+  endpoints REQUIRE `Idempotency-Key` (first cleanup attempt without it returned 400).
+- Production mutations this checkpoint: migrations 0029/0030 applied; test customers created and
+  revoked. Schema at 30; previous `repo-live` image retained for instant rollback.
 
 ## 2026-09-14 02:53 coordinator checkpoint
 - Verified canonical main `3b49e0b9dd10cd720dbbf33be50361f3ec003dce`; push CI `34789203279` SUCCESS.
