@@ -1,46 +1,30 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-14 18:42 Asia/Tehran
+Verified checkpoint: 2026-09-14 21:4x Asia/Tehran
 
-## Current GitHub truth
-- Canonical main before this documentation refresh was `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` SUCCESS.
-- STEER-002 / #110 is completed and closed. PR #112 merged via code-bearing `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; exact pre-merge head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` passed CI `34842627049`, Exact Accounting `34842627114`, and Pinned Forwardproxy `34842627193`.
-- Task13 #108 remains DRAFT/unmerged at `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`; fresh metadata says `mergeable=true`. Exact-head CI `34789937594`, Exact Accounting `34789937603`, and Pinned Forwardproxy `34789937575` are SUCCESS. Real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance is still mandatory.
-- Karing #101 remains DRAFT/unmerged at `216d53670066033403fe95f61b0402bb710186a3`; fresh metadata says `mergeable=true`. Exact-head CI `34732580376`, Exact Accounting `34732580468`, and Pinned Forwardproxy `34732580377` are SUCCESS. Real disposable Karing import → parse → CONNECT → cleanup/revoke is still mandatory.
+## GitHub truth
+- Verified code baseline before this docs refresh: `4906556b98387685472ddd82c169edaa4dbeae67`.
+- Exact-head CI `34879387500`, WS1 Exact Accounting `34879387510`, and WS1 Pinned Forwardproxy `34879387503` are all SUCCESS.
+- R1 / STEER-001 #109 is closed/completed. Telemetry remains separate from exact byte-accounting/quota truth.
+- Task13 #108 and Karing #101 remain old DRAFT branches, materially behind main. Do not merge either without reconstructing/reconciling on current main and satisfying their real-client/protocol acceptance gates.
 
 ## Production truth
-- Latest persistent deployment receipt remains `pvnaive:repo-live2` image `76c10697a03b`, runtime `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`, schema 30 after forward-only 0029/0030, recorded healthy readiness + nip.io E2E ALL_GREEN, previous `repo-live` retained for rollback.
-- Fresh Remote Desktop inventory shows both known registrations offline and no Production Primary available. Do not assert current live image, migration ledger, encrypted-backup freshness, disk headroom or rollback snapshot beyond the persistent receipt.
+- Persistent verified Production checkpoint: schema 33, Master Upgrade Pack / repo-fin2 generation live, healthy panel/API/SSE/real-customer CONNECT/accounting postflight, and retained backup/rollback evidence.
+- Current Remote Desktop inventory does not contain a trustworthy `PVNaive-Production-Primary`. The sole online registration identifies as `Pak-Nasheeee-haaaaaaaaa`, and `/opt/pvnaive/src` is absent there.
+- Treat Production as inaccessible until the expected Primary identity reconnects. No Production mutation was made.
 
-## Active lanes
-- **Task13 #108:** Worker 2 performs real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance: target-only kill, sibling survival, forged-tuple rejection, repeat idempotency, credential/account survival, unchanged Caddy lifecycle, exactly-once final accounting. Worker 3 reconciles only for a concrete merge-ref/exact-head defect. Worker 1 performs final independent review after protocol evidence exists.
-- **Karing #101:** Worker 4 performs real disposable Karing import → parse → CONNECT → cleanup/revoke with client/platform/version, generated-profile SHA-256 and redacted logs. Static/unit/build proof is not a substitute.
-- **R1 / STEER-001 #109:** continue independently. New migrations must be strictly >0030; never reuse/rewrite 0029/0030. Worker 3 = trusted TCP_INFO sampling from authoritative socket/RemoteAddr state; Worker 2 = DB ingest/replay/idempotency; Worker 1 = schema/privilege/security/accounting review; Worker 4 = E2E after an exact implementation head exists. Telemetry remains separate from exact byte-accounting/quota truth.
-- **Production #100:** Primary performs read-only audit first when connected. Before any future runtime deploy: fresh encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → postflight → retain rollback.
+## Execute next
+1. #113: Worker 2 starts RED-first R5 pool-manager UI; Worker 1 reviews security/accessibility/truthful state; Worker 4 runs disposable browser E2E after exact head.
+2. #114: Worker 3 starts RED-first authenticated sibling mTLS pull listener; Worker 1 reviews PKI/trust/rollback; Worker 2 validates registry/revision integration; Worker 4 runs disposable multi-node E2E.
+3. #115: Worker 4 prepares disposable coverd/Caddy rehearsal; Worker 3 owns staged promotion/rollback mechanics; Worker 1 reviews persona/security/no-secret boundaries; Worker 2 checks panel/API/data-plane invariants. Do not touch Production until trusted Primary audit + backup + rollback gates are green.
+4. #100: first trusted-Primary action is read-only host/SHA/image/schema/services/Caddy/backup/disk/rollback audit.
+5. #108/#101: keep DRAFT. Reconcile only when real pinned-Caddy HTTP1/2 and real Karing acceptance hosts are available; historical CI is not sufficient for current-main merge.
 
-No Production deploy, migration, restart/reload, credential rotation, DB/Caddy mutation, backup mutation or rollback mutation was performed in this checkpoint.
+## Invariants
+- Preserve exact accounting, session, quota and credential semantics.
+- No XFF/Forwarded/client-header authority for trusted identity.
+- No fabricated health/telemetry and no secret-bearing evidence.
+- Forward-only migrations; never rewrite applied history.
+- Promotion order: exact-head CI → disposable rehearsal → trusted Production read-only audit → fresh encrypted backup + rollback snapshot → staged promotion → postflight → retain rollback.
 
-## Coordinator checkpoint — 2026-09-14 19:4x Asia/Tehran
-
-- Canonical `main` before this docs refresh: `eccb681f2b21ea1ad3ff74137b47e1991be9db5e`; push CI `34861097897` completed SUCCESS.
-- Task13 PR #108 was reconciled non-destructively with this exact main and pushed at refreshed head `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`. Clean merge; local `git diff --check` PASS; Docker Go 1.25 `go vet ./...` + `go test ./... -count=1` PASS. Fresh exact-head CI/Exact Accounting/Pinned Forwardproxy were started and must all finish green before any merge consideration.
-- Task13 mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains required on the refreshed exact head; historical protocol evidence is not promoted to exact-head proof.
-- Karing PR #101 remains DRAFT; real Karing import -> parse -> CONNECT -> cleanup/revoke is still mandatory.
-- Production Primary is not present in fresh connected-device inventory. No deploy/migration/restart/reload/DB/Caddy/credential/backup/rollback mutation was performed; last recorded Production receipt remains the truth ceiling until a fresh read-only audit.
-- R1 / STEER-001 remains independent: any new migration is strictly >0030; telemetry stays separate from quota/exact byte-accounting truth.
-
-## Coordinator checkpoint — 2026-09-14 19:5x Asia/Tehran
-
-- One execution worker is online again; the second known registration remains offline. Production Primary is still absent from fresh inventory.
-- Task13 PR #108 refreshed exact head: `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`; local exact-tree diff/vet/test PASS. Fresh WS1 Exact Accounting `34867408480` SUCCESS; CI `34867408371` and Pinned Forwardproxy `34867408392` were still in progress at this checkpoint. Real HTTP/1.1 + HTTP/2 pinned-Caddy acceptance remains mandatory before merge.
-- Karing PR #101 refreshed exact head: `6691392639be9fae4656a861db4a6d16580f850d`; local exact-tree diff/vet/test PASS. Fresh exact-head CI/Accounting/Pinned workflows are running. Real Karing import -> parse -> CONNECT -> cleanup/revoke remains mandatory before merge.
-- R1 / STEER-001 was redispatched across trusted TCP_INFO, >0030 ingest/replay/idempotency, independent security/schema/accounting review, and later disposable E2E. Network telemetry remains outside quota/exact byte-accounting truth.
-- No Production mutation was performed. On Primary reconnect, perform read-only live image/schema/backup/disk/rollback audit before any deploy decision.
-
-## Coordinator checkpoint — 2026-09-14 20:0x Asia/Tehran
-
-- Canonical docs baseline `b79ad34abf90903a3b476edf1342f7d3ce79d360` completed CI SUCCESS (`34867971143`).
-- Task13 exact head `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`: CI `34867408371` SUCCESS; Exact Accounting `34867408480` SUCCESS; Pinned Forwardproxy `34867408392` SUCCESS on retry attempt 2. Attempt 1 was a transient sum.golang.org HTTP/2 INTERNAL_ERROR, not a source failure. Independent local exact-head reproducible build also PASS with binary SHA256 `629f58b192fcceac9b1ada6887ad2f53c397f872bb28d28856a90b66f86d99ec`. PR remains DRAFT because real HTTP/1.1 + HTTP/2 target-only kill/sibling-survival/idempotency/forged-tuple/credential-survival/exactly-once-accounting acceptance still has not been rerun on this exact head.
-- Karing exact head `6691392639be9fae4656a861db4a6d16580f850d`: CI `34867775973` SUCCESS; Exact Accounting `34867775798` SUCCESS; Pinned Forwardproxy `34867775829` SUCCESS. PR remains DRAFT pending real Karing import -> parse -> CONNECT -> cleanup/revoke.
-- Production Primary remains disconnected; no Production mutation. Last recorded Production receipt remains the truth ceiling until read-only audit after reconnect.
-- One execution worker is online; R1 / STEER-001 tasks remain dispatched with migration strictly >0030 and telemetry isolated from quota/exact byte-accounting truth.
+Concrete progress in the latest cycle: current main and all canonical gates verified green, #109 closed completed, Remote Desktop identity mismatch caught before any Production action, #100 updated, and #113/#114/#115 redispatched.
