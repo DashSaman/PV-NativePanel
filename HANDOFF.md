@@ -1,34 +1,39 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-14 22:xx Asia/Tehran
+Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Verified baseline
-- Exact main: `722cc905464e2f581520b6350db90eec77993578`.
-- Main CI: `34882541754` SUCCESS.
-- R5-UI `f71cdc6`, R5-PULL `d02c18a`, R6-FLIP wiring `ed0bf0f` are integrated on main.
-- Production truth ceiling remains the persistent schema-33 / repo-fin2 checkpoint; no fresh Primary shell audit exists in this cycle.
+
+- Validated code main before this documentation commit: `deaf0f8edb1bdbedbaf71a39518d1a3fe941b693`.
+- Task13 PR #108 is merged after exact-head CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, and real pinned-Caddy HTTP/1.1+HTTP/2 acceptance all passed.
+- Task13 accepted binary SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`; target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting were verified.
+- R8 issue #116 is completed on main. PR #117 was closed unmerged as stale/superseded by the stronger main implementation and fixes.
+- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated.
 
 ## Production blocker
-- No identifiable `PVNaive-Production-Primary` is connected.
-- The online remote registration is not the PVNaive Production host; do not deploy or audit Production through it.
-- On trusted Primary reconnect: read-only verify host identity, deployed image/SHA, schema/migration ledger, services/listeners/Caddy, encrypted backups, disk headroom and rollback snapshots before any mutation.
 
-## Active integration work
-- #116 / draft PR #117: R8 dashboard SSE wiring, exact head `3671a5d785e72802523f2f5194498b2a3cdafc55`.
-- Local exact-head web gates: 22 files / 105 tests PASS; `npm run build` PASS; `git diff --check` PASS.
-- GitHub exact-head gates are all SUCCESS: CI `34885703421`, WS1 Exact Accounting `34885703511`, WS1 Pinned Forwardproxy `34885703413`. A genuinely independent review is still required; do not merge early.
-- #108 Task13 remains DRAFT pending real pinned-Caddy HTTP/1.1 + HTTP/2 target-only kill/accounting proof.
-- #101 Karing remains DRAFT pending real disposable Karing import → parse → CONNECT → cleanup/revoke proof.
+- No identifiable `PVNaive-Production-Primary` is connected. The currently online remote is an execution worker and must not be treated as Production.
+- On trusted Primary reconnect, perform read-only host identity, deployed image/SHA, schema/migration ledger, services/listeners/Caddy, encrypted-backup freshness, disk headroom and rollback snapshot checks before any mutation.
+- Production truth ceiling remains the persistent schema-33 / repo-fin2 checkpoint; do not claim fresher live state without that audit.
+
+## Remaining acceptance blockers
+
+- #101 Karing: requires a real disposable Karing import → parse → CONNECT → cleanup/revoke run.
+- R5/R6: require disposable multi-node / cover-site rehearsals before any Production enablement.
+- Production: trusted Primary reconnect plus audit/backup/rollback gates.
 
 ## Worker queue
-- Worker 2: #116/#117 model/UI implementation completed to current draft head; remediate only verified CI/review defects.
-- Worker 1: independent #117 honesty/accessibility review; also review R5/R6 security boundaries.
-- Worker 3: #117 SSE contract/security regression; R5-PULL integration review.
-- Worker 4: browser/perf E2E for #117 when a suitable host exists; R5 multi-node and R6 flip rehearsals remain queued.
-- Coordinator: integrate only exact-head validated work and preserve Production backup/rollback gates.
 
-## Safety gates
-- Missing telemetry is Unknown, not zero.
-- Exact accounting/session/quota truth is untouched by R8 visualization.
-- Applied migrations are immutable and future migrations are forward-only.
-- Production promotion order remains CI → disposable rehearsal → trusted audit → fresh encrypted backup + rollback snapshot → staged promotion → postflight → retained rollback.
+- Worker 1 — independent security/accounting review: Task13 post-merge boundaries, R5/R6 privilege boundaries, R8 accessibility/RBAC honesty.
+- Worker 2 — R8 UI-002: ledger reconciliation + truthful per-node/per-user projections, RED-first.
+- Worker 3 — R5 pull/STEER-006 integration and R8 stream-RBAC isolation regression.
+- Worker 4 — R5/R6 browser/multi-node E2E and real Karing acceptance when a suitable client is available.
+- Coordinator — exact-head integration only; no Production mutation without trusted audit + fresh backup + rollback.
+
+## Invariants
+
+- Preserve exact accounting, session, quota and credential semantics.
+- Task13 session control is target-only and cannot become credential revocation.
+- Missing telemetry is Unknown, never zero-by-assumption.
+- TLS client certificate is authoritative for fleet identity.
+- Forward-only immutable migration ledger.

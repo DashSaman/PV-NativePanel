@@ -1,48 +1,42 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-14 (Asia/Tehran)
+Last updated: 2026-09-15 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Exact `main`: `722cc905464e2f581520b6350db90eec77993578`.
-- Main CI `34882541754`: SUCCESS.
-- R5 owner pool-manager UI is on main at `f71cdc662b38a3090132af1302be5fc2b84833bc`.
-- R5 sibling mTLS pull listener is on main at `d02c18a326c480661ce5ac96ca3b9c9cfd612041`.
-- R6 gated cover-site flip wiring is on main at `ed0bf0f5ae57fcf43875dddd6a32041ec8e373ca`.
-- R8 live-chart frontend work is active in issue #116 / draft PR #117, exact head
-  `3671a5d785e72802523f2f5194498b2a3cdafc55`. Local web verification is green
-  (22 test files / 105 tests, production build, `git diff --check`). Exact-head GitHub
-  all three exact-head gates are green: CI `34885703421`, Exact Accounting `34885703511`, Pinned Forwardproxy `34885703413`. Independent review remains pending.
-- Task13 PR #108 and Karing PR #101 remain DRAFT and require their real acceptance gates before merge.
+- Validated code main before this documentation checkpoint: `deaf0f8edb1bdbedbaf71a39518d1a3fe941b693`.
+- R8 live monitoring slice is integrated on main. The superseded PR #117 was closed unmerged and issue #116 was closed completed after browser E2E and exact-head CI/accounting/forwardproxy validation on the main implementation.
+- Task13 PR #108 is merged. Its final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, and Pinned Forwardproxy `34897871355` before merge.
+- Task13 real pinned-Caddy acceptance also passed on that exact head: HTTP/1.1 + HTTP/2 negotiated, forged tuple rejected, target-only kill, sibling survival, repeated-kill idempotency, credential survival, unchanged Caddy PID, and exactly-once final accounting. Reproducible Caddy SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`.
+- Karing PR #101 remains unmerged until a real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is recorded.
 
 ## Production truth ceiling
 
-- Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade
-  Pack / `repo-fin2` generation live, healthy panel/API/SSE/real-customer CONNECT/accounting
-  postflight, forward-only migrations 0031/0032/0033, and retained rollback/backup evidence.
-- Fresh remote inventory does not expose an identifiable `PVNaive-Production-Primary`.
-  The only online remote registration is not the PVNaive Production host and must not be used
-  for Production actions.
-- Therefore current container/image identity, migration ledger, encrypted-backup freshness,
-  disk headroom and rollback snapshot are not freshly asserted. No Production mutation is allowed
-  until trusted Primary reconnect + read-only audit + backup/rollback gates.
+- Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade Pack / `repo-fin2` generation live, healthy panel/API/SSE/real-customer CONNECT/accounting postflight, forward-only migrations 0031/0032/0033, and retained rollback/backup evidence.
+- Fresh remote inventory still does not expose an identifiable `PVNaive-Production-Primary`. The online remote registration is an execution worker, not Production.
+- Therefore current Production image/container identity, schema ledger, encrypted-backup freshness, disk headroom and rollback snapshot are not freshly asserted. No Production mutation is allowed until the trusted Primary reconnects and the read-only audit plus backup/rollback gates pass.
 
 ## Active roadmap lanes
 
-1. **R8 #116/#117:** finish exact-head CI + independent review, then integrate only if every gate is green.
-2. **R5 enablement (#113/#114):** code is on main; real disposable multi-node mTLS pull E2E and Production enablement remain gated.
-3. **R6-FLIP #115:** code is on main and default-OFF; promotion requires trusted audit, fresh encrypted backup, independent rollback snapshot and postflight.
-4. **#100 Production lane:** read-only audit first when the real Primary reconnects.
-5. **#108/#101:** keep DRAFT until real pinned-Caddy HTTP/1.1+HTTP/2 and real Karing acceptance respectively exist.
+1. **R5 enablement (#113/#114):** code is on main; run disposable multi-node enroll → publish → mTLS pull → heartbeat/drift and STEER-006 scale rehearsal. Keep Production enablement gated.
+2. **R6-FLIP #115:** code is on main and default-OFF; run disposable cover/persona/probe-sweep/failure rehearsals. Production promotion requires trusted Primary audit + fresh encrypted backup + independent rollback snapshot.
+3. **R8 remaining gates:** extend validated monitoring to ledger reconciliation/per-node/per-user truth, RBAC stream isolation, accessibility/RTL and documented 100-node performance without fabricating missing telemetry.
+4. **Karing #101:** real-client acceptance only; static/unit evidence cannot substitute.
+5. **#100 Production lane:** on trusted Primary reconnect, read-only identity/SHA/schema/services/Caddy/backup/disk/rollback audit first.
+
+## Worker allocation
+
+- Worker 1: independent security/accounting review of merged Task13 boundaries plus R5/R6/R8 RBAC/accessibility review; report findings only, no speculative rewrites.
+- Worker 2: R8 UI-002 ledger reconciliation and per-node/per-user truthful projections; RED-first tests and bounded data structures.
+- Worker 3: R5 mTLS pull/STEER-006 integration + R8 stream-RBAC regression; preserve TLS-cert authoritative identity and exact-accounting separation.
+- Worker 4: disposable R5/R6 browser/multi-node rehearsals and real Karing acceptance when a suitable client host is available.
+- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates.
 
 ## Safety invariants
 
-- Accounting/session/quota semantics are canonical truth and must not be weakened by telemetry/UI work.
+- Accounting/session/quota semantics are canonical truth and must not be weakened by telemetry/UI/control work.
+- Task13 kills the selected live session only; it must not revoke credentials or mutate sibling sessions.
 - Never trust XFF/Forwarded/client headers for authoritative node/session identity; fleet pull identity is TLS-client-cert-only.
 - Applied migrations are immutable; future DB changes are forward-only and ledger-checked.
 - Unknown/unavailable telemetry stays Unknown; UI must not convert missing data into zero or fabricated health.
 - Production sequence: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
-
-## Coordinator checkpoint
-
-Concrete progress this cycle: verified green main `722cc905`; reconciled R5 UI/pull and R6 flip as code-complete but not Production-enabled; opened #116 and implemented the first R8 SSE dashboard slice in draft PR #117 with RED-first tests, bounded drop-oldest history, truthful Unknown gaps and last-valid-sample retention. Production remained mutation-free because the trusted Primary is not connected.
