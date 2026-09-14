@@ -13,3 +13,5 @@ DROP FUNCTION IF EXISTS pvnaive.pool_enrollment_token_record(text,text,integer);
 DROP TABLE IF EXISTS pvnaive.pool_enrollment_tokens;
 DROP TABLE IF EXISTS pvnaive.pool_manifest_revisions;
 DROP TABLE IF EXISTS pvnaive.pool_nodes;
+
+DELETE FROM pvnaive.schema_migrations WHERE version = 33;
