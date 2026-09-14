@@ -236,3 +236,10 @@ on 45.141.148.59 is still `pvnaive:repo-live2` (a4edea6, schema 30). Deploy requ
 procedure (fresh encrypted backup → independent rollback snapshot → exact SHA lock → staged
 promotion → postflight). Do NOT deploy without that receipt. This is also the STEER-001 live
 evidence blocker.
+
+### R7-NET-001 — Panel-access runtime apply (Caddyfile base path/port) not yet wired (OPEN)
+Migration 0030 + settings API + recovery CLI are merged, but the runtime reconciliation
+that regenerates the Caddyfile (base path, listen port, graceful dual-accept window) is not
+implemented — panel_settings changes currently affect the API contract only and require an
+operator-coordinated reload. Default exposure remains reverse_proxy on /panel. Track with
+the R8/R5 integration lanes; do NOT claim ACCESS-001 live until the flip is rehearsed.

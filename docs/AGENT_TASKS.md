@@ -329,8 +329,10 @@ NEXT (in order):
    pinned-forwardproxy TCP_INFO sampler (patch regenerated, overlay tests green) +
    `tests/db/network_telemetry_migration_test.sh` in CI. Pending: CI green on push,
    independent review (worker 1), live E2E + production image rebuild via #100 procedure.
-2. R7 PR: panel_settings backend flows on top of migration 0030 (base-path/port transactional
-   apply + step-up auth + recovery CLI) (ACCESS-001..004).
+2. R7 PR: **backend implemented 2026-09-14** — GET/PUT /api/v1/panel-access (Owner, step-up
+   current-password), validation matrix tests, recovery CLI `pvnaive admin reset-access`.
+   Remaining: Caddyfile base-path/port runtime apply + graceful dual-accept (R7-NET-001),
+   panel UI card (queued with R8).
 3. R8 PR: live-charts streaming backend (WS/SSE ring buffers, RBAC stream auth) + per-user/per-node cards.
 4. R5 PR: pool manager UI on top of R4 manifest + R2 TopK (add-node wizard, drain, STEER-006 rehearsal).
 5. R6 integration: coverd scheduler + Caddy routing flip behind a default-OFF flag → live CAMO gates.

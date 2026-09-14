@@ -54,6 +54,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "admin" && len(os.Args) > 2 && os.Args[2] == "reset-access" {
+		if err := adminResetAccess(os.Args[3:]); err != nil {
+			fmt.Fprintf(os.Stderr, "PVNaive admin reset-access: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		log.Printf("PVNaive API stopped: %v", err)
 		os.Exit(1)

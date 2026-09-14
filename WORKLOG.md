@@ -267,3 +267,24 @@ postpone the `namir.softarg.ir` flip to the next day.
   exposed per-request by net/http — upstream-path samples cover those sessions); production
   deploy of the R1 image is NOT done in this session (no server shell access here) — deploy
   follows the #100 backup → snapshot → SHA-lock procedure when the Primary reconnects.
+
+## 2026-09-14 04:2x UTC — R7 panel access backend (Super-Z operator session, continued)
+
+- `internal/auth/store_panel_access.go`: ReadPanelSettings / UpsertPanelSettings /
+  EffectiveAdminUsername behind the 0030 SECURITY DEFINER functions (session_ttl scanned
+  as epoch seconds; secrets never serialized).
+- `internal/httpapi/panel_access_endpoints.go`: GET/PUT `/api/v1/panel-access` (Owner),
+  step-up = current password verified against the actor hash on EVERY change (same
+  mechanism as me.password.update); payload validation reuses the R7 validators
+  (base path regex + reserved list, port 1..65535 excluding 80/443, grace 1..60,
+  exposure whitelist, new-password 12+/score-3 policy); routes registered + wired.
+- Recovery CLI: `pvnaive admin reset-access` (cmd/pvnaive/reset_access_cli.go) — TTY-only,
+  prompts twice, never argv/env/pipes, applies via the same SECURITY DEFINER path,
+  appends `panel.access.recovery` audit, prints non-secret effective state. Requires the
+  API restart to reload credentials (printed as a NOTE).
+- Tests: payload validation matrix (step-up mandatory, reserved paths, edge ports, grace
+  bounds, exposure whitelist, weak/strong password), route access contract (Owner on both),
+  unauthenticated-show never leaks defaults. Full `go test ./...`, vet, gofmt green locally.
+- Honest limits: Caddyfile base-path/port RUNTIME apply + graceful dual-accept window is
+  NOT wired yet (needs live rehearsal; entrypoint/Caddyfile template reconciliation) —
+  recorded as R7-NET-001; UI card for panel access settings is queued with R8.
