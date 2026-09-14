@@ -1,0 +1,39 @@
+{
+	order forward_proxy before file_server
+	default_sni {$PVNAIVE_DOMAIN:localhost}
+}
+
+:443, {$PVNAIVE_DOMAIN:localhost} {
+	encode gzip
+
+	handle_path /panel/* {
+		root * /opt/pvnaive/web
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle /api/v1/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle /sub/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle /s/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	forward_proxy {
+		basic_auth {$PVNAIVE_PROXY_USER} {$PVNAIVE_PROXY_PASSWORD}
+		hide_ip
+		hide_via
+		probe_resistance
+		pvnaive_accounting_socket /run/pvnaive/accounting.sock
+		pvnaive_node_id pvnaive-node-1
+		pvnaive_runtime_credential {$PVNAIVE_PROXY_USER} 00000000-0000-0000-0000-100000000001
+	}
+
+	root * /opt/pvnaive/camouflage
+	file_server
+}

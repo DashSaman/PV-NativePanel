@@ -1,35 +1,41 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-13 02:40 Asia/Tehran
+Last updated: 2026-09-14 18:42 Asia/Tehran
 
 ## Verified GitHub state
-- Repository `DashSaman/PV-NativePanel` is accessible; `main` is the default branch.
-- Verified pre-documentation `main`: `7bfadac0878c37369636536e95103e4bb9701513`.
-- Exact-main combined status is `pending` with zero published statuses; commit-specific workflow lookup returns no workflow runs. This checkpoint is **not claimed CI-green**.
-- Last validated runtime integration remains Task16/schema21: PR #81 merged successfully as `7efa359ccc5745c548cda9590bc5c516e9d5aa9e` from exact head `904e17c4a013e3adb5fb349c70f254ab59c925f8`.
-- PR #64 / Task13 remains OPEN, DRAFT and non-mergeable at exact head `3fc14825e1b164bad558decaef47f56b792e81af`. Fresh compare against current main is diverged: 45 commits ahead / 515 behind, merge base `0b921abe9b2bd1d827023f494fda11a407fe34d3`. A current-main reconstruction and fresh real pinned-Caddy HTTP/1.1 + HTTP/2 kill/accounting rehearsal remain mandatory.
-- PR #4 / Karing remains OPEN/DRAFT at exact head `2501e39dc39e14063b6a501bc96b77bbfcae7384`. This cycle safely retargeted its obsolete base from `s04-auth` to `main`; GitHub now reports it non-mergeable. Fresh compare against current main is diverged: 3 commits ahead / 1294 behind, merge base `c9af51b16533ba4e85776f54370634241b2e6a2f`. The diff remains limited to `web/src/RuntimeNaive.tsx`, `web/src/runtime.test.ts`, and `web/src/runtime.ts`. A clean current-main reconstruction, exact-head CI, and independent real Karing smoke remain mandatory.
-
-## Worker / coordinator reconciliation
-- PR #64, PR #4, issue #99 and issue #100 were re-read after the previous dispatches. No newer exact-head completion receipt exists.
-- Issue #79 remains closed completed for merged Task16/schema21. Duplicate issues #97/#98 remain superseded; canonical independent lanes are #99 (security/accounting) and #100 (Production read-only audit).
-- Persistent historical `AGENT_HANDOFF.md` and `ops/DEPLOYMENT_PROGRESS.md` remain materially stale (2026-08-27, S04-era) and must not override this canonical status, `HANDOFF.md`, `CONTINUE_HERE.md`, or fresh exact-SHA evidence.
-- TrPaqet remains the persisted isolated Task13 rehearsal lane. Never credit stale, dirty, mixed-head, unpushed, historical, or absent-CI evidence.
+- Canonical `main` before this documentation refresh is `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` completed SUCCESS.
+- STEER-002 / issue #110 is completed and closed. PR #112 merged through code-bearing commit `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; exact pre-merge head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` passed CI `34842627049`, WS1 Exact Accounting `34842627114`, and WS1 Pinned Forwardproxy `34842627193`. Post-merge main CI is green. Production was not touched for this lane.
+- Task13 PR #108 remains OPEN/DRAFT and unmerged on `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`. Fresh GitHub metadata reports `mergeable=true`. Exact-head CI `34789937594`, WS1 Exact Accounting `34789937603`, and WS1 Pinned Forwardproxy `34789937575` are SUCCESS. Mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance is still absent, so merge remains blocked.
+- Karing PR #101 remains OPEN/DRAFT and unmerged on `216d53670066033403fe95f61b0402bb710186a3`. Fresh GitHub metadata reports `mergeable=true`. Exact-head CI `34732580376`, WS1 Exact Accounting `34732580468`, and WS1 Pinned Forwardproxy `34732580377` are SUCCESS. Mandatory real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is still absent.
+- R1 / STEER-001 #109 is the next independent code roadmap lane. Production schema truth is 30; all new DB work must use migration strictly >0030 and never rewrite/reuse 0029 or 0030. Network telemetry remains separate from exact byte-accounting/quota truth.
+- Fresh Remote Desktop inventory reports both known registrations offline and no Production Primary available.
 
 ## Production truth
-- No connected command-level Production tool/evidence is available in this run. Issue #100 contains dispatches but no fresh audit receipt after the latest assignment.
-- Therefore deployed SHA/schema, current services/listeners, Caddy binary/state, fresh encrypted backup, independent rollback snapshot, staged promotion and postflight are **not re-verified**.
-- Production was not mutated. No restart/reload, DB/schema change, credential change, Caddy change, backup mutation, rollback mutation or deploy was performed.
-- Promotion sequence remains: read-only audit → fresh encrypted backup → independent rollback snapshot → exact deploy-SHA lock → staged promotion → health/postflight → retained rollback.
+- Latest persistent receipt remains `pvnaive:repo-live2` image `76c10697a03b`, runtime `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`, schema 30 after forward-only 0029/0030, recorded healthy readiness, nip.io E2E ALL_GREEN, and previous `repo-live` retained for rollback.
+- No fresh Production Primary shell audit exists in this checkpoint, so no new assertion is made for live container identity, migration ledger, encrypted-backup freshness, disk headroom or rollback snapshot.
+- `namir.softarg.ir` remains deferred until the documented ACME retry window clears; do not restart/recreate Production merely to chase certificate issuance.
 
-## Actions completed this cycle
-- Re-verified exact `main`, combined status, commit workflow visibility, all open PRs, actionable worker issues, and persistent handoff/progress records.
-- Compared Task13 and Karing heads directly against current `main` and recorded exact divergence.
-- Retargeted Karing PR #4 from obsolete `s04-auth` to `main` without merging; its draft gate remains intact.
-- Refreshed canonical status/handoff/continue documentation and re-dispatched all independent lanes.
+## Remaining gates
+1. **Task13 #108:** Worker 2 runs the mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential/account survival, unchanged Caddy lifecycle, and exactly-once final accounting. Worker 3 only reconciles if a new merge-ref/exact-head defect appears. Worker 1 performs final independent diff/security/accounting review after protocol evidence exists.
+2. **Karing #101:** Worker 4 runs real disposable Karing import → parse → CONNECT → cleanup/revoke and records client/platform/version, generated-profile SHA-256 and redacted logs. Unit/build proof is not a substitute.
+3. **R1 / STEER-001 #109:** Worker 3 = trusted TCP_INFO sampling from authoritative socket/RemoteAddr state; Worker 2 = >0030 DB ingest/replay/idempotency; Worker 1 = schema/privilege/security/accounting-boundary review; Worker 4 = disposable E2E after an exact implementation head exists.
+4. **Production #100:** when Primary reconnects, perform read-only live image/revision, migration/schema, services/listeners/Caddy, encrypted-backup, disk and rollback audit before any future promotion.
 
-## Next executable gates
-1. Task13: reconstruct/rebase validated delta onto current `main` without rewriting validated history, publish a new exact head, rerun exact-head CI/accounting/pinned-forwardproxy/focused gates, then run the isolated real HTTP/1.1 + HTTP/2 rehearsal proving target-only termination, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, no Caddy restart/reload, and exactly-once final accounting.
-2. Karing: reconstruct the three-file export delta on a clean branch from current `main`, rerun exact-head CI, then run a real client import/parse/connect/cleanup smoke using disposable credentials and a non-Production target; record exact profile hash, client/platform/version and redacted logs.
-3. Security/accounting: issue #99 must return clean-worktree exact-SHA PASS/FAIL evidence for RLS fail-closed behavior, privilege separation, bounded retention/purge safety, trusted lineage, commit-before-HTTP-success semantics and redaction.
-4. Production: issue #100 must first return a connected read-only audit. Only after all runtime gates are green may backup/rollback creation and staged deployment proceed.
+## Worker allocation
+- Worker 2: Task13 real HTTP1/HTTP2 protocol/accounting acceptance; R1 ingest/replay/idempotency.
+- Worker 3: R1 trusted TCP_INFO sampling; Task13 reconciliation only for a concrete new defect.
+- Worker 4: real Karing client acceptance; R1 E2E follow-up.
+- Worker 1: independent diff/schema/security/accounting/CI review for new exact heads and final promotion candidates.
+- Primary: read-only Production audit when connected.
+- Coordinator: integrate only validated work, preserve promotion gates, and maintain canonical docs.
+
+Concrete progress this checkpoint: post-merge main CI was verified green; STEER-002 #110 was closed completed; stale mergeability state for #108/#101 was corrected to current `mergeable=true`; exact-head workflow success for both PRs was re-verified; persistent worker/Production queues were refreshed. No Production deploy, migration, restart/reload, credential rotation, DB/Caddy mutation, backup mutation or rollback mutation was performed.
+
+## Coordinator checkpoint — 2026-09-14 19:4x Asia/Tehran
+
+- Canonical `main` before this docs refresh: `eccb681f2b21ea1ad3ff74137b47e1991be9db5e`; push CI `34861097897` completed SUCCESS.
+- Task13 PR #108 was reconciled non-destructively with this exact main and pushed at refreshed head `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`. Clean merge; local `git diff --check` PASS; Docker Go 1.25 `go vet ./...` + `go test ./... -count=1` PASS. Fresh exact-head CI/Exact Accounting/Pinned Forwardproxy were started and must all finish green before any merge consideration.
+- Task13 mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains required on the refreshed exact head; historical protocol evidence is not promoted to exact-head proof.
+- Karing PR #101 remains DRAFT; real Karing import -> parse -> CONNECT -> cleanup/revoke is still mandatory.
+- Production Primary is not present in fresh connected-device inventory. No deploy/migration/restart/reload/DB/Caddy/credential/backup/rollback mutation was performed; last recorded Production receipt remains the truth ceiling until a fresh read-only audit.
+- R1 / STEER-001 remains independent: any new migration is strictly >0030; telemetry stays separate from quota/exact byte-accounting truth.

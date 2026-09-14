@@ -3,6 +3,11 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+
+# Derive the expected schema version from the real lineage so this test survives new migrations.
+max_migration="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${max_migration}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema="$((10#${max_migration}))"
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
 test_db="pvnaive_health_test_${test_suffix,,}"
@@ -96,14 +101,14 @@ health_output="$(
     PVNAIVE_DB_NAME="${test_db}" \
     PVNAIVE_DB_USER=pvnaive_app \
     PVNAIVE_DB_CONNECT_TIMEOUT=5 \
-    PVNAIVE_EXPECTED_SCHEMA_VERSION=21 \
+    PVNAIVE_EXPECTED_SCHEMA_VERSION="${expected_schema}" \
     PVNAIVE_EXPECTED_DB_USER=pvnaive_app \
     PGPASSFILE="${pgpass}" \
     "${repo_root}/scripts/db/health.sh"
 )"
 
 grep -Fqx 'PVNAIVE_DB_HEALTH=OK' <<< "${health_output}"
-grep -Fqx 'PVNAIVE_SCHEMA_VERSION=21' <<< "${health_output}"
+grep -Fqx "PVNAIVE_SCHEMA_VERSION=${expected_schema}" <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_USER=pvnaive_app' <<< "${health_output}"
 grep -Fqx 'PVNAIVE_DB_SERVER_ADDRESS=127.0.0.1' <<< "${health_output}"
 grep -Fqx "PVNAIVE_DB_SERVER_PORT=${PVNAIVE_DB_PORT}" <<< "${health_output}"

@@ -3,6 +3,10 @@ set -Eeuo pipefail
 umask 077
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+# Derive the expected schema version from the real lineage so this test survives new migrations.
+expected_schema="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${expected_schema}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema="$((10#${expected_schema}))"
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
 source_db="pvnaive_backup_test_${test_suffix,,}"
@@ -44,7 +48,7 @@ createdb --host "${PVNAIVE_DB_HOST}" --port "${PVNAIVE_DB_PORT}" --username "${P
 export PVNAIVE_DB_NAME="${source_db}"
 "${repo_root}/scripts/db/migrate.sh" >/dev/null
 source_schema="$(psql_admin --dbname "${source_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${source_schema}" == "21" ]] || { echo "ERROR: backup source expected latest schema 21, got ${source_schema}" >&2; exit 1; }
+[[ "${source_schema}" == "${expected_schema}" ]] || { echo "ERROR: backup source expected latest schema ${expected_schema}, got ${source_schema}" >&2; exit 1; }
 psql_admin --dbname "${source_db}" --command \
   "INSERT INTO pvnaive.tenants (id, tenant_type, slug, display_name) VALUES ('44000000-0000-0000-0000-000000000004', 'reseller', 'backup_test', 'Backup Test')" >/dev/null
 
@@ -62,7 +66,7 @@ backup_file="$(awk -F= '/^PVNAIVE_BACKUP_PATH=/ {value=$2} END {print value}' <<
 backup_dir="$(dirname -- "${backup_file}")"
 (cd "${backup_dir}" && sha256sum --check --strict SHA256SUMS) >/dev/null
 [[ ! -e "${backup_dir}/pvnaive.dump" ]] || { echo "ERROR: plaintext backup archive exists" >&2; exit 1; }
-grep -Fq '"schema_version": 21,' "${backup_dir}/metadata.json"
+grep -Fq "\"schema_version\": ${expected_schema}," "${backup_dir}/metadata.json"
 
 restore_output="$(
   PVNAIVE_RESTORE_BACKUP="${backup_file}" \
@@ -74,7 +78,7 @@ grep -Fqx 'PVNAIVE_RESTORE_RESULT=PASSED' <<< "${restore_output}"
 restored_row="$(psql_admin --dbname "${restore_db}" --tuples-only --no-align --command "SELECT slug FROM pvnaive.tenants WHERE id = '44000000-0000-0000-0000-000000000004'")"
 [[ "${restored_row}" == "backup_test" ]] || { echo "ERROR: restored data verification failed" >&2; exit 1; }
 restored_schema="$(psql_admin --dbname "${restore_db}" --tuples-only --no-align --command 'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${restored_schema}" == 21 ]] || { echo "ERROR: restored schema expected 21, got ${restored_schema}" >&2; exit 1; }
+[[ "${restored_schema}" == "${expected_schema}" ]] || { echo "ERROR: restored schema expected ${expected_schema}, got ${restored_schema}" >&2; exit 1; }
 plaintext_dump="$(find "${temp_root}" -type f -name '*.dump' -print -quit)"
 [[ -z "${plaintext_dump}" ]] || {
   echo "ERROR: plaintext dump file was materialized: ${plaintext_dump}" >&2

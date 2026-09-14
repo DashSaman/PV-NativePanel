@@ -4,6 +4,7 @@ import { DEFAULT_PRODUCT_FILTERS, listProductCustomers, listProductPlans } from 
 import { getRuntimeStatus } from "./runtime";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { SystemDashboard } from "./SystemDashboard";
+import { Icon, Sparkline } from "./ui";
 
 type Props = { role: Principal["role"] };
 type Snapshot = {
@@ -72,20 +73,23 @@ export function Dashboard({ role }: Props) {
     return { active, pending, suspended, ended };
   }, [snapshot]);
 
+  /* Real cumulative expiry curve from live queries: today(0) -> 7d -> 30d. No synthetic data. */
+  const expiryTrend = useMemo(() => [0, snapshot.expiring7, snapshot.expiring30], [snapshot.expiring7, snapshot.expiring30]);
+
   if (!canUseCustomerProduct(role)) return <main className="dashboard-page"><section className="dashboard-card"><h1>داشبورد</h1><p className="muted">این نقش دسترسی عملیاتی به مدیریت کاربران ندارد.</p></section></main>;
 
   return <main className="dashboard-page">
     <header className="dashboard-hero">
       <div><p className="eyebrow">PVNaive Control Panel</p><h1>داشبورد</h1><p>وضعیت کلی سرویس‌ها و کاربران در یک نگاه.</p></div>
-      <button className="button-secondary" onClick={() => void refresh()} disabled={loading}>↻ بروزرسانی</button>
+      <button className="button-secondary" onClick={() => void refresh()} disabled={loading}><Icon name="refresh" size={15}/> بروزرسانی</button>
     </header>
     {message && <div className="product-message danger">{message}</div>}
 
     <section className="dashboard-kpis">
-      <article><span className="kpi-symbol">◎</span><div><small>کل کاربران</small><strong>{loading ? "…" : snapshot.total.toLocaleString("fa-IR")}</strong><em>حساب‌های ثبت‌شده</em></div></article>
-      <article><span className="kpi-symbol success">✓</span><div><small>کاربران فعال</small><strong>{loading ? "…" : snapshot.active.toLocaleString("fa-IR")}</strong><em>سرویس قابل استفاده</em></div></article>
-      <article><span className="kpi-symbol gold">▣</span><div><small>پلن‌ها</small><strong>{loading ? "…" : snapshot.plans.toLocaleString("fa-IR")}</strong><em>پلن‌های تعریف‌شده</em></div></article>
-      <article><span className="kpi-symbol warning">!</span><div><small>نیازمند توجه</small><strong>{loading ? "…" : (snapshot.suspended + snapshot.ended).toLocaleString("fa-IR")}</strong><em>تعلیق یا پایان سرویس</em></div></article>
+      <article><span className="kpi-symbol"><Icon name="users" size={20}/></span><div><small>کل کاربران</small><strong>{loading ? "…" : snapshot.total.toLocaleString("fa-IR")}</strong><em>حساب‌های ثبت‌شده</em></div></article>
+      <article><span className="kpi-symbol success"><Icon name="check" size={20}/></span><div><small>کاربران فعال</small><strong>{loading ? "…" : snapshot.active.toLocaleString("fa-IR")}</strong><em>سرویس قابل استفاده</em></div></article>
+      <article><span className="kpi-symbol gold"><Icon name="plans" size={20}/></span><div><small>پلن‌ها</small><strong>{loading ? "…" : snapshot.plans.toLocaleString("fa-IR")}</strong><em>پلن‌های تعریف‌شده</em></div></article>
+      <article><span className="kpi-symbol warning"><Icon name="alert" size={20}/></span><div><small>نیازمند توجه</small><strong>{loading ? "…" : (snapshot.suspended + snapshot.ended).toLocaleString("fa-IR")}</strong><em>تعلیق یا پایان سرویس</em></div></article>
     </section>
 
     <section className="dashboard-grid">
@@ -107,6 +111,7 @@ export function Dashboard({ role }: Props) {
         <div className="expiry-overview">
           <div><span>۷ روز آینده</span><strong>{snapshot.expiring7.toLocaleString("fa-IR")}</strong><i><b style={{ width: `${Math.min(100, snapshot.total ? snapshot.expiring7 / snapshot.total * 100 : 0)}%` }}/></i></div>
           <div><span>۳۰ روز آینده</span><strong>{snapshot.expiring30.toLocaleString("fa-IR")}</strong><i><b style={{ width: `${Math.min(100, snapshot.total ? snapshot.expiring30 / snapshot.total * 100 : 0)}%` }}/></i></div>
+          <div className="expiry-trend" aria-hidden="true"><Sparkline values={expiryTrend} height={40} title="روند انقضا"/></div>
           <div className="runtime-summary"><span>Runtime</span><strong>{snapshot.runtimeReady === null ? "طبق نقش" : snapshot.runtimeReady ? "آماده" : "نیازمند بررسی"}</strong></div>
         </div>
       </article>
@@ -116,7 +121,7 @@ export function Dashboard({ role }: Props) {
 
     <section className="quick-actions dashboard-card">
       <div><p className="eyebrow">دسترسی سریع</p><h2>مدیریت روزمره</h2></div>
-      <div><a className="quick-link primary" href="/panel/#/customers">＋ ساخت و مدیریت کاربر</a><a className="quick-link" href="/panel/#/catalog">پلن‌ها و دسته‌بندی‌ها</a>{canUseRawRuntime(role) && <a className="quick-link" href="/panel/#/runtime/naive">سیستم / Runtime</a>}</div>
+      <div><a className="quick-link primary" href="/panel/#/customers"><Icon name="plus" size={15}/> ساخت و مدیریت کاربر</a><a className="quick-link" href="/panel/#/catalog"><Icon name="plans" size={15}/> پلن‌ها و دسته‌بندی‌ها</a>{canUseRawRuntime(role) && <a className="quick-link" href="/panel/#/runtime/naive"><Icon name="system" size={15}/> سیستم / Runtime</a>}</div>
     </section>
   </main>;
 }

@@ -7,7 +7,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +67,10 @@ type Profile struct {
 	UsedBytes           *int64
 	RemainingBytes      *int64
 	AccountingBaseline  AccountingBaseline
+	// Node carries the renderable endpoint for multi-format subscription
+	// delivery (R3). Populated only when Available. Today it holds the
+	// single local node; the pool list arrives with R4/R5.
+	Node *Node
 }
 
 type Store interface {
@@ -169,12 +175,40 @@ func (s *Service) ResolveProfile(ctx context.Context, rawToken, host string) (Pr
 		plaintext[i] = 0
 	}
 	uri, err := BuildNaiveURI(record.Username, password, host)
-	password = ""
 	if err != nil {
 		return Profile{}, ErrUnavailable
 	}
 	profile.DirectURI = uri
+	nodeHost, nodePort, nodeErr := splitProxyHost(host)
+	if nodeErr == nil {
+		profile.Node = &Node{
+			Name:     "PVNaive",
+			Host:     nodeHost,
+			Port:     nodePort,
+			Username: record.Username,
+			Password: password,
+			SNI:      nodeHost,
+		}
+	}
 	return profile, nil
+}
+
+// splitProxyHost parses "host" or "host:port" (port defaults to 443) using
+// the same validation BuildNaiveURI applies.
+func splitProxyHost(host string) (string, int, error) {
+	probe, err := url.Parse("https://" + strings.TrimSpace(host))
+	if err != nil || probe.Host == "" || probe.User != nil || probe.Path != "" || probe.RawQuery != "" || probe.Fragment != "" {
+		return "", 0, errors.New("subscription: invalid proxy host")
+	}
+	h, portStr, splitErr := net.SplitHostPort(probe.Host)
+	if splitErr != nil {
+		return probe.Host, 443, nil
+	}
+	port, convErr := strconv.Atoi(portStr)
+	if convErr != nil || port <= 0 || port > 65535 {
+		return "", 0, errors.New("subscription: invalid proxy host port")
+	}
+	return h, port, nil
 }
 
 func cloneAccountingBaseline(value AccountingBaseline) AccountingBaseline {

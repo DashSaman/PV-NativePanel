@@ -196,3 +196,28 @@ Current main contains these product capabilities. Do not recreate them from old 
 ### CLOSED — Exact multiple Naive basic_auth syntax proof
 
 Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reopen only on a real version/module regression.
+
+## Open infrastructure issues (2026-09-14 live-server batch)
+
+
+### CLOSED (2026-09-14) — DEPLOY-001: boot config renderer drops active customer credentials
+
+- Closed by `internal/runtimeconfig.ReconcileRuntimeConfigFile` + the `pvnaive reconcile-runtime-config` subcommand: the all-in-one entrypoint now reconciles the rendered config's credential block with active DB credentials on EVERY boot (superuser snapshot over the local socket, production renderer, pinned-binary validation, atomic swap; failure is non-fatal with a loud warning). Zero-active is a no-op (fresh-install seed).
+- The `docker/` build context (Dockerfile, entrypoint, template, compose, installer) is upstreamed into the repo and the deployed image `pvnaive:repo-live` was built from the repo tree. Live evidence: boot log `RECONCILE_RESULT=CHANGED:false CREDENTIALS:22` after recreate.
+- TLS storage persistence added at the same time (`XDG_DATA_HOME=/var/lib/pvnaive/tls-data` + `./data/tls` compose volume) — recreates no longer re-obtain certificates (the cause of the 2026-09-14 Let's Encrypt rate-limit outage; see AGENTS.md batch-2 notes for the dual-name interim state and the namir auto-retry window).
+
+### CLOSED (2026-09-14) — LINEAGE-001: deployed migration lineage ahead of repo lineage
+
+- Repo `db/migrations` is now `0001..0028`: deployed server files 0022..0027 upstreamed byte-identical (UP-file checksums are immutable in `schema_migrations`), server down files normalized to repo convention (version header + transactional/destructive markers + self-delete; 0024..0027 lacked the self-delete and broke `rollback.sh`), manifest regenerated.
+- The hardened self-service functions are new **0028_auth_actor_credential_mutations_hardened** (authentication-context guard over the deployed 0027 bodies; CREATE OR REPLACE upgrades live in place). `tests/db/auth_actor_credential_mutations_migration_test.sh` now asserts schema 28. Full 35-gate CI database suite green.
+
+### CLOSED (2026-09-14) — readiness 503 / baked PVNAIVE_EXPECTED_SCHEMA_VERSION
+
+- The image no longer bakes the expected schema: `docker/entrypoint.sh` derives it from the bundled migration count (operator override still wins). Live boot: `derived PVNAIVE_EXPECTED_SCHEMA_VERSION=28`, readiness `{"ready":true,"schema":"ok"}` without any override env.
+
+### RESOLVED (2026-09-14) — pvbootstrap is obsolete in the runtime-mapped proxy architecture
+
+- The custom `forward_proxy` Caddy module now REQUIRES a runtime UUID mapping (DB-backed identity) for every `basic_auth` user; adding the bootstrap account without a mapping is rejected at config load: `missing or invalid runtime UUID mapping for configured user "pvbootstrap"`.
+- The live Caddyfile intentionally contains only customer credentials (22 entries); `pvbootstrap` cannot proxy and must not be re-added to the rendered Caddyfile.
+- Docs that still advertise the `pvbootstrap`/`Bt7xKp9mVq2wRt8z` proxy account are stale — treat the installer bootstrap account as API/owner bootstrap only.
+- Note for agents: never attempt to reload a Caddyfile containing unmapped users — validate first (`caddy validate`), and remember the running config survives a failed reload.

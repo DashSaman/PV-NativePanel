@@ -17,9 +17,9 @@ const (
 )
 
 type ValidityInput struct {
-	Mode         ValidityMode
-	DurationDays int
-	ExpiresAt    *time.Time
+	Mode         ValidityMode `json:"mode"`
+	DurationDays int          `json:"duration_days"`
+	ExpiresAt    *time.Time   `json:"expires_at,omitempty"`
 }
 
 var (

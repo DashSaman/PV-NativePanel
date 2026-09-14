@@ -92,3 +92,46 @@ Already integrated and not to be rewritten: secure Runtime credential lifecycle,
 ## Definition of Done
 
 A feature is never `DONE` merely because code exists. Required where applicable: real backend/schema/auth/UI, no secret leaks, idempotency/failure/race tests, unit/integration/web tests, vet/build, exact-head GitHub CI, rollback for Runtime/Production changes, live verification for Production-facing capabilities, canonical docs/evidence and no regressions.
+
+## 2026-09-14 operator batch — live server 45.141.148.59 (evidence-based)
+
+Executed and verified live by agent session Super-Z (see AGENTS.md "Live environment" for credentials/location facts):
+
+| Item | Status | Evidence |
+|---|---|---|
+| GitHub write access (fine-grained PAT, blob-probe 201) + 5 commits pushed to `main` | DONE | push `0c245b5..dbbcb98`, CI run 34775222448 |
+| Domain switched to `namir.softarg.ir` (A record → 45.141.148.59), Let's Encrypt issued + auto-renew | DONE | panel HTTPS 200 verify=0; subscriptions now domain-based (clients re-import once) |
+| BBR + fq + host sysctl tuning (`/etc/sysctl.d/99-pvnaive-tuning.conf`) | DONE | cubic→bbr verified; quic receive-buffer warning gone |
+| Self-service admin password/login-identity change from inside panel (`POST /api/v1/me/password`, `PATCH /api/v1/me/profile`, migration 0027 SECURITY DEFINER, `SettingsSecurity.tsx`) | DONE live (deployed image pvnaive:fix2) | 7-step live E2E pass; repo commits `feat(panel) account security` + `fix(auth) SECURITY DEFINER` |
+| UI/UX overhaul "Amber Command Deck" (Vazirmatn self-hosted font, SVG icon set `web/src/ui.tsx`, glass/aurora design system in `styles.css`, login/command-deck polish, light+dark refined, reduced-motion + focus rings) | DONE on main (build+61 web tests green) | deploy to live server still pending image rebuild |
+| Competitor research snapshots (3x-ui v3.0→v3.7 full release notes, PasarGuard, Hiddify) saved | DONE | repo: `docs/competitor/3xui-v3-release-notes.md` (summary in FEATURE_MATRIX) |
+
+## 2026-09-14 operator batch 2 — repo-built deploy (evidence-based)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Migration lineage reconciled: server 0022..0027 upstreamed byte-identical, hardened auth functions as 0028, down-file conventions fixed, manifest regenerated | DONE | 35-gate CI database suite all passed; live migrate: 0027 ALREADY_APPLIED (checksum match), 0028 APPLIED, DB schema 28 |
+| Boot credential reconcile + derived expected schema + upstreamed docker/ build context | DONE | boot logs `RECONCILE_RESULT=CHANGED:false CREDENTIALS:22` + `derived PVNAIVE_EXPECTED_SCHEMA_VERSION=28`; readiness green without override |
+| Runtime agent caddy-admin reload mode (Docker) restored customer mutations from repo binaries | DONE | live create customer 201; strict-TLS CONNECT 204 gstatic+cloudflare |
+| TLS storage persistence (XDG_DATA_HOME + ./data/tls volume) ending per-boot re-obtains | DONE | recreate reused seeded storage; no new obtain logs for nip.io |
+| UI/UX overhaul + account security now LIVE from repo main | DONE | panel serves rebuilt web assets from repo main |
+
+## Remaining work — numbered, competitor-informed priority list
+
+Source: full 3x-ui v3.0→v3.7 release notes, PasarGuard v5.3, Hiddify Manager v12 (official). Ordered by operator value; map to legacy task IDs where they exist.
+
+1. **DONE (2026-09-14 batch 2) — Deploy the current main (incl. UI overhaul + account security) to the live server.** Image `pvnaive:repo-live` built from the reconciled repo lineage (0001..0028) and deployed; live E2E green (readiness derived schema 28, config reconcile 22 credentials, create 201, strict-TLS CONNECT 204, UI overhaul live).
+2. **DONE (2026-09-14 batch 2) — Fix DEPLOY-001 boot renderer (P0).** `pvnaive reconcile-runtime-config` + `internal/runtimeconfig` merge DB credential truth on every boot (see KNOWN_ISSUES CLOSED section); Docker caddy-admin reload mode added to the runtime agent; TLS storage persistence added.
+3. **Traffic accounting truth** (Task 5/6/10): exact usage numbers are the #1 operator trust feature; 3x-ui shows per-client online+speed+totals live.
+4. **Live per-client online status + realtime speed** (3x-ui v3.3.1 online-stats, v3.5.0): presence dot + last-online + per-client speed in customer table.
+5. **DB backup/restore from panel + schedule** (3x-ui v3.2.5; Hiddify 6h auto-backup): encrypted backups, download, restore-with-validation, retention.
+6. **Multi-format subscriptions**: Clash/Mihomo + sing-box + raw Xray JSON + auto-format-by-User-Agent (3x-ui v3.2.8/v3.6.0); subscription page templates (v3.3.0).
+7. **Fail2ban-native IP limiting** + trusted-IP exemptions (3x-ui v3.4.0/v3.7.0); HWID/device limits per subscription (v3.7.0) — maps to Task 16/17.
+8. **Notification event bus**: Telegram + SMTP/email + threshold alerts (offline/down/depleted/expiry) with per-event subscribe (3x-ui v3.4.0) — upgrade our simple TG channel; maps to Task 34.
+9. **Scoped, expiring API tokens + in-panel OpenAPI docs** (3x-ui v3.7.0/v3.2.0) — maps to Task 33/34.
+10. **Calendar-day renewals + per-client reset cycle + auto-renew cap** (3x-ui v3.7.0) — extends existing usage-reset machinery.
+11. **Settings UX**: tag shipped-default values, 2FA re-confirm for sensitive changes (3x-ui v3.4.2/v3.6.0).
+12. **Accessibility pass** (screen-reader/keyboard, axe-clean) — 3x-ui v3.4.2/v3.6.0; matches Task 46.
+13. **Command-deck overview upgrades**: two-series throughput + TCP/UDP connection charts on dashboard (3x-ui v3.6.0) once telemetry API exposes them.
+14. **Multi-node resilience** (Tasks 38/39; 3x-ui v3.2.8→v3.7.0 hardened sync): offline-node edits survive, per-node routing, mTLS reconcile.
+15. **Client lifecycle billing**: renewal history, per-client external link controls, subscription last-fetch time (3x-ui v3.5.0/v3.7.0).

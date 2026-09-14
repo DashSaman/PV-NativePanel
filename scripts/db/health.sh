@@ -45,6 +45,15 @@ if ((expected_version >= 2)); then
   [[ "${mfa_direct}" == "false|false" || "${mfa_direct}" == "f|f" ]] || pvnaive_die "application role has direct SELECT on MFA secret tables"
 fi
 
+if ((expected_version >= 29)); then
+  cover_direct="$(pvnaive_psql_at --command "SELECT has_table_privilege(current_user, 'pvnaive.cover_nodes', 'SELECT')::text || '|' || has_table_privilege(current_user, 'pvnaive.cover_content', 'SELECT')::text")"
+  [[ "${cover_direct}" == "false|false" || "${cover_direct}" == "f|f" ]] || pvnaive_die "application role has direct SELECT on cover storage"
+  cover_read_exec="$(pvnaive_psql_at --command "SELECT has_function_privilege(current_user, 'pvnaive.cover_latest(text,integer)', 'EXECUTE')::text || '|' || has_function_privilege(current_user, 'pvnaive.cover_health(text)', 'EXECUTE')::text || '|' || has_function_privilege(current_user, 'pvnaive.cover_persona(text)', 'EXECUTE')::text")"
+  [[ "${cover_read_exec}" == "true|true|true" || "${cover_read_exec}" == "t|t|t" ]] || pvnaive_die "application role is missing cover read projection privileges"
+  cover_mutator_exec="$(pvnaive_psql_at --command "SELECT has_function_privilege(current_user, 'pvnaive.cover_ensure_partition(date)', 'EXECUTE')::text || '|' || has_function_privilege(current_user, 'pvnaive.cover_replace_snapshot(text,text,jsonb)', 'EXECUTE')::text || '|' || has_function_privilege(current_user, 'pvnaive.cover_set_persona(text,text)', 'EXECUTE')::text")"
+  [[ "${cover_mutator_exec}" == "false|false|false" || "${cover_mutator_exec}" == "f|f|f" ]] || pvnaive_die "application role can execute owner-only cover mutators"
+fi
+
 health_row="$(pvnaive_psql_at --command "
 WITH required(name) AS (
   VALUES ('actors'), ('backups'), ('credentials'), ('notification_deliveries'),
@@ -60,7 +69,7 @@ WITH required(name) AS (
          ('customer_profiles'), ('customer_tag_assignments'), ('plan_tag_assignments'),
          ('customer_bulk_operations'), ('customer_bulk_operation_keys'), ('customer_bulk_reset_operations'),
          ('service_term_reset_schedules'), ('scheduled_usage_reset_attempts'),
-         ('direct_naive_accounting_session_peers')
+         ('direct_naive_accounting_session_peers'), ('cover_nodes'), ('cover_content')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -73,7 +82,9 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 17)); then
+if ((expected_version >= 29)); then
+  [[ "${required_tables}" == "46" ]] || pvnaive_die "required table check failed: ${required_tables}/46"
+elif ((expected_version >= 17)); then
   [[ "${required_tables}" == "44" ]] || pvnaive_die "required table check failed: ${required_tables}/44"
 elif ((expected_version >= 16)); then
   [[ "${required_tables}" == "43" ]] || pvnaive_die "required table check failed: ${required_tables}/43"
@@ -94,7 +105,11 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 21)); then
+if ((expected_version >= 29)); then
+  [[ "${rls_tables}" == "53" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/53"
+elif ((expected_version >= 28)); then
+  [[ "${rls_tables}" == "44" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/44"
+elif ((expected_version >= 21)); then
   [[ "${rls_tables}" == "43" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/43"
 elif ((expected_version >= 17)); then
   [[ "${rls_tables}" == "42" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/42"
@@ -128,4 +143,8 @@ echo "PVNAIVE_DB_CLIENT_ADDRESS=${client_address}"
 echo "PVNAIVE_SECRET_DIRECT_SELECT=DENIED"
 if ((expected_version >= 2)); then
   echo "PVNAIVE_MFA_DIRECT_SELECT=DENIED"
+fi
+if ((expected_version >= 29)); then
+  echo "PVNAIVE_COVER_DIRECT_SELECT=DENIED"
+  echo "PVNAIVE_COVER_MUTATOR_EXECUTE=DENIED"
 fi

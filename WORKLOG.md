@@ -193,3 +193,27 @@ Every transition records date, exact commit/source, what changed, tests/CI, Prod
 - Active independent work: BUG-001 refresh reuse DB proof; Task13 exact kill-session; Task14/15 deterministic race RED proof; Task16 bounded privacy-aware history proof.
 - Task15 unit/model candidate is not promotable until real PostgreSQL concurrency proof passes. Task16 is not promotable until migration numbering is reconciled after the P0 BUG-001 schema change and PG18/retention proof passes.
 - Next release action: publish the exact Task12 tree, run exact-head GitHub CI including schema17 and pinned forwardproxy/Caddy, then guarded Production backup → schema16→17 → API/web/Caddy rollout → postflight.
+
+## 2026-09-14 02:53 coordinator checkpoint
+- Verified canonical main `3b49e0b9dd10cd720dbbf33be50361f3ec003dce`; push CI `34789203279` SUCCESS.
+- Task13 PR #108 refreshed by fast-forwarding its exact implementation history with current docs/spec main; new head `d42f1db4112fe43e71f4cd1b7feff941d78094af`, GitHub mergeable. Independent `git diff --check`, Docker Go 1.25 gofmt/vet/test and web 19/64 + build PASS. Fresh exact-head CI/accounting/forwardproxy are running; real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains mandatory.
+- Production remains mutation-free. Latest fresh external read-only probe: nip.io live/ready/panel healthy; `namir.softarg.ir` still inside documented Let's Encrypt retry window. Primary shell-level deployed identity/backups/rollback remain unverified.
+- Opened #109 as the independent next roadmap lane: R1 / STEER-001 trusted-boundary network telemetry. Worker 3=forwardproxy sampling, Worker 2=DB/ingest/replay semantics, Worker 1=independent schema/CI/test-harness review, Worker 4=E2E rehearsal, Primary=read-only Production.
+
+
+## 2026-09-14 — Master Upgrade Pack R1→R8 execution (Super-Z operator session)
+
+Verified on dev-server golang:1.25 CI-mirror before every push; evidence in git history.
+
+| Workstream | Slice merged | Main |
+|---|---|---|
+| Program docs | `docs/AGENT_TASKS.md` canonical board (owner R1→R8 merged), `docs/STEERING_SPEC_FA.md`, `docs/CAMO_ACCESS_UI_SPEC_FA.md` | 9409719, a14201a, 3b49e0b |
+| R2 steering | `internal/steering`: deterministic scoring, EWMA, per-user phase offsets, hysteresis 25%/2w, kill-switch, Unknown policy; 10 simulation tests (STEER-002 core) | daee7e2 |
+| R3 renderer | `internal/subscription/render.go`: UA negotiation (Clash/sing-box/Karing/Hiddify/v2ray/naive), url-test tolerance 50 + load-balance round-robin, never interrupt-exist-connections, Profile-Update-Interval + Subscription-Userinfo headers, single-node Profile.Node (pool list pending R4/R5) | 715cc5c |
+| R8 UI | `web/src/design-tokens.ts` + stealth login (hover/focus reveal, reduced-motion, no layout-shift tell, sr-labels + autocomplete) + pure reveal state machine tests; vitest 69/69 + build green | b1a7935 |
+| R6 coverd | migration 0029 (cover_content partitions + SECURITY DEFINER + RLS), 6 original persona packs, accurate jalaali-js port, polite RSS/Atom fetcher (stale-keeps-snapshot), hygiene server (human 404 probe sweep); 15 tests; Caddy routing deliberately OFF until live CAMO gates | 75415be |
+| R4 fleet | `internal/fleet/manifest.go`: Ed25519 signed manifests, fail-closed verify + expiry; 6 tests | ab0b1c3 |
+
+Open lanes (unclaimed or worker-assigned): R1 forwardproxy TCP_INFO sampling + ingest (#109 worker split),
+R5 pool manager UI, R7 panel access backend (base path/port flows), R8 live-charts streaming backend,
+R6 Caddy routing flip + coverd scheduler wiring, R2/R3 wiring to live telemetry.

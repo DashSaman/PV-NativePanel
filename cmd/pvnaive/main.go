@@ -40,6 +40,20 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "backfill-subscriptions" {
+		if err := runBackfillSubscriptions(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "PVNaive backfill-subscriptions: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "reconcile-runtime-config" {
+		if err := runReconcileRuntimeConfig(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "PVNaive reconcile-runtime-config: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		log.Printf("PVNaive API stopped: %v", err)
 		os.Exit(1)

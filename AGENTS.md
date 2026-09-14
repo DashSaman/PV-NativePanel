@@ -1,6 +1,6 @@
 # AGENTS.md — PVNaive mandatory agent instructions
 
-Last reconciled: 2026-08-31
+Last reconciled: 2026-09-13
 
 ## Mission
 
@@ -171,6 +171,19 @@ No agent may say only “Done”. Final DONE transition belongs to Lead/Agent-RE
 - Do not reset/force-push main to reconcile branch history.
 - Do not copy GPL/AGPL competitor code without explicit license-compatibility review.
 
+## Live environment & client facts (verified 2026-09-13)
+
+Hard-won operational truths from debugging the live deployment and strict clients. Re-verify on latest main/live server before relying on them.
+
+- **Subscription URI must carry the port**: `naive+https://user:pass@host:443`. `PVNAIVE_NAIVE_PUBLIC_HOST` (derived from `PVNAIVE_DOMAIN`) must include `:443`; repo contract tests enforce it. Bare-host URIs fail to import in strict clients such as Karing.
+- **TLS and bare IPs do not mix**: a deployment addressed by bare IPv4 gets Caddy `tls internal` (self-signed). Chromium-based clients (Android Karing) then fail with `handshake failed ... net_error -202` (= `ERR_CERT_AUTHORITY_INVALID`). Serving the same stack behind a resolvable hostname gives a real Let's Encrypt certificate automatically (currently a `<ip>.nip.io` wildcard in the test deployment; prefer an Owner-owned domain for release).
+- **Caddyfile lifecycle**: the entrypoint renders `/etc/caddy/Caddyfile` ONLY when the file is absent (it is bind-mounted under the data dir and therefore persists across restarts). Regenerating it is a deliberate, backed-up operation, never a casual restart.
+- **`probe_resistance` masks auth failures**: unauthorized `CONNECT` attempts to `forward_proxy` return a disguised 404. A 404 from the proxy port does NOT mean the route is missing — retest with valid customer credentials before diagnosing.
+- **Database schema layout**: all panel tables live in the `pvnaive` PostgreSQL schema, not `public`.
+- **Auth cookies**: session cookie `__Host-pvnaive_session`; CSRF cookie ends with `pvnaive_csrf`. Mutating API calls require the `X-CSRF-Token` header; customer creation additionally requires an `Idempotency-Key` and `validity.mode: on_creation`.
+- **Karing diagnostics**: "no server available" means the subscription downloaded but parsed 0 nodes (check URI format/User-Agent); TLS `net_error -202` means an untrusted certificate (self-signed/bare IP), not a malformed URI.
+- **Readiness gate**: readiness compares the compose-provided `PVNAIVE_EXPECTED_SCHEMA_VERSION` with the live database schema version; a mismatch marks the stack not-ready. Align the env whenever the schema version is bumped.
+
 ## Customer / Subscription invariants
 
 - existing users must not be deleted during migrations/reconciliation;
@@ -246,3 +259,32 @@ A feature is not DONE unless all applicable Owner DoD items are satisfied, inclu
 ## Context recovery
 
 If context may be lost, update repository state first. A new Chat/Agent must be able to continue from canonical files without the old conversation or historical stage runbooks.
+
+## Live session results (2026-09-14, agent Super-Z)
+
+Facts other agents can rely on; re-verify anything you mutate:
+
+- **GitHub push is unblocked.** The fine-grained PAT now has real Contents:write (Git Data blob probe returned 201 — always verify with the blob probe, never trust the `/repos` permissions JSON). Five commits pushed to `main` as `0c245b5..dbbcb98`; another bot's docs-refresh commits were rebased on cleanly.
+- **Production domain is `namir.softarg.ir`** (A record → 45.141.148.59). Let's Encrypt cert issued and auto-renews. `.env` keys: `PVNAIVE_DOMAIN=namir.softarg.ir`, `PVNAIVE_NAIVE_PUBLIC_HOST=namir.softarg.ir:443`. All subscription URIs are domain-based now — existing Karing clients must re-import their subscription once.
+- **BBR + fq are live on the host** via `/etc/sysctl.d/99-pvnaive-tuning.conf` (bbr, fq, 64MB rmem/wmem, mtu probing, fastopen, backlog/somaxconn) plus `tc qdisc replace dev eth0 root fq`. Verified cubic→bbr. This file is host-side, not in the repo.
+- **Self-service account security is live** (deployed image `pvnaive:fix2`): `POST /api/v1/me/password` + `PATCH /api/v1/me/profile`, store layer `store_me.go`, SECURITY DEFINER functions via deployed migration 0027, UI `web/src/SettingsSecurity.tsx` (owner nav item "امنیت و حساب" → `#/settings/security`). Live 7-step E2E passed (change→login new→restore; 401 wrong-current; 400 short).
+- **UI/UX overhaul "Amber Command Deck" merged to `main`** (not yet in the deployed image): self-hosted Vazirmatn (`@fontsource/vazirmatn`), SVG icon set in `web/src/ui.tsx`, full design-system rewrite of `web/src/styles.css` (glass surfaces, aurora background, luminous borders, entrance animations, focus rings, reduced-motion safe, light+dark), iconified sidebar/login/dashboard, honest cumulative expiry sparkline. All 61 web tests + typecheck + build green locally.
+- **Competitor research moved into the repo**: `docs/competitor/3xui-v3-release-notes.md` (full v3.0→v3.7 release notes). Numbered remaining-work ledger lives at the end of `ROADMAP.md`.
+- **Two open infra issues are documented in `KNOWN_ISSUES.md`**: DEPLOY-001 (boot config renderer drops active credentials — P0) and LINEAGE-001 (deployed migrations 0022..0027 vs repo 0021 — reconcile before next repo-built deploy).
+- Live login (owner): `https://namir.softarg.ir/panel/` with `admin@pvnaive.local` / password in `/opt/pvnaive/.env` on the server. Server root access: see `scripts/ssh_run.py` in the agent workspace (password list maintained there).
+
+- **Readiness 503 incident (2026-09-14, resolved):** the fix2 image bakes `PVNAIVE_EXPECTED_SCHEMA_VERSION=23` in Docker ENV while the live DB is schema 27 — the readiness gate fail-closed for ~2h (panel SPA kept serving, so it looked fine externally). Fixed live via compose override `PVNAIVE_EXPECTED_SCHEMA_VERSION: "27"` in `/opt/pvnaive/docker-compose.override.yml`; container healthy. The image must render this from its own migration count instead of hardcoding.
+- **pvbootstrap is obsolete as a proxy account:** the custom forward_proxy module requires a runtime UUID mapping per basic_auth user; unmapped users are rejected at config load. The live Caddyfile holds customer credentials only (22 entries). Do not re-add pvbootstrap; do not reload unvalidated Caddyfiles (failed reload leaves the running config intact).
+
+## Live session results (2026-09-14 batch 2, agent Super-Z)
+
+DEPLOY-001 and LINEAGE-001 are CLOSED; repo main is now the deployed truth.
+
+- **Migration lineage reconciled (LINEAGE-001 closed).** Repo `db/migrations` is now `0001..0028`: the deployed server files 0022..0027 were upstreamed byte-identical (UP files must never change — `schema_migrations` stores their checksums and `migrate.sh` refuses mismatches). Repo's old `0022_auth_actor_credential_mutations` was superseded by new **0028_auth_actor_credential_mutations_hardened** (adds the authentication-context guard the deployed 0027 lacked; CREATE OR REPLACE upgrades the live functions in place). Server down-file format was normalized to repo convention (exact `-- pvnaive:migration-version NNNN` header, `-- pvnaive:transactional true`, `-- pvnaive:destructive true`, and the `DELETE FROM pvnaive.schema_migrations WHERE version = N;` self-delete — 0024/0025/0026/0027 lacked it and broke `rollback.sh`). SHA256SUMS regenerated. Full 35-gate CI database suite passed on the final tree.
+- **Expected schema is derived, not baked (readiness 503 class closed).** `docker/entrypoint.sh` exports `PVNAIVE_EXPECTED_SCHEMA_VERSION` from the bundled migration count when unset; the Dockerfile ENV was removed. An operator-set env still wins.
+- **Boot config reconcile (DEPLOY-001 closed).** New package `internal/runtimeconfig.ReconcileRuntimeConfigFile`: on every boot the entrypoint runs `pvnaive reconcile-runtime-config`, which lists active `naive_runtime_credentials` (superuser snapshot over the local socket — RLS hides rows from `pvnaive_app` without a request context), decrypts via `runtimecred.ReconcileDesiredCredentials`, no-ops when the config already matches (`naiveruntime.CredentialsMatch`), otherwise renders through the production renderer (`RenderCredentials`), validates with the pinned binary and atomically swaps. Failure is non-fatal by design (boot continues, loud warning). Zero active credentials is a legitimate no-op (fresh-install seed path).
+- **Docker runtime reload works from repo main now.** `internal/runtimeagent` gained `ReloadModeCaddyAdmin`: when `PVNAIVE_RUNTIME_RELOAD_MODE=caddy-admin`, the agent verifies candidates with the pinned binary and reloads via the pinned binary's admin-API CLI instead of systemd. This unblocked customer create/rotate/revoke in the all-in-one image (systemd-only operator made every runtime apply fail in Docker). Bare-metal default remains systemd.
+- **`docker/` build context upstreamed into the repo** (Dockerfile, entrypoint, template, compose, installer) plus `scripts/release/build-docker-context.sh` to assemble `dist/docker`. Deployed image built from the repo tree: `pvnaive:repo-live` (tag of `pvnaive:repo-reconcile1`, sha cfb99744de34).
+- **Let's Encrypt rate-limit incident (2026-09-14, mitigated):** every container recreate re-obtained certificates because the proxy's storage was container-local; namir.softarg.ir hit the 5-per-168h duplicate limit (`retry after 2026-09-15 03:17:36 UTC` — the proxy keeps retrying automatically and will succeed on its own). Interim state: the live site block serves BOTH `namir.softarg.ir` and `45.141.148.59.nip.io`; the nip.io cert is issued and TLS persistence is FIXED via `XDG_DATA_HOME=/var/lib/pvnaive/tls-data` + compose volume `./data/tls` (seeded from the obtained cert — no more per-boot re-obtains). `.env` subscription host is temporarily `45.141.148.59.nip.io:443`; flip back to `namir.softarg.ir(:443)` after the LE window clears (single .env edit + recreate; both names keep working in the dual block, so no client re-import is needed at flip time).
+- **Live E2E after repo-built deploy (all green):** boot logs `derived PVNAIVE_EXPECTED_SCHEMA_VERSION=28` + `RECONCILE_RESULT=CHANGED:false CREDENTIALS:22`; readiness `{"ready":true,"schema":"ok"}`; DB schema 28 (0027 ALREADY_APPLIED with checksum match, 0028 APPLIED); config intact (22 basic_auth + 22 mapping lines, zero pvbootstrap); login 200; customer create 201 through the new caddy-admin apply; subscription 200 with `:443` host; strict-TLS CONNECT 204 (gstatic + cloudflare).
+- Create-customer contract note: `POST /api/v1/customers` is plan-based now (`ProductCreateCustomerInput`); `validity.duration_days` must be sent as `durationDays` (ValidityInput has no json tags). Old `karing-e2e` payloads with `duration_days` fail decode.

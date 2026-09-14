@@ -69,6 +69,10 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
 				handler = http.HandlerFunc(s.publicSubscription)
 			}
+		case "subscriptions.info":
+			if cfg.SubscriptionService != nil && cfg.SubscriptionProxyHost != "" {
+				handler = http.HandlerFunc(s.publicSubscriptionInfo)
+			}
 		case "customers.index":
 			if cfg.CustomerService != nil {
 				handler = http.HandlerFunc(s.listCustomers)
@@ -112,6 +116,14 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "me.show":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.me)
+			}
+		case "me.password.update":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.mePasswordUpdate)
+			}
+		case "me.profile.update":
+			if cfg.AuthStore != nil {
+				handler = http.HandlerFunc(s.meProfileUpdate)
 			}
 		case "me.sessions.index":
 			if cfg.AuthStore != nil {
