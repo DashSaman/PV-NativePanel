@@ -97,6 +97,7 @@ var Routes = []Route{
 	{"GET", "/api/v1/usage/users/{id}", "usage.user", Auditor, false},
 	{"GET", "/api/v1/usage/reconciliation", "usage.reconciliation", Auditor, false},
 	{"GET", "/api/v1/system/status", "system.status", Operator, false},
+	{"GET", "/api/v1/system/stream", "system.stream", Operator, false},
 	{"GET", "/api/v1/panel-access", "panel.access.show", Owner, false},
 	{"PUT", "/api/v1/panel-access", "panel.access.update", Owner, false},
 	{"GET", "/api/v1/audit-events", "audit.index", Auditor, false},

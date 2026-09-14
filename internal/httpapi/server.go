@@ -34,6 +34,9 @@ type ServerConfig struct {
 
 type server struct {
 	config ServerConfig
+	// streams bounds concurrent live SSE streams (system.stream). Pre-allocated
+	// by NewServer; lazily initialized for directly-constructed test servers.
+	streams chan struct{}
 }
 
 func NewServer(configs ...ServerConfig) http.Handler {
@@ -41,7 +44,7 @@ func NewServer(configs ...ServerConfig) http.Handler {
 	if len(configs) > 0 {
 		cfg = configs[0]
 	}
-	s := &server{config: cfg}
+	s := &server{config: cfg, streams: make(chan struct{}, systemStreamMaxClients)}
 	mux := http.NewServeMux()
 	for _, route := range Routes {
 		route := route
@@ -53,6 +56,8 @@ func NewServer(configs ...ServerConfig) http.Handler {
 			handler = http.HandlerFunc(s.ready)
 		case "system.status":
 			handler = http.HandlerFunc(s.systemStatus)
+		case "system.stream":
+			handler = http.HandlerFunc(s.systemStream)
 		case "auth.login":
 			if cfg.AuthService != nil {
 				handler = http.HandlerFunc(s.login)
@@ -329,9 +334,25 @@ type responseBuffer struct {
 	body       []byte
 	header     http.Header
 	wrote      bool
+	streaming  bool
+}
+
+// enableStreaming switches the buffer into direct passthrough mode. It is used
+// by long-lived streaming handlers (system.stream) AFTER their database
+// transaction has been committed: from that point every write goes straight
+// to the client and commitToClient becomes a no-op so the auth wrapper never
+// replays the stream.
+func (buf *responseBuffer) enableStreaming() {
+	if buf.streaming {
+		return
+	}
+	buf.streaming = true
 }
 
 func (buf *responseBuffer) Header() http.Header {
+	if buf.streaming {
+		return buf.w.Header()
+	}
 	if buf.header == nil {
 		buf.header = http.Header{}
 	}
@@ -339,6 +360,14 @@ func (buf *responseBuffer) Header() http.Header {
 }
 
 func (buf *responseBuffer) WriteHeader(status int) {
+	if buf.streaming {
+		if !buf.wrote {
+			buf.wrote = true
+			buf.statusCode = status
+			buf.w.WriteHeader(status)
+		}
+		return
+	}
 	if !buf.wrote {
 		buf.statusCode = status
 		buf.wrote = true
@@ -346,6 +375,13 @@ func (buf *responseBuffer) WriteHeader(status int) {
 }
 
 func (buf *responseBuffer) Write(b []byte) (int, error) {
+	if buf.streaming {
+		if !buf.wrote {
+			buf.wrote = true
+			buf.statusCode = http.StatusOK
+		}
+		return buf.w.Write(b)
+	}
 	if !buf.wrote {
 		buf.statusCode = http.StatusOK
 		buf.wrote = true
@@ -354,7 +390,22 @@ func (buf *responseBuffer) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// flushToClient forwards a flush request to the underlying writer while in
+// streaming mode so SSE frames are delivered immediately.
+// NOTE: deliberately NOT named Flush — BUG-002 contract requires that
+// *responseBuffer never satisfies http.Flusher (a buffered writer that
+// claims flush support silently breaks streaming handlers).
+func (buf *responseBuffer) flushToClient() {
+	if flusher, ok := buf.w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func (buf *responseBuffer) commitToClient() {
+	if buf.streaming {
+		// Streaming frames were already delivered directly to the client.
+		return
+	}
 	dst := buf.w.Header()
 	for k, vv := range buf.header {
 		for _, v := range vv {
