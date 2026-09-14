@@ -53,8 +53,8 @@ func TestFamilyFromQuery(t *testing.T) {
 	}
 }
 
-func TestRenderClashStructure(t *testing.T) {
-	body, err := RenderClash(sampleNodes())
+func TestRenderClashProviderPayload(t *testing.T) {
+	body, err := RenderClashProviderPayload(sampleNodes())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,10 +71,49 @@ func TestRenderClashStructure(t *testing.T) {
 			Username string `yaml:"username"`
 			SNI      string `yaml:"sni"`
 		} `yaml:"proxies"`
+		ProxyProviders map[string]any `yaml:"proxy-providers"`
+		Groups         []any          `yaml:"proxy-groups"`
+	}
+	if err := yaml.Unmarshal(body, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Proxies) != 2 || doc.Proxies[0].Type != "naive" || doc.Proxies[0].Host != "203.0.113.10" || doc.Proxies[0].Port != 443 {
+		t.Fatalf("proxies render wrong: %+v", doc.Proxies)
+	}
+	if doc.Proxies[0].SNI != "placeholder.example" || doc.Proxies[1].SNI != "203.0.113.11" {
+		t.Fatalf("sni hardcode wrong: %+v", doc.Proxies)
+	}
+	if doc.ProxyProviders != nil || doc.Groups != nil {
+		t.Fatal("provider payload must be a bare proxies document")
+	}
+}
+
+func TestRenderClashProfileProviderForm(t *testing.T) {
+	const selfURL = "https://namir.softarg.ir/sub/tok?family=mihomo"
+	body, err := RenderClashProfile(selfURL, sampleNodes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	if strings.Contains(text, "interrupt-exist-connections") {
+		t.Fatal("clash profile must never set interrupt-exist-connections")
+	}
+	var doc struct {
+		Proxies   []any `yaml:"proxies"`
+		Providers map[string]struct {
+			Type     string `yaml:"type"`
+			URL      string `yaml:"url"`
+			Interval int    `yaml:"interval"`
+			Health   struct {
+				Enable   bool   `yaml:"enable"`
+				URL      string `yaml:"url"`
+				Interval int    `yaml:"interval"`
+			} `yaml:"health-check"`
+		} `yaml:"proxy-providers"`
 		Groups []struct {
 			Name      string   `yaml:"name"`
 			Type      string   `yaml:"type"`
-			Proxies   []string `yaml:"proxies"`
+			Use       []string `yaml:"use"`
 			URL       string   `yaml:"url"`
 			Interval  int      `yaml:"interval"`
 			Tolerance int      `yaml:"tolerance"`
@@ -85,51 +124,64 @@ func TestRenderClashStructure(t *testing.T) {
 	if err := yaml.Unmarshal(body, &doc); err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Proxies) != 2 || doc.Proxies[0].Type != "naive" || doc.Proxies[0].Host != "203.0.113.10" || doc.Proxies[0].Port != 443 {
-		t.Fatalf("proxies render wrong: %+v", doc.Proxies)
+	if len(doc.Proxies) != 0 {
+		t.Fatal("full profile must not carry inline proxies (spec §3: provider, never inline)")
+	}
+	pv, ok := doc.Providers["pvnaive"]
+	if !ok || pv.Type != "http" || pv.URL != selfURL || pv.Interval != 14400 {
+		t.Fatalf("pvnaive provider wrong: %+v", doc.Providers)
+	}
+	if !pv.Health.Enable || pv.Health.URL != "http://www.gstatic.com/generate_204" || pv.Health.Interval != 300 {
+		t.Fatalf("provider health-check wrong: %+v", pv.Health)
 	}
 	var urlGroup, balanceGroup *struct {
+		Name      string
 		Type      string
+		Use       []string
 		URL       string
 		Interval  int
 		Tolerance int
 		Strategy  string
-		Proxies   []string
 	}
 	for i := range doc.Groups {
 		g := doc.Groups[i]
 		switch g.Type {
 		case "url-test":
 			urlGroup = &struct {
+				Name      string
 				Type      string
+				Use       []string
 				URL       string
 				Interval  int
 				Tolerance int
 				Strategy  string
-				Proxies   []string
-			}{g.Type, g.URL, g.Interval, g.Tolerance, g.Strategy, g.Proxies}
+			}{g.Name, g.Type, g.Use, g.URL, g.Interval, g.Tolerance, g.Strategy}
 		case "load-balance":
 			balanceGroup = &struct {
+				Name      string
 				Type      string
+				Use       []string
 				URL       string
 				Interval  int
 				Tolerance int
 				Strategy  string
-				Proxies   []string
-			}{g.Type, g.URL, g.Interval, g.Tolerance, g.Strategy, g.Proxies}
+			}{g.Name, g.Type, g.Use, g.URL, g.Interval, g.Tolerance, g.Strategy}
 		}
 	}
-	if urlGroup == nil || urlGroup.Tolerance != 50 || urlGroup.Interval != 300 || urlGroup.URL != "http://www.gstatic.com/generate_204" {
+	if urlGroup == nil || urlGroup.Name != "PV-AUTO" || urlGroup.Tolerance != 50 || urlGroup.Interval != 300 || urlGroup.URL != "http://www.gstatic.com/generate_204" {
 		t.Fatalf("url-test group must use tolerance 50 / interval 300: %+v", urlGroup)
 	}
-	if len(urlGroup.Proxies) != 2 {
-		t.Fatalf("url-test group must reference both nodes: %+v", urlGroup.Proxies)
+	if len(urlGroup.Use) != 1 || urlGroup.Use[0] != "pvnaive" {
+		t.Fatalf("url-test group must use the pvnaive provider: %+v", urlGroup.Use)
 	}
-	if balanceGroup == nil || balanceGroup.Strategy != "round-robin" {
-		t.Fatalf("load-balance group must be round-robin: %+v", balanceGroup)
+	if balanceGroup == nil || balanceGroup.Name != "PV-RR" || balanceGroup.Strategy != "round-robin" || len(balanceGroup.Use) != 1 || balanceGroup.Use[0] != "pvnaive" {
+		t.Fatalf("load-balance group must be round-robin over the provider: %+v", balanceGroup)
 	}
 	if len(doc.Rules) != 1 || doc.Rules[0] != "MATCH,PV-AUTO" {
 		t.Fatalf("rules wrong: %+v", doc.Rules)
+	}
+	if _, err := RenderClashProfile("", sampleNodes()); err == nil {
+		t.Fatal("missing provider url must error")
 	}
 }
 
@@ -233,10 +285,41 @@ func TestRenderBase64ListPrimaryFirst(t *testing.T) {
 	if !strings.HasPrefix(lines[1], "naive+https://user-2:secret-2@203.0.113.11:443") {
 		t.Fatalf("second link wrong: %q", lines[1])
 	}
+	if !strings.HasSuffix(lines[0], "#PVNaive") || !strings.HasSuffix(lines[1], "#PVNaive-2") {
+		t.Fatalf("links must carry the node name fragment (spec §3): %q %q", lines[0], lines[1])
+	}
+}
+
+func TestNaiveRawPrimaryFirstWithFragments(t *testing.T) {
+	body, _, err := RenderMachinePayload(FamilyNaive, sampleNodes(), RenderOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(body)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want primary + alternate, got %d lines", len(lines))
+	}
+	if !strings.HasPrefix(lines[0], "naive+https://user-1:secret-1@203.0.113.10:443#PVNaive") {
+		t.Fatalf("primary first with fragment: %q", lines[0])
+	}
+	if !strings.HasPrefix(lines[1], "naive+https://user-2:secret-2@203.0.113.11:443#PVNaive-2") {
+		t.Fatalf("alternate second: %q", lines[1])
+	}
+	// Non-ASCII display names must survive as a properly percent-encoded
+	// fragment.
+	fa := []Node{{Name: "نود تهران", Host: "203.0.113.9", Port: 443, Username: "u", Password: "p"}}
+	uri, err := fa[0].naiveURI()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(uri, "#%D9%86%D9%88%D8%AF%20%D8%AA%D9%87%D8%B1%D8%A7%D9%86") {
+		t.Fatalf("persian fragment must be percent-encoded: %q", uri)
+	}
 }
 
 func TestRenderMachinePayloadFamilies(t *testing.T) {
 	nodes := sampleNodes()
+	opts := RenderOptions{ProviderURL: "https://namir.softarg.ir/sub/tok?family=mihomo"}
 	cases := map[Family]string{
 		FamilyClash:   "application/yaml; charset=utf-8",
 		FamilySingBox: "application/json; charset=utf-8",
@@ -245,7 +328,7 @@ func TestRenderMachinePayloadFamilies(t *testing.T) {
 		FamilyNaive:   "text/plain; charset=utf-8",
 	}
 	for family, ctype := range cases {
-		body, got, err := RenderMachinePayload(family, nodes)
+		body, got, err := RenderMachinePayload(family, nodes, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", family, err)
 		}
@@ -256,8 +339,26 @@ func TestRenderMachinePayloadFamilies(t *testing.T) {
 			t.Fatalf("%s: empty body", family)
 		}
 	}
-	if _, _, err := RenderMachinePayload(FamilyClash, nil); err == nil {
+	if _, _, err := RenderMachinePayload(FamilyClash, nil, opts); err == nil {
 		t.Fatal("empty node list must error")
+	}
+	// Clash profile vs provider payload split (spec §3 self-referential URL).
+	profileBody, _, err := RenderMachinePayload(FamilyClash, nodes, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(profileBody), "proxy-providers:") {
+		t.Fatal("profile fetch must embed the proxy-provider block")
+	}
+	payloadBody, _, err := RenderMachinePayload(FamilyClash, nodes, RenderOptions{ProviderPayload: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(payloadBody), "proxy-providers:") || !strings.HasPrefix(string(payloadBody), "proxies:") {
+		t.Fatal("provider payload fetch must return the bare proxies document")
+	}
+	if _, _, err := RenderMachinePayload(FamilyClash, nodes, RenderOptions{}); err == nil {
+		t.Fatal("clash profile without provider url must error")
 	}
 }
 
@@ -271,7 +372,7 @@ func TestUserinfoHeaderFormat(t *testing.T) {
 
 func TestNodeValidationAndURIErrors(t *testing.T) {
 	bad := []Node{{Name: "x", Host: "", Port: 443, Username: "u", Password: "p"}}
-	if _, err := RenderClash(bad); err == nil {
+	if _, err := RenderClashProviderPayload(bad); err == nil {
 		t.Fatal("empty host must error")
 	}
 	worse := []Node{{Name: "x", Host: "h", Port: 443, Username: "", Password: "p"}}

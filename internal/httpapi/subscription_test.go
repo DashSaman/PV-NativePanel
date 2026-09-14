@@ -65,7 +65,7 @@ func TestPublicSubscriptionReturnsNaiveURIUsingConfiguredProxyHost(t *testing.T)
 		t.Fatalf("content-type=%q", got)
 	}
 	body := strings.TrimSpace(res.Body.String())
-	if body != "naive+https://customer1:customer-secret-123@proxy.pvnaive.example:443" {
+	if body != "naive+https://customer1:customer-secret-123@proxy.pvnaive.example:443#PVNaive" {
 		t.Fatalf("subscription body=%q", body)
 	}
 	if strings.Contains(body, "attacker.example") {

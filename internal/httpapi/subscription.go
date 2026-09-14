@@ -47,7 +47,12 @@ func (s *server) publicSubscription(w http.ResponseWriter, r *http.Request) {
 	if profile.Node != nil {
 		nodes = append(nodes, *profile.Node)
 	}
-	body, contentType, renderErr := subscription.RenderMachinePayload(family, nodes)
+	opts, err := s.renderOptions(r, token)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	body, contentType, renderErr := subscription.RenderMachinePayload(family, nodes, opts)
 	if renderErr != nil {
 		http.Error(w, "subscription: render failed", http.StatusInternalServerError)
 		return
@@ -69,6 +74,22 @@ func negotiateFamily(query url.Values, userAgent string) (subscription.Family, e
 		return override, nil
 	}
 	return subscription.DetectFamily(userAgent), nil
+}
+
+// renderOptions builds the machine render context. The Mihomo provider URL
+// is the canonical absolute /sub/<token>?family=mihomo address embedded in
+// the full profile; a fetch carrying that explicit override is Mihomo's own
+// proxy-provider engine pulling the node list, so it renders the bare
+// provider payload instead (STEER-003 hot updates).
+func (s *server) renderOptions(r *http.Request, token string) (subscription.RenderOptions, error) {
+	base, err := canonicalSubscriptionURL(s.config.SubscriptionProxyHost, token)
+	if err != nil {
+		return subscription.RenderOptions{}, err
+	}
+	return subscription.RenderOptions{
+		ProviderURL:     base + "?family=mihomo",
+		ProviderPayload: subscription.ProviderPayloadOverride(r.URL.Query()),
+	}, nil
 }
 
 // setSubscriptionDeliveryHeaders adds the mandatory machine-endpoint headers

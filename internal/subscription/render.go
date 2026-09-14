@@ -98,7 +98,11 @@ func (n Node) displayName() string {
 	return n.Host
 }
 
-// naiveURI renders the machine URI for one node (naive+https scheme).
+// naiveURI renders the machine URI for one node (naive+https scheme) with
+// the node display name as URI fragment (spec §3: naive://USER:PASS@IP:443#NAME
+// — clients show the fragment as the node label; percent-encoding is handled
+// by url.URL). The human-facing DirectURI (service.go) deliberately keeps no
+// fragment.
 func (n Node) naiveURI() (string, error) {
 	if err := n.validate(); err != nil {
 		return "", err
@@ -107,7 +111,33 @@ func (n Node) naiveURI() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return uri, nil
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return "", fmt.Errorf("subscription: render naive uri: %w", err)
+	}
+	parsed.Fragment = n.displayName()
+	return parsed.String(), nil
+}
+
+// RenderOptions carries the render context for machine payloads.
+type RenderOptions struct {
+	// ProviderURL is the canonical absolute /sub/<token>?family=mihomo URL
+	// embedded in the Mihomo proxy-provider block (STEER-003 hot-update
+	// source). Required for the FamilyClash full profile.
+	ProviderURL string
+	// ProviderPayload reports the ?family=mihomo explicit override: the fetch
+	// is Mihomo's proxy-provider engine pulling the node list, so the response
+	// must be the bare proxies document instead of the full profile.
+	ProviderPayload bool
+}
+
+// ProviderPayloadOverride reports whether the ?family=mihomo override was
+// passed explicitly. The spec §3 self-referential provider URL
+// (…/sub/<token>?family=mihomo) is fetched by Mihomo's proxy-provider
+// engine; those fetches receive the provider payload (a bare proxies list)
+// while profile fetches receive the full profile embedding that URL.
+func ProviderPayloadOverride(query url.Values) bool {
+	return strings.ToLower(strings.TrimSpace(query.Get("family"))) == "mihomo"
 }
 
 // clashProxy is the Mihomo/Clash naive proxy map. Field names follow the
@@ -123,28 +153,21 @@ type clashProxy struct {
 }
 
 type clashGroup struct {
-	Name    string   `yaml:"name"`
-	Type    string   `yaml:"type"`
-	Use     []string `yaml:"use,omitempty"`
-	Proxies []string `yaml:"proxies,omitempty"`
-	URL     string   `yaml:"url"`
-	Inter   int      `yaml:"interval"`
-	Tol     int      `yaml:"tolerance,omitempty"`
-	Strat   string   `yaml:"strategy,omitempty"`
+	Name  string   `yaml:"name"`
+	Type  string   `yaml:"type"`
+	Use   []string `yaml:"use,omitempty"`
+	URL   string   `yaml:"url"`
+	Inter int      `yaml:"interval"`
+	Tol   int      `yaml:"tolerance,omitempty"`
+	Strat string   `yaml:"strategy,omitempty"`
 }
 
-// RenderClash renders a Mihomo/Clash profile for the given nodes:
-//   - one naive proxy per node (inline; proxy-provider form arrives with the
-//     R4/R5 pool registry — documented in docs/STEERING_SPEC_FA.md §3);
-//   - a url-test group with tolerance 50ms / interval 300s (STEER-005 anti-flap);
-//   - a load-balance round-robin group over the same nodes;
-//   - never sets interrupt-exist-connections anywhere.
-func RenderClash(nodes []Node) ([]byte, error) {
-	if len(nodes) == 0 {
-		return nil, errors.New("subscription: at least one node is required")
-	}
+const clashHealthURL = "http://www.gstatic.com/generate_204"
+
+// clashProxies validates the node set and renders the mihomo naive proxy
+// list (preference order preserved: steering primary first).
+func clashProxies(nodes []Node) ([]clashProxy, error) {
 	proxies := make([]clashProxy, 0, len(nodes))
-	names := make([]string, 0, len(nodes))
 	for _, n := range nodes {
 		if err := n.validate(); err != nil {
 			return nil, err
@@ -158,21 +181,77 @@ func RenderClash(nodes []Node) ([]byte, error) {
 			Host: n.Host, Port: n.Port,
 			Username: n.Username, Password: n.Password, SNI: sni,
 		})
-		names = append(names, n.displayName())
 	}
+	return proxies, nil
+}
 
-	const healthURL = "http://www.gstatic.com/generate_204"
+// RenderClashProviderPayload renders the canonical Mihomo proxy-provider
+// payload: a bare `proxies:` document (STEER-003). It is served to the
+// fetches triggered by the proxy-providers.pvnaive.url inside the full
+// profile, so provider updates stay hot — the client refreshes its node
+// list without reloading the profile.
+func RenderClashProviderPayload(nodes []Node) ([]byte, error) {
+	if len(nodes) == 0 {
+		return nil, errors.New("subscription: at least one node is required")
+	}
+	proxies, err := clashProxies(nodes)
+	if err != nil {
+		return nil, err
+	}
+	out, err := yaml.Marshal(map[string]any{"proxies": proxies})
+	if err != nil {
+		return nil, fmt.Errorf("subscription: render clash provider payload: %w", err)
+	}
+	return out, nil
+}
+
+// RenderClashProfile renders the full Mihomo/Clash profile per spec §3:
+//   - the node set arrives exclusively through the pvnaive http
+//     proxy-provider (interval 4h + gstatic health-check) so updates are hot
+//     and the profile itself never needs a reload;
+//   - a url-test group with tolerance 50ms / interval 300s (STEER-005
+//     anti-flap) and a load-balance round-robin group, both `use` the
+//     provider;
+//   - interrupt-exist-connections is never set anywhere.
+//
+// providerURL is the absolute canonical /sub/<token>?family=mihomo URL the
+// client re-fetches on the provider interval.
+func RenderClashProfile(providerURL string, nodes []Node) ([]byte, error) {
+	if len(nodes) == 0 {
+		return nil, errors.New("subscription: at least one node is required")
+	}
+	if _, err := clashProxies(nodes); err != nil {
+		return nil, err
+	}
+	providerURL = strings.TrimSpace(providerURL)
+	if providerURL == "" {
+		return nil, errors.New("subscription: clash provider url is required")
+	}
+	// interval 14400s == the spec's 4h, emitted as integer seconds because
+	// every parser in the Clash family (Mihomo/Stash/legacy) accepts it,
+	// while duration strings predate some of them.
 	doc := map[string]any{
-		"proxies": proxies,
+		"proxy-providers": map[string]any{
+			"pvnaive": map[string]any{
+				"type":     "http",
+				"url":      providerURL,
+				"interval": 14400,
+				"health-check": map[string]any{
+					"enable":   true,
+					"url":      clashHealthURL,
+					"interval": 300,
+				},
+			},
+		},
 		"proxy-groups": []clashGroup{
-			{Name: "PV-AUTO", Type: "url-test", Proxies: names, URL: healthURL, Inter: 300, Tol: 50},
-			{Name: "PV-RR", Type: "load-balance", Proxies: names, URL: healthURL, Inter: 300, Strat: "round-robin"},
+			{Name: "PV-AUTO", Type: "url-test", Use: []string{"pvnaive"}, URL: clashHealthURL, Inter: 300, Tol: 50},
+			{Name: "PV-RR", Type: "load-balance", Use: []string{"pvnaive"}, URL: clashHealthURL, Inter: 300, Strat: "round-robin"},
 		},
 		"rules": []string{"MATCH,PV-AUTO"},
 	}
 	out, err := yaml.Marshal(doc)
 	if err != nil {
-		return nil, fmt.Errorf("subscription: render clash: %w", err)
+		return nil, fmt.Errorf("subscription: render clash profile: %w", err)
 	}
 	return out, nil
 }
@@ -285,10 +364,14 @@ func UserinfoHeader(upload, download, total, expireUnix int64) string {
 }
 
 // RenderMachinePayload renders the negotiated family body.
-func RenderMachinePayload(family Family, nodes []Node) ([]byte, string, error) {
+func RenderMachinePayload(family Family, nodes []Node, opts RenderOptions) ([]byte, string, error) {
 	switch family {
 	case FamilyClash:
-		body, err := RenderClash(nodes)
+		if opts.ProviderPayload {
+			body, err := RenderClashProviderPayload(nodes)
+			return body, "application/yaml; charset=utf-8", err
+		}
+		body, err := RenderClashProfile(opts.ProviderURL, nodes)
 		return body, "application/yaml; charset=utf-8", err
 	case FamilySingBox, FamilyHiddify:
 		body, err := RenderSingBox(nodes)
@@ -297,14 +380,20 @@ func RenderMachinePayload(family Family, nodes []Node) ([]byte, string, error) {
 		body, err := RenderBase64List(nodes)
 		return body, "text/plain; charset=utf-8", err
 	case FamilyNaive:
+		// spec §3: raw naive = current primary first, then alternates,
+		// one naive:// URI per line (single node ⇒ single line).
 		if len(nodes) == 0 {
 			return nil, "", errors.New("subscription: at least one node is required")
 		}
-		uri, err := nodes[0].naiveURI()
-		if err != nil {
-			return nil, "", err
+		lines := make([]string, 0, len(nodes))
+		for _, n := range nodes {
+			uri, err := n.naiveURI()
+			if err != nil {
+				return nil, "", err
+			}
+			lines = append(lines, uri)
 		}
-		return []byte(uri + "\n"), "text/plain; charset=utf-8", nil
+		return []byte(strings.Join(lines, "\n") + "\n"), "text/plain; charset=utf-8", nil
 	default:
 		return nil, "", fmt.Errorf("subscription: unsupported family %q", family)
 	}
