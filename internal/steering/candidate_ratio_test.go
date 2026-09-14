@@ -66,3 +66,30 @@ func TestEvaluateCandidateRatioKeepsBestWhenScoresAreNonPositive(t *testing.T) {
 		t.Fatalf("best node must remain first in candidate set: %+v", d.Candidates)
 	}
 }
+
+func TestTopKUsesRatioFilteredDecisionCandidates(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.CandidateRatio = 0.85
+	eng, err := NewEngine(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	aggs := []Aggregate{
+		agg("u-topk", "node-a", 10, 0, 0, 0, 100),
+		agg("u-topk", "node-b", 20, 0, 0, 0, 100),
+		agg("u-topk", "node-c", 30, 0, 0, 0, 100),
+	}
+	health := healthAll([]string{"node-a", "node-b", "node-c"}, HealthHealthy)
+
+	d := eng.Evaluate("u-topk", 0, aggs, health)
+	got := TopK(d.Candidates, cfg.TopKMobile)
+	if len(got) != len(d.Candidates) {
+		t.Fatalf("TopK renderer input must be the ratio-filtered decision candidates: got=%+v candidates=%+v", got, d.Candidates)
+	}
+	for i := range got {
+		if got[i] != d.Candidates[i] {
+			t.Fatalf("TopK must preserve ratio-filtered decision order: got=%+v candidates=%+v", got, d.Candidates)
+		}
+	}
+}
