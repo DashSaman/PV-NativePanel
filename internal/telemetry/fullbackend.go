@@ -11,10 +11,25 @@ import (
 // telemetry (NetworkSampleBackend) so a single Unix-socket handler serves both
 // boundaries. The embedding never widens table privileges: every method still
 // goes through the same SECURITY DEFINER functions.
+//
+// BUG-ACCT-001 guard: both embedded types historically declared an `Ingest`
+// method, which made FullBackend's promoted method set ambiguous — it
+// satisfied NEITHER Ingestor nor networkSampleIngestor, so every proxy
+// CONNECT was fail-closed with 503. The sample method is renamed
+// (IngestNetworkSample) and the compile-time assertions below pin every
+// telemetry interface so a future conflict fails the build, not production.
 type FullBackend struct {
 	*PostgresStore
 	*NetworkSampleBackend
 }
+
+var (
+	_ Ingestor              = (*FullBackend)(nil)
+	_ Authorizer            = (*FullBackend)(nil)
+	_ Claimer               = (*FullBackend)(nil)
+	_ SessionPeerRecorder   = (*FullBackend)(nil)
+	_ networkSampleIngestor = (*FullBackend)(nil)
+)
 
 func NewFullBackend(db *sql.DB, cfg NetworkAggConfig) (*FullBackend, error) {
 	store, err := NewPostgresStore(db)

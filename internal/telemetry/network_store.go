@@ -181,7 +181,7 @@ func NewNetworkSampleBackend(store *PostgresStore, holder *EWMAHolder) (*Network
 }
 
 // Ingest is the socket-facing entry point.
-func (b *NetworkSampleBackend) Ingest(ctx context.Context, request NetworkSampleRequest) (NetworkSampleResult, error) {
+func (b *NetworkSampleBackend) IngestNetworkSample(ctx context.Context, request NetworkSampleRequest) (NetworkSampleResult, error) {
 	if b == nil || b.store == nil {
 		return NetworkSampleResult{Rejected: true, Reason: "unavailable"}, errors.New("telemetry: network backend unavailable")
 	}
@@ -289,7 +289,7 @@ func (b *NetworkSampleBackend) RestoreAggregates(ctx context.Context, staleAfter
 const TelemetryNetworkSamplePath = "/v1/accounting/network-sample"
 
 type networkSampleIngestor interface {
-	Ingest(context.Context, NetworkSampleRequest) (NetworkSampleResult, error)
+	IngestNetworkSample(context.Context, NetworkSampleRequest) (NetworkSampleResult, error)
 }
 
 func (h *telemetryHandler) handleNetworkSample(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +306,7 @@ func (h *telemetryHandler) handleNetworkSample(w http.ResponseWriter, r *http.Re
 		writeTelemetryError(w, http.StatusBadRequest, "invalid network sample request")
 		return
 	}
-	result, err := backend.Ingest(r.Context(), request)
+	result, err := backend.IngestNetworkSample(r.Context(), request)
 	if err != nil {
 		status := http.StatusConflict
 		if strings.Contains(result.Reason, "invalid") || result.Reason == "empty_batch" || result.Reason == "batch_too_large" {

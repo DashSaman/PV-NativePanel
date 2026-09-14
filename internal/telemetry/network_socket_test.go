@@ -53,13 +53,13 @@ func TestNetworkSampleHandlerRejectionPaths(t *testing.T) {
 
 func TestNetworkSampleBackendIngestValidation(t *testing.T) {
 	backend := &NetworkSampleBackend{store: &PostgresStore{}, holder: NewEWMAHolder(DefaultNetworkAggConfig())}
-	if _, err := backend.Ingest(context.Background(), NetworkSampleRequest{Samples: nil}); err == nil {
+	if _, err := backend.IngestNetworkSample(context.Background(), NetworkSampleRequest{Samples: nil}); err == nil {
 		t.Fatal("empty batch must be rejected")
 	}
 	valid := netTestSample(1, time.Now().UTC(), "33333333-3333-3333-3333-333333333333", 1000, 10, 0, 0, 0, 1000)
 	// PostgresStore without a live DB: Ingest must fail closed (DB required),
 	// not silently pretend success.
-	if _, err := backend.Ingest(context.Background(), NetworkSampleRequest{Samples: []NetworkSample{valid}}); err == nil {
+	if _, err := backend.IngestNetworkSample(context.Background(), NetworkSampleRequest{Samples: []NetworkSample{valid}}); err == nil {
 		t.Fatal("ingest without DB must fail closed")
 	}
 	_ = networkTestBackend
