@@ -4,11 +4,11 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Verified baseline
 
-- Validated code main before this documentation commit: `deaf0f8edb1bdbedbaf71a39518d1a3fe941b693`.
+- Validated code main before this documentation commit: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 (test-only R8 SSE recorder synchronization) merged after exact head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy. Post-merge CI `34904000208` is still running at this checkpoint.
 - Task13 PR #108 is merged after exact-head CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, and real pinned-Caddy HTTP/1.1+HTTP/2 acceptance all passed.
 - Task13 accepted binary SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`; target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting were verified.
 - R8 issue #116 is completed on main. PR #117 was closed unmerged as stale/superseded by the stronger main implementation and fixes.
-- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated.
+- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated. A fresh disposable PostgreSQL 18 run of `tests/db/pool_registry_migration_test.sh` passed on exact main `3eee556b...`, confirming schema-33 registry/token/revision/heartbeat/drain/privilege invariants.
 
 ## Production blocker
 
@@ -26,9 +26,9 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 - Worker 1 — independent security/accounting review: Task13 post-merge boundaries, R5/R6 privilege boundaries, R8 accessibility/RBAC honesty.
 - Worker 2 — R8 UI-002: ledger reconciliation + truthful per-node/per-user projections, RED-first.
-- Worker 3 — R5 pull/STEER-006 integration and R8 stream-RBAC isolation regression.
+- Worker 3 — R5 pull/STEER-006 integration and R8 stream-RBAC isolation regression; next concrete gate is real disposable mTLS multi-node pull/heartbeat/drift, not another unit-only proof.
 - Worker 4 — R5/R6 browser/multi-node E2E and real Karing acceptance when a suitable client is available.
-- Coordinator — exact-head integration only; no Production mutation without trusted audit + fresh backup + rollback.
+- Coordinator — exact-head integration only; no Production mutation without trusted audit + fresh backup + rollback. Only one execution worker is currently online; use it for independent disposable acceptance while Production/other registrations are unavailable.
 
 ## Invariants
 

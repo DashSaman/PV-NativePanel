@@ -4,11 +4,12 @@ Last updated: 2026-09-15 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Validated code main before this documentation checkpoint: `deaf0f8edb1bdbedbaf71a39518d1a3fe941b693`.
+- Validated code main before this documentation checkpoint: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 fixed the R8 SSE test-harness race with a synchronized recorder; exact PR head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy before guarded merge. Post-merge main CI `34904000208` was still running at this checkpoint and is not pre-declared green.
 - R8 live monitoring slice is integrated on main. The superseded PR #117 was closed unmerged and issue #116 was closed completed after browser E2E and exact-head CI/accounting/forwardproxy validation on the main implementation.
 - Task13 PR #108 is merged. Its final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, and Pinned Forwardproxy `34897871355` before merge.
 - Task13 real pinned-Caddy acceptance also passed on that exact head: HTTP/1.1 + HTTP/2 negotiated, forged tuple rejected, target-only kill, sibling survival, repeated-kill idempotency, credential survival, unchanged Caddy PID, and exactly-once final accounting. Reproducible Caddy SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`.
 - Karing PR #101 remains unmerged until a real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is recorded.
+- Fresh disposable PostgreSQL 18 validation on exact main `3eee556b...` passed `tests/db/pool_registry_migration_test.sh`: schema >=33, single-use enrollment, monotonic append-only revisions, heartbeat non-rewind, drain-before-disable, and SECURITY DEFINER/no-direct-table-access boundaries.
 
 ## Production truth ceiling
 
@@ -26,11 +27,11 @@ Last updated: 2026-09-15 (Asia/Tehran)
 
 ## Worker allocation
 
-- Worker 1: independent security/accounting review of merged Task13 boundaries plus R5/R6/R8 RBAC/accessibility review; report findings only, no speculative rewrites.
+- Worker 1: independent security/accounting review of merged Task13 boundaries plus R5/R6/R8 RBAC/accessibility review; include the now race-clean R8 SSE harness and report findings only, no speculative rewrites.
 - Worker 2: R8 UI-002 ledger reconciliation and per-node/per-user truthful projections; RED-first tests and bounded data structures.
 - Worker 3: R5 mTLS pull/STEER-006 integration + R8 stream-RBAC regression; preserve TLS-cert authoritative identity and exact-accounting separation.
 - Worker 4: disposable R5/R6 browser/multi-node rehearsals and real Karing acceptance when a suitable client host is available.
-- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates.
+- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates. Fresh remote inventory currently exposes one execution worker only; queue independent work there while other registrations/Production remain offline.
 
 ## Safety invariants
 
