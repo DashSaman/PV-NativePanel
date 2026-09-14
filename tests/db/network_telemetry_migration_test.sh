@@ -79,10 +79,14 @@ INSERT INTO pvnaive.naive_runtime_credentials (
 -- (service_terms -> user_runtime_credentials), same as production lifecycle.
 INSERT INTO pvnaive.service_terms (
   id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
-  purchased_at, state, renewal_kind
+  purchased_at, state, renewal_kind,
+  accounting_baseline_state, accounting_baseline_source,
+  accounting_baseline_cutoff_at, accounting_baseline_upload_bytes,
+  accounting_baseline_download_bytes
 )
 SELECT 'cccccccc-cccc-cccc-cccc-cccccccccccc', tenant_id, id, 1000000, 2592000,
-       'on_creation', '2026-09-14T09:00:00Z', 'active', 'initial'
+       'on_creation', '2026-09-14T09:00:00Z', 'active', 'initial',
+       'known', 'fresh_managed_term', '2026-09-14T09:00:00Z', 0, 0
 FROM pvnaive.users WHERE id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
 INSERT INTO pvnaive.user_runtime_credentials (
