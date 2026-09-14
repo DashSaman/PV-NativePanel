@@ -74,6 +74,24 @@ INSERT INTO pvnaive.naive_runtime_credentials (
   decode(repeat('12',32),'hex'), decode(repeat('13',12),'hex'), 'runtime-v1',
   'active', 'panel', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 );
+
+-- network_sample_ingest resolves the user through the durable binding chain
+-- (service_terms -> user_runtime_credentials), same as production lifecycle.
+INSERT INTO pvnaive.service_terms (
+  id, tenant_id, user_id, quota_bytes, duration_seconds, start_policy,
+  purchased_at, state, renewal_kind
+)
+SELECT 'cccccccc-cccc-cccc-cccc-cccccccccccc', tenant_id, id, 1000000, 2592000,
+       'on_creation', '2026-09-14T09:00:00Z', 'active', 'initial'
+FROM pvnaive.users WHERE id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+INSERT INTO pvnaive.user_runtime_credentials (
+  id, tenant_id, user_id, service_term_id, runtime_credential_id, role, bound_at
+)
+SELECT 'dddddddd-dddd-dddd-dddd-dddddddddddd', tenant_id, id,
+       'cccccccc-cccc-cccc-cccc-cccccccccccc',
+       '11111111-1111-1111-1111-111111111111', 'primary', '2026-09-14T09:30:00Z'
+FROM pvnaive.users WHERE id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 SQL
 
 ingest() {
