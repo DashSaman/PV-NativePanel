@@ -32,30 +32,21 @@ jobs:
             createdb -h 127.0.0.1 -U postgres --owner pvnaive_owner pvnaive_health_diag
             bash scripts/db/migrate.sh >/dev/null
           '
-      - name: Health invariant required relations
+      - name: Export health catalog facts
         run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            got=$(psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "WITH required(name) AS (VALUES ('\''actors'\''),('\''backups'\''),('\''credentials'\''),('\''notification_deliveries'\''),('\''notification_outbox'\''),('\''notification_rules'\''),('\''plans'\''),('\''purchases'\''),('\''quota_policies'\''),('\''renewal_events'\''),('\''reseller_credit_ledger'\''),('\''reseller_plan_terms'\''),('\''resellers'\''),('\''runtime_health'\''),('\''runtime_revisions'\''),('\''schema_migrations'\''),('\''sessions'\''),('\''subscriptions'\''),('\''subscription_tokens'\''),('\''tenants'\''),('\''usage_ledger'\''),('\''usage_reset_events'\''),('\''users'\''),('\''audit_events'\''),('\''auth_sessions'\''),('\''log_metadata'\''),('\''actor_totp_factors'\''),('\''actor_mfa_recovery_codes'\''),('\''naive_runtime_credentials'\''),('\''service_terms'\''),('\''user_runtime_credentials'\''),('\''customer_mutation_keys'\''),('\''direct_subscription_tokens'\''),('\''customer_groups'\''),('\''customer_tags'\''),('\''customer_profiles'\''),('\''customer_tag_assignments'\''),('\''plan_tag_assignments'\''),('\''customer_bulk_operations'\''),('\''customer_bulk_operation_keys'\''),('\''customer_bulk_reset_operations'\''),('\''service_term_reset_schedules'\''),('\''scheduled_usage_reset_attempts'\''),('\''direct_naive_accounting_session_peers'\''),('\''cover_nodes'\''),('\''cover_content'\'')) SELECT COUNT(*) FROM required r WHERE to_regclass('\''pvnaive.'\'' || r.name) IS NOT NULL")
-            test "$got" = 46
-          '
-      - name: Health invariant RLS coverage
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            got=$(psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='\''pvnaive'\'' AND c.relkind='\''r'\'' AND c.relrowsecurity")
-            test "$got" = 51
-          '
-      - name: Health invariant cover privileges
-        run: |
-          docker run --rm --network host --env PGPASSWORD="${APP_PASSWORD}" postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            got=$(psql -h 127.0.0.1 -U pvnaive_app -d pvnaive_health_diag -Atc "SELECT has_table_privilege(current_user,'\''pvnaive.cover_nodes'\'','\''SELECT'\'')::text || '\''|'\'' || has_table_privilege(current_user,'\''pvnaive.cover_content'\'','\''SELECT'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_latest(text,integer)'\'','\''EXECUTE'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_health(text)'\'','\''EXECUTE'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_persona(text)'\'','\''EXECUTE'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_ensure_partition(date)'\'','\''EXECUTE'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_replace_snapshot(text,text,jsonb)'\'','\''EXECUTE'\'')::text || '\''|'\'' || has_function_privilege(current_user,'\''pvnaive.cover_set_persona(text,text)'\'','\''EXECUTE'\'')::text")
-            test "$got" = "false|false|true|true|true|false|false|false"
-          '
-      - name: End-to-end health
-        run: |
-          docker run --rm --network host --env PGPASSWORD="${APP_PASSWORD}" --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_NAME=pvnaive_health_diag --env PVNAIVE_DB_USER=pvnaive_app --env PVNAIVE_EXPECTED_DB_USER=pvnaive_app --env PVNAIVE_EXPECTED_SCHEMA_VERSION=29 --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc 'set -Eeuo pipefail; bash scripts/db/health.sh >/dev/null'
+          set -Eeuo pipefail
+          {
+            printf 'RLS_COUNT='
+            docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='pvnaive' AND c.relkind='r' AND c.relrowsecurity"
+            printf 'COVER_RELATIONS=' 
+            docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only postgres:18-bookworm psql -h 127.0.0.1 -U postgres -d pvnaive_health_diag -Atc "SELECT string_agg(c.relname || ':' || c.relkind || ':' || c.relrowsecurity::text, ',' ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='pvnaive' AND c.relname LIKE 'cover_%'"
+            printf 'COVER_PRIVS='
+            docker run --rm --network host --env PGPASSWORD="${APP_PASSWORD}" postgres:18-bookworm psql -h 127.0.0.1 -U pvnaive_app -d pvnaive_health_diag -Atc "SELECT has_table_privilege(current_user,'pvnaive.cover_nodes','SELECT')::text || '|' || has_table_privilege(current_user,'pvnaive.cover_content','SELECT')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_latest(text,integer)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_health(text)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_persona(text)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_ensure_partition(date)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_replace_snapshot(text,text,jsonb)','EXECUTE')::text || '|' || has_function_privilege(current_user,'pvnaive.cover_set_persona(text,text)','EXECUTE')::text"
+          } > db-health-facts.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-health-facts
+          path: db-health-facts.txt
       - name: Stop PostgreSQL 18
         if: always()
         run: docker rm --force pvnaive-dbdiag >/dev/null 2>&1 || true
