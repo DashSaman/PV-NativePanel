@@ -293,3 +293,55 @@ func parseSSEFramesForTest(body string) []sseFrame {
 	}
 	return frames
 }
+
+// BUG-STREAM-001: streaming responses must reach the wire through the
+// production middleware chain. responseStatusRecorder previously did not
+// forward http.Flusher, so SSE frames stayed in net/http's bufio buffer and
+// clients observed zero bytes while the handler kept running.
+func TestStreamFlushesThroughInstrumentationChain(t *testing.T) {
+	s := &server{config: ServerConfig{SystemStatus: func(*http.Request) (any, error) {
+		return map[string]any{"sample": map[string]any{"cpu_percent": 1.0}}, nil
+	}}}
+	handler := WithOperationalMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = withAuthenticatedRequest(r, &auth.AuthenticatedTx{
+			Principal: auth.Principal{ActorID: "operator-1", Role: "operator"},
+		}, "session-token")
+		s.systemStream(w, r)
+	}))
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/api/v1/system/stream?interval=100", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status=%d", res.StatusCode)
+	}
+
+	// The first frame must arrive WITHOUT the handler returning: if the flush
+	// is swallowed anywhere in the middleware chain this loop times out with
+	// only the retry hint (or nothing) received.
+	deadline := time.Now().Add(3 * time.Second)
+	var seen strings.Builder
+	chunk := make([]byte, 512)
+	for !strings.Contains(seen.String(), "event: status") {
+		if time.Now().After(deadline) {
+			t.Fatalf("no status frame within deadline; received so far: %q", seen.String())
+		}
+		n, err := res.Body.Read(chunk)
+		if n > 0 {
+			seen.Write(chunk[:n])
+		}
+		if err != nil {
+			t.Fatalf("stream read failed; received so far %q: %v", seen.String(), err)
+		}
+	}
+}

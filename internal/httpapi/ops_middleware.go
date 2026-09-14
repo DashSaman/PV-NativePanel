@@ -36,6 +36,21 @@ func (w *responseStatusRecorder) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
+// Flush forwards flush requests so streaming handlers (system.stream) deliver
+// frames immediately. Without this the recorder hides http.Flusher and SSE
+// bytes stay buffered in net/http until the handler returns (BUG-STREAM-001).
+func (w *responseStatusRecorder) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+// Unwrap lets http.ResponseController reach the underlying writer through
+// this recorder.
+func (w *responseStatusRecorder) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 func (w *responseStatusRecorder) Write(body []byte) (int, error) {
 	if w.status == 0 {
 		w.status = http.StatusOK
