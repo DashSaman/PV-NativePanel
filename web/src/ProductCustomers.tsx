@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Principal } from "./auth";
 import {
   createProductCustomer,
@@ -133,6 +133,26 @@ function createValidity(noExpiry: boolean, validityMode: "on_creation" | "on_fir
   if (noExpiry) return undefined;
   if (validityMode === "fixed_expiry") return { mode: validityMode, expires_at: new Date(fixedExpiry).toISOString() } as const;
   return { mode: validityMode, duration_days: Number(days) } as const;
+}
+
+
+// The row actions menu is rendered inside a scroll container that clips
+// absolutely-positioned overflow. When it opens, switch it to fixed
+// coordinates anchored to the summary button, flipping upward when the
+// viewport bottom is too close so every action stays reachable.
+function syncRowMenu(details: HTMLDetailsElement) {
+  const menu = details.querySelector<HTMLElement>(".more-menu");
+  if (!menu) return;
+  if (!details.open) { menu.style.position = menu.style.top = menu.style.right = menu.style.bottom = ""; return; }
+  menu.style.visibility = "hidden";
+  menu.style.position = "fixed";
+  const rect = details.getBoundingClientRect();
+  const menuH = menu.offsetHeight || 300;
+  const below = rect.bottom + menuH + 8 <= window.innerHeight;
+  menu.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+  menu.style.top = below ? `${rect.bottom + 6}px` : "";
+  menu.style.bottom = below ? "" : `${Math.max(8, window.innerHeight - rect.top + 6)}px`;
+  menu.style.visibility = "visible";
 }
 
 function CreateForm({ plans, groups, tags, onDone, onClose }: { plans: ProductPlan[]; groups: ProductGroup[]; tags: ProductTag[]; onDone: (result: { username: string; password?: string; subscriptionPath?: string; accountPagePath?: string }) => Promise<void>; onClose: () => void }) {
@@ -498,7 +518,7 @@ export function ProductCustomers({ role: _role }: Props) {
             <td><div className="presence-cell"><i className={usage.presence === "آنلاین" ? "online" : "offline"}/><div><strong>{usage.exact ? usage.presence : "—"}</strong><small>{usage.exact ? `${usage.sessions} نشست` : ""}</small></div></div></td>
             <td><div className="stack-cell"><strong>{customer.no_expiry ? "بدون انقضا" : formatPanelDate(customer.expires_at)}</strong><small>{customer.start_policy === "on_first_successful_connection" ? "از اولین اتصال" : "از زمان ثبت"}</small></div></td>
             <td><label className="toggle-switch" data-disabled={revoked ? "true" : "false"} title={suspended ? "فعال‌سازی" : "تعلیق"}><input type="checkbox" checked={!suspended && !revoked} disabled={busy || revoked} onChange={() => void lifecycle(customer, suspended ? "resume" : "suspend")} /><span/></label></td>
-            <td><div className="row-actions"><details className="row-more"><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button disabled={busy || revoked} onClick={() => void resetUsage(customer)}>Reset مصرف</button><button disabled={busy} onClick={() => void openSessions(customer)}>نشست‌های فعال</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
+            <td><div className="row-actions"><details className="row-more" onToggle={(e) => syncRowMenu(e.currentTarget)}><summary aria-label={`عملیات ${customer.username}`}>•••</summary><div className="more-menu"><button disabled={busy} onClick={() => setDialog({ type: "metadata", customer })}>ویرایش مشخصات</button><button disabled={busy} onClick={() => setDialog({ type: "renew", customer })}>تمدید سرویس</button><button disabled={busy || !customer.subscription_retrievable} onClick={() => void openSubscription(customer)}>اشتراک و QR</button><button disabled={busy} onClick={() => setDialog({ type: "password", customer })}>تغییر رمز</button><button disabled={busy} onClick={() => void openSubscription(customer, true)}>صدور لینک جدید</button><button disabled={busy || revoked} onClick={() => void resetUsage(customer)}>Reset مصرف</button><button disabled={busy} onClick={() => void openSessions(customer)}>نشست‌های فعال</button><button className="danger-action" disabled={busy || revoked} onClick={() => void lifecycle(customer, "revoke")}>لغو حساب</button></div></details></div></td>
           </tr>;
         })}
       </tbody></table></div>
