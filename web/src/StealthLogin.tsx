@@ -45,9 +45,9 @@ function AuroraMesh() {
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
       const blobs: Array<[number, number, number, string]> = [
-        [0.3 + 0.1 * Math.sin(t / 9000), 0.35 + 0.08 * Math.cos(t / 11000), 0.55, "rgba(245,185,66,0.10)"],
-        [0.7 + 0.08 * Math.cos(t / 8000), 0.3 + 0.1 * Math.sin(t / 12000), 0.5, "rgba(96,165,250,0.08)"],
-        [0.5 + 0.12 * Math.sin(t / 13000), 0.75 + 0.06 * Math.cos(t / 9000), 0.6, "rgba(74,222,128,0.05)"],
+        [0.3 + 0.1 * Math.sin(t / 9000), 0.35 + 0.08 * Math.cos(t / 11000), 0.55, "rgba(34,211,238,0.10)"],
+        [0.7 + 0.08 * Math.cos(t / 8000), 0.3 + 0.1 * Math.sin(t / 12000), 0.5, "rgba(129,140,248,0.09)"],
+        [0.5 + 0.12 * Math.sin(t / 13000), 0.75 + 0.06 * Math.cos(t / 9000), 0.6, "rgba(56,189,248,0.06)"],
       ];
       for (const [cx, cy, rr, color] of blobs) {
         const g = ctx.createRadialGradient(cx * w, cy * h, 0, cx * w, cy * h, rr * Math.max(w, h));

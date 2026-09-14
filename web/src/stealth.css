@@ -75,7 +75,7 @@
   color: var(--text, #e8eaf0);
   font: inherit;
   padding: 2px 0 0;
-  caret-color: var(--accent, #f5b942);
+  caret-color: var(--accent, #22d3ee);
 }
 
 .stealth-field input::placeholder {
@@ -89,9 +89,9 @@
 
 /* Revealed state (hover or focus-within): glass surface materializes. */
 .stealth-field.revealed {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(245, 185, 66, 0.35);
-  box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.08);
+  background: rgba(148, 197, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.09), 0 0 24px rgba(34, 211, 238, 0.08);
 }
 
 .stealth-field.revealed .stealth-label {
@@ -102,8 +102,8 @@
 /* Keyboard visibility: any focus inside also materializes (CSS backup for
    the JS state machine — belt and braces for AT and autofill UIs). */
 .stealth-field:focus-within {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(245, 185, 66, 0.35);
+  background: rgba(148, 197, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.4);
 }
 
 .stealth-field:focus-within .stealth-label {

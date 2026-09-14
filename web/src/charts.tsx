@@ -168,8 +168,9 @@ export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFor
       <defs>
         {series.map((s, i) => (
           <linearGradient key={s.name} id={`mgrad-${stableId(ariaLabel)}-${i}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={s.color} stopOpacity="0.34" />
-            <stop offset="100%" stopColor={s.color} stopOpacity="0.02" />
+            <stop offset="0%" stopColor={s.color} stopOpacity="0.45" />
+            <stop offset="55%" stopColor={s.color} stopOpacity="0.14" />
+            <stop offset="100%" stopColor={s.color} stopOpacity="0.03" />
           </linearGradient>
         ))}
       </defs>
@@ -182,9 +183,10 @@ export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFor
           </g>
         );
       })}
+      <line x1={width - 0.5} x2={width - 0.5} y1={padTop} y2={padTop + plotH} className="monitor-cursor" vectorEffect="non-scaling-stroke" />
       {paths.map((path) => <path key={`a-${path.key}`} d={path.area} fill={`url(#mgrad-${stableId(ariaLabel)}-${path.gradientIndex})`} stroke="none" />)}
       {paths.map((path) => (
-        <path key={`l-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="2"
+        <path key={`l-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="2.25"
           vectorEffect="non-scaling-stroke" strokeLinecap="round" className="monitor-line" />
       ))}
       <line x1="0" x2={width} y1={padTop + plotH} y2={padTop + plotH} className="monitor-axis" />

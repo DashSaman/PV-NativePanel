@@ -1,9 +1,9 @@
-// Design tokens for the PVNaive command-center UI (R8).
+// Design tokens for the PVNaive command-center UI (R9 "Midnight Glass Ops").
 //
 // Methodology: ui-ux-pro-max-skill (typography scale, 8pt spacing grid,
-// semantic color roles, WCAG AA contrast, motion rules). These tokens are the
-// single source of truth consumed by CSS custom properties and TS styles;
-// component code must not invent raw values outside this file.
+// semantic color roles, WCAG AA contrast, motion rules). These tokens mirror
+// the CSS custom properties in styles.css/system.css; component code must not
+// invent raw values outside this file.
 
 export const spacing = {
   xxs: "4px",
@@ -23,10 +23,11 @@ export const radius = {
 } as const;
 
 export const typography = {
-  display: { size: "28px", lineHeight: "1.35", weight: 700 },
-  title: { size: "20px", lineHeight: "1.4", weight: 700 },
+  display: { size: "28px", lineHeight: "1.35", weight: 800 },
+  title: { size: "20px", lineHeight: "1.4", weight: 800 },
   body: { size: "14px", lineHeight: "1.7", weight: 400 },
   caption: { size: "12px", lineHeight: "1.6", weight: 400 },
+  mono: { family: '"JetBrains Mono","Vazirmatn",ui-monospace,monospace', feature: "tabular-nums" },
 } as const;
 
 // Motion durations per the ui-ux-pro-max skill motion scale. The stealth
@@ -40,18 +41,21 @@ export const motion = {
 
 // Semantic palette. Values mirror styles.css custom properties so the
 // stealth layer and the panel shell render from one palette.
+// "Midnight Glass Ops": deep-space navy canvas, frosted glass surfaces,
+// cyan telemetry accent with an indigo secondary.
 export const palette = {
-  bgDeep: "#0b0d12",
-  surface: "rgba(255, 255, 255, 0.04)",
-  surfaceRaised: "rgba(255, 255, 255, 0.07)",
-  border: "rgba(255, 255, 255, 0.10)",
-  borderLuminous: "rgba(255, 255, 255, 0.18)",
-  text: "#e8eaf0",
-  textDim: "#9aa3b2",
-  accent: "#f5b942",
-  accentSoft: "rgba(245, 185, 66, 0.16)",
-  danger: "#ff6b6b",
-  ok: "#4ade80",
+  bgDeep: "#04070f",
+  surface: "rgba(17, 27, 49, 0.60)",
+  surfaceRaised: "rgba(148, 197, 255, 0.06)",
+  border: "rgba(128, 160, 220, 0.14)",
+  borderLuminous: "rgba(255, 255, 255, 0.09)",
+  text: "#eaf1ff",
+  textDim: "#8ea2c7",
+  accent: "#22d3ee",
+  accentSoft: "rgba(34, 211, 238, 0.16)",
+  accent2: "#818cf8",
+  danger: "#fb7185",
+  ok: "#34d399",
 } as const;
 
 export const designTokens = { spacing, radius, typography, motion, palette } as const;
