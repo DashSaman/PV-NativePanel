@@ -23,3 +23,12 @@ Checkpoint: 2026-09-14 18:42 Asia/Tehran
 - Coordinator: integrate validated work only, update canonical truth, preserve backup/rollback/deploy gates.
 
 No Production mutation was performed. Concrete work this checkpoint: post-merge main CI was verified green, #110 was closed completed, #108/#101 mergeability and exact-head workflow status were freshly reconciled, and worker/Production queues were refreshed.
+
+## Coordinator checkpoint — 2026-09-14 19:4x Asia/Tehran
+
+- Canonical `main` before this docs refresh: `eccb681f2b21ea1ad3ff74137b47e1991be9db5e`; push CI `34861097897` completed SUCCESS.
+- Task13 PR #108 was reconciled non-destructively with this exact main and pushed at refreshed head `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`. Clean merge; local `git diff --check` PASS; Docker Go 1.25 `go vet ./...` + `go test ./... -count=1` PASS. Fresh exact-head CI/Exact Accounting/Pinned Forwardproxy were started and must all finish green before any merge consideration.
+- Task13 mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remains required on the refreshed exact head; historical protocol evidence is not promoted to exact-head proof.
+- Karing PR #101 remains DRAFT; real Karing import -> parse -> CONNECT -> cleanup/revoke is still mandatory.
+- Production Primary is not present in fresh connected-device inventory. No deploy/migration/restart/reload/DB/Caddy/credential/backup/rollback mutation was performed; last recorded Production receipt remains the truth ceiling until a fresh read-only audit.
+- R1 / STEER-001 remains independent: any new migration is strictly >0030; telemetry stays separate from quota/exact byte-accounting truth.
