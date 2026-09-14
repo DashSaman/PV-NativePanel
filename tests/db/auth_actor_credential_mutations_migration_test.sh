@@ -8,6 +8,10 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 : "${PVNAIVE_DB_USER:=postgres}"
 export PVNAIVE_DB_HOST PVNAIVE_DB_PORT PVNAIVE_DB_USER
 
+max_migration="$(ls "${repo_root}/db/migrations" | sed -n 's/^\([0-9]\{4\}\)_.*\.up\.sql$/\1/p' | sort -u | tail -1)"
+[[ "${max_migration}" =~ ^[0-9]{4}$ ]] || { echo 'ERROR: could not derive max migration version' >&2; exit 1; }
+expected_schema_version="$((10#${max_migration}))"
+
 test_suffix="${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}_${BASHPID}"
 test_suffix="${test_suffix//[^a-zA-Z0-9_]/_}"
 test_db="pvnaive_auth_actor_mutation_${test_suffix,,}"
@@ -52,7 +56,10 @@ export PVNAIVE_DB_NAME="${test_db}"
 
 schema_version="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command \
   'SELECT COALESCE(MAX(version),0) FROM pvnaive.schema_migrations')"
-[[ "${schema_version}" == "28" ]] || { echo "ERROR: schema version=${schema_version}, want=28" >&2; exit 1; }
+[[ "${schema_version}" == "${expected_schema_version}" ]] || {
+  echo "ERROR: schema version=${schema_version}, want=${expected_schema_version}" >&2
+  exit 1
+}
 
 psql_admin --dbname "${test_db}" <<SQL >/dev/null
 INSERT INTO pvnaive.actors (id, tenant_id, actor_role, email, display_name, password_hash, status)
