@@ -78,6 +78,23 @@
   caret-color: var(--accent, #22d3ee);
 }
 
+/* styles.css `.auth-form input` would otherwise beat the stealth layer
+   (bundle order) and paint visible boxes at rest — reassert invisibility
+   with matching specificity. */
+.auth-form .stealth-field input {
+  background: transparent;
+  border: none;
+  min-height: 0;
+  box-shadow: none;
+  padding: 2px 0 0;
+}
+
+.auth-form .stealth-field input:focus {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
 .stealth-field input::placeholder {
   color: transparent; /* placeholders must never leak field identity */
 }
