@@ -1,9 +1,9 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-14 06:37 Asia/Tehran
+Checkpoint: 2026-09-14 07:41 Asia/Tehran
 
 ## Verified baseline
-- Canonical repository `main` before this documentation refresh: `fabd62f4fd71c23c67c3901286153d34d3c30842`; CI `34798441279` SUCCESS.
+- Canonical repository `main` before this documentation refresh: `40024958b05d1025be48dfb95e5c750447457137`; CI `34801758693` SUCCESS.
 - Runtime commit deployed to Production: `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`; CI `34795216345` SUCCESS.
 - Latest persistent Production receipt records `pvnaive:repo-live2` image `76c10697a03b`, schema 30 after forward-only 0029/0030, healthy readiness, preserved owner/account state, and previous `repo-live` retained for rollback.
 - Full recorded nip.io E2E is ALL_GREEN: strict TLS, panel 200, login 200, user creation 201, subscription headers, UA negotiation, and strict-TLS proxy CONNECT 204. Seven disposable E2E users were revoked after the test with history retained.
