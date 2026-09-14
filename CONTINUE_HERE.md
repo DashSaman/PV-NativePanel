@@ -1,9 +1,9 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-14 05:39 Asia/Tehran
+Verified checkpoint: 2026-09-14 06:37 Asia/Tehran
 
 ## Current GitHub truth
-- Canonical `main`: `2868aba2a0b10f8885513de29f1dea1dded969a6`; push CI `34795837294` SUCCESS.
+- Canonical `main` before this documentation refresh: `fabd62f4fd71c23c67c3901286153d34d3c30842`; push CI `34798441279` SUCCESS.
 - Runtime deploy commit `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`; CI `34795216345` SUCCESS.
 - Open PRs: Task13 #108 DRAFT/non-mergeable at stale `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`; Karing #101 DRAFT/non-mergeable at `216d53670066033403fe95f61b0402bb710186a3`.
 
@@ -15,9 +15,9 @@ Verified checkpoint: 2026-09-14 05:39 Asia/Tehran
 - Production Primary is currently not connected. This cycle did not independently re-check the live container identity, migration ledger, backup freshness/encryption, disk headroom or rollback snapshot by shell.
 
 ## Active lanes
-- **Task13 #108**: Worker 3 must reconstruct/reconcile exact session-kill work onto current green main, then rerun CI + Exact Accounting + Pinned Forwardproxy. Worker 2 must then independently execute the real pinned-Caddy HTTP/1.1 + HTTP/2 proof: target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting. No stale-head merge credit.
-- **Karing #101**: Worker 4 must provide a real disposable Karing import → parse → CONNECT → cleanup/revoke receipt, then reconstruct on latest main and rerun exact-head repository gates.
+- **Task13 #108**: Worker 3 must reconstruct/reconcile exact session-kill work onto exact latest green main, then rerun CI + Exact Accounting + Pinned Forwardproxy. Worker 2 must then independently execute the real pinned-Caddy HTTP/1.1 + HTTP/2 proof: target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting. No stale-head merge credit.
+- **Karing #101**: Worker 4 must provide a real disposable Karing import → parse → CONNECT → cleanup/revoke receipt, then reconstruct only the validated minimal delta on latest main and rerun exact-head repository gates.
 - **R1 / STEER-001 #109**: continue independently. Production schema is now 30, so any new migration must be >0030; never reuse/rewrite 0029/0030. Network telemetry must remain separate from exact byte-accounting/quota truth. Worker 3 = trusted TCP_INFO sampling; Worker 2 = DB ingest/replay/idempotency; Worker 1 = schema/security/accounting review; Worker 4 = E2E once an exact head exists.
 - **Production #100**: Primary performs read-only audit first when connected. Before any next runtime deploy: fresh encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → postflight → retain rollback.
 
-Remote executor inventory currently has no online PVNaive worker or Production Primary. Persisted assignments remain authoritative for the next available workers. No additional Production mutation was performed by this coordinator after reconciling the successful schema30 deployment receipt.
+Remote executor inventory at this checkpoint has no online PVNaive worker or Production Primary. Persisted assignments remain authoritative for the next available workers. No additional Production mutation was performed by this coordinator after reconciling the successful schema30 deployment receipt.
