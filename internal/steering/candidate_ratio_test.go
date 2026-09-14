@@ -26,6 +26,21 @@ func TestEvaluateFiltersCandidatesByConfiguredRatio(t *testing.T) {
 	}
 }
 
+func TestCandidateSetIncludesExactThresholdAndExcludesBelow(t *testing.T) {
+	got := candidateSet([]Scored{
+		{NodeID: "best", Score: 100, Kind: "eligible"},
+		{NodeID: "threshold", Score: 85, Kind: "eligible"},
+		{NodeID: "below", Score: 84.999, Kind: "eligible"},
+	}, 0.85)
+
+	if len(got) != 2 {
+		t.Fatalf("exact threshold must be included and below-threshold excluded: %+v", got)
+	}
+	if got[0].NodeID != "best" || got[1].NodeID != "threshold" {
+		t.Fatalf("candidate order/boundary mismatch: %+v", got)
+	}
+}
+
 func TestEvaluateCandidateRatioKeepsBestWhenScoresAreNonPositive(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.CandidateRatio = 0.85
