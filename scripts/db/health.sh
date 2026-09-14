@@ -69,7 +69,9 @@ WITH required(name) AS (
          ('customer_profiles'), ('customer_tag_assignments'), ('plan_tag_assignments'),
          ('customer_bulk_operations'), ('customer_bulk_operation_keys'), ('customer_bulk_reset_operations'),
          ('service_term_reset_schedules'), ('scheduled_usage_reset_attempts'),
-         ('direct_naive_accounting_session_peers'), ('cover_nodes'), ('cover_content')
+         ('direct_naive_accounting_session_peers'), ('cover_nodes'), ('cover_content'),
+         ('steering_decisions'), ('user_steering_state'), ('pool_nodes'),
+         ('pool_manifest_revisions'), ('pool_enrollment_tokens')
 ), checks AS (
   SELECT
     (SELECT COALESCE(MAX(version), 0) FROM pvnaive.schema_migrations) AS schema_version,
@@ -82,7 +84,9 @@ SELECT schema_version || '|' || required_tables || '|' || rls_tables || '|' || d
 
 IFS='|' read -r schema_version required_tables rls_tables destructive_migrations <<< "${health_row}"
 [[ "${schema_version}" == "${expected_version}" ]] || pvnaive_die "schema version ${schema_version}, expected ${expected_version}"
-if ((expected_version >= 29)); then
+if ((expected_version >= 33)); then
+  [[ "${required_tables}" == "51" ]] || pvnaive_die "required table check failed: ${required_tables}/51"
+elif ((expected_version >= 29)); then
   [[ "${required_tables}" == "46" ]] || pvnaive_die "required table check failed: ${required_tables}/46"
 elif ((expected_version >= 17)); then
   [[ "${required_tables}" == "44" ]] || pvnaive_die "required table check failed: ${required_tables}/44"
@@ -105,7 +109,9 @@ elif ((expected_version >= 2)); then
 else
   [[ "${required_tables}" == "26" ]] || pvnaive_die "required table check failed: ${required_tables}/26"
 fi
-if ((expected_version >= 29)); then
+if ((expected_version >= 33)); then
+  [[ "${rls_tables}" == "65" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/65"
+elif ((expected_version >= 29)); then
   [[ "${rls_tables}" == "53" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/53"
 elif ((expected_version >= 28)); then
   [[ "${rls_tables}" == "44" ]] || pvnaive_die "RLS coverage check failed: ${rls_tables}/44"
