@@ -19,6 +19,7 @@ import (
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/fleet"
+	"github.com/DashSaman/PV-NaivePanel/internal/fleetpull"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
@@ -169,6 +170,9 @@ func run() error {
 		log.Printf("PVNaive pool registry enabled (signed revisions)")
 	}
 
+	// R5 pull-model registry: one store shared by the owner API and the
+	// R5-PULL-001 mTLS control listener below.
+	fleetStore := fleet.NewStore(db)
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -176,7 +180,7 @@ func run() error {
 		RuntimeService:        runtimeService,
 		CustomerService:       customerService,
 		AccountingStore:       accountingStore,
-		FleetStore:            fleet.NewStore(db),
+		FleetStore:            fleetStore,
 		FleetSigningKey:       fleetSigningKey,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
@@ -210,6 +214,18 @@ func run() error {
 	if err := startSteeringLoop(runCtx, db, accountingStore, steerConfig, log.Printf); err != nil {
 		return fmt.Errorf("start steering scheduler: %w", err)
 	}
+	// R5-PULL-001: dedicated sibling mTLS control listener. Optional;
+	// enabled only when all four env variables are set. Sibling identity
+	// is the client certificate — the panel cookie world never reaches
+	// this listener and headers never carry identity.
+	fleetPullServer, err := buildFleetPullListener(os.Getenv, fleetStore)
+	if err != nil {
+		return fmt.Errorf("fleet pull listener configuration: %w", err)
+	}
+	fleetPullErr := make(chan error, 1) // nil until started: receive blocks forever when disabled
+	if fleetPullServer != nil {
+		go func() { fleetPullErr <- fleetpull.Serve(runCtx, fleetPullServer, log.Printf) }()
+	}
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Printf("PVNaive API listening on %s", listen)
@@ -223,6 +239,8 @@ func run() error {
 
 	select {
 	case err := <-serveErr:
+		return err
+	case err := <-fleetPullErr:
 		return err
 	case <-runCtx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -393,6 +411,42 @@ func validatedListenAddress(value string) (string, error) {
 		return "", errors.New("PVNAIVE_LISTEN requires a non-zero port")
 	}
 	return value, nil
+}
+
+// buildFleetPullListener wires the optional R5-PULL-001 sibling mTLS
+// control listener from the environment. Disabled (nil) unless ALL of
+// PVNAIVE_FLEET_PULL_LISTEN / _CERT_FILE / _KEY_FILE / _CLIENT_CA_FILE
+// are set; partial configuration is a startup error, never a silent
+// half-enabled listener.
+func buildFleetPullListener(getenv func(string) string, store *fleet.Store) (*http.Server, error) {
+	listen := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_LISTEN"))
+	certFile := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_CERT_FILE"))
+	keyFile := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_KEY_FILE"))
+	clientCA := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_CLIENT_CA_FILE"))
+	if listen == "" && certFile == "" && keyFile == "" && clientCA == "" {
+		return nil, nil
+	}
+	if listen == "" || certFile == "" || keyFile == "" || clientCA == "" {
+		return nil, errors.New("PVNAIVE_FLEET_PULL_LISTEN, _CERT_FILE, _KEY_FILE and _CLIENT_CA_FILE must all be set together")
+	}
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return nil, fmt.Errorf("invalid PVNAIVE_FLEET_PULL_LISTEN: %w", err)
+	}
+	if net.ParseIP(host) == nil || !strings.Contains(host, ".") {
+		return nil, fmt.Errorf("PVNAIVE_FLEET_PULL_LISTEN must be an explicit IPv4 address, got %q", host)
+	}
+	if port == "" || port == "0" {
+		return nil, errors.New("PVNAIVE_FLEET_PULL_LISTEN requires a non-zero port")
+	}
+	handler := &fleetpull.Handler{Store: store}
+	return fleetpull.NewListener(fleetpull.ListenerConfig{
+		Listen:   listen,
+		CertFile: certFile,
+		KeyFile:  keyFile,
+		ClientCA: clientCA,
+		Handler:  handler,
+	})
 }
 
 func zeroBytes(value []byte) {
