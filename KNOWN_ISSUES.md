@@ -1,6 +1,35 @@
 # PVNaive — Known Issues / Risks / Technical Debt
 
-Last updated: 2026-08-31
+Last updated: 2026-09-14
+
+## Current open items (2026-09-14)
+
+- **OPEN — PUSH-BLOCK-001 (owner action):** the fine-grained GitHub PAT authenticates as
+  DashSaman but still lacks `contents=write` (blob-create probe returns 403 with
+  `X-Accepted-GitHub-Permissions: contents=write`). Editing the token's Repository permissions
+  is not enough — the edit must be saved with the green **Update token** button (or a new token
+  value must be supplied). Nine rebased commits are ready in the sandbox + full bundle
+  `pvnaive-fin2.bundle`; push completes the moment write access works.
+- **OPEN — R5-PULL-001:** sibling agents PULL desired-state over a dedicated mTLS control
+  listener. Registry backend (0033 + fleet store + owner endpoints) is live; the network
+  listener and enrollment preflight (version/reach/time-skew) are the remaining slice.
+- **OPEN — R5-UI-001:** pool manager UI (add-node wizard, node list with live RTT/loss/load,
+  pool CRUD, bulk CSV/JSON import/export). Backend + Owner API live.
+- **OPEN — R6-FLIP-001:** coverd core (persona packs, renderer, fetcher, hygiene) is merged and
+  rehearsal-tested (CAMO-001/002 behaviors: no cookies/CORS/identifying headers/panel
+  vocabulary, natural degrade on source failure). The production flip (coverd serving root
+  behind Caddy per node, default-OFF today: root -> 404) is a deliberate, separately-gated
+  change.
+- **OPEN — BUG-STREAM-001 FIXED, BUG-ACCT-001 FIXED (record for history):** SSE flush through
+  the middleware chain and the FullBackend interface ambiguity (all CONNECTs fail-closed)
+  were found live and fixed (3cf8abd / 46f9dfb equivalents in the rebased chain); postflight
+  proves both stay fixed through the 0031/0032/0033 deploys.
+- **HONEST NOTE — pre-deploy gate value:** the 0032/0033 migration gates rejected five real
+  defects before production (missing `-- pvnaive:destructive` headers, gofmt in
+  steeringstore, unquoted nullable SQL args in the gate itself, superuser-mutability check
+  error, plpgsql `expires_at` shadowing). Gates run on scratch postgres:18 on the deploy
+  server until GitHub CI sees the branch again.
+
 
 This file contains only current gaps or intentionally retained historical closure evidence. Do not keep obsolete statements such as “exact accounting is unproven” after the integrated WS1 + Production proof.
 

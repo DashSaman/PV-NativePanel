@@ -1,6 +1,6 @@
 # PVNaive — Feature Matrix and Gap Analysis
 
-Last updated: 2026-08-30
+Last updated: 2026-09-14
 
 This file is the canonical **short-form** capability truth. The full 120-feature competitor matrix is:
 
@@ -21,6 +21,20 @@ GPL/AGPL competitors are behavior/architecture/UX references only unless a later
 ## Current PVNaive truth
 
 Legend: `DONE`, `PARTIAL`, `BLOCKED`, `OPTIONAL`, `N/A`.
+
+## R1→R8 Master Upgrade Pack status (2026-09-14, live-verified)
+
+| Slice | Status | Evidence / remaining gate |
+|---|---|---|
+| R1 network telemetry | DONE (live) | schema 31, samples+EWMA live, aggregates feed R2 |
+| R2 steering scheduler | DONE (live) | 60s tick, dispatches initial/hysteresis/kill-switch only; users=0 until samples >= MinSamples |
+| R3 renderer decision-sink | DONE (live) | mihomo proxy-provider profile + spec-exact naive links; 0032 durable sink |
+| R5 pool manager | PARTIAL | backend DONE (0033, Owner API, signed revisions, drain); UI + mTLS pull = R5-UI-001 / R5-PULL-001 |
+| R6 cover site | PARTIAL | core+rehearsal DONE (CAMO-001/002 behaviors tested); production flip = R6-FLIP-001 |
+| R7 panel access | DONE (live) | GET/PUT /api/v1/panel-access, step-up, recovery CLI |
+| R8 command center | PARTIAL | SSE stream live (3 frames/3s post-deploy); live-charts UI wiring continues |
+| R4 fleet manifests | DONE | Ed25519 signed manifests, fail-closed verification (internal/fleet) |
+
 
 | Area | Status | Evidence / remaining gate |
 |---|---|---|

@@ -1,6 +1,31 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-14 18:42 Asia/Tehran
+Last updated: 2026-09-14 20:10 Asia/Tehran
+
+## Checkpoint 2026-09-14 (Master Upgrade Pack live checkpoint — verified)
+
+- Production runs `pvnaive:repo-fin2-163115` (commit `bc3b319` provenance, deployed 16:34 UTC via
+  backup -> pg_dump -> image swap with TLS persistence -> force-recreate). Schema truth: **33**
+  after forward-only migrations 0031 (R1 telemetry), 0032 (R2/R3 steering decisions), 0033
+  (R5 pool registry). Postflight ALL GREEN (external): panel 200, owner login 200, SSE 3
+  frames/3s, real-customer CONNECT 204x2 through the full naive path, 20 accounting events/5min.
+- LIVE subsystems: R1 network telemetry (session_network_samples + EWMA aggregates), R2 steering
+  scheduler (60s tick; users=0 expected until R1 samples pass MinSamples=8), R3 renderer
+  (mihomo proxy-provider profile, spec-exact naive links), R5 pool registry backend (enrollment
+  tokens, signed monotonic revisions, drain state machine), R7 panel access, R8 SSE stream.
+- Migration gates now run pre-deploy on the server (scratch postgres:18 container):
+  steering_decisions gate + pool_registry gate both PASS. The gates caught and rejected five
+  real pre-production defects (headers, gofmt, quoted nullable args, superuser-mutability
+  check, plpgsql shadowing) — none reached production.
+- Push state: 9 commits sit on local `main` rebased onto origin/main `eccb681`
+  (56de993-rebased chain through 6afbd9c: R1, R7, R8, R2 scheduler, BUG-STREAM-001,
+  BUG-ACCT-001, R3, R2/R3 sink, R5 registry + R6 rehearsal). Owner's fine-grained PAT still
+  lacks Contents:write (API blob probe 403) — the permission edit must be SAVED in GitHub
+  ("Update token"), then `git push` from the sandbox completes immediately.
+- Remaining: R5 UI (wizard/node list), R5-PULL-001 (sibling mTLS pull listener), R6 flip
+  (coverd process + Caddy root route; core+rehearsal done, CAMO-001/002 proven by test),
+  `namir.softarg.ir` flip after the 2026-09-15 ~03:21-03:26 UTC LE window.
+
 
 ## Verified GitHub state
 - Canonical `main` before this documentation refresh is `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` completed SUCCESS.
