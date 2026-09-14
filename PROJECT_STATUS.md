@@ -4,41 +4,41 @@ Last updated: 2026-09-15 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Validated code main before this documentation checkpoint: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 fixed the R8 SSE test-harness race with a synchronized recorder; exact PR head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy before guarded merge. Post-merge main CI `34904000208` completed SUCCESS on `3eee556b908ec98c7a033de0ce63938b7dc0e714`.
-- R8 live monitoring slice is integrated on main. The superseded PR #117 was closed unmerged and issue #116 was closed completed after browser E2E and exact-head CI/accounting/forwardproxy validation on the main implementation.
-- Task13 PR #108 is merged. Its final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, and Pinned Forwardproxy `34897871355` before merge.
-- Task13 real pinned-Caddy acceptance also passed on that exact head: HTTP/1.1 + HTTP/2 negotiated, forged tuple rejected, target-only kill, sibling survival, repeated-kill idempotency, credential survival, unchanged Caddy PID, and exactly-once final accounting. Reproducible Caddy SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`.
-- Karing PR #101 remains unmerged until a real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is recorded.
-- Fresh disposable PostgreSQL 18 validation on exact main `3eee556b...` passed `tests/db/pool_registry_migration_test.sh`: schema >=33, single-use enrollment, monotonic append-only revisions, heartbeat non-rewind, drain-before-disable, and SECURITY DEFINER/no-direct-table-access boundaries.
-- Fresh real disposable two-node R5 mTLS E2E also passed on current main: CA-verified URI-SAN identities, signed rev1/rev2 pulls, forged identity header ignored, unknown CA-valid node forbidden, no-client-cert handshake failure, and truthful heartbeat/drift state (`1/1` healthy vs `2/1` degraded). #114 stays open for certificate rotation/overlap + explicit revocation proof.
+- Current code main: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide change). CI run `34907620721`: Go, Web, PostgreSQL/migration/backup-restore gates and the full S04/S04R/Task13 rehearsal steps are PASS; the workflow has not yet reached a terminal SUCCESS because downstream completion/bundle scheduling is still pending. Do not report the entire run green until GitHub records a terminal success.
+- R10 changes the panel/subscription UX and `/s/<token>` bilingual guide. Repository gates validate rendering/build/runtime invariants, but they do not prove named third-party client compatibility. Issue #120 now tracks this truthfulness gate; no Production promotion of client-specific claims until exact real-client evidence exists.
+- Task13 PR #108 is merged. Final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, plus real pinned-Caddy HTTP/1.1+HTTP/2 target-only kill acceptance with exactly-once final accounting.
+- R8 issue #116 and test-race issue #118 are completed; PR #119 merged after exact-head CI/accounting/forwardproxy gates.
+- Karing PR #101 remains DRAFT/unmerged and currently non-mergeable on stale head `6691392639be9fae4656a861db4a6d16580f850d`. Historical green gates must not be reused after reconciliation; final acceptance still requires real disposable Karing import → parse → CONNECT → cleanup/revoke.
+- R5 disposable PostgreSQL 18 registry validation and real two-node mTLS pull/heartbeat/drift E2E are recorded PASS. #114 remains open only for certificate overlap/rotation + explicit revocation/replay/fail-closed lifecycle proof.
 
 ## Production truth ceiling
 
-- Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade Pack / `repo-fin2` generation live, healthy panel/API/SSE/real-customer CONNECT/accounting postflight, forward-only migrations 0031/0032/0033, and retained rollback/backup evidence.
-- Fresh remote inventory still does not expose an identifiable `PVNaive-Production-Primary`. The online remote registration is an execution worker, not Production.
-- Therefore current Production image/container identity, schema ledger, encrypted-backup freshness, disk headroom and rollback snapshot are not freshly asserted. No Production mutation is allowed until the trusted Primary reconnects and the read-only audit plus backup/rollback gates pass.
+- Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade Pack / `repo-fin2` generation live and previously recorded healthy panel/API/SSE/real-customer CONNECT/accounting postflight plus retained rollback/backup evidence.
+- Fresh Remote Desktop inventory on 2026-09-15 shows both known registrations named `Pak-Nasheeee-haaaaaaaaa` offline and no identifiable `PVNaive-Production-Primary` connected.
+- Therefore current Production image/container identity, schema ledger, encrypted-backup freshness, disk headroom, services/Caddy state and rollback snapshot are not freshly asserted. No Production mutation is allowed until the trusted Primary reconnects and read-only audit + backup/rollback gates pass.
 
 ## Active roadmap lanes
 
-1. **R5 enablement (#113/#114):** code is on main; run disposable multi-node enroll → publish → mTLS pull → heartbeat/drift and STEER-006 scale rehearsal. Keep Production enablement gated.
-2. **R6-FLIP #115:** code is on main and default-OFF; run disposable cover/persona/probe-sweep/failure rehearsals. Production promotion requires trusted Primary audit + fresh encrypted backup + independent rollback snapshot.
-3. **R8 remaining gates:** extend validated monitoring to ledger reconciliation/per-node/per-user truth, RBAC stream isolation, accessibility/RTL and documented 100-node performance without fabricating missing telemetry.
-4. **Karing #101:** real-client acceptance only; static/unit evidence cannot substitute.
+1. **R10 truthfulness (#120 + #101):** verify every named-client compatibility claim. Worker 4 owns real Karing acceptance; Worker 1 reviews client claims; Worker 2 adds RED-first UI/content truth tests; Worker 3 verifies subscription/direct formats against runtime semantics.
+2. **R5 enablement (#113/#114):** code and basic two-node mTLS E2E exist; next prove cert overlap/rotation/revocation/replay lifecycle and STEER-006 scale. Keep Production enablement gated.
+3. **R6-FLIP #115:** code is on main and default-OFF; run disposable cover/persona/probe-sweep/failure rehearsals before any promotion.
+4. **R8 remaining gates:** ledger reconciliation/per-node/per-user truth, RBAC stream isolation, accessibility/RTL and bounded performance without fabricated telemetry.
 5. **#100 Production lane:** on trusted Primary reconnect, read-only identity/SHA/schema/services/Caddy/backup/disk/rollback audit first.
 
 ## Worker allocation
 
-- Worker 1: independent security/accounting review of merged Task13 boundaries plus R5/R6/R8 RBAC/accessibility review; include the now race-clean R8 SSE harness and report findings only, no speculative rewrites.
-- Worker 2: R8 UI-002 ledger reconciliation and per-node/per-user truthful projections; RED-first tests and bounded data structures.
-- Worker 3: R5 mTLS pull/STEER-006 integration + R8 stream-RBAC regression; preserve TLS-cert authoritative identity and exact-accounting separation.
-- Worker 4: disposable R5/R6 browser/multi-node rehearsals and real Karing acceptance when a suitable client host is available.
-- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates. Fresh remote inventory currently exposes one execution worker only; queue independent work there while other registrations/Production remain offline.
+- Worker 1: R10 named-client compatibility/security truth review; then R5 PKI/revocation and R6/R8 RBAC/accessibility review.
+- Worker 2: RED-first R10 content/capability tests preserving dual-QR behavior; then R8 ledger reconciliation and truthful projections.
+- Worker 3: verify R10 direct/subscription formats against server semantics; then R5 cert rotation/revocation + STEER-006 integration.
+- Worker 4: real disposable Karing exact-main acceptance; then R5/R6 browser/multi-node rehearsals.
+- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates. No remote execution worker is currently online, so these assignments remain queued in GitHub until capacity returns.
 
 ## Safety invariants
 
 - Accounting/session/quota semantics are canonical truth and must not be weakened by telemetry/UI/control work.
-- Task13 kills the selected live session only; it must not revoke credentials or mutate sibling sessions.
+- Task13 kills only the selected live session; it must not revoke credentials or mutate sibling sessions.
 - Never trust XFF/Forwarded/client headers for authoritative node/session identity; fleet pull identity is TLS-client-cert-only.
 - Applied migrations are immutable; future DB changes are forward-only and ledger-checked.
 - Unknown/unavailable telemetry stays Unknown; UI must not convert missing data into zero or fabricated health.
+- Client compatibility must be evidence-backed; CI rendering tests do not equal real-client support.
 - Production sequence: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
