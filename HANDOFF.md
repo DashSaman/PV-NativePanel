@@ -4,31 +4,32 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Verified baseline
 
-- Validated code main before this documentation commit: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 (test-only R8 SSE recorder synchronization) merged after exact head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy. Post-merge CI `34904000208` completed SUCCESS on `3eee556b908ec98c7a033de0ce63938b7dc0e714`.
-- Task13 PR #108 is merged after exact-head CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, and real pinned-Caddy HTTP/1.1+HTTP/2 acceptance all passed.
-- Task13 accepted binary SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`; target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting were verified.
-- R8 issue #116 is completed on main. PR #117 was closed unmerged as stale/superseded by the stronger main implementation and fixes.
-- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated. A fresh disposable PostgreSQL 18 run of `tests/db/pool_registry_migration_test.sh` passed on exact main `3eee556b...`, confirming schema-33 registry/token/revision/heartbeat/drain/privilege invariants. Fresh two-node real mTLS pull/heartbeat/drift E2E passed too; forged header identity was ignored, unknown CA-valid node was forbidden, and no-cert TLS failed. #114 remains open only for rotation/overlap + explicit revocation proof before enablement.
+- Current code main before this documentation checkpoint: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide). CI run `34907620721` has Go, Web, database/migration/backup-restore, pinned forwardproxy boundary, S04 auth rehearsal and full S04R/Task13 rehearsal steps PASS; GitHub has not yet recorded the entire workflow as terminal SUCCESS, so do not overstate it.
+- R10 client-specific support claims are not yet acceptance-proven. Issue #120 is the new promotion gate; #101 Karing remains DRAFT/non-mergeable on stale head and still requires real disposable import → parse → CONNECT → cleanup/revoke after reconciliation to latest verified main.
+- Task13 #108 is merged after exact-head CI/accounting/forwardproxy plus real HTTP/1.1+HTTP/2 target-only kill proof; exact accounting/session/credential invariants remain locked.
+- R8 live monitoring is integrated and its SSE race regression is fixed/closed.
+- R5 registry and basic real two-node mTLS pull/heartbeat/drift E2E are green. #114 stays OPEN for certificate overlap/rotation + explicit revocation/replay/fail-closed proof.
 
 ## Production blocker
 
-- No identifiable `PVNaive-Production-Primary` is connected. The currently online remote is an execution worker and must not be treated as Production.
-- On trusted Primary reconnect, perform read-only host identity, deployed image/SHA, schema/migration ledger, services/listeners/Caddy, encrypted-backup freshness, disk headroom and rollback snapshot checks before any mutation.
-- Production truth ceiling remains the persistent schema-33 / repo-fin2 checkpoint; do not claim fresher live state without that audit.
+- Fresh remote inventory shows both known Remote Desktop registrations offline; no trusted `PVNaive-Production-Primary` is connected.
+- Production truth ceiling remains the last persistent schema-33 / repo-fin2 checkpoint. Do not claim fresh image/schema/backup/disk/Caddy/rollback state.
+- On trusted Primary reconnect: read-only host identity → deployed SHA/image → schema ledger → services/listeners/Caddy → encrypted-backup freshness → disk → rollback snapshot. Only then may fresh backup/snapshot and staged promotion be considered.
 
 ## Remaining acceptance blockers
 
-- #101 Karing: requires a real disposable Karing import → parse → CONNECT → cleanup/revoke run.
-- R5/R6: require disposable multi-node / cover-site rehearsals before any Production enablement.
+- #120/#101: verify client compatibility truth; real Karing exact-main acceptance is non-substitutable.
+- #114: cert lifecycle rotation/overlap/revocation/replay/fail-closed proof.
+- #115: disposable R6 cover/persona/probe-sweep/failure rehearsal; Production remains default-OFF/gated.
 - Production: trusted Primary reconnect plus audit/backup/rollback gates.
 
 ## Worker queue
 
-- Worker 1 — independent security/accounting review: Task13 post-merge boundaries, R5/R6 privilege boundaries, R8 accessibility/RBAC honesty.
-- Worker 2 — R8 UI-002: ledger reconciliation + truthful per-node/per-user projections, RED-first.
-- Worker 3 — R5 pull/STEER-006 integration and R8 stream-RBAC isolation regression; next concrete gate is real disposable mTLS multi-node pull/heartbeat/drift, not another unit-only proof.
-- Worker 4 — R5/R6 browser/multi-node E2E and real Karing acceptance when a suitable client is available.
-- Coordinator — exact-head integration only; no Production mutation without trusted audit + fresh backup + rollback. Only one execution worker is currently online; use it for independent disposable acceptance while Production/other registrations are unavailable.
+- Worker 1 — R10 client-claim/security truth review; then R5 PKI/revocation and R6/R8 RBAC/accessibility.
+- Worker 2 — RED-first R10 UI/content capability tests preserving dual-QR; then R8 ledger reconciliation/projections.
+- Worker 3 — verify R10 subscription/direct format semantics; then R5 cert lifecycle + STEER-006.
+- Worker 4 — real disposable Karing acceptance; then R5/R6 browser/multi-node E2E.
+- Coordinator — integrate exact-head validated work only. All remote registrations are currently offline, so assignments are queued persistently in GitHub rather than fabricated as running.
 
 ## Invariants
 
@@ -37,3 +38,4 @@ Checkpoint: 2026-09-15 Asia/Tehran
 - Missing telemetry is Unknown, never zero-by-assumption.
 - TLS client certificate is authoritative for fleet identity.
 - Forward-only immutable migration ledger.
+- User-facing compatibility claims require real evidence, not just build/unit success.
