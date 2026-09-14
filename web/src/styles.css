@@ -212,6 +212,12 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .kpi-symbol.warning{color:var(--orange);background:linear-gradient(145deg,color-mix(in srgb,var(--orange) 14%,var(--surface-3)),var(--surface-3));border-color:color-mix(in srgb,var(--orange) 28%,var(--border))}
 .dashboard-kpis small,.dashboard-kpis em{display:block;color:var(--muted);font-style:normal;font-size:10.5px}
 .dashboard-kpis strong{display:block;font-size:25px;margin:3px 0;font-weight:800}
+.kpi-share{position:absolute;right:0;bottom:0;left:0;height:4px;background:color-mix(in srgb,var(--border) 55%,transparent);overflow:hidden}
+.kpi-share b{display:block;height:100%;border-radius:0 99px 99px 0;background:linear-gradient(90deg,color-mix(in srgb,var(--blue) 75%,var(--text)),var(--blue));animation:grow 1s cubic-bezier(.22,1,.36,1);transform-origin:right center}
+.kpi-share.success b{background:linear-gradient(90deg,color-mix(in srgb,var(--green) 70%,var(--text)),var(--green))}
+.kpi-share.gold b{background:linear-gradient(90deg,var(--gold-deep),var(--gold))}
+.kpi-share.warning b{background:linear-gradient(90deg,color-mix(in srgb,var(--orange) 70%,var(--text)),var(--orange))}
+.legend-share{font-style:normal;font-size:9.5px;color:var(--muted);background:var(--surface-3);border-radius:999px;padding:2px 7px;min-width:34px;text-align:center}
 .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .dashboard-card{
   position:relative;
@@ -235,7 +241,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .dashboard-donut strong{font-size:26px;font-weight:800}
 .dashboard-donut span{font-size:10px;color:var(--muted);margin-top:3px}
 .status-legend{display:grid;gap:8px}
-.status-legend>div{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.status-legend>div{display:grid;grid-template-columns:8px 1fr auto auto;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--border)}
 .status-legend>div:last-child{border-bottom:0}
 .status-legend span{font-size:11px;color:var(--muted)}
 .status-legend strong{font-size:12.5px;font-weight:800}

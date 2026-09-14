@@ -20,8 +20,8 @@ index 15bb5e9..9232871 100644
  
  	if h.DialTimeout <= 0 {
  		h.DialTimeout = caddy.Duration(30 * time.Second)
-@@ -371,6 +375,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
- 			}
+@@ -372,6 +376,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
+ 			accountingSession.startSampler(targetConn)
  			targetConn = &pvnaiveAccountingConn{Conn: targetConn, session: accountingSession}
  		}
 +		unregisterPVNaiveSession := h.registerPVNaiveSession(targetConn, accountingSession)

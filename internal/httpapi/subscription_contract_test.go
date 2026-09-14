@@ -63,8 +63,79 @@ func TestMachineSubscriptionEndpointIgnoresBrowserAcceptHeader(t *testing.T) {
 	if strings.Contains(strings.ToLower(res.Body.String()), "<!doctype html") {
 		t.Fatal("machine endpoint returned HTML because of Accept header")
 	}
-	if got := strings.TrimSpace(res.Body.String()); got != "naive+https://Amir22:customer-secret-123@namir.softarg.ir:443" {
+	if got := strings.TrimSpace(res.Body.String()); got != "naive+https://Amir22:customer-secret-123@namir.softarg.ir:443#PVNaive" {
 		t.Fatalf("machine body=%q", got)
+	}
+}
+
+func TestMachineSubscriptionServesMihomoProfileWithProviderURL(t *testing.T) {
+	handler, token := subscriptionContractFixture(t, subscription.Record{})
+	req := httptest.NewRequest(http.MethodGet, "/sub/"+token, nil)
+	req.Header.Set("User-Agent", "ClashMetaForAndroid/2.10.7")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", res.Code, res.Body.String())
+	}
+	body := res.Body.String()
+	for _, want := range []string{
+		"proxy-providers:",
+		"pvnaive:",
+		"url: https://namir.softarg.ir:443/sub/" + token + "?family=mihomo",
+		"interval: 14400",
+		"health-check:",
+		"use:",
+		"PV-AUTO",
+		"PV-RR",
+		"round-robin",
+		"MATCH,PV-AUTO",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("mihomo profile missing %q\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "interrupt-exist-connections") {
+		t.Fatal("mihomo profile must never set interrupt-exist-connections")
+	}
+	if got := res.Header().Get("Profile-Update-Interval"); got != "4" {
+		t.Fatalf("Profile-Update-Interval=%q", got)
+	}
+	if !strings.Contains(res.Header().Get("Subscription-Userinfo"), "upload=") {
+		t.Fatalf("Subscription-Userinfo=%q", res.Header().Get("Subscription-Userinfo"))
+	}
+}
+
+func TestMachineSubscriptionServesProviderPayloadOnMihomoOverride(t *testing.T) {
+	handler, token := subscriptionContractFixture(t, subscription.Record{})
+	req := httptest.NewRequest(http.MethodGet, "/sub/"+token+"?family=mihomo", nil)
+	req.Header.Set("User-Agent", "mihomo/1.18.1")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", res.Code, res.Body.String())
+	}
+	body := res.Body.String()
+	if !strings.HasPrefix(body, "proxies:") {
+		t.Fatalf("provider fetch must return the bare proxies document:\n%s", body)
+	}
+	for _, banned := range []string{"proxy-providers:", "proxy-groups:", "rules:"} {
+		if strings.Contains(body, banned) {
+			t.Fatalf("provider payload must not carry %s\n%s", banned, body)
+		}
+	}
+	if !strings.Contains(body, "host: namir.softarg.ir") || !strings.Contains(body, "username: Amir22") {
+		t.Fatalf("provider payload must carry the render node:\n%s", body)
+	}
+
+	// Any other explicit override (e.g. family=clash) keeps the full profile
+	// so operators can preview the exact client-facing document.
+	previewReq := httptest.NewRequest(http.MethodGet, "/sub/"+token+"?family=clash", nil)
+	previewRes := httptest.NewRecorder()
+	handler.ServeHTTP(previewRes, previewReq)
+	if previewRes.Code != http.StatusOK || !strings.Contains(previewRes.Body.String(), "proxy-providers:") {
+		t.Fatalf("clash preview status=%d body=%s", previewRes.Code, previewRes.Body.String())
 	}
 }
 

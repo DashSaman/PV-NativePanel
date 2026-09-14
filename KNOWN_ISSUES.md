@@ -1,6 +1,44 @@
 # PVNaive — Known Issues / Risks / Technical Debt
 
-Last updated: 2026-08-31
+Last updated: 2026-09-15
+
+## Current open items (2026-09-15)
+
+- **RESOLVED — PUSH-BLOCK-001:** fine-grained PAT access was fixed owner-side
+  (repository access + Workflows: read/write saved). The full R-program chain
+  (R1..R8 slices + CI fixes + docs, heads `f71cdc6`/`d02c18a`/`ed0bf0f`) is
+  pushed and exact-head CI is green. Owner should revoke the superseded token
+  ending `...Z7UW`.
+- **RESOLVED (code) — R5-UI-001 / R5-PULL-001:** owner pool-manager UI is live
+  on `#/pool` (one-time enroll-token wizard, node enrollment, signed revision
+  publish with endpoint editor, drain workflow mirroring the 0033 state
+  machine, signed-manifest viewer; 27 model tests). The dedicated sibling mTLS
+  pull listener (`internal/fleetpull`, GET /fleet/v1/manifest) is merged:
+  identity = TLS client cert (URI SAN urn:pvnaive:node:), fail-closed 401/403
+  gates, pull doubles as heartbeat preflight with clock-skew warning; enabled
+  via PVNAIVE_FLEET_PULL_LISTEN/_CERT_FILE/_KEY_FILE/_CLIENT_CA_FILE (all-or-none).
+  Remaining: production enablement + multi-node E2E on real hosts.
+- **RESOLVED (code) — R6-FLIP-001 wiring:** coverd now has validated flip
+  config (PVNAIVE_COVERD_ENABLED=1, loopback-only bind, persona override >
+  stored > deterministic), a durable DB content store over 0029 projections,
+  and the gated Caddy runbook (ops/caddy/COVERD_FLIP.md). The production flip
+  itself remains a deliberate, separately-gated operator action (pre-gates:
+  trusted audit + fresh encrypted backup + rollback snapshot).
+- **RESOLVED (UI) — R8 live-charts wiring:** dashboard monitoring console now consumes the
+  R8 SSE stream (1s ticks) with a polling fallback + auto stream retry; live RX/TX area
+  chart, 270° CPU/RAM/Disk gauges, SVG segmented donut. Zero chart dependencies; chart
+  math pinned by charts.test.ts (109 web tests green). Charts render only real server
+  samples — no synthetic history.
+- **OPEN — BUG-STREAM-001 FIXED, BUG-ACCT-001 FIXED (record for history):** SSE flush through
+  the middleware chain and the FullBackend interface ambiguity (all CONNECTs fail-closed)
+  were found live and fixed (3cf8abd / 46f9dfb equivalents in the rebased chain); postflight
+  proves both stay fixed through the 0031/0032/0033 deploys.
+- **HONEST NOTE — pre-deploy gate value:** the 0032/0033 migration gates rejected five real
+  defects before production (missing `-- pvnaive:destructive` headers, gofmt in
+  steeringstore, unquoted nullable SQL args in the gate itself, superuser-mutability check
+  error, plpgsql `expires_at` shadowing). Gates run on scratch postgres:18 on the deploy
+  server until GitHub CI sees the branch again.
+
 
 This file contains only current gaps or intentionally retained historical closure evidence. Do not keep obsolete statements such as “exact accounting is unproven” after the integrated WS1 + Production proof.
 
@@ -221,3 +259,25 @@ Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reo
 - The live Caddyfile intentionally contains only customer credentials (22 entries); `pvbootstrap` cannot proxy and must not be re-added to the rendered Caddyfile.
 - Docs that still advertise the `pvbootstrap`/`Bt7xKp9mVq2wRt8z` proxy account are stale — treat the installer bootstrap account as API/owner bootstrap only.
 - Note for agents: never attempt to reload a Caddyfile containing unmapped users — validate first (`caddy validate`), and remember the running config survives a failed reload.
+
+### R1-NET-001 — Client-path TCP_INFO coverage limited to HTTP/1 hijack sessions (OPEN, by design of net/http)
+`net/http` does not expose the client-side TCP conn for H2/H3 requests, so the R1 sampler
+records `client`-path samples only on HTTP/1 hijack sessions; H2/H3 sessions contribute
+`upstream`-path samples (node↔destination). Steering therefore prefers fresh client-path
+aggregates and falls back to upstream-path aggregates per (user, node). Revisit if Caddy
+exposes per-request conn info. Evidence: third_party/forwardproxy overlay + WORKLOG
+2026-09-14 03:5x entry.
+
+### R1-NET-002 — R1 image not yet deployed to production (OPEN, procedure-bound)
+Migration 0031 + telemetry agent + sampler Caddy are merged to main but the production image
+on 45.141.148.59 is still `pvnaive:repo-live2` (a4edea6, schema 30). Deploy requires the #100
+procedure (fresh encrypted backup → independent rollback snapshot → exact SHA lock → staged
+promotion → postflight). Do NOT deploy without that receipt. This is also the STEER-001 live
+evidence blocker.
+
+### R7-NET-001 — Panel-access runtime apply (Caddyfile base path/port) not yet wired (OPEN)
+Migration 0030 + settings API + recovery CLI are merged, but the runtime reconciliation
+that regenerates the Caddyfile (base path, listen port, graceful dual-accept window) is not
+implemented — panel_settings changes currently affect the API contract only and require an
+operator-coordinated reload. Default exposure remains reverse_proxy on /panel. Track with
+the R8/R5 integration lanes; do NOT claim ACCESS-001 live until the flip is rehearsed.

@@ -1,32 +1,48 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-14 18:42 Asia/Tehran
+Last updated: 2026-09-14 (Asia/Tehran)
 
-## Verified GitHub state
-- Canonical `main` before this documentation refresh is `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` completed SUCCESS.
-- STEER-002 / issue #110 is completed and closed. PR #112 merged through code-bearing commit `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; exact pre-merge head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` passed CI `34842627049`, WS1 Exact Accounting `34842627114`, and WS1 Pinned Forwardproxy `34842627193`. Post-merge main CI is green. Production was not touched for this lane.
-- Task13 PR #108 remains OPEN/DRAFT and unmerged on `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`. Fresh GitHub metadata reports `mergeable=true`. Exact-head CI `34789937594`, WS1 Exact Accounting `34789937603`, and WS1 Pinned Forwardproxy `34789937575` are SUCCESS. Mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance is still absent, so merge remains blocked.
-- Karing PR #101 remains OPEN/DRAFT and unmerged on `216d53670066033403fe95f61b0402bb710186a3`. Fresh GitHub metadata reports `mergeable=true`. Exact-head CI `34732580376`, WS1 Exact Accounting `34732580468`, and WS1 Pinned Forwardproxy `34732580377` are SUCCESS. Mandatory real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is still absent.
-- R1 / STEER-001 #109 is the next independent code roadmap lane. Production schema truth is 30; all new DB work must use migration strictly >0030 and never rewrite/reuse 0029 or 0030. Network telemetry remains separate from exact byte-accounting/quota truth.
-- Fresh Remote Desktop inventory reports both known registrations offline and no Production Primary available.
+## Current verified GitHub truth
 
-## Production truth
-- Latest persistent receipt remains `pvnaive:repo-live2` image `76c10697a03b`, runtime `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`, schema 30 after forward-only 0029/0030, recorded healthy readiness, nip.io E2E ALL_GREEN, and previous `repo-live` retained for rollback.
-- No fresh Production Primary shell audit exists in this checkpoint, so no new assertion is made for live container identity, migration ledger, encrypted-backup freshness, disk headroom or rollback snapshot.
-- `namir.softarg.ir` remains deferred until the documented ACME retry window clears; do not restart/recreate Production merely to chase certificate issuance.
+- Exact `main`: `722cc905464e2f581520b6350db90eec77993578`.
+- Main CI `34882541754`: SUCCESS.
+- R5 owner pool-manager UI is on main at `f71cdc662b38a3090132af1302be5fc2b84833bc`.
+- R5 sibling mTLS pull listener is on main at `d02c18a326c480661ce5ac96ca3b9c9cfd612041`.
+- R6 gated cover-site flip wiring is on main at `ed0bf0f5ae57fcf43875dddd6a32041ec8e373ca`.
+- R8 live-chart frontend work is active in issue #116 / draft PR #117, exact head
+  `3671a5d785e72802523f2f5194498b2a3cdafc55`. Local web verification is green
+  (22 test files / 105 tests, production build, `git diff --check`). Exact-head GitHub
+  all three exact-head gates are green: CI `34885703421`, Exact Accounting `34885703511`, Pinned Forwardproxy `34885703413`. Independent review remains pending.
+- Task13 PR #108 and Karing PR #101 remain DRAFT and require their real acceptance gates before merge.
 
-## Remaining gates
-1. **Task13 #108:** Worker 2 runs the mandatory real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance proving target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential/account survival, unchanged Caddy lifecycle, and exactly-once final accounting. Worker 3 only reconciles if a new merge-ref/exact-head defect appears. Worker 1 performs final independent diff/security/accounting review after protocol evidence exists.
-2. **Karing #101:** Worker 4 runs real disposable Karing import → parse → CONNECT → cleanup/revoke and records client/platform/version, generated-profile SHA-256 and redacted logs. Unit/build proof is not a substitute.
-3. **R1 / STEER-001 #109:** Worker 3 = trusted TCP_INFO sampling from authoritative socket/RemoteAddr state; Worker 2 = >0030 DB ingest/replay/idempotency; Worker 1 = schema/privilege/security/accounting-boundary review; Worker 4 = disposable E2E after an exact implementation head exists.
-4. **Production #100:** when Primary reconnects, perform read-only live image/revision, migration/schema, services/listeners/Caddy, encrypted-backup, disk and rollback audit before any future promotion.
+## Production truth ceiling
 
-## Worker allocation
-- Worker 2: Task13 real HTTP1/HTTP2 protocol/accounting acceptance; R1 ingest/replay/idempotency.
-- Worker 3: R1 trusted TCP_INFO sampling; Task13 reconciliation only for a concrete new defect.
-- Worker 4: real Karing client acceptance; R1 E2E follow-up.
-- Worker 1: independent diff/schema/security/accounting/CI review for new exact heads and final promotion candidates.
-- Primary: read-only Production audit when connected.
-- Coordinator: integrate only validated work, preserve promotion gates, and maintain canonical docs.
+- Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade
+  Pack / `repo-fin2` generation live, healthy panel/API/SSE/real-customer CONNECT/accounting
+  postflight, forward-only migrations 0031/0032/0033, and retained rollback/backup evidence.
+- Fresh remote inventory does not expose an identifiable `PVNaive-Production-Primary`.
+  The only online remote registration is not the PVNaive Production host and must not be used
+  for Production actions.
+- Therefore current container/image identity, migration ledger, encrypted-backup freshness,
+  disk headroom and rollback snapshot are not freshly asserted. No Production mutation is allowed
+  until trusted Primary reconnect + read-only audit + backup/rollback gates.
 
-Concrete progress this checkpoint: post-merge main CI was verified green; STEER-002 #110 was closed completed; stale mergeability state for #108/#101 was corrected to current `mergeable=true`; exact-head workflow success for both PRs was re-verified; persistent worker/Production queues were refreshed. No Production deploy, migration, restart/reload, credential rotation, DB/Caddy mutation, backup mutation or rollback mutation was performed.
+## Active roadmap lanes
+
+1. **R8 #116/#117:** finish exact-head CI + independent review, then integrate only if every gate is green.
+2. **R5 enablement (#113/#114):** code is on main; real disposable multi-node mTLS pull E2E and Production enablement remain gated.
+3. **R6-FLIP #115:** code is on main and default-OFF; promotion requires trusted audit, fresh encrypted backup, independent rollback snapshot and postflight.
+4. **#100 Production lane:** read-only audit first when the real Primary reconnects.
+5. **#108/#101:** keep DRAFT until real pinned-Caddy HTTP/1.1+HTTP/2 and real Karing acceptance respectively exist.
+
+## Safety invariants
+
+- Accounting/session/quota semantics are canonical truth and must not be weakened by telemetry/UI work.
+- Never trust XFF/Forwarded/client headers for authoritative node/session identity; fleet pull identity is TLS-client-cert-only.
+- Applied migrations are immutable; future DB changes are forward-only and ledger-checked.
+- Unknown/unavailable telemetry stays Unknown; UI must not convert missing data into zero or fabricated health.
+- Production sequence: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
+
+## Coordinator checkpoint
+
+Concrete progress this cycle: verified green main `722cc905`; reconciled R5 UI/pull and R6 flip as code-complete but not Production-enabled; opened #116 and implemented the first R8 SSE dashboard slice in draft PR #117 with RED-first tests, bounded drop-oldest history, truthful Unknown gaps and last-valid-sample retention. Production remained mutation-free because the trusted Primary is not connected.

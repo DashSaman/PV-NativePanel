@@ -91,6 +91,8 @@ func (h *telemetryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleSessionPeer(w, r)
 	case r.Method == http.MethodPost && r.URL.Path == TelemetryIngestPath:
 		h.handleIngest(w, r)
+	case r.Method == http.MethodPost && r.URL.Path == TelemetryNetworkSamplePath:
+		h.handleNetworkSample(w, r)
 	default:
 		http.NotFound(w, r)
 	}

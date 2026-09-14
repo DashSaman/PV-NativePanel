@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -16,7 +17,10 @@ import (
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/coverd"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
+	"github.com/DashSaman/PV-NaivePanel/internal/fleet"
+	"github.com/DashSaman/PV-NaivePanel/internal/fleetpull"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
@@ -51,6 +55,13 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "reconcile-runtime-config" {
 		if err := runReconcileRuntimeConfig(os.Args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "PVNaive reconcile-runtime-config: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "admin" && len(os.Args) > 2 && os.Args[2] == "reset-access" {
+		if err := adminResetAccess(os.Args[3:]); err != nil {
+			fmt.Fprintf(os.Stderr, "PVNaive admin reset-access: %v\n", err)
 			os.Exit(1)
 		}
 		return
@@ -149,6 +160,26 @@ func run() error {
 		periodicResetConfig = &cfg
 	}
 
+	steerConfig, err := steeringLoopConfigFromEnv(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("steering scheduler configuration: %w", err)
+	}
+
+	// R5 pool registry: the owner-facing pool endpoints ride the panel DB
+	// (0033 trusted boundary). The signing key is operator-supplied via
+	// the environment; without it revision publishing stays unavailable
+	// while the inventory/drain endpoints still work.
+	fleetSigningKey := strings.TrimSpace(os.Getenv("PVNAIVE_FLEET_SIGNING_KEY"))
+	if fleetSigningKey != "" {
+		if _, err := hex.DecodeString(fleetSigningKey); err != nil {
+			return fmt.Errorf("PVNAIVE_FLEET_SIGNING_KEY: must be hex-encoded ed25519 private key")
+		}
+		log.Printf("PVNaive pool registry enabled (signed revisions)")
+	}
+
+	// R5 pull-model registry: one store shared by the owner API and the
+	// R5-PULL-001 mTLS control listener below.
+	fleetStore := fleet.NewStore(db)
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -157,6 +188,8 @@ func run() error {
 		CustomerService:       customerService,
 		AccountingStore:       accountingStore,
 		SessionController:     sessionController,
+		FleetStore:            fleetStore,
+		FleetSigningKey:       fleetSigningKey,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
 		SystemStatus:          systemStatus,
@@ -183,6 +216,36 @@ func run() error {
 			log.Printf,
 		)
 	}
+	// R2→R3 live loop: engine + telemetry aggregates + durable decision
+	// sink (0032). A single-node fleet still records honest initial
+	// assignments — the audit trail the fleet renderer will order by.
+	if err := startSteeringLoop(runCtx, db, accountingStore, steerConfig, log.Printf); err != nil {
+		return fmt.Errorf("start steering scheduler: %w", err)
+	}
+	// R5-PULL-001: dedicated sibling mTLS control listener. Optional;
+	// enabled only when all four env variables are set. Sibling identity
+	// is the client certificate — the panel cookie world never reaches
+	// this listener and headers never carry identity.
+	fleetPullServer, err := buildFleetPullListener(os.Getenv, fleetStore)
+	if err != nil {
+		return fmt.Errorf("fleet pull listener configuration: %w", err)
+	}
+	fleetPullErr := make(chan error, 1) // nil until started: receive blocks forever when disabled
+	if fleetPullServer != nil {
+		go func() { fleetPullErr <- fleetpull.Serve(runCtx, fleetPullServer, log.Printf) }()
+	}
+	// R6-FLIP-001: the cover site of THIS node. Default OFF (root keeps
+	// 404); enabled only with PVNAIVE_COVERD_ENABLED=1. Binds loopback
+	// only — public exposure happens exclusively through the reverse
+	// proxy (see ops/caddy/COVERD_FLIP.md for the gated flip runbook).
+	coverdServer, err := buildCoverdServer(os.Getenv, db)
+	if err != nil {
+		return fmt.Errorf("coverd configuration: %w", err)
+	}
+	coverdErr := make(chan error, 1) // nil channel: receive blocks forever when disabled
+	if coverdServer != nil {
+		go func() { coverdErr <- coverd.Serve(runCtx, coverdServer, log.Printf) }()
+	}
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Printf("PVNaive API listening on %s", listen)
@@ -196,6 +259,10 @@ func run() error {
 
 	select {
 	case err := <-serveErr:
+		return err
+	case err := <-fleetPullErr:
+		return err
+	case err := <-coverdErr:
 		return err
 	case <-runCtx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -366,6 +433,89 @@ func validatedListenAddress(value string) (string, error) {
 		return "", errors.New("PVNAIVE_LISTEN requires a non-zero port")
 	}
 	return value, nil
+}
+
+// buildFleetPullListener wires the optional R5-PULL-001 sibling mTLS
+// control listener from the environment. Disabled (nil) unless ALL of
+// PVNAIVE_FLEET_PULL_LISTEN / _CERT_FILE / _KEY_FILE / _CLIENT_CA_FILE
+// are set; partial configuration is a startup error, never a silent
+// half-enabled listener.
+func buildFleetPullListener(getenv func(string) string, store *fleet.Store) (*http.Server, error) {
+	listen := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_LISTEN"))
+	certFile := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_CERT_FILE"))
+	keyFile := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_KEY_FILE"))
+	clientCA := strings.TrimSpace(getenv("PVNAIVE_FLEET_PULL_CLIENT_CA_FILE"))
+	if listen == "" && certFile == "" && keyFile == "" && clientCA == "" {
+		return nil, nil
+	}
+	if listen == "" || certFile == "" || keyFile == "" || clientCA == "" {
+		return nil, errors.New("PVNAIVE_FLEET_PULL_LISTEN, _CERT_FILE, _KEY_FILE and _CLIENT_CA_FILE must all be set together")
+	}
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return nil, fmt.Errorf("invalid PVNAIVE_FLEET_PULL_LISTEN: %w", err)
+	}
+	if net.ParseIP(host) == nil || !strings.Contains(host, ".") {
+		return nil, fmt.Errorf("PVNAIVE_FLEET_PULL_LISTEN must be an explicit IPv4 address, got %q", host)
+	}
+	if port == "" || port == "0" {
+		return nil, errors.New("PVNAIVE_FLEET_PULL_LISTEN requires a non-zero port")
+	}
+	handler := &fleetpull.Handler{Store: store}
+	return fleetpull.NewListener(fleetpull.ListenerConfig{
+		Listen:   listen,
+		CertFile: certFile,
+		KeyFile:  keyFile,
+		ClientCA: clientCA,
+		Handler:  handler,
+	})
+}
+
+// buildCoverdServer wires the optional R6-FLIP-001 cover site of THIS node.
+// Disabled (nil) unless PVNAIVE_COVERD_ENABLED is exactly "1"; the node id,
+// loopback listen address and optional persona override come from
+// PVNAIVE_COVERD_NODE_ID / _LISTEN / _PERSONA. Content and stored persona
+// ride migration 0029's SECURITY DEFINER projections through coverd.DBStore.
+func buildCoverdServer(getenv func(string) string, db *sql.DB) (*http.Server, error) {
+	enabled := strings.TrimSpace(getenv("PVNAIVE_COVERD_ENABLED"))
+	if enabled == "" {
+		return nil, nil // default OFF: the root keeps its 404
+	}
+	if enabled != "1" {
+		return nil, errors.New("PVNAIVE_COVERD_ENABLED must be exactly \"1\" or unset")
+	}
+	config := coverd.FlipConfig{
+		Enabled:         true,
+		NodeID:          strings.TrimSpace(getenv("PVNAIVE_COVERD_NODE_ID")),
+		Listen:          strings.TrimSpace(getenv("PVNAIVE_COVERD_LISTEN")),
+		PersonaOverride: strings.TrimSpace(getenv("PVNAIVE_COVERD_PERSONA")),
+	}
+	if config.Listen == "" {
+		config.Listen = "127.0.0.1:9444"
+	}
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+	store := &coverd.DBStore{DB: db}
+	handler, err := coverd.NewNodeServer(config, store, func() (string, bool) {
+		id, ok, err := store.StoredPersona(config.NodeID)
+		if err != nil || !ok {
+			return "", false
+		}
+		return string(id), true
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Server{
+		Addr:              config.Listen,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    64 << 10,
+	}, nil
 }
 
 func zeroBytes(value []byte) {

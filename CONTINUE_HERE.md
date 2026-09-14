@@ -1,21 +1,28 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-14 18:42 Asia/Tehran
+Verified checkpoint: 2026-09-14 (Asia/Tehran)
 
-## Current GitHub truth
-- Canonical main before this documentation refresh was `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` SUCCESS.
-- STEER-002 / #110 is completed and closed. PR #112 merged via code-bearing `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; exact pre-merge head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` passed CI `34842627049`, Exact Accounting `34842627114`, and Pinned Forwardproxy `34842627193`.
-- Task13 #108 remains DRAFT/unmerged at `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`; fresh metadata says `mergeable=true`. Exact-head CI `34789937594`, Exact Accounting `34789937603`, and Pinned Forwardproxy `34789937575` are SUCCESS. Real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance is still mandatory.
-- Karing #101 remains DRAFT/unmerged at `216d53670066033403fe95f61b0402bb710186a3`; fresh metadata says `mergeable=true`. Exact-head CI `34732580376`, Exact Accounting `34732580468`, and Pinned Forwardproxy `34732580377` are SUCCESS. Real disposable Karing import → parse → CONNECT → cleanup/revoke is still mandatory.
+## GitHub truth
+- Exact `main`: `722cc905464e2f581520b6350db90eec77993578`; CI `34882541754` SUCCESS.
+- R5 owner pool UI (`f71cdc6`), sibling mTLS pull (`d02c18a`) and R6 gated cover flip wiring (`ed0bf0f`) are on main.
+- R8 live dashboard slice is draft PR #117 on exact head `3671a5d785e72802523f2f5194498b2a3cdafc55`.
+- #117 local web gates and all three exact-head GitHub gates are green (CI `34885703421`, Exact Accounting `34885703511`, Pinned Forwardproxy `34885703413`); independent review remains before any merge decision.
 
 ## Production truth
-- Latest persistent deployment receipt remains `pvnaive:repo-live2` image `76c10697a03b`, runtime `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`, schema 30 after forward-only 0029/0030, recorded healthy readiness + nip.io E2E ALL_GREEN, previous `repo-live` retained for rollback.
-- Fresh Remote Desktop inventory shows both known registrations offline and no Production Primary available. Do not assert current live image, migration ledger, encrypted-backup freshness, disk headroom or rollback snapshot beyond the persistent receipt.
+- Persistent verified ceiling: schema 33 / repo-fin2 with recorded healthy panel/API/SSE/real-customer CONNECT/accounting postflight and retained rollback/backup evidence.
+- No trusted Production Primary is currently connected, so do not infer fresh image/schema/backup/disk/rollback state and do not mutate Production.
 
-## Active lanes
-- **Task13 #108:** Worker 2 performs real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance: target-only kill, sibling survival, forged-tuple rejection, repeat idempotency, credential/account survival, unchanged Caddy lifecycle, exactly-once final accounting. Worker 3 reconciles only for a concrete merge-ref/exact-head defect. Worker 1 performs final independent review after protocol evidence exists.
-- **Karing #101:** Worker 4 performs real disposable Karing import → parse → CONNECT → cleanup/revoke with client/platform/version, generated-profile SHA-256 and redacted logs. Static/unit/build proof is not a substitute.
-- **R1 / STEER-001 #109:** continue independently. New migrations must be strictly >0030; never reuse/rewrite 0029/0030. Worker 3 = trusted TCP_INFO sampling from authoritative socket/RemoteAddr state; Worker 2 = DB ingest/replay/idempotency; Worker 1 = schema/privilege/security/accounting review; Worker 4 = E2E after an exact implementation head exists. Telemetry remains separate from exact byte-accounting/quota truth.
-- **Production #100:** Primary performs read-only audit first when connected. Before any future runtime deploy: fresh encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → postflight → retain rollback.
+## Execute next
+1. Obtain a genuinely independent diff/contract review for #117. All exact-head workflows are already green; merge only with expected-head guard after that review is real and no blocking finding remains.
+2. If #117 is integrated, refresh canonical docs and continue R8 toward per-node/per-user charts, reconciliation and performance/RBAC gates.
+3. R5: run real disposable multi-node enroll → publish → mTLS pull → heartbeat/drift E2E before Production enablement.
+4. R6-FLIP: remain default-OFF until trusted Production audit + fresh encrypted backup + independent rollback snapshot + runbook postflight are available.
+5. #108/#101: keep DRAFT until their real acceptance hosts exist; historical CI is not a substitute.
+6. Production Primary reconnect: first action is read-only identity/SHA/schema/service/Caddy/backup/disk/rollback audit.
 
-No Production deploy, migration, restart/reload, credential rotation, DB/Caddy mutation, backup mutation or rollback mutation was performed in this checkpoint.
+## Invariants
+- Preserve exact accounting, session, quota and credential semantics.
+- TLS client certificate is authoritative for fleet-pull identity; never trust forwarded/client headers.
+- Missing data remains Unknown; never smooth or fabricate source data.
+- Forward-only migrations; never rewrite applied history.
+- Production promotion: exact-head CI → disposable rehearsal → trusted audit → fresh encrypted backup + rollback snapshot → staged promotion → postflight → retain rollback.

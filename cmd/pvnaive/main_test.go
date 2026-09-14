@@ -87,3 +87,114 @@ func TestExpectedSchemaVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildFleetPullListener(t *testing.T) {
+	// Disabled when nothing is set (the default deployment posture).
+	server, err := buildFleetPullListener(func(string) string { return "" }, nil)
+	if err != nil || server != nil {
+		t.Fatalf("unset env: server=%v err=%v, want nil/nil", server, err)
+	}
+	// Partial configuration must fail loudly, never half-enable.
+	getenv := func(key string) string {
+		if key == "PVNAIVE_FLEET_PULL_LISTEN" {
+			return "203.0.113.10:9443"
+		}
+		return ""
+	}
+	if _, err := buildFleetPullListener(getenv, nil); err == nil {
+		t.Fatalf("partial configuration unexpectedly accepted")
+	}
+	// Loopback is allowed for single-host rehearsals; malformed hosts are not.
+	getenvFull := func(key string) string {
+		switch key {
+		case "PVNAIVE_FLEET_PULL_LISTEN":
+			return "127.0.0.1:9443"
+		case "PVNAIVE_FLEET_PULL_CERT_FILE":
+			return "/tmp/cert.pem"
+		case "PVNAIVE_FLEET_PULL_KEY_FILE":
+			return "/tmp/key.pem"
+		case "PVNAIVE_FLEET_PULL_CLIENT_CA_FILE":
+			return "/tmp/ca.pem"
+		}
+		return ""
+	}
+	if _, err := buildFleetPullListener(getenvFull, nil); err == nil {
+		t.Fatalf("missing certificate files should fail during load")
+	}
+	// Hostname listen addresses are refused (explicit IPv4 only).
+	getenvHost := func(key string) string {
+		if key == "PVNAIVE_FLEET_PULL_LISTEN" {
+			return "registry.example.net:9443"
+		}
+		if key == "PVNAIVE_FLEET_PULL_CERT_FILE" {
+			return "/tmp/cert.pem"
+		}
+		if key == "PVNAIVE_FLEET_PULL_KEY_FILE" {
+			return "/tmp/key.pem"
+		}
+		return "/tmp/ca.pem"
+	}
+	if _, err := buildFleetPullListener(getenvHost, nil); err == nil {
+		t.Fatalf("hostname listen address unexpectedly accepted")
+	}
+}
+
+func TestBuildCoverdServer(t *testing.T) {
+	// Default OFF — the flip is explicit.
+	server, err := buildCoverdServer(func(string) string { return "" }, nil)
+	if err != nil || server != nil {
+		t.Fatalf("unset env: server=%v err=%v, want nil/nil", server, err)
+	}
+	// Junk enablement value must fail loudly, never half-enable.
+	getenvJunk := func(key string) string {
+		if key == "PVNAIVE_COVERD_ENABLED" {
+			return "yes"
+		}
+		return ""
+	}
+	if _, err := buildCoverdServer(getenvJunk, nil); err == nil {
+		t.Fatalf("junk enablement value unexpectedly accepted")
+	}
+	// Enabled without a node id is a startup error.
+	getenvNoNode := func(key string) string {
+		if key == "PVNAIVE_COVERD_ENABLED" {
+			return "1"
+		}
+		return ""
+	}
+	if _, err := buildCoverdServer(getenvNoNode, nil); err == nil {
+		t.Fatalf("enabled cover without node id unexpectedly accepted")
+	}
+	// Non-loopback listen is refused: exposure is reverse-proxy-only.
+	getenvPublic := func(key string) string {
+		switch key {
+		case "PVNAIVE_COVERD_ENABLED":
+			return "1"
+		case "PVNAIVE_COVERD_NODE_ID":
+			return "node-alpha"
+		case "PVNAIVE_COVERD_LISTEN":
+			return "0.0.0.0:9444"
+		}
+		return ""
+	}
+	if _, err := buildCoverdServer(getenvPublic, nil); err == nil {
+		t.Fatalf("non-loopback cover bind unexpectedly accepted")
+	}
+	// Enabled with defaults builds a loopback server with the derived persona.
+	getenvValid := func(key string) string {
+		if key == "PVNAIVE_COVERD_ENABLED" {
+			return "1"
+		}
+		if key == "PVNAIVE_COVERD_NODE_ID" {
+			return "node-alpha"
+		}
+		return ""
+	}
+	server, err = buildCoverdServer(getenvValid, nil)
+	if err != nil {
+		t.Fatalf("valid cover config rejected: %v", err)
+	}
+	if server == nil || server.Addr != "127.0.0.1:9444" {
+		t.Fatalf("cover server = %+v, want loopback 9444", server)
+	}
+}
