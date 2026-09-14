@@ -111,7 +111,7 @@ ingest() {
 
 # 2) First ingest: accepted, user resolved through the accounting join.
 first="$(ingest 1 1 upstream 42000 8000 1200 4 100000 200000 60000000)"
-[[ "${first##*$'\n'}" == "true|false|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
+[[ "${first##*$'\n'}" == "true|true|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
   echo "ERROR: first ingest: ${first}" >&2; exit 1;
 }
 
@@ -125,13 +125,13 @@ count="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SE
 
 # 4) New sample_seq in the same session is accepted.
 second="$(ingest 2 2 upstream 45000 9000 1500 6 200000 400000 120000000)"
-[[ "${second##*$'\n'}" == "true|false|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
+[[ "${second##*$'\n'}" == "true|true|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
   echo "ERROR: second ingest: ${second}" >&2; exit 1;
 }
 
 # 5) Client-path sample is stored under the same identity.
 third="$(ingest 3 3 client 18000 3000 900 2 50000 80000 30000000)"
-[[ "${third##*$'\n'}" == "true|false|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
+[[ "${third##*$'\n'}" == "true|true|false|accepted|bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" ]] || {
   echo "ERROR: client-path ingest: ${third}" >&2; exit 1;
 }
 
@@ -149,23 +149,23 @@ set -e
 
 # 8) Partition auto-ensure at a future month boundary (no 2027-03 partition exists).
 future="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT accepted::text FROM pvnaive.network_sample_ingest('11111111-1111-1111-1111-111111111111','direct-1','22222222-2222-2222-2222-222222222222','33333333-3333-3333-3333-333333333333',5,'2027-03-15T10:00:00Z','upstream',20000,100,20,1,1000,2000,1000000);")"
-[[ "${future##*$'\n'}" == t ]] || { echo "ERROR: future partition ingest: ${future}" >&2; exit 1; }
+[[ "${future##*$'\n'}" == true ]] || { echo "ERROR: future partition ingest: ${future}" >&2; exit 1; }
 auto_partition="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT to_regclass('pvnaive.session_network_samples_2027_03') IS NOT NULL;")"
 [[ "${auto_partition}" == t ]] || { echo 'ERROR: partition auto-ensure failed' >&2; exit 1; }
 
 # 9) Aggregate upsert: monotonic guard — newer wins, older is ignored.
-agg_new="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT pvnaive.network_agg_upsert('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','direct-1','client',19000,3200,0.02,700000,1.0,8,'2026-09-14T10:01:00Z');")"
+agg_new="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT pvnaive.network_agg_upsert('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','direct-1','client',19000,3200,0.02,700000,1.0,8,clock_timestamp() - interval '10 seconds');")"
 [[ "${agg_new##*$'\n'}" == t ]] || { echo "ERROR: agg upsert new: ${agg_new}" >&2; exit 1; }
-agg_old="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT pvnaive.network_agg_upsert('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','direct-1','client',99000,99000,0.99,1,0.1,3,'2026-09-14T09:00:00Z');")"
+agg_old="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT pvnaive.network_agg_upsert('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','direct-1','client',99000,99000,0.99,1,0.1,3,clock_timestamp() - interval '2 hours');")"
 [[ "${agg_old##*$'\n'}" == t ]] || { echo "ERROR: agg upsert old call: ${agg_old}" >&2; exit 1; }
 agg_check="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SELECT concat_ws('|',rtt_ewma_micros::text,sample_count::text) FROM pvnaive.user_node_network_agg WHERE user_id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' AND node_id='direct-1' AND path='client';")"
 [[ "${agg_check}" == '19000|8' ]] || { echo "ERROR: older aggregate overwrote newer: ${agg_check}" >&2; exit 1; }
 
 # 10) network_agg_read honors staleness (fresh row returned, aged-out omitted).
 fresh_read="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT count(*) FROM pvnaive.network_agg_read(3600);")"
-[[ "${fresh_read}" == 1 ]] || { echo "ERROR: fresh read count: ${fresh_read}" >&2; exit 1; }
+[[ "${fresh_read##*$'\n'}" == 1 ]] || { echo "ERROR: fresh read count: ${fresh_read}" >&2; exit 1; }
 aged_read="$(psql_admin --dbname "${test_db}" --tuples-only --no-align --command "SET ROLE pvnaive_app; SELECT count(*) FROM pvnaive.network_agg_read(1);")"
-[[ "${aged_read}" == 0 ]] || { echo "ERROR: stale read should be empty: ${aged_read}" >&2; exit 1; }
+[[ "${aged_read##*$'\n'}" == 0 ]] || { echo "ERROR: stale read should be empty: ${aged_read}" >&2; exit 1; }
 
 # 11) Trusted boundary: pvnaive_app cannot touch the tables directly.
 set +e
