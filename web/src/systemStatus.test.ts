@@ -42,6 +42,16 @@ describe("system status", () => {
     expect(status.traffic_semantics).toBe("server_counter_delta");
   });
 
+  it("normalizes the raw SSE status frame (same envelope) without a cast — R8 live-charts regression", () => {
+    // connectSystemStream delivers the raw parsed JSON of each "status" frame;
+    // the monitoring console must normalize it exactly like the polling path.
+    const frame = JSON.parse(JSON.stringify(response));
+    const status = normalizeSystemStatus(frame);
+    expect(status.sample.rx_bytes_per_second).toBeDefined();
+    expect(() => normalizeSystemStatus({})).toThrow();
+    expect(() => normalizeSystemStatus({ metrics: { sample: { sampled_at: "x" } } })).toThrow();
+  });
+
   it("includes Telemetry in dependency presentation", () => {
     const status = normalizeSystemStatus(response);
     expect(dependencyEntries(status.dependencies).map((item) => item.label)).toEqual(["API", "DB", "Runtime", "Telemetry"]);

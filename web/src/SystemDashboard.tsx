@@ -6,6 +6,7 @@ import {
   formatBytes,
   formatRate,
   formatUptime,
+  normalizeSystemStatus,
   SystemSample,
   SystemStatus,
 } from "./systemStatus";
@@ -89,7 +90,7 @@ export function SystemDashboard() {
         {
           onStatus: (payload) => {
             try {
-              applySample(payload as SystemStatus);
+              applySample(normalizeSystemStatus(payload));
               stopPolling();
               setModeSafe("live");
             } catch { /* malformed frame: skip */ }
