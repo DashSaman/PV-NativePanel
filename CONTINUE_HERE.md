@@ -1,13 +1,13 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-14 11:40 Asia/Tehran
+Verified checkpoint: 2026-09-14 12:41 Asia/Tehran
 
 ## Current GitHub truth
-- Canonical `main` before this documentation refresh: `638844337e814e806cbe90897e522aadc6d43863`; push CI `34817253202` SUCCESS.
+- Canonical `main` before this documentation refresh: `3ea84fb9d8bdaba7fcd6fd33d1dd44d4ff04d1f6`; push CI `34821820421` SUCCESS.
 - Runtime deploy commit remains `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`; CI `34795216345` SUCCESS.
-- Task13 #108 is DRAFT at `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`; current GitHub metadata reports `mergeable=false`. Exact-head repository workflows are historical-green, but branch/main reconciliation plus real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance are still required.
-- Karing #101 is DRAFT at `216d53670066033403fe95f61b0402bb710186a3`; current GitHub metadata reports `mergeable=false`. Real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is still missing.
-- STEER-002 #110 has advanced into draft PR #112 from exact green main. RED-first head is `7a7923cf8faf6f03a2ea1578570a705f9df57153`; it adds CandidateRatio contract tests only. WS1 Exact Accounting is green on that head; main CI and Pinned Forwardproxy are still running. Do not add implementation until the expected RED failure is observed.
+- Task13 #108 remains DRAFT/unmerged; branch/main reconciliation and real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance are still required.
+- Karing #101 remains DRAFT/unmerged; real disposable Karing import → parse → CONNECT → cleanup/revoke acceptance is still missing.
+- STEER-002 #110 / PR #112 advanced from proven RED to minimal GREEN head `2ebe4637bf8f0d4fefb789fc299f5a404cc867fe`. `Decision.Candidates` now applies CandidateRatio without altering the full healthy eligible set used for primary/hysteresis, and the best candidate is always retained for zero/negative score domains. PR is mergeable but stays DRAFT while CI `34826791358`, Exact Accounting `34826791281`, and Pinned Forwardproxy `34826791365` run and independent edge-case review is pending.
 
 ## Production truth
 - Latest persistent deployment receipt remains `pvnaive:repo-live2` image `76c10697a03b`, built from `a4edea6`, healthy at schema 30 after forward-only 0029/0030.
@@ -17,9 +17,9 @@ Verified checkpoint: 2026-09-14 11:40 Asia/Tehran
 
 ## Active lanes
 - **Task13 #108**: Worker 3 refreshes/reconciles exact session-kill work on latest green main and reruns CI + Exact Accounting + Pinned Forwardproxy if head moves. Worker 2 then independently executes real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance: target-only kill, sibling survival, forged-tuple rejection, repeat idempotency, account survival, unchanged Caddy lifecycle and exactly-once final accounting.
-- **Karing #101**: Worker 4 performs real disposable Karing import → parse → CONNECT → cleanup/revoke, then reconstructs only the validated minimal delta on latest green main and reruns exact-head repository gates.
+- **Karing #101**: Worker 4 performs real disposable Karing import → parse → CONNECT → cleanup/revoke, then refreshes only the validated minimal delta on latest green main and reruns exact-head repository gates if needed.
 - **R1 / STEER-001 #109**: continue independently. New migrations must be >0030; never reuse/rewrite 0029/0030. Network telemetry remains separate from exact byte-accounting/quota truth. Worker 3 = trusted TCP_INFO sampling; Worker 2 = DB ingest/replay/idempotency; Worker 1 = schema/security/accounting review; Worker 4 = E2E after an exact implementation head exists.
-- **R2 / STEER-002 #110 / PR #112**: RED tests are now committed. After CI proves RED for the intended CandidateRatio gap, Worker 3 adds the minimal candidate filtering; Worker 2 reviews non-positive score semantics and TopK/Decision consistency; Worker 1 reviews config/spec boundaries; Worker 4 owns steering E2E. Preserve Unknown/hysteresis/kill-switch/accounting semantics.
+- **R2 / STEER-002 #110 / PR #112**: wait for all exact-head workflows. Then Worker 1 reviews config/spec/diff boundaries, Worker 2 reviews non-positive/tie/TopK-vs-Decision consistency, Worker 3 fixes only exact-head failures if any, and Worker 4 owns steering E2E. Keep DRAFT until all gates are green.
 - **Production #100**: Primary performs a read-only audit first when connected. Before any future runtime deploy: fresh encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → postflight → retain rollback.
 
 No runtime merge, deploy, migration, restart/reload, credential rotation, DB/Caddy mutation, backup mutation or rollback mutation was performed in this checkpoint.
