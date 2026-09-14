@@ -16,7 +16,7 @@ Checkpoint: 2026-09-14 22:xx Asia/Tehran
 ## Active integration work
 - #116 / draft PR #117: R8 dashboard SSE wiring, exact head `3671a5d785e72802523f2f5194498b2a3cdafc55`.
 - Local exact-head web gates: 22 files / 105 tests PASS; `npm run build` PASS; `git diff --check` PASS.
-- GitHub exact-head: WS1 Exact Accounting SUCCESS; CI and WS1 Pinned Forwardproxy still running at checkpoint time. Do not merge early.
+- GitHub exact-head gates are all SUCCESS: CI `34885703421`, WS1 Exact Accounting `34885703511`, WS1 Pinned Forwardproxy `34885703413`. A genuinely independent review is still required; do not merge early.
 - #108 Task13 remains DRAFT pending real pinned-Caddy HTTP/1.1 + HTTP/2 target-only kill/accounting proof.
 - #101 Karing remains DRAFT pending real disposable Karing import → parse → CONNECT → cleanup/revoke proof.
 

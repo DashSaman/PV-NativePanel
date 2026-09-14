@@ -12,7 +12,7 @@ Last updated: 2026-09-14 (Asia/Tehran)
 - R8 live-chart frontend work is active in issue #116 / draft PR #117, exact head
   `3671a5d785e72802523f2f5194498b2a3cdafc55`. Local web verification is green
   (22 test files / 105 tests, production build, `git diff --check`). Exact-head GitHub
-  Exact Accounting is green; CI and Pinned Forwardproxy are still running at this checkpoint.
+  all three exact-head gates are green: CI `34885703421`, Exact Accounting `34885703511`, Pinned Forwardproxy `34885703413`. Independent review remains pending.
 - Task13 PR #108 and Karing PR #101 remain DRAFT and require their real acceptance gates before merge.
 
 ## Production truth ceiling
