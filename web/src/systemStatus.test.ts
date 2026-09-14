@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dependencyEntries, formatBytes, formatRate, formatUptime, normalizeSystemStatus } from "./systemStatus";
+import { historyPointFromPayload } from "./systemLive";
 
 const response = {
   metrics: {
@@ -43,13 +44,20 @@ describe("system status", () => {
   });
 
   it("normalizes the raw SSE status frame (same envelope) without a cast — R8 live-charts regression", () => {
-    // connectSystemStream delivers the raw parsed JSON of each "status" frame;
-    // the monitoring console must normalize it exactly like the polling path.
     const frame = JSON.parse(JSON.stringify(response));
     const status = normalizeSystemStatus(frame);
     expect(status.sample.rx_bytes_per_second).toBeDefined();
     expect(() => normalizeSystemStatus({})).toThrow();
     expect(() => normalizeSystemStatus({ metrics: { sample: { sampled_at: "x" } } })).toThrow();
+  });
+
+  it("preserves unavailable network rates as chart gaps", () => {
+    const unavailable = structuredClone(response);
+    unavailable.metrics.sample.rate_available = false;
+    unavailable.metrics.sample.rx_bytes_per_second = 0;
+    unavailable.metrics.sample.tx_bytes_per_second = 0;
+    const point = historyPointFromPayload(unavailable, 123);
+    expect(point).toEqual({ t: 123, cpu: 31.5, memory: 62.5, rx: null, tx: null });
   });
 
   it("includes Telemetry in dependency presentation", () => {

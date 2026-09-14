@@ -7,36 +7,24 @@ import {
   formatRate,
   formatUptime,
   normalizeSystemStatus,
-  SystemSample,
   SystemStatus,
 } from "./systemStatus";
 import { LiveAreaChart, RadialGauge } from "./charts";
+import { appendLivePoint, historyPointFromStatus, type LivePoint } from "./systemLive";
 
 /* Live server telemetry console. Frames arrive over the R8 SSE stream
    (1s server ticks); a polling fallback keeps data honest if the stream
    drops. Every rendered number originates from a real server sample —
    nothing here is synthesized in the browser. */
 
-type HistoryPoint = { t: number; cpu: number; memory: number; rx: number; tx: number };
+type HistoryPoint = LivePoint;
 type StreamMode = "connecting" | "live" | "polling";
 
-const HISTORY_LIMIT = 90;
 const POLL_FALLBACK_MS = 5000;
 const STREAM_RETRY_MS = 10000;
 
 function percentText(value: number): string {
   return Number.isFinite(value) ? `${value.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪` : "—";
-}
-
-function pushHistory(current: HistoryPoint[], sample: SystemSample): HistoryPoint[] {
-  const next: HistoryPoint = {
-    t: Date.now(),
-    cpu: sample.cpu_percent,
-    memory: sample.memory_used_percent,
-    rx: sample.rate_available ? sample.rx_bytes_per_second : 0,
-    tx: sample.rate_available ? sample.tx_bytes_per_second : 0,
-  };
-  return [...current, next].slice(-HISTORY_LIMIT);
 }
 
 export function SystemDashboard() {
@@ -58,7 +46,7 @@ export function SystemDashboard() {
       setStatus(next);
       setUpdatedAt(new Date());
       setError("");
-      setHistory((current) => pushHistory(current, next.sample));
+      setHistory((current) => appendLivePoint(current, historyPointFromStatus(next)));
     };
 
     const setModeSafe = (value: StreamMode) => {

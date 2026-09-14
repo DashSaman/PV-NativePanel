@@ -98,7 +98,27 @@ function stableId(input: string): string {
   return Math.abs(h).toString(36);
 }
 
-export type Series = { name: string; color: string; values: number[] };
+export type SeriesValue = number | null;
+export type Series = { name: string; color: string; values: SeriesValue[] };
+
+export type FiniteRunPoint = { index: number; value: number };
+
+/** Split a nullable series into contiguous finite runs so Unknown renders as a gap. */
+export function splitFiniteRuns(values: SeriesValue[]): FiniteRunPoint[][] {
+  const runs: FiniteRunPoint[][] = [];
+  let current: FiniteRunPoint[] = [];
+  for (let index = 0; index < values.length; index++) {
+    const value = values[index];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      current.push({ index, value });
+      continue;
+    }
+    if (current.length) runs.push(current);
+    current = [];
+  }
+  if (current.length) runs.push(current);
+  return runs;
+}
 
 /** Live multi-series area chart with grid, nice ticks and smooth curves. */
 export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFormat(n), ariaLabel }: {
@@ -112,21 +132,32 @@ export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFor
   const padBottom = 16;
   const plotH = height - padTop - padBottom;
 
-  const { paths, areas, ticks, max } = useMemo(() => {
-    const all = series.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
+  const { paths, ticks, max } = useMemo(() => {
+    const all = series.flatMap((s) => s.values).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
     const dataMax = all.length ? Math.max(...all) : 1;
     const top = niceTicks(dataMax).slice(-1)[0] ?? dataMax;
     const localTicks = niceTicks(top);
     const span = Math.max(top, 0.0001);
-    const built = series.map((s) => {
-      const pts: Point[] = s.values.map((v, i) => ({
-        x: (i / Math.max(1, s.values.length - 1)) * width,
-        y: padTop + plotH - (Math.max(0, Math.min(v, span)) / span) * plotH,
-      }));
-      const line = buildSmoothPath(pts);
-      return { line, area: pts.length ? `${line} L${width},${padTop + plotH} L0,${padTop + plotH} Z` : "" };
+    const built = series.flatMap((s, seriesIndex) => {
+      const denominator = Math.max(1, s.values.length - 1);
+      return splitFiniteRuns(s.values).map((run, runIndex) => {
+        const pts: Point[] = run.map(({ index, value }) => ({
+          x: (index / denominator) * width,
+          y: padTop + plotH - (Math.max(0, Math.min(value, span)) / span) * plotH,
+        }));
+        const line = buildSmoothPath(pts);
+        const firstX = pts[0]?.x ?? 0;
+        const lastX = pts[pts.length - 1]?.x ?? firstX;
+        return {
+          key: `${seriesIndex}-${runIndex}`,
+          color: s.color,
+          gradientIndex: seriesIndex,
+          line,
+          area: pts.length ? `${line} L${lastX},${padTop + plotH} L${firstX},${padTop + plotH} Z` : "",
+        };
+      });
     });
-    return { paths: built.map((b) => b.line), areas: built.map((b) => b.area), ticks: localTicks, max: span };
+    return { paths: built, ticks: localTicks, max: span };
   }, [series, plotH]);
 
   const count = Math.max(1, ...series.map((s) => s.values.length - 1), 1);
@@ -151,9 +182,9 @@ export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFor
           </g>
         );
       })}
-      {areas.map((area, i) => <path key={`a${i}`} d={area} fill={`url(#mgrad-${stableId(ariaLabel)}-${i})`} stroke="none" />)}
-      {paths.map((line, i) => (
-        <path key={`l${i}`} d={line} fill="none" stroke={series[i].color} strokeWidth="2"
+      {paths.map((path) => <path key={`a-${path.key}`} d={path.area} fill={`url(#mgrad-${stableId(ariaLabel)}-${path.gradientIndex})`} stroke="none" />)}
+      {paths.map((path) => (
+        <path key={`l-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="2"
           vectorEffect="non-scaling-stroke" strokeLinecap="round" className="monitor-line" />
       ))}
       <line x1="0" x2={width} y1={padTop + plotH} y2={padTop + plotH} className="monitor-axis" />

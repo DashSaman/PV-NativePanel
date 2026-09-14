@@ -7,6 +7,7 @@ import {
   gaugeDash,
   niceTicks,
   polar,
+  splitFiniteRuns,
 } from "./charts";
 
 describe("monitoring chart math", () => {
@@ -59,6 +60,14 @@ describe("monitoring chart math", () => {
     expect(gapped[0].a1 - gapped[0].a0).toBeCloseTo(176);
     expect(gapped[1].a0).toBeCloseTo(182);
     expect(gapped[1].a1).toBeCloseTo(358);
+  });
+
+  it("keeps unavailable samples as gaps instead of connecting them through zero", () => {
+    expect(splitFiniteRuns([10, null, 20, 30, null, 40])).toEqual([
+      [{ index: 0, value: 10 }],
+      [{ index: 2, value: 20 }, { index: 3, value: 30 }],
+      [{ index: 5, value: 40 }],
+    ]);
   });
 
   it("computes donut arcs and polar coordinates consistently", () => {
