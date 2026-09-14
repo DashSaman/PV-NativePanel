@@ -22,3 +22,12 @@ export function livePointFromStatus(status: SystemStatus): LivePoint {
 export function appendLivePoint(history: LivePoint[], point: LivePoint): LivePoint[] {
   return [...history, point].slice(-LIVE_HISTORY_LIMIT);
 }
+export type LiveStreamState = "connecting" | "live" | "disconnected";
+
+export function liveStreamLabel(state: LiveStreamState): string {
+  switch (state) {
+    case "live": return "جریان SSE زنده";
+    case "disconnected": return "SSE قطع‌شده";
+    default: return "SSE در حال اتصال";
+  }
+}

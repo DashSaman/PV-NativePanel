@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { dependencyEntries, fetchSystemStatus, formatBytes, formatRate, formatUptime, normalizeSystemStatus, SystemStatus } from "./systemStatus";
 import { connectSystemStream } from "./systemStream";
-import { appendLivePoint, livePointFromStatus, LivePoint } from "./systemLive";
+import { appendLivePoint, livePointFromStatus, liveStreamLabel, LivePoint, LiveStreamState } from "./systemLive";
 
 type HistoryPoint = LivePoint;
 
@@ -20,6 +20,7 @@ export function SystemDashboard() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [streamState, setStreamState] = useState<LiveStreamState>("connecting");
 
   useEffect(() => {
     let active = true;
@@ -40,12 +41,18 @@ export function SystemDashboard() {
 
     const close = connectSystemStream({
       onStatus: (payload) => {
-        try { accept(normalizeSystemStatus(payload)); } catch {
+        try {
+          accept(normalizeSystemStatus(payload));
+          if (active) setStreamState("live");
+        } catch {
           if (active) setError("نمونه نامعتبر از جریان زنده رد شد؛ آخرین داده معتبر حفظ شده است.");
         }
       },
       onError: () => {
-        if (active) setError("جریان زنده قطع شده است؛ مرورگر به‌صورت خودکار دوباره متصل می‌شود.");
+        if (active) {
+          setStreamState("disconnected");
+          setError("جریان زنده قطع شده است؛ مرورگر به‌صورت خودکار دوباره متصل می‌شود.");
+        }
       },
     });
 
@@ -79,6 +86,6 @@ export function SystemDashboard() {
       <article><span>Uptime</span><strong>{formatUptime(sample.uptime_seconds)}</strong></article>
       <article><span>Traffic semantics</span><strong className="system-semantics">{status.traffic_semantics}</strong><small>Accounting/Online در این کارت ساخته یا تخمین زده نمی‌شود.</small></article>
     </div>
-    <p className="sample-meta">جریان SSE · آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
+    <p className="sample-meta">{liveStreamLabel(streamState)} · آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
   </section>;
 }

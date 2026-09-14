@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendLivePoint, livePointFromStatus, LIVE_HISTORY_LIMIT } from "./systemLive";
+import { appendLivePoint, livePointFromStatus, liveStreamLabel, LIVE_HISTORY_LIMIT } from "./systemLive";
 import type { LivePoint } from "./systemLive";
 import type { SystemStatus } from "./systemStatus";
 
@@ -39,5 +39,11 @@ describe("system live history", () => {
     expect(history).toHaveLength(LIVE_HISTORY_LIMIT);
     expect(history[0]?.cpu).toBe(1);
     expect(history.at(-1)?.cpu).toBe(999);
+  });
+
+  it("does not claim a live SSE stream until a valid SSE sample arrives", () => {
+    expect(liveStreamLabel("connecting")).toBe("SSE در حال اتصال");
+    expect(liveStreamLabel("live")).toBe("جریان SSE زنده");
+    expect(liveStreamLabel("disconnected")).toBe("SSE قطع‌شده");
   });
 });
