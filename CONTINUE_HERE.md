@@ -4,31 +4,34 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 
 ## GitHub truth
 
-- Validated code main before this docs checkpoint: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. R8 race issue #118 / PR #119 is merged; exact PR head `e983468bb80fbda5dc9509aa1e4b89b96431b059` had all required GitHub gates green. Post-merge CI `34904000208` completed SUCCESS on `3eee556b908ec98c7a033de0ce63938b7dc0e714`.
-- Task13 #108 is merged. Final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, plus the real HTTP/1.1+HTTP/2 target-session kill rehearsal.
-- R8 chart issue #116 is closed completed on main; obsolete/conflicting PR #117 is closed unmerged.
-- #101 Karing remains blocked on real-client acceptance.
-- R5 registry DB gate and a real disposable two-node mTLS pull/heartbeat/drift E2E both passed on current main. #114 remains open for certificate rotation/overlap + explicit revocation proof; Production enablement stays gated.
+- Current code main before docs refresh: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide). CI run `34907620721` has Go, Web, database/migration/backup-restore and full rehearsal steps PASS, but GitHub has not yet recorded a terminal workflow SUCCESS; re-check before treating the whole run as green.
+- R10 is not Production-approved merely because CI is passing: named-client compatibility is a separate truth gate in #120. #101 Karing remains DRAFT/non-mergeable and must be reconciled to latest verified main before a real import → parse → CONNECT → cleanup/revoke acceptance.
+- Task13 #108 is merged and accepted with real HTTP/1.1+HTTP/2 target-only kill plus exactly-once final accounting.
+- R8 monitoring/race fixes are integrated.
+- R5 registry and real basic two-node mTLS pull/heartbeat/drift E2E are green; #114 remains for cert rotation/overlap + explicit revocation/replay/fail-closed lifecycle proof.
 
 ## Production truth
 
-- Persistent verified ceiling: schema 33 / repo-fin2 with recorded healthy panel/API/SSE/real-customer CONNECT/accounting postflight and retained rollback/backup evidence.
-- No trusted Production Primary is connected. Do not infer fresh image/schema/backup/disk/rollback state and do not mutate Production.
+- Persistent verified ceiling: schema 33 / repo-fin2 checkpoint.
+- Both known Remote Desktop registrations are currently offline; no trusted Production Primary is connected.
+- Do not infer fresh image/schema/backup/disk/rollback/Caddy state and do not mutate Production.
 
 ## Execute next
 
-1. R5: registry + real two-node mTLS pull/heartbeat/drift are green; next prove certificate rotation/overlap + explicit revocation and STEER-006 scale. TLS client cert remains authoritative.
-2. R8: RED-first UI-002 ledger reconciliation/per-node/per-user projections and stream-RBAC isolation; preserve Unknown gaps and bounded histories.
-3. R6: disposable default-OFF cover/persona/probe-sweep/feed-failure rehearsal; do not promote to Production yet.
-4. #101: perform real disposable Karing import → parse → CONNECT → cleanup/revoke when a real client host is available.
-5. Production Primary reconnect: first action is read-only identity/SHA/schema/service/Caddy/backup/disk/rollback audit. Only after fresh encrypted backup and independent rollback snapshot may a staged deploy be considered.
+1. #120/#101: validate every advertised client claim. Real Karing exact-main acceptance first; remove or qualify any unverified client claims rather than presenting them as supported.
+2. #114: implement/prove certificate overlap/rotation + explicit revocation/replay/fail-closed behavior; TLS client cert remains authoritative.
+3. R8: ledger reconciliation/per-node/per-user projections and stream-RBAC isolation with Unknown gaps preserved.
+4. #115: disposable default-OFF cover/persona/probe-sweep/failure rehearsal.
+5. Production Primary reconnect: read-only identity/SHA/schema/services/Caddy/backup/disk/rollback audit first; only then fresh encrypted backup + independent rollback snapshot and staged promotion.
 
 ## Worker allocation
 
-- W1: independent security/accounting/accessibility review across Task13/R5/R6/R8.
-- W2: R8 ledger reconciliation and truthful projections.
-- W3: R5 mTLS/STEER-006 + R8 RBAC stream tests; prioritize real disposable listener/client-cert integration over duplicate unit coverage.
-- W4: disposable R5/R6 E2E + Karing real-client acceptance.
+- W1: R10 support-claim/security review → R5 PKI/revocation → R6/R8 RBAC/accessibility.
+- W2: RED-first R10 truth tests → R8 ledger/projections.
+- W3: R10 export/direct format semantics → R5 cert lifecycle/STEER-006.
+- W4: real Karing acceptance → disposable R5/R6 E2E.
+
+All registered remote workers are currently offline. Keep the queue in GitHub and resume these assignments on reconnect; do not claim worker execution without receipts.
 
 ## Invariants
 
@@ -36,4 +39,5 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 - Task13 kills only the selected session and preserves credentials/siblings.
 - Missing telemetry remains Unknown.
 - Applied migrations are immutable and future migrations are forward-only.
+- Client compatibility claims are evidence-backed.
 - Production promotion order: exact-head CI → disposable rehearsal → trusted audit → fresh encrypted backup + rollback snapshot → staged promotion → postflight → retain rollback.
