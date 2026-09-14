@@ -4,11 +4,11 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Verified baseline
 
-- Validated code main before this documentation commit: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 (test-only R8 SSE recorder synchronization) merged after exact head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy. Post-merge CI `34904000208` is still running at this checkpoint.
+- Validated code main before this documentation commit: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. PR #119 (test-only R8 SSE recorder synchronization) merged after exact head `e983468bb80fbda5dc9509aa1e4b89b96431b059` passed CI, Exact Accounting and Pinned Forwardproxy. Post-merge CI `34904000208` completed SUCCESS on `3eee556b908ec98c7a033de0ce63938b7dc0e714`.
 - Task13 PR #108 is merged after exact-head CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, and real pinned-Caddy HTTP/1.1+HTTP/2 acceptance all passed.
 - Task13 accepted binary SHA256: `6c55347714b355be18d0d35e487e4f6c821b13626c4285f2f4d9a1cc1ef0487b`; target-only kill, sibling survival, forged-tuple rejection, idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting were verified.
 - R8 issue #116 is completed on main. PR #117 was closed unmerged as stale/superseded by the stronger main implementation and fixes.
-- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated. A fresh disposable PostgreSQL 18 run of `tests/db/pool_registry_migration_test.sh` passed on exact main `3eee556b...`, confirming schema-33 registry/token/revision/heartbeat/drain/privilege invariants.
+- R5 UI/pull and R6 gated cover flip code remain on main; Production enablement remains gated. A fresh disposable PostgreSQL 18 run of `tests/db/pool_registry_migration_test.sh` passed on exact main `3eee556b...`, confirming schema-33 registry/token/revision/heartbeat/drain/privilege invariants. Fresh two-node real mTLS pull/heartbeat/drift E2E passed too; forged header identity was ignored, unknown CA-valid node was forbidden, and no-cert TLS failed. #114 remains open only for rotation/overlap + explicit revocation proof before enablement.
 
 ## Production blocker
 

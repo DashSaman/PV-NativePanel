@@ -4,11 +4,11 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 
 ## GitHub truth
 
-- Validated code main before this docs checkpoint: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. R8 race issue #118 / PR #119 is merged; exact PR head `e983468bb80fbda5dc9509aa1e4b89b96431b059` had all required GitHub gates green. Post-merge CI `34904000208` is still running at this checkpoint.
+- Validated code main before this docs checkpoint: `3eee556b908ec98c7a033de0ce63938b7dc0e714`. R8 race issue #118 / PR #119 is merged; exact PR head `e983468bb80fbda5dc9509aa1e4b89b96431b059` had all required GitHub gates green. Post-merge CI `34904000208` completed SUCCESS on `3eee556b908ec98c7a033de0ce63938b7dc0e714`.
 - Task13 #108 is merged. Final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, plus the real HTTP/1.1+HTTP/2 target-session kill rehearsal.
 - R8 chart issue #116 is closed completed on main; obsolete/conflicting PR #117 is closed unmerged.
 - #101 Karing remains blocked on real-client acceptance.
-- R5 registry DB gate was freshly rerun on exact main against disposable PostgreSQL 18 and passed; this is not a substitute for real mTLS multi-node E2E.
+- R5 registry DB gate and a real disposable two-node mTLS pull/heartbeat/drift E2E both passed on current main. #114 remains open for certificate rotation/overlap + explicit revocation proof; Production enablement stays gated.
 
 ## Production truth
 
@@ -17,7 +17,7 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 
 ## Execute next
 
-1. R5: database registry invariants are freshly green; next run disposable multi-node enroll → signed publish → real mTLS pull → heartbeat/drift plus STEER-006 scale rehearsal; TLS client cert remains authoritative.
+1. R5: registry + real two-node mTLS pull/heartbeat/drift are green; next prove certificate rotation/overlap + explicit revocation and STEER-006 scale. TLS client cert remains authoritative.
 2. R8: RED-first UI-002 ledger reconciliation/per-node/per-user projections and stream-RBAC isolation; preserve Unknown gaps and bounded histories.
 3. R6: disposable default-OFF cover/persona/probe-sweep/feed-failure rehearsal; do not promote to Production yet.
 4. #101: perform real disposable Karing import → parse → CONNECT → cleanup/revoke when a real client host is available.
