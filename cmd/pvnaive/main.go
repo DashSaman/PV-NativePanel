@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
+	"github.com/DashSaman/PV-NaivePanel/internal/coverd"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
 	"github.com/DashSaman/PV-NaivePanel/internal/fleet"
 	"github.com/DashSaman/PV-NaivePanel/internal/fleetpull"
@@ -226,6 +227,18 @@ func run() error {
 	if fleetPullServer != nil {
 		go func() { fleetPullErr <- fleetpull.Serve(runCtx, fleetPullServer, log.Printf) }()
 	}
+	// R6-FLIP-001: the cover site of THIS node. Default OFF (root keeps
+	// 404); enabled only with PVNAIVE_COVERD_ENABLED=1. Binds loopback
+	// only — public exposure happens exclusively through the reverse
+	// proxy (see ops/caddy/COVERD_FLIP.md for the gated flip runbook).
+	coverdServer, err := buildCoverdServer(os.Getenv, db)
+	if err != nil {
+		return fmt.Errorf("coverd configuration: %w", err)
+	}
+	coverdErr := make(chan error, 1) // nil channel: receive blocks forever when disabled
+	if coverdServer != nil {
+		go func() { coverdErr <- coverd.Serve(runCtx, coverdServer, log.Printf) }()
+	}
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Printf("PVNaive API listening on %s", listen)
@@ -241,6 +254,8 @@ func run() error {
 	case err := <-serveErr:
 		return err
 	case err := <-fleetPullErr:
+		return err
+	case err := <-coverdErr:
 		return err
 	case <-runCtx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -447,6 +462,53 @@ func buildFleetPullListener(getenv func(string) string, store *fleet.Store) (*ht
 		ClientCA: clientCA,
 		Handler:  handler,
 	})
+}
+
+// buildCoverdServer wires the optional R6-FLIP-001 cover site of THIS node.
+// Disabled (nil) unless PVNAIVE_COVERD_ENABLED is exactly "1"; the node id,
+// loopback listen address and optional persona override come from
+// PVNAIVE_COVERD_NODE_ID / _LISTEN / _PERSONA. Content and stored persona
+// ride migration 0029's SECURITY DEFINER projections through coverd.DBStore.
+func buildCoverdServer(getenv func(string) string, db *sql.DB) (*http.Server, error) {
+	enabled := strings.TrimSpace(getenv("PVNAIVE_COVERD_ENABLED"))
+	if enabled == "" {
+		return nil, nil // default OFF: the root keeps its 404
+	}
+	if enabled != "1" {
+		return nil, errors.New("PVNAIVE_COVERD_ENABLED must be exactly \"1\" or unset")
+	}
+	config := coverd.FlipConfig{
+		Enabled:         true,
+		NodeID:          strings.TrimSpace(getenv("PVNAIVE_COVERD_NODE_ID")),
+		Listen:          strings.TrimSpace(getenv("PVNAIVE_COVERD_LISTEN")),
+		PersonaOverride: strings.TrimSpace(getenv("PVNAIVE_COVERD_PERSONA")),
+	}
+	if config.Listen == "" {
+		config.Listen = "127.0.0.1:9444"
+	}
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+	store := &coverd.DBStore{DB: db}
+	handler, err := coverd.NewNodeServer(config, store, func() (string, bool) {
+		id, ok, err := store.StoredPersona(config.NodeID)
+		if err != nil || !ok {
+			return "", false
+		}
+		return string(id), true
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Server{
+		Addr:              config.Listen,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    64 << 10,
+	}, nil
 }
 
 func zeroBytes(value []byte) {
