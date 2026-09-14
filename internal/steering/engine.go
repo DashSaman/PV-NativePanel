@@ -283,6 +283,26 @@ func (e *Engine) Primary(user string) string {
 	return ""
 }
 
+// candidateSet applies the rendering/subset CandidateRatio contract without
+// changing the full eligible set used by primary selection and hysteresis.
+// The best node is always retained; this matters when all scores are zero or
+// negative because best*ratio would otherwise be greater than the best score.
+func candidateSet(eligible []Scored, ratio float64) []Scored {
+	if len(eligible) == 0 {
+		return nil
+	}
+	best := eligible[0].Score
+	threshold := best * ratio
+	out := make([]Scored, 0, len(eligible))
+	out = append(out, eligible[0])
+	for _, s := range eligible[1:] {
+		if s.Score >= threshold {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 // Evaluate processes one rotation window for a user. aggs carries the latest
 // per-node aggregates for the user; health carries current node health.
 //
@@ -308,7 +328,7 @@ func (e *Engine) Evaluate(user string, windowIdx int64, aggs []Aggregate, health
 		}
 	}
 
-	d := Decision{UserID: user, WindowIdx: windowIdx, Previous: st.primary, Candidates: eligible}
+	d := Decision{UserID: user, WindowIdx: windowIdx, Previous: st.primary, Candidates: candidateSet(eligible, e.cfg.CandidateRatio)}
 	if len(eligible) == 0 {
 		// Fail-closed: no fabricated choice. Keep the previous primary recorded
 		// so callers can serve last-known-good, but report no candidates.
