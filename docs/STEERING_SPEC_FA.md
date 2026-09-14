@@ -149,3 +149,25 @@ pool از مسیر secret/Runtime Agent، rotated و encrypted-at-rest.
 | STEER-004 | قطع نود وسط پنجره: سوییچ نامرئی + بایت دقیق |
 | STEER-005 | سه تست بخش ۵ |
 | STEER-006 | مقیاس ۱۰۰ نود (manifest ≤256KB، propagation ≤90s، رندر p99 <150ms، drain×5، outage) |
+
+## ۷. انحرافات مستند پیاده‌سازی R1 (نسخهٔ 0031)
+
+پیاده‌سازی واقعی (migrations/0031) نسبت به DDL پیش‌نویس §1 این تغییرات آگاهانه را دارد؛
+همه در بهبود صحت است و در WORKLOG و tests/db/network_telemetry_migration_test.sh مستند است:
+
+1. `session_id uuid` به جدول نمونه‌ها اضافه شد: کلید `(boot_id, session_seq)` پیش‌نویس
+   نمی‌تواند دو session هم‌زمان در یک boot را تفکیک کند؛ هویت دقیق
+   `(boot_id, session_id, sample_seq, sampled_at)` است (sample_seq مونوتیک per session).
+2. ستون `path` (`client` | `upstream`): نمونهٔ client = مسیر کاربر↔نود (فقط مسیر hijack
+   HTTP/1 در این نسخه)، نمونهٔ upstream = نود↔مقصد (همیشه موجود). Aggregate ها per-path
+   هستند و R2 اول ردیف client تازه را می‌خواند.
+3. ایندکس یکتا روی جدول partition‌شده باید کلید partition را داشته باشد (قاعدهٔ PG)؛
+   بنابراین `sampled_at` داخل کلید یکتاست — همان قاعدهٔ uniqueness §1.1 spec. شرط dedup:
+   payload تکراری byte-identical است (sampler بچ فرستاده‌شده را بدون تغییر timestamp
+   replay می‌کند).
+4. EWMA در نگهدارندهٔ Go محاسبه می‌شود — دقیقاً مطابق قاعدهٔ §1.2 («سرِ نگهدارنده، نه
+   دیتابیس»). DB فقط upsert مونوتیک و read تازگی را فراهم می‌کند.
+5. ویژگی‌های نرخ (jitter/retrans/throughput) فقط از دلتای شمارنده‌های cumulative داخل یک
+   span پیوستهٔ همان session محاسبه می‌شوند؛ ابتدای span هیچ نرخی ساختگی نیست.
+6. نمونه‌برداری داخل pinned forwardproxy با `golang.org/x/sys/unix` TCP_INFO است
+   (stdlib syscall فیلدهای segs/bytes را ندارد)؛ بازه پیش‌فرض ۷ ثانیه، clamp 5..10.

@@ -13,12 +13,40 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 const pvnaiveAccountingSocketPath = "/run/pvnaive/accounting.sock"
+
+// pvnaiveNetSampleIntervalEnv is the operator-tunable sampling period for R1
+// network telemetry. Allowed range is deliberately narrow (5..10 seconds,
+// default 7): dense enough for steering, sparse enough to be invisible.
+const pvnaiveNetSampleIntervalEnv = "PVNAIVE_NET_SAMPLE_INTERVAL_SECS"
+
+func pvnaiveNetSampleInterval() time.Duration {
+	raw := strings.TrimSpace(os.Getenv(pvnaiveNetSampleIntervalEnv))
+	seconds := 7
+	if raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			seconds = 7
+		} else {
+			seconds = parsed
+		}
+	}
+	if seconds < 5 {
+		seconds = 5
+	}
+	if seconds > 10 {
+		seconds = 10
+	}
+	return time.Duration(seconds) * time.Second
+}
 
 var (
 	errPVNaiveQuotaDepleted       = errors.New("pvnaive: quota depleted")
@@ -80,10 +108,11 @@ type pvnaiveEventResult struct {
 }
 
 type pvnaiveAccountingClient struct {
-	httpClient *http.Client
-	nodeID     string
-	bootID     string
-	runtimeIDs map[string]string
+	httpClient        *http.Client
+	nodeID            string
+	bootID            string
+	runtimeIDs        map[string]string
+	netSampleInterval time.Duration
 }
 
 func (h *Handler) provisionPVNaiveAccounting() error {
@@ -154,10 +183,11 @@ func (h *Handler) provisionPVNaiveAccounting() error {
 		},
 	}
 	h.pvnaiveAccountingClient = &pvnaiveAccountingClient{
-		httpClient: &http.Client{Transport: transport, Timeout: 5 * time.Second},
-		nodeID:     h.PVNaiveNodeID,
-		bootID:     bootID,
-		runtimeIDs: h.PVNaiveRuntimeCredentials,
+		httpClient:        &http.Client{Transport: transport, Timeout: 5 * time.Second},
+		nodeID:            h.PVNaiveNodeID,
+		bootID:            bootID,
+		runtimeIDs:        h.PVNaiveRuntimeCredentials,
+		netSampleInterval: pvnaiveNetSampleInterval(),
 	}
 	return nil
 }
@@ -254,6 +284,10 @@ type pvnaiveAccountingSession struct {
 	closed        bool
 	failed        bool
 	peerRecorded  bool
+
+	// R1 network telemetry state. Dedicated mutex inside; sampling is
+	// fail-open and never blocks or fails accounting.
+	sampler pvnaiveSampler
 }
 
 type pvnaiveSessionPeerRequest struct {
@@ -333,6 +367,7 @@ func (s *pvnaiveAccountingSession) close(ctx context.Context) error {
 	if s == nil {
 		return nil
 	}
+	defer s.stopSampler()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.opened || s.closed || s.failed {
@@ -540,4 +575,234 @@ func pvnaiveNewUUID() (string, error) {
 
 func ctxBackground() context.Context {
 	return context.Background()
+}
+
+// --- R1 network telemetry sampler (STEER-001) -------------------------------
+//
+// Samples live TCP sockets owned by the proxy session and posts them to the
+// telemetry agent through the SAME trusted Unix socket as accounting, keyed by
+// the SAME credential identity. Sampling is strictly fail-open: a telemetry
+// failure never affects the data path (unlike accounting, which fails closed).
+
+type pvnaiveNetSample struct {
+	RuntimeCredentialID string    `json:"runtime_credential_id"`
+	NodeID              string    `json:"node_id"`
+	BootID              string    `json:"boot_id"`
+	SessionID           string    `json:"session_id"`
+	SampleSeq           int64     `json:"sample_seq"`
+	SampledAt           time.Time `json:"sampled_at"`
+	Path                string    `json:"path"`
+	RTTMicros           int64     `json:"rtt_micros"`
+	RTTVarMicros        int64     `json:"rtt_var_micros"`
+	SegsOut             int64     `json:"segs_out"`
+	SegsRetrans         int64     `json:"segs_retrans"`
+	BytesIn             int64     `json:"bytes_in"`
+	BytesOut            int64     `json:"bytes_out"`
+	DurationMicros      int64     `json:"duration_micros"`
+}
+
+type pvnaiveNetSampleRequest struct {
+	Samples []pvnaiveNetSample `json:"samples"`
+}
+
+type pvnaiveNetSampleResult struct {
+	Accepted   int    `json:"accepted"`
+	Duplicates int    `json:"duplicates"`
+	Rejected   bool   `json:"rejected"`
+	Reason     string `json:"reason,omitempty"`
+}
+
+// pvnaiveSampledConn pairs a live TCP conn with its establishment time so
+// duration_micros is monotonic per connection.
+type pvnaiveSampledConn struct {
+	conn        net.Conn
+	established time.Time
+}
+
+// pvnaiveSampler carries all mutable sampler state for one session. It uses a
+// dedicated mutex so telemetry I/O never blocks accounting settlement.
+type pvnaiveSampler struct {
+	mu            sync.Mutex
+	started       bool
+	stopped       bool
+	stopCh        chan struct{}
+	interval      time.Duration
+	sampleSeq     int64
+	pending       []pvnaiveNetSample
+	upstream      *pvnaiveSampledConn
+	client        *pvnaiveSampledConn
+	runtimeCredID string
+	sessionID     string
+	backend       *pvnaiveAccountingClient
+}
+
+func (s *pvnaiveAccountingSession) startSampler(upstream net.Conn) {
+	if s == nil || s.client == nil {
+		return
+	}
+	s.sampler.mu.Lock()
+	defer s.sampler.mu.Unlock()
+	if s.sampler.started {
+		return
+	}
+	s.sampler.started = true
+	s.sampler.stopCh = make(chan struct{})
+	s.sampler.interval = s.client.netSampleInterval
+	if s.sampler.interval <= 0 {
+		s.sampler.interval = pvnaiveNetSampleInterval()
+	}
+	s.sampler.runtimeCredID = s.runtimeCredentialID
+	s.sampler.sessionID = s.sessionID
+	s.sampler.backend = s.client
+	if upstream != nil {
+		s.sampler.upstream = &pvnaiveSampledConn{conn: upstream, established: time.Now()}
+	}
+	go s.sampler.loop(s)
+}
+
+// attachClientConn registers the client-side TCP conn (HTTP/1 hijack path).
+// It may arrive after the sampler started; the next tick picks it up.
+func (s *pvnaiveAccountingSession) attachClientConn(client net.Conn) {
+	if s == nil || client == nil {
+		return
+	}
+	s.sampler.mu.Lock()
+	defer s.sampler.mu.Unlock()
+	if s.sampler.client == nil {
+		s.sampler.client = &pvnaiveSampledConn{conn: client, established: time.Now()}
+	}
+}
+
+func (s *pvnaiveAccountingSession) stopSampler() {
+	if s == nil {
+		return
+	}
+	s.sampler.mu.Lock()
+	defer s.sampler.mu.Unlock()
+	if !s.sampler.started || s.sampler.stopped {
+		return
+	}
+	s.sampler.stopped = true
+	close(s.sampler.stopCh)
+}
+
+func (p *pvnaiveSampler) loop(session *pvnaiveAccountingSession) {
+	ticker := time.NewTicker(p.interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-p.stopCh:
+			return
+		case <-ticker.C:
+			p.tickOnce(session)
+		}
+	}
+}
+
+func (p *pvnaiveSampler) tickOnce(session *pvnaiveAccountingSession) {
+	batch := session.collectSampleBatch()
+	p.mu.Lock()
+	if len(batch) == 0 && len(p.pending) == 0 {
+		p.mu.Unlock()
+		return
+	}
+	payload := make([]pvnaiveNetSample, 0, len(p.pending)+len(batch))
+	payload = append(payload, p.pending...)
+	payload = append(payload, batch...)
+	p.mu.Unlock()
+
+	result := pvnaiveNetSampleResult{}
+	err := p.backend.postJSON(ctxBackground(), "/v1/accounting/network-sample",
+		pvnaiveNetSampleRequest{Samples: payload}, &result)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err != nil || result.Rejected {
+		// Fail-open for the data path: keep the exact payload buffered
+		// and replay it (identical bytes => identical timestamps => the
+		// telemetry identity index dedups) on a later tick.
+		p.pending = payload
+		return
+	}
+	p.pending = nil
+}
+
+// collectSampleBatch builds one sample per registered live conn. Sequence
+// numbers are session-monotonic so the telemetry store's identity index can
+// dedup replays exactly.
+func (s *pvnaiveAccountingSession) collectSampleBatch() []pvnaiveNetSample {
+	s.sampler.mu.Lock()
+	defer s.sampler.mu.Unlock()
+	now := time.Now()
+	var batch []pvnaiveNetSample
+	for _, sampled := range []*pvnaiveSampledConn{s.sampler.upstream, s.sampler.client} {
+		if sampled == nil {
+			continue
+		}
+		info, ok := pvnaiveTCPInfo(sampled.conn)
+		if !ok {
+			// Non-TCP (tests/pipes) or closed: skip silently.
+			continue
+		}
+		s.sampler.sampleSeq++
+		path := "upstream"
+		if sampled == s.sampler.client {
+			path = "client"
+		}
+		batch = append(batch, pvnaiveNetSample{
+			RuntimeCredentialID: s.sampler.runtimeCredID,
+			NodeID:              s.sampler.backend.nodeID,
+			BootID:              s.sampler.backend.bootID,
+			SessionID:           s.sampler.sessionID,
+			SampleSeq:           s.sampler.sampleSeq,
+			SampledAt:           now.UTC(),
+			Path:                path,
+			RTTMicros:           int64(info.Rtt),
+			RTTVarMicros:        int64(info.Rttvar),
+			SegsOut:             int64(info.Segs_out),
+			SegsRetrans:         int64(info.Total_retrans),
+			BytesIn:             int64(info.Bytes_received),
+			BytesOut:            int64(info.Bytes_acked),
+			DurationMicros:      now.Sub(sampled.established).Microseconds(),
+		})
+	}
+	return batch
+}
+
+// pvnaiveTCPInfo reads Linux TCP_INFO from the first TCP conn found by
+// unwrapping (TLS -> raw). The stdlib syscall.TCPInfo lacks the extended
+// counters (segs_out/segs_retrans/bytes_*), so this uses golang.org/x/sys/unix
+// (already pinned as an indirect dependency). Returns ok=false for anything
+// that is not a TCP socket — telemetry never guesses.
+func pvnaiveTCPInfo(conn net.Conn) (*unix.TCPInfo, bool) {
+	tcp := pvnaiveUnwrapTCP(conn)
+	if tcp == nil {
+		return nil, false
+	}
+	raw, err := tcp.SyscallConn()
+	if err != nil {
+		return nil, false
+	}
+	var info *unix.TCPInfo
+	var infoErr error
+	controlErr := raw.Control(func(fd uintptr) {
+		info, infoErr = unix.GetsockoptTCPInfo(int(fd), unix.IPPROTO_TCP, unix.TCP_INFO)
+	})
+	if controlErr != nil || infoErr != nil || info == nil {
+		return nil, false
+	}
+	return info, true
+}
+
+func pvnaiveUnwrapTCP(conn net.Conn) *net.TCPConn {
+	for i := 0; conn != nil && i < 4; i++ {
+		if tcp, ok := conn.(*net.TCPConn); ok {
+			return tcp
+		}
+		unwrapper, ok := conn.(interface{ NetConn() net.Conn })
+		if !ok {
+			return nil
+		}
+		conn = unwrapper.NetConn()
+	}
+	return nil
 }

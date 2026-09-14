@@ -324,13 +324,18 @@ R6 coverd core + migration 0029 (`internal/coverd`, routing OFF), R8 design toke
 stealth login (`web/src`). See WORKLOG.md 2026-09-14 entry for main hashes.
 
 NEXT (in order):
-1. R1 PR: forwardproxy TCP_INFO sampling → `session_network_samples` → aggregates
-   (STEER-001; worker split in issue #109 — claim via issue before starting).
-2. R7 PR: panel_settings model + base-path/port transactional apply + recovery CLI (ACCESS-001..004).
+1. R1 PR: **IMPLEMENTED 2026-09-14 (this lane, see WORKLOG 03:5x entry)** — migration 0031 +
+   `internal/telemetry` network stack + `/v1/accounting/network-sample` socket endpoint +
+   pinned-forwardproxy TCP_INFO sampler (patch regenerated, overlay tests green) +
+   `tests/db/network_telemetry_migration_test.sh` in CI. Pending: CI green on push,
+   independent review (worker 1), live E2E + production image rebuild via #100 procedure.
+2. R7 PR: panel_settings backend flows on top of migration 0030 (base-path/port transactional
+   apply + step-up auth + recovery CLI) (ACCESS-001..004).
 3. R8 PR: live-charts streaming backend (WS/SSE ring buffers, RBAC stream auth) + per-user/per-node cards.
 4. R5 PR: pool manager UI on top of R4 manifest + R2 TopK (add-node wizard, drain, STEER-006 rehearsal).
 5. R6 integration: coverd scheduler + Caddy routing flip behind a default-OFF flag → live CAMO gates.
-6. Wire R2+R3 to live R1 aggregates (TopK into renderer, phase scheduler into /sub).
+6. Wire R2+R3 to live R1 aggregates (TopK into renderer, phase scheduler into /sub) — the R1
+   provider surface is `NetworkSampleBackend.ReadAggregates` + `SteeringEligible`.
 Live-ops lane: after LE window (2026-09-15 03:26 UTC) flip domain back to `namir.softarg.ir`
 (Section 6 row 2); then traffic-accounting truth probe (row 6).
 

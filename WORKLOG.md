@@ -217,3 +217,53 @@ Verified on dev-server golang:1.25 CI-mirror before every push; evidence in git 
 Open lanes (unclaimed or worker-assigned): R1 forwardproxy TCP_INFO sampling + ingest (#109 worker split),
 R5 pool manager UI, R7 panel access backend (base path/port flows), R8 live-charts streaming backend,
 R6 Caddy routing flip + coverd scheduler wiring, R2/R3 wiring to live telemetry.
+
+## 2026-09-14 03:5x UTC — R1 / STEER-001 implementation (Super-Z operator session, continued)
+
+Owner instruction: finish the program, keep `https://45.141.148.59.nip.io/panel/` as the entry,
+postpone the `namir.softarg.ir` flip to the next day.
+
+- External re-verification (fresh evidence, this session): `https://45.141.148.59.nip.io/panel/`
+  HTTP/2 200, Let's Encrypt cert `CN=45.141.148.59.nip.io` valid 2026-09-13 → 2026-12-12.
+  Root path 404 is expected until R6 cover routing flips (documented default-OFF).
+- R1 implemented end-to-end (commit this line is part of):
+  - Migration `0031_network_telemetry` (up/down): `pvnaive.session_network_samples`
+    PARTITION BY RANGE (sampled_at) with monthly partitions 2026-09..2027-02 +
+    `network_ensure_partition()` runtime auto-create (0029 pattern);
+    idempotency index (boot_id, session_id, sample_seq, sampled_at) — matches the spec's
+    uniqueness rule; `pvnaive.user_node_network_agg` PK (user_id, node_id, path);
+    SECURITY DEFINER `network_sample_ingest` (resolves user via the exact-accounting join,
+    untracked ⇒ tracked=false fail-closed, never guessed), `network_agg_upsert` (monotonic
+    last_sampled_at guard), `network_agg_read` (freshness-filtered); REVOKE ALL + RLS enabled
+    (0009/0029 pattern); SHA256SUMS updated.
+  - Go `internal/telemetry`: `network.go` (NetworkSample validation, EWMA holder with
+    delta-based jitter/retrans/throughput — rate features only for continuous same-session
+    spans, no fabricated zeros; alpha 0.2, MinSamples 8; Seed() restart memory),
+    `network_store.go` (transactional batched ingest, monotonic aggregate upserts,
+    freshness read, `/v1/accounting/network-sample` socket endpoint on the SAME trusted
+    Unix socket as accounting), `fullbackend.go` (FullBackend = accounting + telemetry;
+    SteeringAggregate adapter into internal/steering; SteeringEligible freshness gate),
+    `network_test.go` + `network_socket_test.go` (EWMA parity vectors, span-boundary
+    anti-fabrication, replay determinism, seed/restart memory, handler rejection paths).
+  - Telemetry agent wiring: FullBackend + aggregate restore at startup (STEER-001 restart
+    safety).
+  - Pinned forwardproxy: overlay R1 TCP_INFO sampler (per-session goroutine, dedicated
+    mutex — telemetry never blocks accounting; fail-open on the data path, fail-closed on
+    ingest identity; interval `PVNAIVE_NET_SAMPLE_INTERVAL_SECS` clamped 5..10 default 7;
+    golang.org/x/sys/unix TCP_INFO — Rtt/Rttvar/Segs_out/Total_retrans/Bytes_received/
+    Bytes_acked; buffered replay of failed posts byte-identical so the identity index dedups;
+    client-path sampling on HTTP/1 hijack, upstream-path always). Patch regenerated from
+    pinned `d62c80d3dd2c706b6b87579844d2397bddd18317`; overlay tests extended (interval clamp,
+    unwrap, real loopback TCP_INFO, replay-buffer identity) — all green locally; full suite
+    `go test ./...` re-run in the build script pattern (tests then delete then vet) PASSED.
+  - `tests/db/network_telemetry_migration_test.sh` registered in ci.yml: schema contract,
+    ingest/replay dedup (row count invariant), untracked honesty, malformed rejection,
+    future-month partition auto-ensure, monotonic aggregate upsert, freshness read,
+    pvnaive_app direct-table denial.
+- Documented spec deviations (docs/STEERING_SPEC_FA.md §7): session_id added to the
+  identity, path column (client|upstream), unique index includes sampled_at (PG partition
+  rule), EWMA in the holder exactly as the spec's "سرِ نگهدارنده" rule requires.
+- Honest limits: client-path RTT only on HTTP/1 hijack sessions (H2/H3 client conns are not
+  exposed per-request by net/http — upstream-path samples cover those sessions); production
+  deploy of the R1 image is NOT done in this session (no server shell access here) — deploy
+  follows the #100 backup → snapshot → SHA-lock procedure when the Primary reconnects.

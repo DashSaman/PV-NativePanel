@@ -51,6 +51,20 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	holder := telemetry.NewEWMAHolder(telemetry.DefaultNetworkAggConfig())
+	networkBackend, err := telemetry.NewNetworkSampleBackend(store, holder)
+	if err != nil {
+		return err
+	}
+	// Restore EWMA memory from persisted aggregates so a restart/reload does
+	// not reset steering state (STEER-001 restart safety).
+	restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := networkBackend.RestoreAggregates(restoreCtx, telemetry.SteeringStaleAfter); err != nil {
+		restoreCancel()
+		return fmt.Errorf("restore network aggregates: %w", err)
+	}
+	restoreCancel()
+	backend := &telemetry.FullBackend{PostgresStore: store, NetworkSampleBackend: networkBackend}
 	listener, err := telemetry.ListenUnix(telemetry.DefaultTelemetrySocketPath)
 	if err != nil {
 		return fmt.Errorf("listen telemetry socket: %w", err)
@@ -59,7 +73,7 @@ func run() error {
 	defer os.Remove(telemetry.DefaultTelemetrySocketPath)
 
 	server := &http.Server{
-		Handler:           telemetry.NewTelemetryHandler(store),
+		Handler:           telemetry.NewTelemetryHandler(backend),
 		ReadHeaderTimeout: 3 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,

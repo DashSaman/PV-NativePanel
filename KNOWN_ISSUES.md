@@ -221,3 +221,18 @@ Pinned Naive Caddy validation/rehearsal already closed this historical risk. Reo
 - The live Caddyfile intentionally contains only customer credentials (22 entries); `pvbootstrap` cannot proxy and must not be re-added to the rendered Caddyfile.
 - Docs that still advertise the `pvbootstrap`/`Bt7xKp9mVq2wRt8z` proxy account are stale — treat the installer bootstrap account as API/owner bootstrap only.
 - Note for agents: never attempt to reload a Caddyfile containing unmapped users — validate first (`caddy validate`), and remember the running config survives a failed reload.
+
+### R1-NET-001 — Client-path TCP_INFO coverage limited to HTTP/1 hijack sessions (OPEN, by design of net/http)
+`net/http` does not expose the client-side TCP conn for H2/H3 requests, so the R1 sampler
+records `client`-path samples only on HTTP/1 hijack sessions; H2/H3 sessions contribute
+`upstream`-path samples (node↔destination). Steering therefore prefers fresh client-path
+aggregates and falls back to upstream-path aggregates per (user, node). Revisit if Caddy
+exposes per-request conn info. Evidence: third_party/forwardproxy overlay + WORKLOG
+2026-09-14 03:5x entry.
+
+### R1-NET-002 — R1 image not yet deployed to production (OPEN, procedure-bound)
+Migration 0031 + telemetry agent + sampler Caddy are merged to main but the production image
+on 45.141.148.59 is still `pvnaive:repo-live2` (a4edea6, schema 30). Deploy requires the #100
+procedure (fresh encrypted backup → independent rollback snapshot → exact SHA lock → staged
+promotion → postflight). Do NOT deploy without that receipt. This is also the STEER-001 live
+evidence blocker.

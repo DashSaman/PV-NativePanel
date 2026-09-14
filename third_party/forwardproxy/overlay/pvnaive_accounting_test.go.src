@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 type pvnaiveRoundTripFunc func(*http.Request) (*http.Response, error)
@@ -336,4 +338,232 @@ func TestPVNaiveSettlementFailureFailsClosedAfterSuccessfulWrite(t *testing.T) {
 	if session.uploadBytes != 4 || session.sequence != 1 {
 		t.Fatalf("session counters upload=%d sequence=%d", session.uploadBytes, session.sequence)
 	}
+}
+
+func TestPVNaiveNetSampleIntervalClamp(t *testing.T) {
+	cases := map[string]int{
+		"":    7,
+		"abc": 7,
+		"4":   5,
+		"5":   5,
+		"7":   7,
+		"10":  10,
+		"11":  10,
+	}
+	for raw, want := range cases {
+		t.Setenv(pvnaiveNetSampleIntervalEnv, raw)
+		if got := pvnaiveNetSampleInterval(); got != time.Duration(want)*time.Second {
+			t.Fatalf("interval(%q)=%v want %d seconds", raw, got, want)
+		}
+	}
+}
+
+// pvnaiveLoopbackPair returns a connected loopback TCP pair or skips the
+// test. The pair is built inside a watchdog goroutine so a hostile or broken
+// environment can never hang the suite; tests simply skip instead.
+func pvnaiveLoopbackPair(t *testing.T) (client, server net.Conn) {
+	t.Helper()
+	type pairResult struct {
+		client net.Conn
+		server net.Conn
+		err    error
+	}
+	done := make(chan pairResult, 1)
+	go func() {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			done <- pairResult{err: err}
+			return
+		}
+		defer listener.Close()
+		type dialOutcome struct {
+			conn net.Conn
+			err  error
+		}
+		dialed := make(chan dialOutcome, 1)
+		go func() {
+			conn, err := net.DialTimeout("tcp", listener.Addr().String(), 3*time.Second)
+			dialed <- dialOutcome{conn: conn, err: err}
+		}()
+		tcpListener := listener.(*net.TCPListener)
+		_ = tcpListener.SetDeadline(time.Now().Add(3 * time.Second))
+		accepted, err := tcpListener.Accept()
+		if err != nil {
+			done <- pairResult{err: err}
+			return
+		}
+		outcome := <-dialed
+		if outcome.err != nil {
+			accepted.Close()
+			done <- pairResult{err: outcome.err}
+			return
+		}
+		done <- pairResult{client: outcome.conn, server: accepted}
+	}()
+	select {
+	case result := <-done:
+		if result.err != nil {
+			t.Skipf("loopback pair unavailable: %v", result.err)
+		}
+		if result.client == nil || result.server == nil {
+			t.Skip("loopback pair did not complete")
+		}
+		t.Cleanup(func() {
+			result.client.Close()
+			result.server.Close()
+		})
+		return result.client, result.server
+	case <-time.After(15 * time.Second):
+		t.Skip("loopback pair watchdog timeout")
+		return nil, nil
+	}
+}
+
+func TestPVNaiveUnwrapTCP(t *testing.T) {
+	client, _ := pvnaiveLoopbackPair(t)
+
+	wrapped := pvnaiveNetConnWrapper{Conn: client}
+	if pvnaiveUnwrapTCP(wrapped) == nil {
+		t.Fatal("NetConn() wrapper did not unwrap to TCP")
+	}
+	// A conn without a NetConn() escape hatch must not unwrap.
+	if pvnaiveUnwrapTCP(pvnaiveOpaqueConn{Conn: client}) != nil {
+		t.Fatal("opaque conn must not unwrap")
+	}
+}
+
+type pvnaiveNetConnWrapper struct {
+	net.Conn
+}
+
+func (w pvnaiveNetConnWrapper) NetConn() net.Conn {
+	return w.Conn
+}
+
+type pvnaiveOpaqueConn struct {
+	net.Conn
+}
+
+func TestPVNaiveTCPInfoOnLoopback(t *testing.T) {
+	client, server := pvnaiveLoopbackPair(t)
+
+	// Move payload in both directions so each socket has sent at least one
+	// data segment before TCP_INFO is read.
+	buf := make([]byte, 16)
+	payload := bytes.Repeat([]byte{0xa5}, 16)
+	if _, err := client.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := server.Read(buf); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := server.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Read(buf); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, conn := range []net.Conn{client, server} {
+		info, ok := pvnaiveTCPInfo(conn)
+		if !ok {
+			t.Fatalf("TCP_INFO unavailable on %T", conn)
+		}
+		if info.Segs_out <= 0 || info.Total_retrans < 0 {
+			t.Fatalf("unexpected TCP_INFO segs_out=%d total_retrans=%d", info.Segs_out, info.Total_retrans)
+		}
+	}
+}
+
+func TestPVNaiveSamplerCollectsAndReplays(t *testing.T) {
+	// Non-TCP conns must be skipped by collection (telemetry never guesses).
+	pipeClient, pipeServer := net.Pipe()
+	defer pipeClient.Close()
+	defer pipeServer.Close()
+	session := &pvnaiveAccountingSession{
+		client: &pvnaiveAccountingClient{
+			httpClient: &http.Client{Transport: pvnaiveRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+				return nil, errors.New("no posting expected during collection")
+			})},
+			nodeID: "node-a",
+			bootID: "11111111-1111-4111-8111-111111111111",
+		},
+		runtimeCredentialID: "22222222-2222-4222-8222-222222222222",
+		username:            "alice",
+		sessionID:           "33333333-3333-4333-8333-333333333333",
+		opened:              true,
+	}
+	session.sampler.started = true
+	session.sampler.stopCh = make(chan struct{})
+	session.sampler.upstream = &pvnaiveSampledConn{conn: pipeClient, established: time.Now()}
+	if batch := session.collectSampleBatch(); len(batch) != 0 {
+		t.Fatalf("non-TCP conn must not produce samples: %d", len(batch))
+	}
+
+	// Replay buffer: a failed tick preserves the exact payload; the next
+	// successful tick replays it byte-identically and then clears it.
+	var seenBatches [][]pvnaiveNetSample
+	fail := true
+	session.sampler.backend = &pvnaiveAccountingClient{
+		httpClient: &http.Client{Transport: pvnaiveRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			if r.URL.Path != "/v1/accounting/network-sample" {
+				return nil, errors.New("unexpected path")
+			}
+			var request pvnaiveNetSampleRequest
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				return nil, err
+			}
+			seenBatches = append(seenBatches, request.Samples)
+			if fail {
+				return nil, errors.New("telemetry down")
+			}
+			return pvnaiveJSONResponse(`{"accepted":1,"duplicates":0}`), nil
+		})},
+		nodeID: "node-a",
+		bootID: "11111111-1111-4111-8111-111111111111",
+	}
+	first := []pvnaiveNetSample{{
+		RuntimeCredentialID: "22222222-2222-4222-8222-222222222222",
+		NodeID:              "node-a",
+		BootID:              "11111111-1111-4111-8111-111111111111",
+		SessionID:           "33333333-3333-4333-8333-333333333333",
+		SampleSeq:           1,
+		SampledAt:           time.Date(2026, 9, 14, 10, 0, 0, 0, time.UTC),
+		Path:                "upstream",
+		RTTMicros:           42000,
+	}}
+	session.sampler.pending = first
+	session.sampler.tickOnce(session)
+	if len(seenBatches) != 1 || len(seenBatches[0]) != 1 {
+		t.Fatalf("failed tick must not clear buffer (seen=%d)", len(seenBatches))
+	}
+	fail = false
+	session.sampler.tickOnce(session)
+	if len(seenBatches) != 2 {
+		t.Fatalf("replay did not happen: seen=%d", len(seenBatches))
+	}
+	if len(session.sampler.pending) != 0 {
+		t.Fatal("successful tick must clear the replay buffer")
+	}
+	if !sameSamples(seenBatches[0], seenBatches[1]) {
+		t.Fatalf("replay payload not identical: %+v vs %+v", seenBatches[0], seenBatches[1])
+	}
+	if seenBatches[1][0].RuntimeCredentialID != first[0].RuntimeCredentialID ||
+		seenBatches[1][0].SampledAt != first[0].SampledAt ||
+		seenBatches[1][0].SampleSeq != first[0].SampleSeq {
+		t.Fatalf("replayed identity changed: %+v", seenBatches[1][0])
+	}
+	session.stopSampler()
+}
+
+func sameSamples(a, b []pvnaiveNetSample) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
