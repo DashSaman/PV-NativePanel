@@ -1,16 +1,23 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-14 04:11 Asia/Tehran
+Verified checkpoint: 2026-09-14 05:39 Asia/Tehran
 
-Current repaired pre-documentation `main`: `21687777e6dd51ccf50650d4360b3c31c05421ad`; push CI `34793340297` SUCCESS. PR #111 repaired schema29 cover migration safety/health gates; Go, PostgreSQL18 migration+health+backup/restore, web and full rehearsal passed. Renderer/build provenance and migration-lineage blockers remain closed by prior recorded evidence; schema29 is now canonical repository head.
+## Current GitHub truth
+- Canonical `main`: `2868aba2a0b10f8885513de29f1dea1dded969a6`; push CI `34795837294` SUCCESS.
+- Runtime deploy commit `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`; CI `34795216345` SUCCESS.
+- Open PRs: Task13 #108 DRAFT/non-mergeable at stale `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`; Karing #101 DRAFT/non-mergeable at `216d53670066033403fe95f61b0402bb710186a3`.
 
-Active work:
-- **Task13 PR #108**: still DRAFT. Prior exact head `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9` had green old-head CI/accounting/pinned-forwardproxy gates but is stale against repaired runtime-bearing main. Worker 3 must reconstruct/reconcile onto exact latest main and rerun exact-head gates. Worker 2 must then supply the REAL pinned-Caddy HTTP/1.1 + HTTP/2 proof: target-only kill, sibling survival, forged tuple rejection, repeat idempotency, credential survival, unchanged Caddy lifecycle, exactly-once final accounting. Do not merge from stale-head evidence.
-- **Karing PR #101**: still DRAFT/non-mergeable at `216d53670066033403fe95f61b0402bb710186a3`; requires disposable real Karing import → parse → CONNECT → cleanup/revoke evidence, then reconstruction on latest main and rerun of exact-head repository gates.
-- **R1 / STEER-001 #109**: activated now that main repair is green. Next migration must be >=0030; never rewrite/reuse 0029. Worker 3 = RED-first trusted TCP_INFO sampling from authoritative socket/RemoteAddr state; Worker 2 = RED-first DB ingest/replay/idempotency with network telemetry separated from exact byte-accounting truth; Worker 1 = independent schema/security/CI review; Worker 4 = later E2E.
-- **Production #100**: latest recorded external probe keeps `45.141.148.59.nip.io` live/ready/panel healthy. `namir.softarg.ir` remains within the documented Let's Encrypt duplicate-certificate retry window through 2026-09-15 03:17:36 UTC; do not restart/recreate to force issuance.
-- **Primary audit**: still required because Production Primary is not connected; capture deployed image/SHA, migration ledger/schema, services/readiness/listeners, Caddy identity/restarts, session-control socket permissions, credential reconcile count without secrets, disk, encrypted backup freshness and independent rollback snapshot read-only before any next runtime deploy.
+## Production truth
+- Latest persistent deployment receipt records `pvnaive:repo-live2` image `76c10697a03b`, built from `a4edea6`, healthy after forward-only schema 28→30 migrations (0029/0030).
+- Recorded external E2E on `https://45.141.148.59.nip.io` is ALL_GREEN: strict TLS, panel 200, owner login 200, user create 201, subscription delivery headers, UA negotiation, and strict-TLS proxy CONNECT 204. Seven disposable E2E customers were revoked with history preserved.
+- Previous `repo-live` image is retained for rollback.
+- `namir.softarg.ir` remains deferred until the documented ACME retry window clears on 2026-09-15; do not restart/recreate merely to force issuance.
+- Production Primary is currently not connected. This cycle did not independently re-check the live container identity, migration ledger, backup freshness/encryption, disk headroom or rollback snapshot by shell.
 
-Current remote executor inventory has no online PVNaive worker. Assignments are persisted on PR #108, PR #101, issue #109 and Production issue #100 for the next connected workers.
+## Active lanes
+- **Task13 #108**: Worker 3 must reconstruct/reconcile exact session-kill work onto current green main, then rerun CI + Exact Accounting + Pinned Forwardproxy. Worker 2 must then independently execute the real pinned-Caddy HTTP/1.1 + HTTP/2 proof: target-only kill, sibling survival, forged-tuple rejection, repeat-kill idempotency, credential survival, unchanged Caddy lifecycle and exactly-once final accounting. No stale-head merge credit.
+- **Karing #101**: Worker 4 must provide a real disposable Karing import → parse → CONNECT → cleanup/revoke receipt, then reconstruct on latest main and rerun exact-head repository gates.
+- **R1 / STEER-001 #109**: continue independently. Production schema is now 30, so any new migration must be >0030; never reuse/rewrite 0029/0030. Network telemetry must remain separate from exact byte-accounting/quota truth. Worker 3 = trusted TCP_INFO sampling; Worker 2 = DB ingest/replay/idempotency; Worker 1 = schema/security/accounting review; Worker 4 = E2E once an exact head exists.
+- **Production #100**: Primary performs read-only audit first when connected. Before any next runtime deploy: fresh encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → postflight → retain rollback.
 
-No Production mutation unless real Task13 + Karing gates are complete and the safety sequence is ready: fresh Primary audit → encrypted backup → independent rollback snapshot → exact deploy SHA lock → staged promotion → health/postflight → retain rollback.
+Remote executor inventory currently has no online PVNaive worker or Production Primary. Persisted assignments remain authoritative for the next available workers. No additional Production mutation was performed by this coordinator after reconciling the successful schema30 deployment receipt.
