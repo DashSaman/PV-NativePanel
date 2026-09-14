@@ -29,8 +29,8 @@ Legend: `DONE`, `PARTIAL`, `BLOCKED`, `OPTIONAL`, `N/A`.
 | R1 network telemetry | DONE (live) | schema 31, samples+EWMA live, aggregates feed R2 |
 | R2 steering scheduler | DONE (live) | 60s tick, dispatches initial/hysteresis/kill-switch only; users=0 until samples >= MinSamples |
 | R3 renderer decision-sink | DONE (live) | mihomo proxy-provider profile + spec-exact naive links; 0032 durable sink |
-| R5 pool manager | PARTIAL | backend DONE (0033, Owner API, signed revisions, drain); UI + mTLS pull = R5-UI-001 / R5-PULL-001 |
-| R6 cover site | PARTIAL | core+rehearsal DONE (CAMO-001/002 behaviors tested); production flip = R6-FLIP-001 |
+| R5 pool manager | DONE (code) | backend 0033 + Owner API + signed revisions + drain; owner UI #/pool (enroll wizard, signed revision publish, drain workflow); mTLS pull listener (fleetpull, identity=TLS cert, preflight skew/version) — production enablement pending deploy |
+| R6 cover site | DONE (code) | core+rehearsal DONE (CAMO-001/002); flip wiring merged (PVNAIVE_COVERD_ENABLED=1, loopback-only, ops/caddy runbook) — production flip deliberately gated |
 | R7 panel access | DONE (live) | GET/PUT /api/v1/panel-access, step-up, recovery CLI |
 | R8 command center | PARTIAL | SSE stream live (3 frames/3s post-deploy); live-charts UI wiring continues |
 | R4 fleet manifests | DONE | Ed25519 signed manifests, fail-closed verification (internal/fleet) |
