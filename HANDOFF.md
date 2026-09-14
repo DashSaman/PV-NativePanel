@@ -1,27 +1,25 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-14 16:47 Asia/Tehran
+Checkpoint: 2026-09-14 18:42 Asia/Tehran
 
 ## Verified baseline
-- Canonical repository main moved to guarded STEER-002 merge commit `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; push CI `34848316732` is currently in progress.
-- PR #112 exact head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` was green on CI `34842627049`, Exact Accounting `34842627114`, and Pinned Forwardproxy `34842627193` before merge. Independent review covered CandidateRatio thresholding, non-positive scores, TopK-on-Decision semantics, one-eligible, all-Unknown, no-flapping, hysteresis and kill-switch behavior. PR #112 is merged.
+- Canonical main before this documentation refresh was `714b2f5490b6eec317061b0834a2721e2c6a8fa6`; push CI `34848486540` completed SUCCESS.
+- STEER-002 / #110 is completed and closed. PR #112 merged via code-bearing `f6b1bab91fa1583a647770a766c7cf9d58f9ee89`; exact pre-merge head `9c43a71fcf4990eb8a9c053221fd9701c10f2caa` passed CI `34842627049`, Exact Accounting `34842627114`, and Pinned Forwardproxy `34842627193`.
 - Runtime commit deployed to Production remains `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`; CI `34795216345` SUCCESS.
-- Latest persistent Production receipt records `pvnaive:repo-live2` image `76c10697a03b`, schema 30 after forward-only 0029/0030, healthy readiness and previous `repo-live` retained for rollback.
-- Recorded nip.io E2E remains ALL_GREEN. Do not infer a fresh shell/container/backup state without Primary reconnect.
+- Latest persistent Production receipt records `pvnaive:repo-live2` image `76c10697a03b`, schema 30 after forward-only 0029/0030, healthy readiness, nip.io E2E ALL_GREEN, and previous `repo-live` retained for rollback.
+- Fresh Remote Desktop inventory shows both known registrations offline and no Production Primary available; do not infer a fresh shell/container/backup state.
 
 ## Promotion truth
-- STEER-002 #110 is code-integrated through merge commit `f6b1bab9...`; close the issue only after post-merge main CI `34848316732` completes SUCCESS.
-- Task13 PR #108 remains OPEN/DRAFT, current head `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`, currently `mergeable=false`. Latest-main reconciliation plus real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance remain mandatory.
-- Karing PR #101 remains OPEN/DRAFT, current head `216d53670066033403fe95f61b0402bb710186a3`, currently `mergeable=false`. Real disposable Karing import → parse → CONNECT → cleanup/revoke remains mandatory.
-- R1 / STEER-001 #109 remains independent. Production schema is 30; new DB work must use a migration strictly >0030 and never rewrite/reuse 0029 or 0030. Network telemetry is not quota truth.
-- Fresh Remote Desktop inventory shows both known PVNaive registrations offline and no Production Primary available.
+- Task13 #108 is OPEN/DRAFT, head `f7d8dd5aa8f33b1bc09e3f19bd26ffb219e650d9`, currently `mergeable=true`. Exact-head CI `34789937594`, Exact Accounting `34789937603`, and Pinned Forwardproxy `34789937575` are SUCCESS. Merge remains blocked only by missing real pinned-Caddy HTTP/1.1 + HTTP/2 acceptance and final independent review.
+- Karing #101 is OPEN/DRAFT, head `216d53670066033403fe95f61b0402bb710186a3`, currently `mergeable=true`. Exact-head CI `34732580376`, Exact Accounting `34732580468`, and Pinned Forwardproxy `34732580377` are SUCCESS. Merge remains blocked by missing real Karing import → parse → CONNECT → cleanup/revoke evidence.
+- R1 / STEER-001 #109 remains the active independent roadmap lane. New migrations must be strictly >0030; 0029/0030 are immutable. Network telemetry is not quota/exact-byte-accounting truth.
 
 ## Worker allocation
-- Worker 2: Task13 real HTTP1/HTTP2 protocol/accounting acceptance; R1 ingest/replay/idempotency.
-- Worker 3: refresh/reconcile Task13 on latest green main; otherwise R1 trusted TCP_INFO sampling.
-- Worker 4: real Karing client acceptance and R1/steering E2E follow-up.
-- Worker 1: independent diff/schema/security/accounting/CI review of new exact heads.
+- Worker 2: Task13 real HTTP1/HTTP2 acceptance; R1 ingest/replay/idempotency.
+- Worker 3: R1 trusted TCP_INFO sampling; Task13 reconcile only for a concrete new exact-head/merge-ref defect.
+- Worker 4: real Karing client acceptance; R1 E2E after an exact implementation head exists.
+- Worker 1: independent diff/schema/security/accounting/CI review of produced exact heads and final promotion candidates.
 - Primary: read-only Production audit when connected.
-- Coordinator: reconcile post-merge main CI, close STEER-002 only after green, integrate validated work, maintain canonical docs and promotion gates.
+- Coordinator: integrate validated work only, update canonical truth, preserve backup/rollback/deploy gates.
 
-No Production mutation was performed. Concrete work this checkpoint is the guarded merge of STEER-002 PR #112 after exact-head repository gates and independent semantic/edge-case review.
+No Production mutation was performed. Concrete work this checkpoint: post-merge main CI was verified green, #110 was closed completed, #108/#101 mergeability and exact-head workflow status were freshly reconciled, and worker/Production queues were refreshed.
