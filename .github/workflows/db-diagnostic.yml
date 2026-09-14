@@ -1,0 +1,71 @@
+name: DB Diagnostic Temporary
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL 18
+        run: |
+          set -Eeuo pipefail
+          docker run --detach --name pvnaive-dbdiag --network host --env POSTGRES_PASSWORD=pvnaive-ci-only postgres:18-bookworm
+          for i in $(seq 1 60); do
+            docker exec pvnaive-dbdiag pg_isready --username postgres --dbname postgres >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: DB chunk A migration core
+        run: |
+          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
+            set -Eeuo pipefail
+            apt-get update >/dev/null && apt-get install --yes --no-install-recommends age file python3 >/dev/null
+            bash tests/db/lib_test.sh
+            bash tests/db/migration_test.sh
+            bash tests/db/auth_refresh_reuse_test.sh
+            bash tests/db/health_test.sh
+            bash tests/db/backup_restore_test.sh
+            bash tests/db/backup_collision_test.sh
+          '
+      - name: DB chunk B auth and customer
+        run: |
+          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
+            set -Eeuo pipefail
+            bash tests/db/auth_migration_test.sh
+            bash tests/db/auth_actor_credential_mutations_migration_test.sh
+            bash tests/db/naive_runtime_migration_test.sh
+            bash tests/db/customer_lifecycle_migration_test.sh
+            bash tests/db/direct_naive_accounting_migration_test.sh
+            bash tests/db/customer_idempotency_migration_test.sh
+            bash tests/db/accounting_baseline_migration_test.sh
+            bash tests/db/subscription_account_projection_migration_test.sh
+          '
+      - name: DB chunk C usage reset
+        run: |
+          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
+            set -Eeuo pipefail
+            bash tests/db/manual_usage_reset_migration_test.sh
+            bash tests/db/bulk_usage_reset_migration_test.sh
+            bash tests/db/periodic_usage_reset_migration_test.sh
+            bash tests/db/periodic_usage_reset_executor_test.sh
+          '
+      - name: DB chunk D session and subscription
+        run: |
+          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
+            set -Eeuo pipefail
+            bash tests/db/operator_session_peers_migration_test.sh
+            bash tests/db/concurrent_session_limit_migration_test.sh
+            bash tests/db/unique_ip_limit_migration_test.sh
+            bash tests/db/run_schema_fixture_test.sh 6 tests/db/direct_subscription_migration_test.sh
+            bash tests/db/subscription_token_recovery_migration_test.sh
+            bash tests/auth/bootstrap_owner_test.sh
+          '
+      - name: Stop PostgreSQL 18
+        if: always()
+        run: docker rm --force pvnaive-dbdiag >/dev/null 2>&1 || true
