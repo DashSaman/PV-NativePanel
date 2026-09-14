@@ -137,8 +137,77 @@ printf '%s\n' \
   cd "${temp_migrations}"
   sha256sum *.sql > SHA256SUMS
 )
-if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>&1; then
+if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>"${temp_migrations}/guard.err"; then
   echo 'ERROR: destructive migration scan did not fail closed' >&2
+  exit 1
+fi
+# The refusal must name the offending (next) migration: every earlier file in the
+# ledger — including any that embeds dollar-quoted function bodies — must have
+# passed the scan first, or this assertion fails and names the false positive.
+grep -q "destructive SQL pattern refused: ${next_migration}_forbidden_drop.up.sql" "${temp_migrations}/guard.err" || {
+  echo 'ERROR: destructive refusal did not name the offending migration' >&2
+  cat "${temp_migrations}/guard.err" >&2
+  exit 1
+}
+rm -rf -- "${temp_migrations}"
+
+# Regression: destructive-looking tokens that only exist inside dollar-quoted
+# function bodies (for example DELETE FROM in a SECURITY DEFINER upsert) must
+# pass the scan — bodies are runtime behavior of the defined function, not
+# migration-time DDL. A deliberately incomplete later migration (missing down
+# file) stops validation after the body-delete file is fully accepted, so this
+# asserts acceptance without applying anything to the database.
+temp_migrations="$(mktemp -d)"
+cp -a "${repo_root}/db/migrations/." "${temp_migrations}/"
+printf '%s\n' \
+  "-- pvnaive:migration-version ${next_migration}" \
+  '-- pvnaive:migration-name body_delete_ok' \
+  '-- pvnaive:transactional true' \
+  '-- pvnaive:destructive false' \
+  'CREATE TABLE pvnaive.guard_body_regression (' \
+  '    id bigint GENERATED ALWAYS AS IDENTITY,' \
+  '    k text NOT NULL,' \
+  "    payload text NOT NULL CHECK (payload LIKE '\$argon2id\$%')," \
+  "    base_path text CHECK (base_path ~ '^/[a-z0-9][a-z0-9\\-_]{2,63}\$')," \
+  '    fetched_at timestamptz NOT NULL DEFAULT now(),' \
+  '    PRIMARY KEY (id, fetched_at)' \
+  ') PARTITION BY RANGE (fetched_at);' \
+  'CREATE TABLE pvnaive.guard_body_regression_p1 PARTITION OF pvnaive.guard_body_regression' \
+  "    FOR VALUES FROM ('2000-01-01') TO ('2100-01-01');" \
+  'CREATE FUNCTION pvnaive.guard_body_regression_replace(p_k text) RETURNS void' \
+  'LANGUAGE plpgsql AS $body$' \
+  'BEGIN' \
+  '    DELETE FROM pvnaive.guard_body_regression WHERE k = p_k;' \
+  '    INSERT INTO pvnaive.guard_body_regression (k) VALUES (p_k);' \
+  'END;' \
+  '$body$ LANGUAGE plpgsql;' > "${temp_migrations}/${next_migration}_body_delete_ok.up.sql"
+printf '%s\n' \
+  "-- pvnaive:migration-version ${next_migration}" \
+  '-- pvnaive:transactional true' \
+  '-- pvnaive:destructive true' \
+  'SELECT 1;' > "${temp_migrations}/${next_migration}_body_delete_ok.down.sql"
+printf '%s\n' \
+  "-- pvnaive:migration-version ${gap_migration}" \
+  '-- pvnaive:migration-name deliberately_incomplete' \
+  '-- pvnaive:transactional true' \
+  '-- pvnaive:destructive false' \
+  'SELECT 1;' > "${temp_migrations}/${gap_migration}_deliberately_incomplete.up.sql"
+(
+  cd "${temp_migrations}"
+  sha256sum *.sql > SHA256SUMS
+)
+if PVNAIVE_MIGRATIONS_DIR="${temp_migrations}" "${repo_root}/scripts/db/migrate.sh" >/dev/null 2>"${temp_migrations}/guard2.err"; then
+  echo 'ERROR: incomplete later migration should have stopped validation' >&2
+  exit 1
+fi
+grep -q "down migration is missing" "${temp_migrations}/guard2.err" || {
+  echo 'ERROR: validation stopped before the body-delete migration was accepted' >&2
+  cat "${temp_migrations}/guard2.err" >&2
+  exit 1
+}
+if grep -q 'destructive SQL pattern refused' "${temp_migrations}/guard2.err"; then
+  echo 'ERROR: dollar-quoted function body still tripped the destructive guard' >&2
+  cat "${temp_migrations}/guard2.err" >&2
   exit 1
 fi
 rm -rf -- "${temp_migrations}"

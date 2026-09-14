@@ -39,6 +39,7 @@ RLS جای RBAC endpoint را نمی‌گیرد. Route و business layer همچ�
 - شماره‌ها از `0001` پیوسته باشند و هر up یک down checksummed داشته باشد.
 - Migration فقط transactional و `destructive false` باشد.
 - الگوهای DROP/TRUNCATE/DELETE/ALTER-DROP/COPY-PROGRAM و include خارجی رد شوند.
+- اسکن destructive فقط DDL سطح بالای migration را قضاوت می‌کند؛ دستورهای داخل بدنه‌ی dollar-quoted (`$$…$$` یا `$tag$…$tag$`) رفتار runtime تابع/DO block تعریف‌شده هستند، در زمان apply اجرا نمی‌شوند و از اسکن خارج می‌شوند. dollar-quote بسته‌نشده fail-closed است (مثال: `DELETE FROM` داخل SECURITY DEFINER upsert در 0029).
 - Migration اعمال‌شده با filename/checksum ثبت‌شده دقیقاً یکسان باشد.
 - advisory transaction lock از اجرای همزمان جلوگیری کند.
 - connection اجرای DDL باید صریحاً امکان assume کردن `pvnaive_owner` را داشته باشد؛ credential برنامه رد می‌شود.
