@@ -22,19 +22,11 @@ jobs:
           done
           exit 1
       - name: DB A1 migration
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            bash tests/db/lib_test.sh
-            bash tests/db/migration_test.sh
-          '
-      - name: DB A2 auth refresh and health
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            bash tests/db/auth_refresh_reuse_test.sh
-            bash tests/db/health_test.sh
-          '
+        run: docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc 'set -Eeuo pipefail; bash tests/db/lib_test.sh; bash tests/db/migration_test.sh'
+      - name: DB A2a auth refresh reuse
+        run: docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc 'set -Eeuo pipefail; bash tests/db/auth_refresh_reuse_test.sh'
+      - name: DB A2b health
+        run: docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc 'set -Eeuo pipefail; bash tests/db/health_test.sh'
       - name: DB A3 backup and restore
         run: |
           docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
@@ -42,39 +34,6 @@ jobs:
             apt-get update >/dev/null && apt-get install --yes --no-install-recommends age file python3 >/dev/null
             bash tests/db/backup_restore_test.sh
             bash tests/db/backup_collision_test.sh
-          '
-      - name: DB B auth and customer
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            bash tests/db/auth_migration_test.sh
-            bash tests/db/auth_actor_credential_mutations_migration_test.sh
-            bash tests/db/naive_runtime_migration_test.sh
-            bash tests/db/customer_lifecycle_migration_test.sh
-            bash tests/db/direct_naive_accounting_migration_test.sh
-            bash tests/db/customer_idempotency_migration_test.sh
-            bash tests/db/accounting_baseline_migration_test.sh
-            bash tests/db/subscription_account_projection_migration_test.sh
-          '
-      - name: DB C usage reset
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            bash tests/db/manual_usage_reset_migration_test.sh
-            bash tests/db/bulk_usage_reset_migration_test.sh
-            bash tests/db/periodic_usage_reset_migration_test.sh
-            bash tests/db/periodic_usage_reset_executor_test.sh
-          '
-      - name: DB D session and subscription
-        run: |
-          docker run --rm --network host --env PGPASSWORD=pvnaive-ci-only --env PVNAIVE_DB_HOST=127.0.0.1 --env PVNAIVE_DB_PORT=5432 --env PVNAIVE_DB_USER=postgres --volume "${GITHUB_WORKSPACE}:/repo" --workdir /repo postgres:18-bookworm bash -lc '
-            set -Eeuo pipefail
-            bash tests/db/operator_session_peers_migration_test.sh
-            bash tests/db/concurrent_session_limit_migration_test.sh
-            bash tests/db/unique_ip_limit_migration_test.sh
-            bash tests/db/run_schema_fixture_test.sh 6 tests/db/direct_subscription_migration_test.sh
-            bash tests/db/subscription_token_recovery_migration_test.sh
-            bash tests/auth/bootstrap_owner_test.sh
           '
       - name: Stop PostgreSQL 18
         if: always()
