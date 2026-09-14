@@ -24,7 +24,11 @@ Last updated: 2026-09-15
   and the gated Caddy runbook (ops/caddy/COVERD_FLIP.md). The production flip
   itself remains a deliberate, separately-gated operator action (pre-gates:
   trusted audit + fresh encrypted backup + rollback snapshot).
-- **OPEN — R8 live-charts UI:** SSE stream live; live-charts UI wiring continues.
+- **RESOLVED (UI) — R8 live-charts wiring:** dashboard monitoring console now consumes the
+  R8 SSE stream (1s ticks) with a polling fallback + auto stream retry; live RX/TX area
+  chart, 270° CPU/RAM/Disk gauges, SVG segmented donut. Zero chart dependencies; chart
+  math pinned by charts.test.ts (109 web tests green). Charts render only real server
+  samples — no synthetic history.
 - **OPEN — BUG-STREAM-001 FIXED, BUG-ACCT-001 FIXED (record for history):** SSE flush through
   the middleware chain and the FullBackend interface ambiguity (all CONNECTs fail-closed)
   were found live and fixed (3cf8abd / 46f9dfb equivalents in the rebased chain); postflight

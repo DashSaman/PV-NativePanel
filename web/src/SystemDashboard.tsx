@@ -1,75 +1,179 @@
-import { useEffect, useMemo, useState } from "react";
-import { dependencyEntries, fetchSystemStatus, formatBytes, formatRate, formatUptime, SystemStatus } from "./systemStatus";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { connectSystemStream } from "./systemStream";
+import {
+  dependencyEntries,
+  fetchSystemStatus,
+  formatBytes,
+  formatRate,
+  formatUptime,
+  SystemSample,
+  SystemStatus,
+} from "./systemStatus";
+import { LiveAreaChart, RadialGauge } from "./charts";
 
-type HistoryPoint = { cpu: number; memory: number; rx: number; tx: number };
+/* Live server telemetry console. Frames arrive over the R8 SSE stream
+   (1s server ticks); a polling fallback keeps data honest if the stream
+   drops. Every rendered number originates from a real server sample —
+   nothing here is synthesized in the browser. */
 
-function percent(value: number): string {
-  return Number.isFinite(value) ? `${value.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}%` : "—";
+type HistoryPoint = { t: number; cpu: number; memory: number; rx: number; tx: number };
+type StreamMode = "connecting" | "live" | "polling";
+
+const HISTORY_LIMIT = 90;
+const POLL_FALLBACK_MS = 5000;
+const STREAM_RETRY_MS = 10000;
+
+function percentText(value: number): string {
+  return Number.isFinite(value) ? `${value.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪` : "—";
 }
 
-function SparkBars({ values, max }: { values: number[]; max: number }) {
-  const safeMax = Math.max(max, ...values, 1);
-  return <div className="system-spark" aria-hidden="true">{values.map((value, index) => <i key={index} style={{ height: `${Math.max(4, Math.min(100, value / safeMax * 100))}%` }} />)}</div>;
+function pushHistory(current: HistoryPoint[], sample: SystemSample): HistoryPoint[] {
+  const next: HistoryPoint = {
+    t: Date.now(),
+    cpu: sample.cpu_percent,
+    memory: sample.memory_used_percent,
+    rx: sample.rate_available ? sample.rx_bytes_per_second : 0,
+    tx: sample.rate_available ? sample.tx_bytes_per_second : 0,
+  };
+  return [...current, next].slice(-HISTORY_LIMIT);
 }
 
 export function SystemDashboard() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<StreamMode>("connecting");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const modeRef = useRef<StreamMode>("connecting");
 
   useEffect(() => {
     let active = true;
-    let timer = 0;
-    const poll = async () => {
-      try {
-        const next = await fetchSystemStatus();
-        if (!active) return;
-        setStatus(next);
-        setUpdatedAt(new Date());
-        setError("");
-        setHistory((current) => [...current, {
-          cpu: next.sample.cpu_percent,
-          memory: next.sample.memory_used_percent,
-          rx: next.sample.rate_available ? next.sample.rx_bytes_per_second : 0,
-          tx: next.sample.rate_available ? next.sample.tx_bytes_per_second : 0,
-        }].slice(-24));
-      } catch {
-        if (active) setError("خواندن وضعیت زنده سرور ناموفق بود؛ داده ساختگی نمایش داده نمی‌شود.");
-      } finally {
-        if (active) timer = window.setTimeout(poll, 5000);
-      }
+    let pollTimer = 0;
+    let retryTimer = 0;
+    let closeStream: (() => void) | null = null;
+
+    const applySample = (next: SystemStatus) => {
+      if (!active) return;
+      setStatus(next);
+      setUpdatedAt(new Date());
+      setError("");
+      setHistory((current) => pushHistory(current, next.sample));
     };
-    void poll();
-    return () => { active = false; window.clearTimeout(timer); };
+
+    const setModeSafe = (value: StreamMode) => {
+      modeRef.current = value;
+      if (active) setMode(value);
+    };
+
+    const startPolling = () => {
+      if (modeRef.current === "polling") return;
+      setModeSafe("polling");
+      const poll = async () => {
+        try {
+          applySample(await fetchSystemStatus());
+        } catch {
+          if (active) setError("خواندن وضعیت سرور ناموفق بود؛ آخرین نمونه معتبر نگه داشته شده است.");
+        } finally {
+          if (active) pollTimer = window.setTimeout(poll, POLL_FALLBACK_MS);
+        }
+      };
+      void poll();
+    };
+
+    const stopPolling = () => { window.clearTimeout(pollTimer); };
+
+    const connect = () => {
+      if (!active) return;
+      setModeSafe("connecting");
+      closeStream = connectSystemStream(
+        {
+          onStatus: (payload) => {
+            try {
+              applySample(payload as SystemStatus);
+              stopPolling();
+              setModeSafe("live");
+            } catch { /* malformed frame: skip */ }
+          },
+          onError: () => {
+            if (!active) return;
+            closeStream?.();
+            closeStream = null;
+            startPolling();
+            retryTimer = window.setTimeout(() => { if (active) connect(); }, STREAM_RETRY_MS);
+          },
+        },
+        { url: "/api/v1/system/stream?interval=1s" },
+      );
+    };
+
+    connect();
+    return () => {
+      active = false;
+      closeStream?.();
+      stopPolling();
+      window.clearTimeout(retryTimer);
+    };
   }, []);
 
-  const networkMax = useMemo(() => Math.max(1, ...history.flatMap((item) => [item.rx, item.tx])), [history]);
+  const series = useMemo(() => [
+    { name: "دریافت", color: "var(--blue)", values: history.map((p) => p.rx) },
+    { name: "ارسال", color: "var(--gold)", values: history.map((p) => p.tx) },
+  ], [history]);
 
   if (!status) {
     return <section className="dashboard-card system-monitor system-fallback" aria-live="polite">
-      <div><p className="eyebrow">Server telemetry</p><h2>وضعیت زنده سرور</h2></div>
+      <div className="monitor-card-head">
+        <div><p className="eyebrow">Server telemetry</p><h2>مانیتورینگ زنده سرور</h2></div>
+        <span className="live-pill" data-mode="connecting"><i />در حال اتصال…</span>
+      </div>
       <p className="muted">{error || "در حال دریافت نمونه واقعی از سرور…"}</p>
     </section>;
   }
 
   const sample = status.sample;
+  const memoryUsedBytes = sample.memory_total_bytes - sample.memory_available_bytes;
+  const diskUsedBytes = sample.disk_total_bytes - sample.disk_available_bytes;
+  const latest = history[history.length - 1];
+
   return <section className="dashboard-card system-monitor" aria-label="مانیتورینگ واقعی سرور">
-    <div className="system-heading">
-      <div><p className="eyebrow">Server telemetry</p><h2>وضعیت زنده سرور</h2><p className="muted">نرخ شبکه از اختلاف counter و timestamp سمت سرور محاسبه می‌شود؛ مرورگر عددی حدس نمی‌زند.</p></div>
-      <div className="dependency-row">{dependencyEntries(status.dependencies).map((item) => <span key={item.label} className={`dependency ${item.status === "ok" ? "ok" : "bad"}`}><i />{item.label}: {item.status === "ok" ? "OK" : "Unavailable"}</span>)}</div>
+    <div className="monitor-card-head">
+      <div><p className="eyebrow">Server telemetry · R8 stream</p><h2>مانیتورینگ زنده سرور</h2></div>
+      <div className="monitor-head-side">
+        <span className="live-pill" data-mode={mode}><i />{mode === "live" ? "زنده · هر ۱ ثانیه" : mode === "polling" ? "نمونه‌برداری دوره‌ای" : "در حال اتصال…"}</span>
+        <div className="dependency-row">
+          {dependencyEntries(status.dependencies).map((item) => <span key={item.label} className={`dependency ${item.status === "ok" ? "ok" : "bad"}`}><i />{item.label}: {item.status === "ok" ? "OK" : "Unavailable"}</span>)}
+        </div>
+      </div>
     </div>
     {error && <div className="system-warning" role="alert">{error} آخرین نمونه معتبر نگه داشته شده است.</div>}
-    <div className="system-kpis">
-      <article><span>CPU</span><strong>{percent(sample.cpu_percent)}</strong><SparkBars values={history.map((item) => item.cpu)} max={100}/></article>
-      <article><span>RAM</span><strong>{percent(sample.memory_used_percent)}</strong><small>{formatBytes(sample.memory_total_bytes - sample.memory_available_bytes)} / {formatBytes(sample.memory_total_bytes)}</small><SparkBars values={history.map((item) => item.memory)} max={100}/></article>
-      <article><span>Disk /</span><strong>{percent(sample.disk_used_percent)}</strong><small>{formatBytes(sample.disk_total_bytes - sample.disk_available_bytes)} / {formatBytes(sample.disk_total_bytes)}</small></article>
-      <article><span>Load 1/5/15</span><strong>{sample.load_1.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}</strong><small>{sample.load_5.toLocaleString("fa-IR", { maximumFractionDigits: 2 })} · {sample.load_15.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}</small></article>
-      <article><span>RX Rate</span><strong>{formatRate(sample.rx_bytes_per_second, sample.rate_available)}</strong><small>{sample.network_interface || "interface unavailable"}</small><SparkBars values={history.map((item) => item.rx)} max={networkMax}/></article>
-      <article><span>TX Rate</span><strong>{formatRate(sample.tx_bytes_per_second, sample.rate_available)}</strong><small>{sample.rate_available ? `window ${sample.sample_window_seconds.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}s` : "window —"}</small><SparkBars values={history.map((item) => item.tx)} max={networkMax}/></article>
-      <article><span>Uptime</span><strong>{formatUptime(sample.uptime_seconds)}</strong></article>
-      <article><span>Traffic semantics</span><strong className="system-semantics">{status.traffic_semantics}</strong><small>Accounting/Online در این کارت ساخته یا تخمین زده نمی‌شود.</small></article>
+
+    <div className="monitor-gauges">
+      <RadialGauge percent={sample.cpu_percent} label="پردازنده" valueText={percentText(sample.cpu_percent)} caption={`load ${sample.load_1.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}`} />
+      <RadialGauge percent={sample.memory_used_percent} label="حافظه" valueText={percentText(sample.memory_used_percent)} caption={`${formatBytes(memoryUsedBytes)} / ${formatBytes(sample.memory_total_bytes)}`} />
+      <RadialGauge percent={sample.disk_used_percent} label="دیسک" valueText={percentText(sample.disk_used_percent)} caption={`${formatBytes(diskUsedBytes)} / ${formatBytes(sample.disk_total_bytes)}`} />
+      <div className="monitor-uptime">
+        <span className="monitor-uptime-label">آپ‌تایم سرور</span>
+        <strong>{formatUptime(sample.uptime_seconds)}</strong>
+        <div className="monitor-uptime-meta">
+          <div><span>Load 1/5/15</span><b>{sample.load_1.toLocaleString("fa-IR", { maximumFractionDigits: 2 })} · {sample.load_5.toLocaleString("fa-IR", { maximumFractionDigits: 2 })} · {sample.load_15.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}</b></div>
+          <div><span>اینترفیس</span><b>{sample.network_interface || "—"}</b></div>
+          <div><span>معناشناسی ترافیک</span><b className="system-semantics">{status.traffic_semantics}</b></div>
+        </div>
+      </div>
     </div>
+
+    <div className="monitor-net">
+      <div className="monitor-net-head">
+        <h3>ترافیک شبکه</h3>
+        <div className="monitor-net-now">
+          <div className="net-stat rx"><i />دریافت<b>{formatRate(latest?.rx ?? sample.rx_bytes_per_second, sample.rate_available)}</b></div>
+          <div className="net-stat tx"><i />ارسال<b>{formatRate(latest?.tx ?? sample.tx_bytes_per_second, sample.rate_available)}</b></div>
+        </div>
+      </div>
+      <LiveAreaChart series={series} height={190} formatValue={(v) => formatRate(v, true)} ariaLabel="نمودار زنده ترافیک شبکه" />
+      <p className="monitor-net-note">نرخ از اختلاف counter و timestamp سمت سرور محاسبه می‌شود؛ مرورگر عددی حدس نمی‌زند. {sample.rate_available ? `پنجره نمونه: ${sample.sample_window_seconds.toLocaleString("fa-IR", { maximumFractionDigits: 1 })} ثانیه` : ""}</p>
+    </div>
+
     <p className="sample-meta">آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
   </section>;
 }

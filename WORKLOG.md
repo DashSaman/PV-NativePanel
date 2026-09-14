@@ -288,3 +288,27 @@ postpone the `namir.softarg.ir` flip to the next day.
 - Honest limits: Caddyfile base-path/port RUNTIME apply + graceful dual-accept window is
   NOT wired yet (needs live rehearsal; entrypoint/Caddyfile template reconciliation) —
   recorded as R7-NET-001; UI card for panel access settings is queued with R8.
+
+## 2026-09-14 20:47 UTC — R8 live-charts UI wiring (monitoring console upgrade)
+
+- New `web/src/charts.tsx`: zero-dependency SVG monitoring kit — LiveAreaChart
+  (smooth Catmull-Rom series, gradient fills, nice 1/2/5 ticks, LTR chart
+  plane), RadialGauge (270° arc, threshold colors green/amber/red), DonutChart
+  (segmented arcs with gaps, center total). All geometry in exported pure
+  functions pinned by `charts.test.ts` (6 tests).
+- `SystemDashboard.tsx` rewritten as a live console: subscribes to the R8 SSE
+  stream (`/api/v1/system/stream?interval=1s`), keeps a 90-sample history,
+  falls back to 5s polling on stream error and retries the stream every 10s;
+  mode surfaced via a pulsing LIVE/polling pill. Renders CPU/RAM/Disk radial
+  gauges, live RX/TX area chart with current-value badges, load 1/5/15,
+  uptime, interface, dependency health.
+- `Dashboard.tsx`: conic-gradient donut replaced by the SVG DonutChart with
+  per-segment percentages; KPI cards carry only honest, query-derived share
+  bars (active share, needs-attention share); expiry bars kept (real queries).
+- Styles: `system.css` rebuilt around the monitoring console (gauge/chart/
+  donut/live-pill classes, responsive down to 420px, reduced-motion honored);
+  `styles.css` gained `.kpi-share` and legend percent chips.
+- Honesty rule preserved: no browser-synthesized numbers anywhere; network
+  rates still server-computed (counter/timestamp deltas).
+- Gates: 109/109 web tests green; `tsc -b && vite build --base=/panel/` green
+  (bundle index-DU45I8Mh.js).
