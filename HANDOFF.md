@@ -42,3 +42,7 @@ Next runtime promotion requires the missing real Task13 proof, fresh Production 
 - R1 / STEER-001 #109 can continue independently on latest green main: Worker 3 trusted TCP_INFO sampling, Worker 2 >=0030 ingest/replay/idempotency, Worker 1 schema/security/accounting-boundary review, Worker 4 E2E. Never mix network samples into quota/accounting truth.
 - Remote inventory currently has no online executable PVNaive worker and no Production Primary. Persisted assignments were refreshed in GitHub for all lanes.
 - Production remains mutation-free from this coordinator: no deploy/migrate/restart/reload, no credential/DB/Caddy mutation, no backup or rollback mutation. Before any deploy: fresh Primary read-only audit → encrypted backup → independent rollback snapshot → lock exact SHA → staged deploy → postflight → retain rollback.
+
+### 04:45 race correction
+- Runtime `main` advanced concurrently with `a4edea62594d5b60a978c39e1f28fad9ac45f6b6`, which fixes public JSON decoding for `ValidityInput` (`mode`, `duration_days`, `expires_at`) and adds product-create/renewal decode regression tests after a live `repo-live2` probe observed a 400 unknown-field failure. CI `34795216345` is still IN_PROGRESS; do not call this runtime tip green yet.
+- Current repository tip after coordinator docs is `54564a08d151747a38b0694ca2d620f8971c5ce7`; current-main CI has not yet been observed complete. Any Task13/Karing reconstruction must wait for a stable exact green runtime tip, then rerun its own exact-head gates.
