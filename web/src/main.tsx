@@ -6,6 +6,7 @@ import "@fontsource/vazirmatn/600.css";
 import "@fontsource/vazirmatn/800.css";
 import "./styles.css";
 import "./system.css";
+import "./pool.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
