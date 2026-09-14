@@ -40,3 +40,11 @@ No Production mutation was performed. Concrete work this checkpoint: post-merge 
 - Karing PR #101 refreshed exact head: `6691392639be9fae4656a861db4a6d16580f850d`; local exact-tree diff/vet/test PASS. Fresh exact-head CI/Accounting/Pinned workflows are running. Real Karing import -> parse -> CONNECT -> cleanup/revoke remains mandatory before merge.
 - R1 / STEER-001 was redispatched across trusted TCP_INFO, >0030 ingest/replay/idempotency, independent security/schema/accounting review, and later disposable E2E. Network telemetry remains outside quota/exact byte-accounting truth.
 - No Production mutation was performed. On Primary reconnect, perform read-only live image/schema/backup/disk/rollback audit before any deploy decision.
+
+## Coordinator checkpoint — 2026-09-14 20:0x Asia/Tehran
+
+- Canonical docs baseline `b79ad34abf90903a3b476edf1342f7d3ce79d360` completed CI SUCCESS (`34867971143`).
+- Task13 exact head `44db803d70ad62dd9867d3d3a85d2b2e57f8b429`: CI `34867408371` SUCCESS; Exact Accounting `34867408480` SUCCESS; Pinned Forwardproxy `34867408392` SUCCESS on retry attempt 2. Attempt 1 was a transient sum.golang.org HTTP/2 INTERNAL_ERROR, not a source failure. Independent local exact-head reproducible build also PASS with binary SHA256 `629f58b192fcceac9b1ada6887ad2f53c397f872bb28d28856a90b66f86d99ec`. PR remains DRAFT because real HTTP/1.1 + HTTP/2 target-only kill/sibling-survival/idempotency/forged-tuple/credential-survival/exactly-once-accounting acceptance still has not been rerun on this exact head.
+- Karing exact head `6691392639be9fae4656a861db4a6d16580f850d`: CI `34867775973` SUCCESS; Exact Accounting `34867775798` SUCCESS; Pinned Forwardproxy `34867775829` SUCCESS. PR remains DRAFT pending real Karing import -> parse -> CONNECT -> cleanup/revoke.
+- Production Primary remains disconnected; no Production mutation. Last recorded Production receipt remains the truth ceiling until read-only audit after reconnect.
+- One execution worker is online; R1 / STEER-001 tasks remain dispatched with migration strictly >0030 and telemetry isolated from quota/exact byte-accounting truth.
