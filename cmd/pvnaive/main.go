@@ -150,6 +150,11 @@ func run() error {
 		periodicResetConfig = &cfg
 	}
 
+	steerConfig, err := steeringLoopConfigFromEnv(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("steering scheduler configuration: %w", err)
+	}
+
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -182,6 +187,12 @@ func run() error {
 			*periodicResetConfig,
 			log.Printf,
 		)
+	}
+	// R2→R3 live loop: engine + telemetry aggregates + durable decision
+	// sink (0032). A single-node fleet still records honest initial
+	// assignments — the audit trail the fleet renderer will order by.
+	if err := startSteeringLoop(runCtx, db, accountingStore, steerConfig, log.Printf); err != nil {
+		return fmt.Errorf("start steering scheduler: %w", err)
 	}
 	serveErr := make(chan error, 1)
 	go func() {
