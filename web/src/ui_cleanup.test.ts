@@ -40,9 +40,14 @@ describe("operator UI cleanup contract", () => {
     expect(customers).toContain("لینک ساب کلاینت");
     expect(customers).toContain("باز کردن صفحه");
   });
-  it("keeps subscription delivery visually focused with one primary QR and advanced direct access", () => {
-    expect(customers).toContain('className="subscription-primary-card"');
-    expect(customers).toContain('className="direct-details"');
+  it("keeps subscription delivery focused: dual prominent QRs (subscription + direct naive)", () => {
+    expect(customers).toContain('className="qr-duo-grid"');
+    expect(customers).toContain('QR لینک ساب');
+    expect(customers).toContain('QR اتصال مستقیم');
+    expect(customers).toContain('copy("sub", subscription)');
+    expect(customers).toContain('copy("direct", delivery.direct_uri!)');
+    // the direct QR must never be hidden behind a collapsed <details> again
+    expect(customers).not.toContain('className="direct-details"');
   });
 
 });

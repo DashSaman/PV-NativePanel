@@ -41,8 +41,9 @@ export const motion = {
 
 // Semantic palette. Values mirror styles.css custom properties so the
 // stealth layer and the panel shell render from one palette.
-// "Midnight Glass Ops": deep-space navy canvas, frosted glass surfaces,
-// cyan telemetry accent with an indigo secondary.
+// "Private Gold on Midnight Glass" (R10): deep-space navy canvas, frosted
+// glass surfaces, gold/amber brand accent (Private Network logo). Chart data
+// series keep teal/violet so data colors never collide with the gold chrome.
 export const palette = {
   bgDeep: "#04070f",
   surface: "rgba(17, 27, 49, 0.60)",
@@ -51,9 +52,9 @@ export const palette = {
   borderLuminous: "rgba(255, 255, 255, 0.09)",
   text: "#eaf1ff",
   textDim: "#8ea2c7",
-  accent: "#22d3ee",
-  accentSoft: "rgba(34, 211, 238, 0.16)",
-  accent2: "#818cf8",
+  accent: "#f5b62e",
+  accentSoft: "rgba(245, 182, 46, 0.16)",
+  accent2: "#e8990c",
   danger: "#fb7185",
   ok: "#34d399",
 } as const;

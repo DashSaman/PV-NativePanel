@@ -40,8 +40,8 @@
 .monitor-gauge:hover{transform:translateY(-2px);border-color:var(--border-strong)}
 .monitor-gauge-track{fill:none;stroke:color-mix(in srgb,var(--surface-3) 82%,transparent);stroke-width:9;stroke-linecap:round}
 .monitor-gauge-value{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .7s cubic-bezier(.22,1,.36,1),stroke .4s ease;filter:drop-shadow(0 0 7px rgba(255,255,255,.18))}
-.monitor-gauge-num{font-size:19px;font-weight:800;paint-order:stroke;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:.3px}
-.monitor-gauge-cap{font-size:8.5px;fill:var(--muted);direction:ltr;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.monitor-gauge-num{font-size:19px;font-weight:800;paint-order:stroke;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.monitor-gauge-cap{font-size:8.5px;fill:var(--muted);direction:ltr;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .monitor-gauge-label{font-size:11px;font-weight:700;color:var(--muted)}
 
 .monitor-uptime{
@@ -57,7 +57,7 @@
 .monitor-uptime-meta>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--border);padding-bottom:6px}
 .monitor-uptime-meta>div:last-child{border-bottom:0;padding-bottom:0}
 .monitor-uptime-meta span{font-size:9.5px;color:var(--muted)}
-.monitor-uptime-meta b{font-size:10.5px;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.monitor-uptime-meta b{font-size:10.5px;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .monitor-uptime-meta b.system-semantics{direction:rtl;white-space:normal;line-height:1.6;font-family:var(--font)}
 
 /* ---------- network chart ---------- */
@@ -78,7 +78,7 @@
   font-size:11px;color:var(--muted);
 }
 .net-stat i{width:9px;height:9px;border-radius:3px;flex:0 0 9px}
-.net-stat b{color:var(--text);font-size:12.5px;direction:ltr;font-family:var(--font-mono);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.net-stat b{color:var(--text);font-size:12.5px;direction:ltr;font-family:var(--font-mono);font-weight:500;font-variant-numeric:tabular-nums}
 .net-stat.rx i{background:var(--blue);box-shadow:0 0 10px color-mix(in srgb,var(--blue) 65%,transparent)}
 .net-stat.tx i{background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 65%,transparent)}
 
@@ -91,9 +91,8 @@
   font-size:9.5px;font-weight:500;
   font-family:var(--font-mono);
   font-variant-numeric:tabular-nums;
-  letter-spacing:.25px;
 }
-.monitor-line{filter:drop-shadow(0 0 5px rgba(160,220,255,.16)) drop-shadow(0 1px 3px rgba(0,0,0,.35))}
+.monitor-line{filter:drop-shadow(0 0 6px rgba(255,255,255,.14)) drop-shadow(0 1px 3px rgba(0,0,0,.35))}
 .monitor-net-note{margin:0;font-size:9.5px;color:var(--muted);line-height:1.8}
 
 /* ---------- legacy alert + dependencies (kept) ---------- */
@@ -103,7 +102,7 @@
   display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:5px 8px;
   border:1px solid var(--border);border-radius:999px;
   background:color-mix(in srgb,var(--surface-3) 66%,transparent);
-  font-size:9px;color:var(--muted);direction:ltr;font-family:var(--font-mono);letter-spacing:.3px;
+  font-size:9px;color:var(--muted);direction:ltr;font-family:var(--font-mono);
 }
 .dependency i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
 .dependency.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 28%,var(--border))}

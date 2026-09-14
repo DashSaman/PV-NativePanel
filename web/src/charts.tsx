@@ -89,8 +89,15 @@ export function donutArc(cx: number, cy: number, r: number, a0: number, a1: numb
   return `M${start.x.toFixed(3)},${start.y.toFixed(3)} A${r},${r} 0 ${large} 1 ${end.x.toFixed(3)},${end.y.toFixed(3)}`;
 }
 
-const faFormat = (value: number, digits = 0): string =>
-  value.toLocaleString("fa-IR", { maximumFractionDigits: digits });
+// Chart numerals use Latin digits + JetBrains Mono (tabular) — the NOC
+// convention. Persian digits render in a fallback font (Vazirmatn) whose
+// metrics break mono axis labels; Latin digits keep tick columns aligned.
+export const fmtNum = (value: number, digits = 0): string =>
+  Number.isFinite(value)
+    ? value.toLocaleString("en-US", { maximumFractionDigits: digits })
+    : "—";
+
+const faFormat = (value: number, digits = 0): string => fmtNum(value, digits);
 
 function stableId(input: string): string {
   let h = 0;

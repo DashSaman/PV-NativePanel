@@ -4,7 +4,7 @@ import { DEFAULT_PRODUCT_FILTERS, listProductCustomers, listProductPlans } from 
 import { getRuntimeStatus } from "./runtime";
 import { canUseCustomerProduct, canUseRawRuntime } from "./productPanelModel";
 import { SystemDashboard } from "./SystemDashboard";
-import { DonutChart } from "./charts";
+import { DonutChart, fmtNum } from "./charts";
 import { Icon } from "./ui";
 
 type Props = { role: Principal["role"] };
@@ -93,20 +93,20 @@ export function Dashboard({ role }: Props) {
     <section className="dashboard-kpis">
       <article>
         <span className="kpi-symbol"><Icon name="users" size={20}/></span>
-        <div><small>کل کاربران</small><strong>{loading ? "…" : snapshot.total.toLocaleString("fa-IR")}</strong><em>حساب‌های ثبت‌شده</em></div>
+        <div><small>کل کاربران</small><strong>{loading ? "…" : fmtNum(snapshot.total)}</strong><em>حساب‌های ثبت‌شده</em></div>
       </article>
       <article>
         <span className="kpi-symbol success"><Icon name="check" size={20}/></span>
-        <div><small>کاربران فعال</small><strong>{loading ? "…" : snapshot.active.toLocaleString("fa-IR")}</strong><em>سرویس قابل استفاده</em></div>
+        <div><small>کاربران فعال</small><strong>{loading ? "…" : fmtNum(snapshot.active)}</strong><em>سرویس قابل استفاده</em></div>
         <i className="kpi-share success" aria-hidden="true"><b style={{ width: `${Math.round(ratios.active * 100)}%` }}/></i>
       </article>
       <article>
         <span className="kpi-symbol gold"><Icon name="plans" size={20}/></span>
-        <div><small>پلن‌ها</small><strong>{loading ? "…" : snapshot.plans.toLocaleString("fa-IR")}</strong><em>پلن‌های تعریف‌شده</em></div>
+        <div><small>پلن‌ها</small><strong>{loading ? "…" : fmtNum(snapshot.plans)}</strong><em>پلن‌های تعریف‌شده</em></div>
       </article>
       <article>
         <span className="kpi-symbol warning"><Icon name="alert" size={20}/></span>
-        <div><small>نیازمند توجه</small><strong>{loading ? "…" : (snapshot.suspended + snapshot.ended).toLocaleString("fa-IR")}</strong><em>تعلیق یا پایان سرویس</em></div>
+        <div><small>نیازمند توجه</small><strong>{loading ? "…" : fmtNum(snapshot.suspended + snapshot.ended)}</strong><em>تعلیق یا پایان سرویس</em></div>
         <i className="kpi-share warning" aria-hidden="true"><b style={{ width: `${Math.round(ratios.attention * 100)}%` }}/></i>
       </article>
     </section>
@@ -118,15 +118,15 @@ export function Dashboard({ role }: Props) {
           <DonutChart
             values={donutValues}
             colors={["var(--green)", "var(--gold)", "var(--orange)", "var(--red)"]}
-            center={snapshot.total.toLocaleString("fa-IR")}
+            center={fmtNum(snapshot.total)}
             caption="کاربر"
             ariaLabel="توزیع وضعیت کاربران"
           />
           <div className="status-legend">
-            <div><i className="dot success"/><span>فعال</span><strong>{snapshot.active.toLocaleString("fa-IR")}</strong><em className="legend-share">{Math.round(ratios.active * 100).toLocaleString("fa-IR")}٪</em></div>
-            <div><i className="dot gold"/><span>منتظر اتصال</span><strong>{snapshot.pending.toLocaleString("fa-IR")}</strong><em className="legend-share">{Math.round(ratios.pending * 100).toLocaleString("fa-IR")}٪</em></div>
-            <div><i className="dot warning"/><span>تعلیق</span><strong>{snapshot.suspended.toLocaleString("fa-IR")}</strong><em className="legend-share">{Math.round(ratios.suspended * 100).toLocaleString("fa-IR")}٪</em></div>
-            <div><i className="dot danger"/><span>پایان‌یافته</span><strong>{snapshot.ended.toLocaleString("fa-IR")}</strong><em className="legend-share">{Math.round(ratios.ended * 100).toLocaleString("fa-IR")}٪</em></div>
+            <div><i className="dot success"/><span>فعال</span><strong>{fmtNum(snapshot.active)}</strong><em className="legend-share">{fmtNum(Math.round(ratios.active * 100))}٪</em></div>
+            <div><i className="dot gold"/><span>منتظر اتصال</span><strong>{fmtNum(snapshot.pending)}</strong><em className="legend-share">{fmtNum(Math.round(ratios.pending * 100))}٪</em></div>
+            <div><i className="dot warning"/><span>تعلیق</span><strong>{fmtNum(snapshot.suspended)}</strong><em className="legend-share">{fmtNum(Math.round(ratios.suspended * 100))}٪</em></div>
+            <div><i className="dot danger"/><span>پایان‌یافته</span><strong>{fmtNum(snapshot.ended)}</strong><em className="legend-share">{fmtNum(Math.round(ratios.ended * 100))}٪</em></div>
           </div>
         </div>
       </article>
@@ -134,8 +134,8 @@ export function Dashboard({ role }: Props) {
       <article className="dashboard-card">
         <div className="dashboard-card-head"><div><p className="eyebrow">انقضای نزدیک</p><h2>سرویس‌های در آستانه پایان</h2></div></div>
         <div className="expiry-overview">
-          <div><span>۷ روز آینده</span><strong>{snapshot.expiring7.toLocaleString("fa-IR")}</strong><i><b className="bar-gold" style={{ width: `${Math.min(100, ratios.expiring7 * 100)}%` }}/></i></div>
-          <div><span>۳۰ روز آینده</span><strong>{snapshot.expiring30.toLocaleString("fa-IR")}</strong><i><b style={{ width: `${Math.min(100, ratios.expiring30 * 100)}%` }}/></i></div>
+          <div><span>۷ روز آینده</span><strong>{fmtNum(snapshot.expiring7)}</strong><i><b className="bar-gold" style={{ width: `${Math.min(100, ratios.expiring7 * 100)}%` }}/></i></div>
+          <div><span>۳۰ روز آینده</span><strong>{fmtNum(snapshot.expiring30)}</strong><i><b style={{ width: `${Math.min(100, ratios.expiring30 * 100)}%` }}/></i></div>
           <div className="runtime-summary"><span>Runtime</span><strong>{snapshot.runtimeReady === null ? "طبق نقش" : snapshot.runtimeReady ? "آماده" : "نیازمند بررسی"}</strong></div>
         </div>
       </article>

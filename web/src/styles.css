@@ -1,9 +1,11 @@
 /* ============================================================
-   PVNaive design system — "Midnight Glass Ops" (R9)
+   PVNaive design system — "Private Gold on Midnight Glass" (R10)
    Professional NOC/monitoring aesthetic: deep-space navy canvas,
    true frosted-glass surfaces (backdrop blur + luminous hairlines),
-   cyan/indigo telemetry accents, faint engineering grid overlay,
-   gradient numerals, SVG icon set, Vazirmatn + JetBrains Mono.
+   gold/amber brand accents (Private Network logo), faint engineering
+   grid overlay, gradient numerals, SVG icon set, Vazirmatn + JetBrains Mono.
+   Chart data series stay teal/violet so data never collides with the
+   gold brand accent (Grafana-style: neutral chrome, distinct data colors).
    All legacy class names are preserved for existing pages.
    ============================================================ */
 
@@ -20,10 +22,10 @@
   --border-luminous:rgba(255,255,255,.09);
   --text:#eaf1ff;
   --muted:#8ea2c7;
-  --accent:#22d3ee;
-  --accent-soft:#9beaf7;
-  --accent-deep:#0e7490;
-  --accent-2:#818cf8;
+  --accent:#f5b62e;
+  --accent-soft:#ffd76a;
+  --accent-deep:#8a5a06;
+  --accent-2:#e8990c;
   /* legacy aliases (older stylesheets reference the amber names) */
   --gold:var(--accent);
   --gold-soft:var(--accent-soft);
@@ -58,10 +60,10 @@
   --border-luminous:rgba(255,255,255,.95);
   --text:#0f172a;
   --muted:#5a6c8c;
-  --accent:#0891b2;
-  --accent-soft:#0e7490;
-  --accent-deep:#155e75;
-  --accent-2:#4f46e5;
+  --accent:#b45309;
+  --accent-soft:#92400e;
+  --accent-deep:#78350f;
+  --accent-2:#d97706;
   --green:#059669;
   --orange:#b45309;
   --red:#dc2626;
@@ -72,7 +74,7 @@
   --shadow-glow:0 10px 30px color-mix(in srgb,var(--accent) 22%,transparent);
 }
 @media(prefers-color-scheme:light){
-  :root:not([data-theme]){color-scheme:light;--bg:#eef2f8;--bg-2:#e8edf5;--surface:rgba(255,255,255,.74);--surface-2:#ffffff;--surface-3:#e9eef6;--surface-glass:rgba(255,255,255,.72);--border:rgba(70,100,160,.16);--border-strong:rgba(70,100,160,.32);--border-luminous:rgba(255,255,255,.95);--text:#0f172a;--muted:#5a6c8c;--accent:#0891b2;--accent-soft:#0e7490;--accent-deep:#155e75;--accent-2:#4f46e5;--green:#059669;--orange:#b45309;--red:#dc2626;--blue:#0284c7;--grid-line:rgba(70,105,168,.065);--shadow-1:0 14px 36px -12px rgba(15,23,42,.14);--shadow-2:0 24px 56px -16px rgba(15,23,42,.2);--shadow-glow:0 10px 30px color-mix(in srgb,var(--accent) 22%,transparent)}
+  :root:not([data-theme]){color-scheme:light;--bg:#eef2f8;--bg-2:#e8edf5;--surface:rgba(255,255,255,.74);--surface-2:#ffffff;--surface-3:#e9eef6;--surface-glass:rgba(255,255,255,.72);--border:rgba(70,100,160,.16);--border-strong:rgba(70,100,160,.32);--border-luminous:rgba(255,255,255,.95);--text:#0f172a;--muted:#5a6c8c;--accent:#b45309;--accent-soft:#92400e;--accent-deep:#78350f;--accent-2:#d97706;--green:#059669;--orange:#b45309;--red:#dc2626;--blue:#0284c7;--grid-line:rgba(70,105,168,.065);--shadow-1:0 14px 36px -12px rgba(15,23,42,.14);--shadow-2:0 24px 56px -16px rgba(15,23,42,.2);--shadow-glow:0 10px 30px color-mix(in srgb,var(--accent) 22%,transparent)}
 }
 
 *{box-sizing:border-box}
@@ -116,6 +118,7 @@ button,input,select,textarea{font:inherit}
 }
 .brand{display:flex;align-items:center;gap:11px;padding:0 8px 20px;margin:0 0 12px;border-bottom:1px solid var(--border)}
 .brand img{filter:drop-shadow(0 0 16px color-mix(in srgb,var(--accent) 40%,transparent))}
+.brand img.brand-mark{border-radius:10px;border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 22%,transparent),inset 0 1px 0 rgba(255,255,255,.18);background:#05070c}
 .brand strong,.brand span{display:block}
 .brand strong{font-size:18px;letter-spacing:.2px}
 .brand span{color:var(--accent);font-size:9px;letter-spacing:2.6px;margin-top:3px;font-weight:700}

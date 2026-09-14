@@ -75,7 +75,7 @@
   color: var(--text, #e8eaf0);
   font: inherit;
   padding: 2px 0 0;
-  caret-color: var(--accent, #22d3ee);
+  caret-color: var(--accent, #f5b62e);
 }
 
 /* styles.css `.auth-form input` would otherwise beat the stealth layer

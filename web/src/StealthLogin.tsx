@@ -138,7 +138,7 @@ export function StealthLogin({ onAuthenticated }: Props) {
       <AuroraMesh/>
       <section className="auth-card stealth-card" aria-labelledby="login-title">
         <div className="brand auth-brand">
-          <img src={`${import.meta.env.BASE_URL}pvnaive-mark.svg`} alt="" width="48" height="48"/>
+          <img className="brand-mark" src={`${import.meta.env.BASE_URL}private-network.webp`} alt="Private Network" width="56" height="56"/>
           <div><strong>PVNaive</strong><span>PVNETWORK</span></div>
         </div>
         <p className="eyebrow"><Icon name="activity" size={12}/> Secure Control Panel</p>

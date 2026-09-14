@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { Principal } from "./auth";
 import { readCookie } from "./auth";
 import { Icon } from "./ui";
+import { fmtNum } from "./charts";
 import {
   buildRevisionPayload,
   driftLabel,
@@ -208,7 +209,7 @@ export function PoolManager({ principal: _principal }: Props) {
     try {
       const payload = await callAPI(`/api/v1/pool/nodes/${encodeURIComponent(revisionNode)}/revisions`, "POST", buildRevisionPayload(input));
       const revision = typeof payload.revision === "number" ? payload.revision : null;
-      setToast({ kind: "success", text: `وضعیت مطلوب منتشر شد${revision !== null ? ` (نسخه ${revision.toLocaleString("fa-IR")})` : ""}. عامل گره آن را در چرخه بعدی دریافت می‌کند.` });
+      setToast({ kind: "success", text: `وضعیت مطلوب منتشر شد${revision !== null ? ` (نسخه ${fmtNum(revision)})` : ""}. عامل گره آن را در چرخه بعدی دریافت می‌کند.` });
       await reload();
     } catch (cause) {
       setToast({ kind: "error", text: cause instanceof Error ? cause.message : "انتشار وضعیت مطلوب انجام نشد." });
@@ -280,10 +281,10 @@ export function PoolManager({ principal: _principal }: Props) {
       {toast && <div className={toast.kind === "error" ? "runtime-alert error" : "runtime-alert success"} role={toast.kind === "error" ? "alert" : "status"}>{toast.text}</div>}
 
       <section className="runtime-stats" aria-label="خلاصه استخر">
-        <article><span>کل گره‌ها</span><strong>{stats.total.toLocaleString("fa-IR")}</strong></article>
-        <article><span>فعال و هم‌گام</span><strong>{stats.inSync.toLocaleString("fa-IR")}</strong></article>
-        <article><span>در انتظار اعمال نسخه</span><strong>{stats.pending.toLocaleString("fa-IR")}</strong></article>
-        <article><span>در تخلیه/غیرفعال</span><strong>{stats.drainingOrDisabled.toLocaleString("fa-IR")}</strong></article>
+        <article><span>کل گره‌ها</span><strong>{fmtNum(stats.total)}</strong></article>
+        <article><span>فعال و هم‌گام</span><strong>{fmtNum(stats.inSync)}</strong></article>
+        <article><span>در انتظار اعمال نسخه</span><strong>{fmtNum(stats.pending)}</strong></article>
+        <article><span>در تخلیه/غیرفعال</span><strong>{fmtNum(stats.drainingOrDisabled)}</strong></article>
       </section>
 
       <section className="runtime-card">
@@ -353,7 +354,7 @@ export function PoolManager({ principal: _principal }: Props) {
       <section className="runtime-card">
         <div className="runtime-section-title">
           <div><p className="eyebrow">فهرست گره‌ها</p><h2>وضعیت زنده استخر</h2></div>
-          <span className="badge">{nodes.length.toLocaleString("fa-IR")} گره</span>
+          <span className="badge">{fmtNum(nodes.length)} گره</span>
         </div>
         {loading ? (
           <p className="runtime-muted">در حال خواندن فهرست گره‌ها…</p>
@@ -380,7 +381,7 @@ export function PoolManager({ principal: _principal }: Props) {
                   <tr key={node.id}>
                     <td><strong>{node.display_name}</strong><span className="runtime-revision mono">{node.id.slice(0, 8)}</span></td>
                     <td>{node.region || "—"}</td>
-                    <td>{node.capacity_weight.toLocaleString("fa-IR")}</td>
+                    <td>{fmtNum(node.capacity_weight)}</td>
                     <td><span className={`status-pill ${healthPillClass[node.health] ?? "pill-muted"}`}>{healthLabel(node.health)}</span></td>
                     <td><span className={`status-pill ${driftPillClass[node.drift] ?? "pill-muted"}`}>{driftLabel(node.drift)}</span></td>
                     <td><span className={`status-pill ${maintenancePillClass[node.maintenance] ?? "pill-muted"}`}>{maintenanceLabel(node.maintenance)}</span></td>
@@ -412,7 +413,7 @@ export function PoolManager({ principal: _principal }: Props) {
             </div>
             {manifestRevision !== null ? (
               <>
-                <p className="runtime-muted">نسخه {manifestRevision.toLocaleString("fa-IR")} — سرور امضا را پیش از ارائه تأیید کرده است.</p>
+                <p className="runtime-muted">نسخه {fmtNum(manifestRevision)} — سرور امضا را پیش از ارائه تأیید کرده است.</p>
                 <ul className="pool-manifest-list">
                   {manifestLines.map((line, index) => <li key={index}>{line}</li>)}
                 </ul>
@@ -434,7 +435,7 @@ export function PoolManager({ principal: _principal }: Props) {
             <div className="runtime-section-title">
               <div><p className="eyebrow">فقط همین یک‌بار</p><h2>توکن ثبت‌نام «{tokenName.trim()}»</h2></div>
             </div>
-            <p className="runtime-muted">این توکن دوباره نمایش داده نمی‌شود؛ الان کپی کنید. انقضا: {new Date(issuedToken.expires_at).toLocaleString("fa-IR")}</p>
+            <p className="runtime-muted">این توکن دوباره نمایش داده نمی‌شود؛ الان کپی کنید. انقضا: {new Date(issuedToken.expires_at).toLocaleString("en-GB", { hour12: false })}</p>
             <code className="mono">{issuedToken.token}</code>
             <div className="secret-actions">
               <button className="primary-action" onClick={() => { void navigator.clipboard?.writeText(issuedToken.token); setToast({ kind: "success", text: "توکن در حافظه کپی شد." }); }}>کپی توکن</button>

@@ -9,7 +9,7 @@ import {
   normalizeSystemStatus,
   SystemStatus,
 } from "./systemStatus";
-import { LiveAreaChart, RadialGauge } from "./charts";
+import { LiveAreaChart, RadialGauge, fmtNum } from "./charts";
 import { appendLivePoint, historyPointFromStatus, type LivePoint } from "./systemLive";
 
 /* Live server telemetry console. Frames arrive over the R8 SSE stream
@@ -24,7 +24,7 @@ const POLL_FALLBACK_MS = 5000;
 const STREAM_RETRY_MS = 10000;
 
 function percentText(value: number): string {
-  return Number.isFinite(value) ? `${value.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪` : "—";
+  return Number.isFinite(value) ? `${fmtNum(value, 1)}٪` : "—";
 }
 
 export function SystemDashboard() {
@@ -137,14 +137,14 @@ export function SystemDashboard() {
     {error && <div className="system-warning" role="alert">{error} آخرین نمونه معتبر نگه داشته شده است.</div>}
 
     <div className="monitor-gauges">
-      <RadialGauge percent={sample.cpu_percent} label="پردازنده" valueText={percentText(sample.cpu_percent)} caption={`load ${sample.load_1.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}`} />
+      <RadialGauge percent={sample.cpu_percent} label="پردازنده" valueText={percentText(sample.cpu_percent)} caption={`load ${fmtNum(sample.load_1, 2)}`} />
       <RadialGauge percent={sample.memory_used_percent} label="حافظه" valueText={percentText(sample.memory_used_percent)} caption={`${formatBytes(memoryUsedBytes)} / ${formatBytes(sample.memory_total_bytes)}`} />
       <RadialGauge percent={sample.disk_used_percent} label="دیسک" valueText={percentText(sample.disk_used_percent)} caption={`${formatBytes(diskUsedBytes)} / ${formatBytes(sample.disk_total_bytes)}`} />
       <div className="monitor-uptime">
         <span className="monitor-uptime-label">آپ‌تایم سرور</span>
         <strong>{formatUptime(sample.uptime_seconds)}</strong>
         <div className="monitor-uptime-meta">
-          <div><span>Load 1/5/15</span><b>{sample.load_1.toLocaleString("fa-IR", { maximumFractionDigits: 2 })} · {sample.load_5.toLocaleString("fa-IR", { maximumFractionDigits: 2 })} · {sample.load_15.toLocaleString("fa-IR", { maximumFractionDigits: 2 })}</b></div>
+          <div><span>Load 1/5/15</span><b>{fmtNum(sample.load_1, 2)} · {fmtNum(sample.load_5, 2)} · {fmtNum(sample.load_15, 2)}</b></div>
           <div><span>اینترفیس</span><b>{sample.network_interface || "—"}</b></div>
           <div><span>معناشناسی ترافیک</span><b className="system-semantics">{status.traffic_semantics}</b></div>
         </div>
@@ -160,9 +160,9 @@ export function SystemDashboard() {
         </div>
       </div>
       <LiveAreaChart series={series} height={190} formatValue={(v) => formatRate(v, true)} ariaLabel="نمودار زنده ترافیک شبکه" />
-      <p className="monitor-net-note">نرخ از اختلاف counter و timestamp سمت سرور محاسبه می‌شود؛ مرورگر عددی حدس نمی‌زند. {sample.rate_available ? `پنجره نمونه: ${sample.sample_window_seconds.toLocaleString("fa-IR", { maximumFractionDigits: 1 })} ثانیه` : ""}</p>
+      <p className="monitor-net-note">نرخ از اختلاف counter و timestamp سمت سرور محاسبه می‌شود؛ مرورگر عددی حدس نمی‌زند. {sample.rate_available ? `پنجره نمونه: ${fmtNum(sample.sample_window_seconds, 1)} ثانیه` : ""}</p>
     </div>
 
-    <p className="sample-meta">آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("fa-IR") || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("fa-IR")}</p>
+    <p className="sample-meta">آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("en-GB", { hour12: false }) || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("en-GB", { hour12: false })}</p>
   </section>;
 }

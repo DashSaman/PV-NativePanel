@@ -262,22 +262,26 @@ function SubscriptionContent({ delivery }: { delivery: ProductSubscriptionDelive
   const [copied, setCopied] = useState("");
   async function copy(key: string, value: string) { await navigator.clipboard.writeText(value); setCopied(key); window.setTimeout(() => setCopied(""), 1000); }
   return <div className="subscription-delivery">
-    <section className="subscription-primary-card">
-      <div className="subscription-primary-copy">
-        <span className="subscription-kicker">Karing / Subscription</span>
-        <h3>لینک ساب کلاینت</h3>
-        <p>برای اضافه‌کردن سرویس در Karing همین QR را اسکن کن یا لینک را کپی کن.</p>
-        <div className="copy-row subscription-link-row"><input readOnly value={subscription} /><button className="primary-action" onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد ✓" : "کپی لینک"}</button></div>
-      </div>
-      <div className="subscription-primary-qr"><QR value={subscription} /><small>QR اشتراک Karing</small></div>
+    <p className="readonly-banner">دو راه اتصال: <strong>QR ساب</strong> برای کلاینت‌هایی مثل Karing که Subscription می‌خوانند، و <strong>QR مستقیم Naive</strong> برای افزودن دستی سرور بدون ساب. هر دو با اسکن کار می‌کنند.</p>
+    <section className="qr-duo-grid">
+      <article className="qr-duo-card">
+        <header><span className="subscription-kicker">۱ · Subscription</span><h3>QR لینک ساب</h3><small>Karing / v2rayNG / NekoBox / Hiddify</small></header>
+        <div className="qr-duo-frame"><QR value={subscription} /></div>
+        <p className="field-hint">در Karing: دکمه «+» ← «اسکن کد QR» ← همین تصویر. کلاینت سرویس را خودکار می‌خواند و به‌روزرسانی ساب هم فعال می‌ماند.</p>
+        <div className="copy-row"><input readOnly value={subscription} /><button className="primary-action" onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد ✓" : "کپی لینک ساب"}</button></div>
+      </article>
+      {delivery.direct_uri && <article className="qr-duo-card">
+        <header><span className="subscription-kicker">۲ · Direct Naive</span><h3>QR اتصال مستقیم</h3><small>naive+https · بدون ساب</small></header>
+        <div className="qr-duo-frame"><QR value={delivery.direct_uri} /></div>
+        <p className="field-hint">در Karing: «+» ← «اسکن کد QR» ← همین تصویر؛ کانفیگ مستقیم naive+https وارد می‌شود. برای تست سریع یا وقتی ساب در دسترس نیست.</p>
+        <div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد ✓" : "کپی لینک مستقیم"}</button></div>
+      </article>}
     </section>
 
     <section className="account-page-box">
-      <div><strong>صفحه وضعیت کاربر</strong><span>نمایش حجم، انقضا و راهنمای اتصال در مرورگر.</span></div>
+      <div><strong>صفحه وضعیت کاربر</strong><span>نمایش حجم، انقضا، هر دو QR و راهنمای کامل اتصال در مرورگر.</span></div>
       <div className="account-page-actions"><a className="open-account-page" href={accountPage} target="_blank" rel="noreferrer">باز کردن صفحه</a><button className="button-secondary" onClick={() => void copy("page", accountPage)}>{copied === "page" ? "کپی شد ✓" : "کپی لینک صفحه"}</button></div>
     </section>
-
-    {delivery.direct_uri && <details className="direct-details"><summary>Direct Naive · تنظیمات پیشرفته</summary><div className="direct-details-body"><div className="subscription-fields"><p className="field-hint">برای ورود دستی یا تست مستقیم استفاده می‌شود؛ برای Karing معمولاً Subscription پیشنهاد می‌شود.</p><div className="copy-row"><input readOnly value={delivery.direct_uri} /><button onClick={() => void copy("direct", delivery.direct_uri!)}>{copied === "direct" ? "کپی شد ✓" : "کپی"}</button></div></div><div className="direct-qr"><QR value={delivery.direct_uri} /><small>QR مستقیم Naive</small></div></div></details>}
     {delivery.delivery_notice && <p className="subscription-notice">{delivery.delivery_notice}</p>}
   </div>;
 }
