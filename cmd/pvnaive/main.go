@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
+	"github.com/DashSaman/PV-NaivePanel/internal/fleet"
 	"github.com/DashSaman/PV-NaivePanel/internal/httpapi"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimeagent"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
@@ -155,6 +157,18 @@ func run() error {
 		return fmt.Errorf("steering scheduler configuration: %w", err)
 	}
 
+	// R5 pool registry: the owner-facing pool endpoints ride the panel DB
+	// (0033 trusted boundary). The signing key is operator-supplied via
+	// the environment; without it revision publishing stays unavailable
+	// while the inventory/drain endpoints still work.
+	fleetSigningKey := strings.TrimSpace(os.Getenv("PVNAIVE_FLEET_SIGNING_KEY"))
+	if fleetSigningKey != "" {
+		if _, err := hex.DecodeString(fleetSigningKey); err != nil {
+			return fmt.Errorf("PVNAIVE_FLEET_SIGNING_KEY: must be hex-encoded ed25519 private key")
+		}
+		log.Printf("PVNaive pool registry enabled (signed revisions)")
+	}
+
 	handler := httpapi.NewServer(httpapi.ServerConfig{
 		AuthService:           service,
 		AuthStore:             store,
@@ -162,6 +176,8 @@ func run() error {
 		RuntimeService:        runtimeService,
 		CustomerService:       customerService,
 		AccountingStore:       accountingStore,
+		FleetStore:            fleet.NewStore(db),
+		FleetSigningKey:       fleetSigningKey,
 		SubscriptionService:   subscriptionService,
 		SubscriptionProxyHost: subscriptionHost,
 		SystemStatus:          systemStatus,

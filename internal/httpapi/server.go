@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/DashSaman/PV-NaivePanel/internal/auth"
 	"github.com/DashSaman/PV-NaivePanel/internal/customer"
+	"github.com/DashSaman/PV-NaivePanel/internal/fleet"
 	"github.com/DashSaman/PV-NaivePanel/internal/runtimecred"
 	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
 	"github.com/DashSaman/PV-NaivePanel/internal/telemetry"
@@ -27,9 +29,14 @@ type ServerConfig struct {
 	SubscriptionProxyHost string
 	CustomerService       *customer.Service
 	AccountingStore       telemetry.AccountingStore
-	SystemStatus          func(*http.Request) (any, error)
-	ReadinessProbe        ReadinessProbeFunc
-	ReadyTimeout          time.Duration
+	FleetStore            *fleet.Store
+	// FleetSigningKey is the operator's Ed25519 private key (hex) used to
+	// sign pool desired-state revisions (R5). It arrives from the
+	// environment, never from the database or the repository.
+	FleetSigningKey string
+	SystemStatus    func(*http.Request) (any, error)
+	ReadinessProbe  ReadinessProbeFunc
+	ReadyTimeout    time.Duration
 }
 
 type server struct {
@@ -133,6 +140,30 @@ func NewServer(configs ...ServerConfig) http.Handler {
 		case "panel.access.update":
 			if cfg.AuthStore != nil {
 				handler = http.HandlerFunc(s.panelAccessUpdate)
+			}
+		case "pool.nodes.index":
+			if cfg.FleetStore != nil {
+				handler = http.HandlerFunc(s.poolNodesIndex)
+			}
+		case "pool.enrolltoken.create":
+			if cfg.FleetStore != nil {
+				handler = http.HandlerFunc(s.poolEnrollTokenCreate)
+			}
+		case "pool.nodes.enroll":
+			if cfg.FleetStore != nil {
+				handler = http.HandlerFunc(s.poolNodesEnroll)
+			}
+		case "pool.revision.publish":
+			if cfg.FleetStore != nil && strings.TrimSpace(cfg.FleetSigningKey) != "" {
+				handler = http.HandlerFunc(s.poolRevisionPublish)
+			}
+		case "pool.manifest.show":
+			if cfg.FleetStore != nil {
+				handler = http.HandlerFunc(s.poolManifestShow)
+			}
+		case "pool.maintenance.set":
+			if cfg.FleetStore != nil {
+				handler = http.HandlerFunc(s.poolMaintenanceSet)
 			}
 		case "me.profile.update":
 			if cfg.AuthStore != nil {
