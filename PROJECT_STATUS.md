@@ -42,3 +42,10 @@ Last updated: 2026-09-15 (Asia/Tehran)
 - Unknown/unavailable telemetry stays Unknown; UI must not convert missing data into zero or fabricated health.
 - Client compatibility must be evidence-backed; CI rendering tests do not equal real-client support.
 - Production sequence: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
+
+## Coordinator checkpoint — 2026-09-15
+
+- Current code head: `edfae4efc7e5da7f714757fe74804901f24a9d13`. The gofmt regression is repaired; the follow-on 0034 rollback defects (destructive marker + schema ledger removal) are repaired and migration checksums refreshed.
+- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is still running; do not promote until terminal green.
+- Production remains untouched and blocked on a trusted `PVNaive-Production-Primary` reconnect plus read-only audit, fresh encrypted backup and independent rollback snapshot.
+- #101 still requires real Karing import → parse → CONNECT → cleanup/revoke.
