@@ -90,6 +90,13 @@ Supported and verified clients: **Karing** (recommended) and **NekoBox / NekoRay
 
 ## Adding a node
 
+> 📚 **Step-by-step illustrated guide (Persian):** [docs/NODE_TUTORIAL_FA.md](docs/NODE_TUTORIAL_FA.md) — every
+> panel step with screenshots, troubleshooting table and FAQ.
+>
+> ⛔ **Cloudflare rule:** the domain of every naive server (primary and nodes) must be **grey-cloud (DNS Only)**;
+> the orange cloud drops the `CONNECT` tunnel with HTTP 400. "It still works right now" only means the old
+> direct-IP DNS cache has not expired yet.
+
 1. **Install the second server exactly like the first** — same one-line command with that server's domain/IP.
 2. In the main panel open `#/pool` → **issue an enrollment token** (shown once).
 3. Enroll the node (name + token + service address). The panel replicates runtime credentials to the node and publishes a signed manifest.
