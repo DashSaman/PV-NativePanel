@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as runtime from "./runtime";
 import {
   buildNaiveURI,
   createRuntimeCredential,
@@ -37,6 +38,36 @@ describe("runtime API client", () => {
     expect(buildNaiveURI("customer+one", "p@ss:word", "namir.softarg.ir")).toBe(
       "naive+https://customer%2Bone:p%40ss%3Aword@namir.softarg.ir:443",
     );
+  });
+
+  it("exports a Karing-compatible sing-box Naive profile instead of relying on raw URI defaults", () => {
+    const builder = (runtime as unknown as Record<string, unknown>).buildKaringSingBoxProfile;
+    expect(builder).toBeTypeOf("function");
+    if (typeof builder !== "function") return;
+
+    const profile = JSON.parse(
+      String(builder("customer+one", "p@ss:word", "namir.softarg.ir")),
+    );
+
+    expect(profile).toEqual({
+      outbounds: [
+        {
+          type: "naive",
+          tag: "PVNaive-customer+one",
+          server: "namir.softarg.ir",
+          server_port: 443,
+          username: "customer+one",
+          password: "p@ss:word",
+          insecure_concurrency: 0,
+          udp_over_tcp: false,
+          quic: false,
+          tls: {
+            enabled: true,
+            server_name: "namir.softarg.ir",
+          },
+        },
+      ],
+    });
   });
 
   it("lists credentials with same-origin credentials and no secret fields", async () => {
