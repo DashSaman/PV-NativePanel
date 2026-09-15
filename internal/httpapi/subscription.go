@@ -223,7 +223,11 @@ func setSubscriptionDeliveryHeaders(w http.ResponseWriter, profile subscription.
 	h.Set("Profile-Update-Interval", "4")
 	h.Set("Subscription-Userinfo", subscription.UserinfoHeader(upload, download, total, expire))
 	if remark := subscriptionProfileRemark(profile); remark != "" {
-		h.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", remark))
+		// "inline" keeps the endpoint renderable in a browser (opening the
+		// subscription URL shows plain text instead of triggering a download)
+		// while machine clients still pick up the filename parameter to name
+		// the imported profile.
+		h.Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", remark))
 	}
 }
 
