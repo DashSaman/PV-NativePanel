@@ -4,7 +4,7 @@ Last updated: 2026-09-15 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Current code main: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide change). CI run `34907620721`: Go, Web, PostgreSQL/migration/backup-restore gates and the full S04/S04R/Task13 rehearsal steps are PASS; the workflow has not yet reached a terminal SUCCESS because downstream completion/bundle scheduling is still pending. Do not report the entire run green until GitHub records a terminal success.
+- Current code main before this documentation refresh: `4886b2730515dc6acac1e4a8d6eeb7b13067e2a5`. R10 landed at `9187266...`; follow-up UI fixes `a715083...` (gold button consistency) and `c9d56a9...` (row action menu viewport positioning) both have terminal green CI (`34908530057`, `34908840088`). Coordinator independently reran Web 23/23 files, 115/115 tests and production build on `c9d56a9...`; then removed an unused `useRef` import in `4886b27...` with the same Web suite/build green. Exact-head GitHub CI for `4886b27...` must be observed before promotion.
 - R10 changes the panel/subscription UX and `/s/<token>` bilingual guide. Repository gates validate rendering/build/runtime invariants, but they do not prove named third-party client compatibility. Issue #120 now tracks this truthfulness gate; no Production promotion of client-specific claims until exact real-client evidence exists.
 - Task13 PR #108 is merged. Final exact head `1f65eccb6d71572f3ff4f15e942cac02e7bfa6c7` passed CI `34897871371`, Exact Accounting `34897871364`, Pinned Forwardproxy `34897871355`, plus real pinned-Caddy HTTP/1.1+HTTP/2 target-only kill acceptance with exactly-once final accounting.
 - R8 issue #116 and test-race issue #118 are completed; PR #119 merged after exact-head CI/accounting/forwardproxy gates.
@@ -14,7 +14,7 @@ Last updated: 2026-09-15 (Asia/Tehran)
 ## Production truth ceiling
 
 - Latest persistent verified Production checkpoint records schema **33** with the Master Upgrade Pack / `repo-fin2` generation live and previously recorded healthy panel/API/SSE/real-customer CONNECT/accounting postflight plus retained rollback/backup evidence.
-- Fresh Remote Desktop inventory on 2026-09-15 shows both known registrations named `Pak-Nasheeee-haaaaaaaaa` offline and no identifiable `PVNaive-Production-Primary` connected.
+- Fresh Remote Desktop inventory on 2026-09-15 shows one registration named `Pak-Nasheeee-haaaaaaaaa` online and one stale duplicate offline; the online host is an execution worker (`/root/pvnaive-orch`) and is not identified as `PVNaive-Production-Primary`.
 - Therefore current Production image/container identity, schema ledger, encrypted-backup freshness, disk headroom, services/Caddy state and rollback snapshot are not freshly asserted. No Production mutation is allowed until the trusted Primary reconnects and read-only audit + backup/rollback gates pass.
 
 ## Active roadmap lanes
@@ -31,7 +31,7 @@ Last updated: 2026-09-15 (Asia/Tehran)
 - Worker 2: RED-first R10 content/capability tests preserving dual-QR behavior; then R8 ledger reconciliation and truthful projections.
 - Worker 3: verify R10 direct/subscription formats against server semantics; then R5 cert rotation/revocation + STEER-006 integration.
 - Worker 4: real disposable Karing exact-main acceptance; then R5/R6 browser/multi-node rehearsals.
-- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates. No remote execution worker is currently online, so these assignments remain queued in GitHub until capacity returns.
+- Coordinator: integrate only exact-head validated work, keep migrations forward-only, and enforce Production backup/rollback gates. One execution worker is currently online; assignments remain persisted in GitHub and may execute there, but Production work stays blocked because this host is not the trusted Primary.
 
 ## Safety invariants
 

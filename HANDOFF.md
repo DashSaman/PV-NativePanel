@@ -4,7 +4,7 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Verified baseline
 
-- Current code main before this documentation checkpoint: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide). CI run `34907620721` has Go, Web, database/migration/backup-restore, pinned forwardproxy boundary, S04 auth rehearsal and full S04R/Task13 rehearsal steps PASS; GitHub has not yet recorded the entire workflow as terminal SUCCESS, so do not overstate it.
+- Current code main before this documentation checkpoint: `4886b2730515dc6acac1e4a8d6eeb7b13067e2a5`. Follow-up R10 UI heads `a715083...` and `c9d56a9...` have terminal green CI (`34908530057`, `34908840088`). Coordinator independently reran Web 23/23 files, 115/115 tests plus production build on the latter; `4886b27...` only removes an unused hook import and passed the same local Web suite/build. Await exact-head GitHub CI before any promotion.
 - R10 client-specific support claims are not yet acceptance-proven. Issue #120 is the new promotion gate; #101 Karing remains DRAFT/non-mergeable on stale head and still requires real disposable import → parse → CONNECT → cleanup/revoke after reconciliation to latest verified main.
 - Task13 #108 is merged after exact-head CI/accounting/forwardproxy plus real HTTP/1.1+HTTP/2 target-only kill proof; exact accounting/session/credential invariants remain locked.
 - R8 live monitoring is integrated and its SSE race regression is fixed/closed.
@@ -12,7 +12,7 @@ Checkpoint: 2026-09-15 Asia/Tehran
 
 ## Production blocker
 
-- Fresh remote inventory shows both known Remote Desktop registrations offline; no trusted `PVNaive-Production-Primary` is connected.
+- Fresh remote inventory shows one Remote Desktop execution-worker registration online and one duplicate offline; no trusted `PVNaive-Production-Primary` is connected.
 - Production truth ceiling remains the last persistent schema-33 / repo-fin2 checkpoint. Do not claim fresh image/schema/backup/disk/Caddy/rollback state.
 - On trusted Primary reconnect: read-only host identity → deployed SHA/image → schema ledger → services/listeners/Caddy → encrypted-backup freshness → disk → rollback snapshot. Only then may fresh backup/snapshot and staged promotion be considered.
 
@@ -29,7 +29,7 @@ Checkpoint: 2026-09-15 Asia/Tehran
 - Worker 2 — RED-first R10 UI/content capability tests preserving dual-QR; then R8 ledger reconciliation/projections.
 - Worker 3 — verify R10 subscription/direct format semantics; then R5 cert lifecycle + STEER-006.
 - Worker 4 — real disposable Karing acceptance; then R5/R6 browser/multi-node E2E.
-- Coordinator — integrate exact-head validated work only. All remote registrations are currently offline, so assignments are queued persistently in GitHub rather than fabricated as running.
+- Coordinator — integrate exact-head validated work only. One execution-worker registration is online; assignments remain persisted in GitHub. Do not treat that worker as Production or fabricate task completion without receipts.
 
 ## Invariants
 

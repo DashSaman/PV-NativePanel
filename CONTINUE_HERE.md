@@ -4,7 +4,7 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 
 ## GitHub truth
 
-- Current code main before docs refresh: `9187266c5f4b63df7849553d450975a982f6b816` (R10 Gold/dual-QR/subscription-guide). CI run `34907620721` has Go, Web, database/migration/backup-restore and full rehearsal steps PASS, but GitHub has not yet recorded a terminal workflow SUCCESS; re-check before treating the whole run as green.
+- Current code main before docs refresh: `4886b2730515dc6acac1e4a8d6eeb7b13067e2a5`. R10 follow-up UI commits `a715083...` and `c9d56a9...` are terminal CI green (`34908530057`, `34908840088`); coordinator also reran Web 23/23 files, 115/115 tests and production build. `4886b27...` is a one-line unused-import cleanup with the same local Web gates green; wait for its exact-head GitHub CI before promotion.
 - R10 is not Production-approved merely because CI is passing: named-client compatibility is a separate truth gate in #120. #101 Karing remains DRAFT/non-mergeable and must be reconciled to latest verified main before a real import → parse → CONNECT → cleanup/revoke acceptance.
 - Task13 #108 is merged and accepted with real HTTP/1.1+HTTP/2 target-only kill plus exactly-once final accounting.
 - R8 monitoring/race fixes are integrated.
@@ -13,7 +13,7 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 ## Production truth
 
 - Persistent verified ceiling: schema 33 / repo-fin2 checkpoint.
-- Both known Remote Desktop registrations are currently offline; no trusted Production Primary is connected.
+- One execution-worker Remote Desktop registration is online and one duplicate is offline; no trusted Production Primary is connected.
 - Do not infer fresh image/schema/backup/disk/rollback/Caddy state and do not mutate Production.
 
 ## Execute next
@@ -31,7 +31,7 @@ Verified checkpoint: 2026-09-15 (Asia/Tehran)
 - W3: R10 export/direct format semantics → R5 cert lifecycle/STEER-006.
 - W4: real Karing acceptance → disposable R5/R6 E2E.
 
-All registered remote workers are currently offline. Keep the queue in GitHub and resume these assignments on reconnect; do not claim worker execution without receipts.
+One registered execution worker is online. Keep the queue in GitHub and execute only with receipts; do not treat that worker as Production.
 
 ## Invariants
 
