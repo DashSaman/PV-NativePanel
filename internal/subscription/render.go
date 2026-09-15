@@ -20,9 +20,9 @@ type Family string
 const (
 	FamilyNaive   Family = "naive"   // raw naive+https URI (default, backwards compatible)
 	FamilyClash   Family = "clash"   // Mihomo / Clash.Meta / Stash
-	FamilySingBox Family = "singbox" // sing-box / Karing
-	FamilyHiddify Family = "hiddify" // Hiddify (sing-box based render)
-	FamilyV2Ray   Family = "v2ray"   // v2rayNG / generic base64 link lists
+	FamilySingBox Family = "singbox" // sing-box JSON profile (Karing/Hiddify import base64 links instead)
+	FamilyHiddify Family = "hiddify" // Hiddify (sing-box based render; kept for override back-compat)
+	FamilyV2Ray   Family = "v2ray"   // v2rayNG / NekoBox / Karing / Hiddify base64 link lists
 )
 
 // DetectFamily maps a User-Agent header to a render family. The empty or
@@ -33,11 +33,17 @@ func DetectFamily(userAgent string) Family {
 	switch {
 	case strings.Contains(ua, "clash"), strings.Contains(ua, "mihomo"), strings.Contains(ua, "stash"):
 		return FamilyClash
-	case strings.Contains(ua, "sing-box"), strings.Contains(ua, "singbox"), strings.Contains(ua, "karing"):
+	case strings.Contains(ua, "sing-box"), strings.Contains(ua, "singbox"):
 		return FamilySingBox
-	case strings.Contains(ua, "hiddify"):
-		return FamilyHiddify
-	case strings.Contains(ua, "v2ray"), strings.Contains(ua, "nekoray"), strings.Contains(ua, "neko"):
+	case strings.Contains(ua, "karing"), strings.Contains(ua, "hiddify"),
+		strings.Contains(ua, "v2ray"), strings.Contains(ua, "nekoray"), strings.Contains(ua, "neko"),
+		strings.Contains(ua, "dart"):
+		// Karing and Hiddify are sing-box GUIs, but their subscription
+		// importers reject the naive outbound type (naive is not part of
+		// the standard sing-box outbound schema), so the JSON profile is
+		// unusable there. The universal base64 link list is the format
+		// they reliably import for naive+https nodes (field report:
+		// Karing would not accept the sing-box JSON subscription).
 		return FamilyV2Ray
 	default:
 		return FamilyNaive
@@ -54,11 +60,11 @@ func FamilyFromQuery(query url.Values) (Family, error) {
 		return FamilyNaive, nil
 	case "clash", "mihomo":
 		return FamilyClash, nil
-	case "singbox", "sing-box", "karing":
+	case "singbox", "sing-box":
 		return FamilySingBox, nil
-	case "hiddify":
-		return FamilyHiddify, nil
-	case "v2ray", "base64":
+	// karing/hiddify mirror the actual UA negotiation: those clients
+	// import the base64 link list, not the sing-box JSON profile.
+	case "karing", "hiddify", "v2ray", "base64":
 		return FamilyV2Ray, nil
 	default:
 		return "", fmt.Errorf("subscription: unknown family override")
@@ -281,10 +287,13 @@ type singBoxTLS struct {
 	ServerName string `json:"server_name"`
 }
 
-// RenderSingBox renders a sing-box (and Karing/Hiddify) profile: naive
-// outbounds for every node, a urltest group (interval 5m, tolerance 50ms) and
-// a selector whose default is the auto group. interrupt_exist_connections is
-// never set to true (STEER-005 hot-update rule).
+// RenderSingBox renders a sing-box JSON profile (genuine sing-box clients
+// and the operator ?family=singbox preview): naive outbounds for every
+// node, a urltest group (interval 5m, tolerance 50ms) and a selector whose
+// default is the auto group. interrupt_exist_connections is never set to
+// true (STEER-005 hot-update rule). Note: Karing/Hiddify are deliberately
+// NOT served this payload - their importers reject the naive outbound type
+// - they get RenderBase64List instead.
 func RenderSingBox(nodes []Node) ([]byte, error) {
 	if len(nodes) == 0 {
 		return nil, errors.New("subscription: at least one node is required")

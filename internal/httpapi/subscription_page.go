@@ -260,7 +260,7 @@ func messagesForLanguage(lang string) accountMessages {
 			InactiveNotice: "Direct access is unavailable while this service is inactive.", SecurityFootnote: "Private account page — do not share publicly",
 			Overview: "Service overview", Connection: "Quick connection", ConnectionHint: "Choose the method that fits your client", HelpTitle: "Connect with Karing", PrivateBadge: "Private account",
 			SubscriptionHint: "Recommended for Karing: add this as a Subscription URL so future profile updates can be refreshed from the same link.", DirectHint: "Direct Naive is useful for one-off/manual imports.",
-			StepOne: "Install a client (Karing is recommended) on your device.", StepTwo: "Scan the Subscription QR, or copy the Subscription URL and add it as a profile.", StepThree: "Refresh the subscription, pick PV-AUTO (best server is chosen automatically), then connect.",
+			StepOne: "Install a client (Karing is recommended) on your device.", StepTwo: "Scan the Subscription QR, or copy the Subscription URL and add it as a profile.", StepThree: "Refresh the subscription, pick the fastest node (or enable your client's auto-select), then connect.",
 			HelpIntro:     "Two independent ways exist to connect. The Subscription QR keeps your client updated automatically; the Direct Naive QR adds the server manually without a subscription. Both work with a scan - no typing required.",
 			HelpTipsTitle: "If the connection fails",
 			HelpTips: []string{
@@ -271,11 +271,11 @@ func messagesForLanguage(lang string) accountMessages {
 				"Never share this page: anyone holding it can read your usage and connection details.",
 			},
 			HelpClients: []helpClient{
-				{Name: "Karing (Android / iOS / Windows / macOS) - recommended", Summary: "Modern sing-box client with native Naive support and automatic best-server switching.", Steps: []string{
+				{Name: "Karing (Android / iOS / Windows / macOS) - recommended", Summary: "Modern client with native Naive support.", Steps: []string{
 					"Install Karing from karing.app, Google Play or the App Store.",
 					"Tap '+', choose 'Scan QR code' and scan the Subscription QR on this page (or paste the Subscription URL).",
 					"Save the profile - it lands named PVNaive-<username> automatically.",
-					"Pick PV-AUTO so Karing keeps probing and always uses the fastest server, then connect.",
+					"Run Karing's latency test and keep the fastest PVNaive node selected, then connect.",
 				}},
 				{Name: "NekoBox / NekoRay (Android / PC)", Summary: "sing-box based client, full naive+https URI support.", Steps: []string{
 					"Groups, then New subscription, paste the Subscription URL and confirm.",
@@ -295,7 +295,7 @@ func messagesForLanguage(lang string) accountMessages {
 		InactiveNotice: "تا زمانی که سرویس غیرفعال است اتصال مستقیم در دسترس نیست.", SecurityFootnote: "صفحه خصوصی حساب — عمومی منتشر نکنید",
 		Overview: "نمای کلی سرویس", Connection: "اتصال سریع", ConnectionHint: "روش مناسب کلاینت خودت را انتخاب کن", HelpTitle: "راهنمای کامل اتصال", PrivateBadge: "حساب خصوصی",
 		SubscriptionHint: "روش پیشنهادی برای Karing: این لینک را به‌عنوان Subscription اضافه کن تا بروزرسانی‌های بعدی از همین لینک دریافت شوند.", DirectHint: "Direct Naive برای ورود دستی یا اتصال مستقیم قابل استفاده است.",
-		StepOne: "اول یک کلاینت نصب کن (پیشنهاد: Karing).", StepTwo: "QR لینک ساب را اسکن کن یا لینک ساب را کپی و به‌عنوان پروفایل اضافه کن.", StepThree: "ساب را Refresh کن، PV-AUTO را انتخاب کن (بهترین سرور خودکار انتخاب می‌شود) و اتصال را بزن.",
+		StepOne: "اول یک کلاینت نصب کن (پیشنهاد: Karing).", StepTwo: "QR لینک ساب را اسکن کن یا لینک ساب را کپی و به‌عنوان پروفایل اضافه کن.", StepThree: "ساب را Refresh کن، سریع‌ترین سرور را انتخاب کن (یا انتخاب خودکار کلاینت را روشن کن) و اتصال را بزن.",
 		HelpIntro:     "دو راه مستقل برای اتصال وجود دارد: QR ساب کلاینت را خودکار به‌روز نگه می‌دارد و QR مستقیم Naive سرور را بدون ساب اضافه می‌کند. هر دو فقط با اسکن کار می‌کنند و نیازی به تایپ نیست.",
 		HelpTipsTitle: "اگر اتصال برقرار نشد",
 		HelpTips: []string{
@@ -306,11 +306,11 @@ func messagesForLanguage(lang string) accountMessages {
 			"این صفحه را با کسی به اشتراک نگذار؛ هر کس لینک را داشته باشد مصرف و جزئیات اتصال تو را می‌بیند.",
 		},
 		HelpClients: []helpClient{
-			{Name: "Karing (اندروید / iOS / ویندوز / مک) — پیشنهادی", Summary: "کلاینت مدرن sing-box با پشتیبانی کامل Naive و سوییچ خودکار به بهترین سرور.", Steps: []string{
+			{Name: "Karing (اندروید / iOS / ویندوز / مک) — پیشنهادی", Summary: "کلاینت مدرن با پشتیبانی کامل Naive.", Steps: []string{
 				"Karing را از karing.app یا گوگل‌پلی / اپ‌استور نصب کن.",
 				"دکمه «+» را بزن، «اسکن کد QR» را انتخاب و QR لینک ساب همین صفحه را اسکن کن (یا لینک ساب را بچسبان).",
 				"پروفایل ذخیره می‌شود و به‌طور خودکار با نام PVNaive-<نام‌کاربری> ثبت می‌گردد.",
-				"PV-AUTO را انتخاب کن تا Karing همیشه سریع‌ترین سرور را پیدا و استفاده کند، بعد اتصال را بزن.",
+				"تست تأخیر داخل Karing را بزن و سریع‌ترین نود PVNaive را انتخاب کن، بعد اتصال را بزن.",
 			}},
 			{Name: "NekoBox / NekoRay (اندروید / کامپیوتر)", Summary: "کلاینت مبتنی بر sing-box با پشتیبانی کامل naive+https.", Steps: []string{
 				"Groups را باز کن، «New subscription» بساز، لینک ساب را بچسبان و تأیید کن.",

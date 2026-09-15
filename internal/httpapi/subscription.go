@@ -67,9 +67,9 @@ func (s *server) publicSubscription(w http.ResponseWriter, r *http.Request) {
 	if profile.Node != nil {
 		nodes = append(nodes, *profile.Node)
 		// Multi-server auto-switch: healthy, in-sync pool nodes join the
-		// rendered profile right after the primary. sing-box/Karing gets a
-		// urltest group that probes every node and sticks to the fastest;
-		// Mihomo gets PV-AUTO (url-test) via the provider payload.
+		// rendered profile right after the primary. The sing-box JSON gets
+		// a urltest group and Mihomo gets PV-AUTO (url-test) via the
+		// provider payload; Karing/NekoBox render base64 link lists.
 		nodes = append(nodes, s.fleetSubscriptionNodes(r.Context(), *profile.Node)...)
 	}
 	opts, err := s.renderOptions(r, token)
