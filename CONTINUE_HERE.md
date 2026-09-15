@@ -1,10 +1,10 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-15 09:42 Asia/Tehran
+Verified checkpoint: 2026-09-15 10:55 Asia/Tehran
 
 ## GitHub truth
 
-- Verified pre-docs main: `d85fbace33efc09299a656692adc0978543d0d81`; CI `34927848620` SUCCESS.
+- Current main: `4871a39f3602574f0aeaab1328d192d4a555ed12`; CI `34935830963` SUCCESS.
 - Fresh exact-main worker validation: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS.
 - #101 is the only open PR: DRAFT, stale head `669139263...`, currently mergeable by GitHub mechanics but acceptance-blocked. Reconcile minimally to current main, rerun exact-head gates, then real Karing import → parse → CONNECT → cleanup/revoke. Never reuse historical CI for merge.
 - #114: basic real two-node mTLS pull proof is retained; remaining gate is certificate overlap/rotation + explicit revocation/replay/fail-closed lifecycle proof.
@@ -35,3 +35,5 @@ Verified checkpoint: 2026-09-15 09:42 Asia/Tehran
 ## Latest actions
 
 Current main/PR/CI/device state and persistent worker reports were inspected. The old Task36 security report is partial historical evidence, not a new completion. #101 and #114 instructions were refreshed in GitHub. Production remained untouched.
+
+- 10:55: exact main `4871a39...` CI `34935830963` SUCCESS; independent Go/Web/build rerun PASS. Continue #120/#114/#115 while Production Primary remains disconnected.

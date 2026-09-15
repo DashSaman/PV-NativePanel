@@ -1,10 +1,10 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-15 09:42 Asia/Tehran
+Checkpoint: 2026-09-15 10:55 Asia/Tehran
 
 ## Verified baseline
 
-- Verified pre-docs main: `d85fbace33efc09299a656692adc0978543d0d81`; CI `34927848620` SUCCESS.
+- Current main: `4871a39f3602574f0aeaab1328d192d4a555ed12`; CI `34935830963` SUCCESS.
 - Independent exact-main worker gates: gofmt clean; `go vet ./...` PASS; `go test ./...` PASS; Web 23/23 files / 117/117 tests PASS; production build PASS.
 - Task13 #108 remains accepted with target-only HTTP/1.1+HTTP/2 kill and exactly-once accounting.
 - R8 monitoring/race fixes are integrated.
@@ -40,3 +40,5 @@ Checkpoint: 2026-09-15 09:42 Asia/Tehran
 - Historical Task36 report remains partial/stale and was not promoted to completed truth.
 - Refreshed #101 and #114 worker instructions in GitHub against current main.
 - Production untouched; no deploy/migration/restart/Caddy/DB/credential/backup/rollback mutation.
+
+- Fresh 10:55 exact-main rerun: gofmt clean, go vet/test PASS, Web 23/117 PASS, production build PASS; CI 34935830963 SUCCESS. GitHub worker instructions refreshed on #120/#114/#115/#100; Production remains untouched.

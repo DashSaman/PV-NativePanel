@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-15 09:42 (Asia/Tehran)
+Last updated: 2026-09-15 10:55 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Current `main`: `d85fbace33efc09299a656692adc0978543d0d81`; GitHub CI `34927848620` is terminal SUCCESS.
+- Current `main`: `4871a39f3602574f0aeaab1328d192d4a555ed12`; GitHub CI `34935830963` is terminal SUCCESS.
 - Fresh execution-worker validation on exact current main: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS.
 - Task13 #108 remains merged/accepted with target-only HTTP/1.1+HTTP/2 session kill and exactly-once final accounting.
 - R8 monitoring/race fixes are integrated.
@@ -35,9 +35,11 @@ Last updated: 2026-09-15 09:42 (Asia/Tehran)
 - Client compatibility claims require real-client evidence.
 - Production promotion order: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
 
-## Coordinator checkpoint — 2026-09-15 09:42 Asia/Tehran
+## Coordinator checkpoint — 2026-09-15 10:55 Asia/Tehran
 
 - `main` and CI are green as stated above; independent Go/Web/build gates were rerun successfully on the online execution worker.
 - Persistent worker reports were inspected; older Task36 security report is historical/partial and not treated as fresh completion evidence.
 - #101 and #114 worker instructions were refreshed in GitHub with exact current-main requirements and no-Production constraints.
 - Production remains untouched because the trusted Primary is disconnected.
+
+- 10:55 refresh: exact main 4871a39 has CI 34935830963 SUCCESS and independent Go/Web/build PASS. Worker queues refreshed on #120/#114/#115; #100 records Primary disconnected.
