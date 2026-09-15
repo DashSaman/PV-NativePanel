@@ -435,7 +435,7 @@ export function PoolManager({ principal: _principal }: Props) {
             <div className="runtime-section-title">
               <div><p className="eyebrow">فقط همین یک‌بار</p><h2>توکن ثبت‌نام «{tokenName.trim()}»</h2></div>
             </div>
-            <p className="runtime-muted">این توکن دوباره نمایش داده نمی‌شود؛ الان کپی کنید. انقضا: {new Date(issuedToken.expires_at).toLocaleString("en-GB", { hour12: false })}</p>
+            <p className="runtime-muted">این توکن دوباره نمایش داده نمی‌شود؛ الان کپی کنید. انقضا: {new Date(issuedToken.expires_at).toLocaleString("fa-IR")}</p>
             <code className="mono">{issuedToken.token}</code>
             <div className="secret-actions">
               <button className="primary-action" onClick={() => { void navigator.clipboard?.writeText(issuedToken.token); setToast({ kind: "success", text: "توکن در حافظه کپی شد." }); }}>کپی توکن</button>

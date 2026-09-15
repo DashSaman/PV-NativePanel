@@ -89,12 +89,13 @@ export function donutArc(cx: number, cy: number, r: number, a0: number, a1: numb
   return `M${start.x.toFixed(3)},${start.y.toFixed(3)} A${r},${r} 0 ${large} 1 ${end.x.toFixed(3)},${end.y.toFixed(3)}`;
 }
 
-// Chart numerals use Latin digits + JetBrains Mono (tabular) — the NOC
-// convention. Persian digits render in a fallback font (Vazirmatn) whose
-// metrics break mono axis labels; Latin digits keep tick columns aligned.
+// Chart numerals use Persian digits (fa-IR) — the whole panel is Persian and
+// mixing Latin dashboard KPIs with Persian labels was reported as a defect.
+// Axis labels render as HTML overlays (crisp, never stretched) so the mono
+// alignment constraint that forced Latin digits no longer applies.
 export const fmtNum = (value: number, digits = 0): string =>
   Number.isFinite(value)
-    ? value.toLocaleString("en-US", { maximumFractionDigits: digits })
+    ? value.toLocaleString("fa-IR", { maximumFractionDigits: digits })
     : "—";
 
 const faFormat = (value: number, digits = 0): string => fmtNum(value, digits);
@@ -169,37 +170,51 @@ export function LiveAreaChart({ series, height = 190, formatValue = (n) => faFor
 
   const count = Math.max(1, ...series.map((s) => s.values.length - 1), 1);
 
+  // Geometry (grid/area/lines) lives in a stretch-scaled SVG; every TEXT label
+  // renders as an HTML overlay positioned in percentages. Mixing text into a
+  // preserveAspectRatio="none" SVG horizontally stretched the numerals —
+  // reported as “deformed numbers” on the traffic chart. HTML labels stay
+  // crisp at any width and let Persian digits render with the body font.
   return (
-    <svg className="monitor-chart" width="100%" height={height} viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none" role="img" aria-label={ariaLabel}>
-      <defs>
-        {series.map((s, i) => (
-          <linearGradient key={s.name} id={`mgrad-${stableId(ariaLabel)}-${i}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={s.color} stopOpacity="0.45" />
-            <stop offset="55%" stopColor={s.color} stopOpacity="0.14" />
-            <stop offset="100%" stopColor={s.color} stopOpacity="0.03" />
-          </linearGradient>
+    <div className="monitor-chart" role="img" aria-label={ariaLabel}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          {series.map((s, i) => (
+            <linearGradient key={s.name} id={`mgrad-${stableId(ariaLabel)}-${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={s.color} stopOpacity="0.45" />
+              <stop offset="55%" stopColor={s.color} stopOpacity="0.14" />
+              <stop offset="100%" stopColor={s.color} stopOpacity="0.03" />
+            </linearGradient>
+          ))}
+        </defs>
+        {ticks.map((t) => {
+          const y = padTop + plotH - (t / max) * plotH;
+          return <line key={t} x1="0" x2={width} y1={y} y2={y} className="monitor-grid" />;
+        })}
+        <line x1={width - 0.5} x2={width - 0.5} y1={padTop} y2={padTop + plotH} className="monitor-cursor" vectorEffect="non-scaling-stroke" />
+        {paths.map((path) => <path key={`a-${path.key}`} d={path.area} fill={`url(#mgrad-${stableId(ariaLabel)}-${path.gradientIndex})`} stroke="none" />)}
+        {paths.map((path) => (
+          <path key={`h-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="7" opacity="0.16"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" className="monitor-line-halo" />
         ))}
-      </defs>
-      {ticks.map((t) => {
-        const y = padTop + plotH - (t / max) * plotH;
-        return (
-          <g key={t}>
-            <line x1="0" x2={width} y1={y} y2={y} className="monitor-grid" />
-            <text x={width - 2} y={y - 2.5} className="monitor-tick" textAnchor="end">{formatValue(t)}</text>
-          </g>
-        );
-      })}
-      <line x1={width - 0.5} x2={width - 0.5} y1={padTop} y2={padTop + plotH} className="monitor-cursor" vectorEffect="non-scaling-stroke" />
-      {paths.map((path) => <path key={`a-${path.key}`} d={path.area} fill={`url(#mgrad-${stableId(ariaLabel)}-${path.gradientIndex})`} stroke="none" />)}
-      {paths.map((path) => (
-        <path key={`l-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="2.25"
-          vectorEffect="non-scaling-stroke" strokeLinecap="round" className="monitor-line" />
-      ))}
-      <line x1="0" x2={width} y1={padTop + plotH} y2={padTop + plotH} className="monitor-axis" />
-      <text x="1" y={height - 4} className="monitor-tick" textAnchor="start">−{faFormat(count)}s</text>
-      <text x={width - 1} y={height - 4} className="monitor-tick" textAnchor="end">اکنون</text>
-    </svg>
+        {paths.map((path) => (
+          <path key={`l-${path.key}`} d={path.line} fill="none" stroke={path.color} strokeWidth="2.25"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" className="monitor-line" />
+        ))}
+        <line x1="0" x2={width} y1={padTop + plotH} y2={padTop + plotH} className="monitor-axis" />
+      </svg>
+      <div className="monitor-ylabels" aria-hidden="true">
+        {ticks.map((t) => {
+          const yPct = ((padTop + plotH - (t / max) * plotH) / height) * 100;
+          return <span key={t} className="monitor-ylabel" style={{ top: `${yPct}%` }}>{formatValue(t)}</span>;
+        })}
+      </div>
+      <div className="monitor-xlabels" aria-hidden="true">
+        <span className="monitor-xlabel">{faFormat(count)} ثانیه قبل</span>
+        <span className="monitor-xlabel">اکنون</span>
+      </div>
+    </div>
   );
 }
 

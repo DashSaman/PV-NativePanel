@@ -28,9 +28,10 @@
   background:linear-gradient(165deg,var(--surface-glass),color-mix(in srgb,var(--surface-2) 88%,transparent));
   backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);
   border:1px solid var(--border-strong);
-  box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous);
-  transition:transform .25s ease,box-shadow .25s ease;
+  box-shadow:var(--shadow-2),0 42px 120px -32px color-mix(in srgb,var(--accent) 14%,transparent),inset 0 1px 0 var(--border-luminous),inset 0 -22px 46px -30px rgba(0,0,0,.55);
+  transition:transform .3s ease,box-shadow .3s ease;
 }
+.login-card:hover{transform:perspective(1200px) rotateX(1.4deg) translateY(-3px)}
 .login-card::before{content:"";position:absolute;top:0;right:0;left:0;height:1px;z-index:2;
   background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 60%,transparent),color-mix(in srgb,var(--accent-2) 42%,transparent),transparent);opacity:.8}
 
@@ -48,7 +49,9 @@
 .login-hero-glow{position:absolute;width:210px;height:210px;border-radius:50%;left:-70px;bottom:-80px;
   background:radial-gradient(circle,color-mix(in srgb,var(--accent) 16%,transparent),transparent 70%);pointer-events:none}
 .login-hero-mark{border-radius:18px;filter:drop-shadow(0 8px 26px color-mix(in srgb,var(--accent) 32%,transparent));
-  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);background:rgba(5,7,12,.35)}
+  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);background:rgba(5,7,12,.35);
+  animation:heroFloat 7s ease-in-out infinite}
+@keyframes heroFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(-1.4deg)}}
 .login-hero-title{font-size:26px;font-weight:800;letter-spacing:.2px;margin-top:6px;
   background:linear-gradient(180deg,#fbfdff 15%,#ffc95e 90%);
   -webkit-background-clip:text;background-clip:text;color:transparent}
@@ -116,4 +119,5 @@
 @media(prefers-reduced-motion:reduce){
   .login-card,.login-input-wrap,.login-input-icon{transition:none}
   .login-card:hover{transform:none}
+  .login-hero-mark{animation:none}
 }

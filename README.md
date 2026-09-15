@@ -4,9 +4,9 @@
   <img src="web/public/private-network.webp" alt="Private Network" width="120" />
 </p>
 
-**PVNaive** is a production-grade management panel for **NaiveProxy**, built as a single Go binary with an embedded Caddy forward-proxy, PostgreSQL 18, and a React (Vite + TypeScript) control panel served under `/panel/`. It manages customers, quota/validity, subscriptions with QR delivery, live server telemetry, a node pool, and role-based administration — designed, documented and tested for public deployment.
+**PVNaive** is a production-grade management panel for **NaiveProxy**, built as a single Go binary with an embedded Caddy forward-proxy, PostgreSQL 18, and a React (Vite + TypeScript) control panel served under `/panel/`. It manages customers, quota/validity, subscriptions with dual QR delivery, live server telemetry, a node pool with automatic best-server switching, and role-based administration.
 
-> Status: **live at `https://naive.softarg.ir/panel/`** · Go + Web test suites green · schema v33
+> Status: **live at `https://naive.softarg.ir/panel/`** · Go + Web (117) test suites green · schema v34 · [نسخه فارسی](README.fa.md)
 
 <p align="center">
   <img src="docs/screenshots/login.png" width="45%" alt="Login" />
@@ -17,242 +17,159 @@
 
 ## Table of contents
 
-1. [Feature overview](#feature-overview)
-2. [Quick start (Docker)](#quick-start-docker)
+1. [One-line install on any fresh server](#one-line-install)
+2. [Requirements](#requirements)
 3. [Panel guide — every page and button](#panel-guide)
 4. [Subscriptions & QR delivery](#subscriptions--qr-delivery)
-5. [Connecting clients (Karing, v2rayNG, …)](#connecting-clients)
-6. [Architecture](#architecture)
-7. [Security model](#security-model)
-8. [Tests & deployment](#tests--deployment)
-9. [Roadmap — done vs. remaining](#roadmap)
-10. [Design credits](#design-credits)
+5. [Connecting clients (Karing / NekoBox / NekoRay)](#connecting-clients)
+6. [Adding a node & automatic best-server switching](#adding-a-node)
+7. [Architecture](#architecture)
+8. [Security model](#security-model)
+9. [Tests & deployment](#tests--deployment)
+10. [Roadmap](#roadmap)
 
 ---
 
-## Feature overview
+## One-line install
 
-- **Native NaiveProxy**: Caddy `forward_proxy` on :443 with `probe_resistance`, `hide_ip`, `hide_via`; per-customer HTTP basic credentials reconciled straight from the database.
-- **Customer lifecycle**: create, edit, suspend/resume, revoke (safe soft-delete), volume add/set, extend, renew, next-plan, reset usage — all explicit, audited, capability-gated.
-- **Dual QR delivery**: every customer gets a **subscription QR** (auto-updating client profile) **and** a **direct `naive+https://` QR** (manual, subscription-free import).
-- **Bilingual account page** (`/s/<token>`): usage, quota, expiry, both QRs, and a complete per-client connection guide in Persian and English.
-- **Content negotiation**: `/sub/<token>` renders raw `naive+https://`, sing-box JSON (Karing), Clash/Mihomo YAML, Hiddify and base64 v2ray lists from the same token via User-Agent detection (or `?family=` override).
-- **Live telemetry**: SSE stream (`/api/v1/system/stream`, 1 s ticks) with CPU/RAM/disk gauges, live network rates from server-side counter deltas, load/uptime — polling fallback keeps data honest if the stream drops.
-- **Node pool**: enroll additional nodes with tokens, publish signed manifests, drift/maintenance view (R5 mTLS fleet).
-- **Roles**: owner / admin / reseller / operator / auditor with tenant isolation and reseller credit ledger.
-- **Security**: `__Host-` session cookies, CSRF, optional TOTP MFA, AES-GCM encrypted subscription secrets, append-only accounting ledgers, audit events, per-request security logs.
-- **Theme**: "Private Gold on Midnight Glass" — dark glassmorphism (Vazirmatn + JetBrains Mono), system-following light/dark, RTL-first.
-
----
-
-## Quick start (Docker)
+Run this on any fresh Ubuntu/Debian server (replace `panel.example.com` with your DNS name):
 
 ```bash
-git clone https://github.com/DashSaman/PV-NativePanel.git
-cd PV-NativePanel/docker
-
-PVNAIVE_DOMAIN=naive.example.com \
-PVNAIVE_PROXY_USER=pvbootstrap \
-PVNAIVE_PROXY_PASSWORD='pick-a-strong-secret' \
-PVNAIVE_OWNER_EMAIL=admin@example.com \
-PVNAIVE_OWNER_PASSWORD='pick-an-owner-password' \
-bash install.sh
+PVNAIVE_DOMAIN=panel.example.com bash <(curl -fsSL https://raw.githubusercontent.com/DashSaman/PV-NativePanel/main/docker/install.sh)
 ```
 
-- Panel: `https://<your-domain>/panel/`
-- Account page: `https://<your-domain>/s/<token>`
-- Machine subscription: `https://<your-domain>/sub/<token>`
-- The persisted Caddyfile lives in `./data/caddy/Caddyfile` and survives recreation; hashed panel assets are served `immutable`, `index.html` is `no-cache` so updates reach users immediately.
-- `PVNAIVE_NAIVE_PUBLIC_HOST` (host:443) controls the host used inside every subscription/direct link and QR payload.
+The installer clones the repository, generates strong secrets, builds the Docker image, starts the stack and prints the panel URL, owner credentials and a ready-to-use `naive+https://` bootstrap account. Secrets persist in `data/.env` (mode 0600); re-running the command upgrades an existing installation in place (forward-only checksum-verified migrations).
+
+Optional overrides: `PVNAIVE_BRANCH`, `PVNAIVE_OWNER_EMAIL`, `PVNAIVE_OWNER_PASSWORD`, `PVNAIVE_PROXY_USER`, `PVNAIVE_PROXY_PASSWORD`, `PVNAIVE_INSTALL_DIR`, `PVNAIVE_DATA_DIR`.
+
+## Requirements
+
+- Ubuntu 20.04+ / Debian 11+, 1 GB RAM minimum, root access.
+- Docker + Compose v2 (`curl -fsSL https://get.docker.com | sh`).
+- Ports **80** and **443** free.
+- A DNS `A` record pointing to the server (for a valid Let's Encrypt certificate). Without a domain the installer falls back to the server IP with a self-signed certificate.
 
 ---
 
 ## Panel guide
 
-### ورود / Login — `#/login`
-
-| Element | What it does |
+| Page | What it does |
 | --- | --- |
-| Email + Password fields | Hidden until hovered/focused ("stealth" reveal) — shoulder-surfing protection. |
-| ورود امن | Issues `__Host-pvnaive_session` (HttpOnly, Secure) + CSRF cookie. |
-| Brand tile | Gold Private Network mark, shared with the favicon. |
-
-### داشبورد / Dashboard — `/`
-
-- **KPI cards** — کل کاربران، کاربران فعال، پلن‌ها، نیازمند توجه. Each card is a real count from the database; the active/attention cards show share-of-total bars.
-- **توزیع سرویس‌ها (donut)** — active / pending-first-connection / suspended / ended split, with percentage legend. Pure SVG, no chart library.
-- **۷ روز آینده / ۳۰ روز آینده** — accounts expiring in the next 7/30 days.
-- **مانیتورینگ زنده سرور** — live console fed by the SSE stream:
-  - **زنده · هر ۱ ثانیه** pill — green = streaming, amber = polling fallback (5 s) if the stream drops; auto-retries every 10 s.
-  - **Telemetry / Runtime / DB / API: OK** chips — server dependency health.
-  - **Gauges** — پردازنده / حافظه / دیسک with threshold colors (green < 75 %, amber < 90 %, red ≥ 90 %).
-  - **آپ‌تایم سرور** + Load 1/5/15 + interface + traffic semantics, all in tabular mono numerals.
-  - **ترافیک شبکه** — live RX/TX area chart (90-sample window) with a "now" cursor; rates are computed server-side from counter deltas, never guessed in the browser.
-- **پشتیبانی / خروج امن / مدیریت روزمره** — support shortcut, secure logout, and daily-management jump links.
-
-<p align="center"><img src="docs/screenshots/dashboard.png" width="80%" alt="Dashboard" /></p>
-<p align="center"><img src="docs/screenshots/monitoring.png" width="80%" alt="Live monitoring console" /></p>
-
-### کاربران / Customers — `#/customers`
-
-- **کاربر جدید** — create account: username, حجمی/نامحدود quota, validity mode (**از همین حالا / از اولین اتصال موفق / تاریخ دستی**), auto-generated password (shown once).
-- **Search + فیلترهای پیشرفته** — by plan, status, expiry range, unlimited volume/expiry, reseller, group, tag.
-- **Bulk bar** — appears when rows are selected: تعلیق، فعال‌سازی، Revoke، افزایش حجم، Set حجم، تمدید، اعمال پلن، تغییر گروه/تگ، Reissue subscription، Reset مصرف.
-- **Row actions (••• menu)** — per customer:
-  - **ویرایش مشخصات** — edit metadata/display profile (read-only-safe).
-  - **تمدید سرویس** — extend by N days or renew from plan.
-  - **اشتراک و QR** — opens the [dual-QR delivery dialog](#subscriptions--qr-delivery); strictly read-only.
-  - **تغییر رمز** — explicit password rotation (auto-generate or custom ≥ 12 chars); never a side effect of viewing.
-  - **صدور لینک جدید** — explicit subscription reissue with warning; invalidates the old token only.
-  - **Reset مصرف** — resets usage after exact accounting is proven for the term.
-  - **نشست‌های فعال** — live sessions per customer with per-session kill (exact-session kill control).
-  - **لغو حساب** — safe revoke: revokes runtime credential, keeps history, fully audited.
-
-<p align="center"><img src="docs/screenshots/customers.png" width="80%" alt="Customers" /></p>
-
-### پلن‌ها و دسته‌بندی / Catalog — `#/catalog`
-
-- Tabs for **پلن‌ها / گروه‌ها / تگ‌ها**; the plan editor appears only when **پلن جدید** is requested (no clutter).
-- Plan fields: quota GB, duration days, unlimited variants, **اتصال همزمان (concurrency limit)** enforcement, next-plan chaining, on-hold policy.
-
-<p align="center"><img src="docs/screenshots/catalog.png" width="80%" alt="Plan catalog" /></p>
-
-### سیستم / Runtime — `#/runtime/naive`
-
-- Live view of every runtime credential: origin (panel/import), status, revision.
-- **Import** existing naive credentials, **create**, and **rotate password**; every change produces a runtime **revision** you can **apply/validate/rollback**.
-- Reconciliation guarantee: the Caddy `basic_auth` block always mirrors database truth.
-
-<p align="center"><img src="docs/screenshots/runtime.png" width="80%" alt="Runtime credentials" /></p>
-
-### استخر گره‌ها / Pool — `#/pool`
-
-- Stats row (total / in-sync / pending / draining), node table with health, capacity weight and last-seen.
-- **Enrollment tokens** (shown once), signed manifest per node, **maintenance mode**, revision publishing with drift explanation.
-
-<p align="center"><img src="docs/screenshots/pool.png" width="80%" alt="Node pool" /></p>
-
-### امنیت و حساب / Security — `#/settings/security`
-
-- Change own password, enroll/remove TOTP MFA (with recovery codes), view & revoke active sessions, panel-access policy.
-
-<p align="center"><img src="docs/screenshots/security.png" width="80%" alt="Security settings" /></p>
+| **Login** `#/login` | "Gold Reception" split card: brand hero with floating 3D mark, always-visible email/password fields with icons and gold focus rings, optional TOTP, show/hide password. |
+| **Dashboard** `/` | KPI cards (perspective hover), service-distribution donut, 7/30-day expiry outlook, **live server console** — CPU/RAM/disk gauges (center = percent, chip below = real usage), live network chart with crisp HTML labels, uptime/load. All numerals are Persian digits. |
+| **Customers** `#/customers` | Create/edit/suspend/revoke, quota add/set, renew, next plan, reset usage, active sessions, dual-QR dialog, bulk operations, advanced filters. |
+| **Catalog** `#/catalog` | Plans / groups / tags with concurrency limits and start policies. |
+| **Runtime** `#/runtime/naive` | Live runtime credentials, import/rotate with validate/apply/rollback revisions; the Caddy `basic_auth` block always mirrors the database. Abandoned-reservation reconciler keeps connectivity after unclean restarts. |
+| **Pool** `#/pool` | Node inventory with health/sync state, one-time enrollment tokens, signed manifests, maintenance mode, revision publishing. |
+| **Security** `#/settings/security` | Own password, MFA-TOTP with recovery codes, active sessions with per-session kill. |
 
 ---
 
 ## Subscriptions & QR delivery
 
-Every customer carries one subscription token rendered three ways:
-
-| Endpoint | Audience | Behaviour |
+| Path | Audience | Behavior |
 | --- | --- | --- |
-| `/sub/<token>` | Machine clients | Content-negotiated: `naive+https://` (default), sing-box JSON (Karing UA), Clash/Mihomo YAML, Hiddify, base64 v2ray. `?family=` overrides. |
-| `/s/<token>` | Humans | Read-only account page: usage, quota, expiry, both QRs, full connection guide (FA/EN switch). |
-| Panel dialog | Owner | Same data, dual QR, copy buttons — opening it never mutates anything. |
+| `/sub/<token>` | Clients | Machine output negotiated by User-Agent: raw naive, sing-box JSON (Karing), Clash/Mihomo YAML, base64 v2ray. **Opening it in a browser now redirects to the account page instead of downloading a file.** `?family=` forces a format. |
+| `/s/<token>` | Humans | Read-only account page: usage, quota, expiry, both QRs, full connection guide (FA/EN). |
+| Panel dialog | Owner | Same data with both QRs and copy buttons — strictly read-only. |
 
-<p align="center"><img src="docs/screenshots/qr-delivery.png" width="75%" alt="Dual QR delivery" /></p>
-
-**Two independent connection paths — both QR-only:**
-
-1. **Subscription QR** — client keeps a live profile; quota/password/token changes propagate on refresh.
-2. **Direct Naive QR** (`naive+https://user:pass@host:443`) — manual import with zero subscription; ideal for quick tests.
-
-<p align="center"><img src="docs/screenshots/account-page.png" width="80%" alt="Account page with dual QR" /></p>
+The client profile is auto-named `PVNaive-<username>` (URI fragment + filename + sing-box tag), so scanning the QR in Karing fills the remark automatically.
 
 ---
 
 ## Connecting clients
 
-The account page ships a complete bilingual guide. Supported clients: **Karing** (recommended) and **NekoBox / NekoRay**.
+Supported and verified clients: **Karing** (recommended) and **NekoBox / NekoRay**.
 
-| Client | Platform | Fastest import |
+| Client | Platform | Fastest path |
 | --- | --- | --- |
-| **Karing** (recommended) | Android / iOS / Windows / macOS | “+” → Scan QR → scan the subscription QR — the profile is named `PVNaive-<username>` automatically |
-| NekoBox / NekoRay | Android / PC | Group → new subscription, or clipboard import of `naive+https://` |
+| **Karing** (recommended) | Android / iOS / Windows / macOS | "+" → scan the subscription QR — profile is imported as `PVNaive-<username>` |
+| NekoBox / NekoRay | Android / Desktop | New subscription group, or import the `naive+https://` URI from clipboard |
 
-**Automatic best-server switching:** every rendered profile carries a `PV-AUTO` url-test group. All healthy, in-sync **pool nodes** (پنل ← استخر گره‌ها) join the subscription automatically, the client probes them every 5 min (50 ms tolerance) and always uses the fastest one — no manual switching needed.
+---
 
-Troubleshooting tips (rendered on the page): status flips to **فعال / آنلاین** after a successful connect; refresh the subscription after quota/password changes; depleted/expired accounts cannot connect; if all else fails use the Direct Naive QR.
+## Adding a node
 
-<p align="center"><img src="docs/screenshots/account-guide.png" width="80%" alt="Step-by-step connection guide on the account page" /></p>
+1. **Install the second server exactly like the first** — same one-line command with that server's domain/IP.
+2. In the main panel open `#/pool` → **issue an enrollment token** (shown once).
+3. Enroll the node (name + token + service address). The panel replicates runtime credentials to the node and publishes a signed manifest.
+4. Wait for the node row to turn **healthy and in sync (Applied = Desired)**; leave maintenance mode.
+5. Every client subscription refresh now includes all healthy pool nodes: Karing/sing-box get a **`PV-AUTO` urltest group** probing every node every 5 minutes (50 ms tolerance) and always using the fastest; Mihomo gets the same via its proxy-provider (hot updates every 4 h). Removing or draining a node is transparent to users.
 
 ---
 
 ## Architecture
 
 ```
-┌────────────────────────── pvnaive container ──────────────────────────┐
-│  React panel (/panel)   Go API (:8080)   Caddy (:80/:443)             │
-│   ├─ Vite build          ├─ /api/v1/*       ├─ TLS (Let's Encrypt)    │
-│   ├─ RTL glass theme     ├─ SSE stream      ├─ forward_proxy (naive)  │
-│   └─ local QR encoder    ├─ RBAC roles      ├─ /sub, /s, /panel       │
-│                          ├─ accounting      └─ accounting socket ◄────┤
-│                          └─ fleet/pool mTLS        exact byte counters│
-│  PostgreSQL 18 (schema v33, forward-only migrations, encrypted backups)│
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────── pvnaive container ─────────────────────────────┐
+│  React panel (/panel)     Go API (:8080)     Caddy (:80/:443)          │
+│   ├─ Vite build           ├─ /api/v1/*        ├─ TLS (Let's Encrypt)    │
+│   ├─ RTL glass theme      ├─ SSE stream       ├─ forward_proxy (naive)  │
+│   └─ local QR encoder     ├─ RBAC             ├─ /sub /s /panel         │
+│                           ├─ accounting       └─ accounting socket ◄──┤ │
+│                           └─ fleet/pool mTLS       exact byte counting │
+│  PostgreSQL 18 (schema v34, forward-only migrations, encrypted backups)│
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Accounting** is append-only: per-credential upload/download, restart-safe baselines, audited resets. Hard quota enforcement is gated behind exact-accounting proof; until proven, the UI shows an explicit *unavailable* state instead of inventing numbers.
-- **First-use validity** starts only on a proven authenticated CONNECT — never on panel views, QR reads, or subscription fetches.
-- **Steering / cover** (R6, default-off) and **fleet mTLS pull** (R5) are wired and feature-flagged.
+- **Exact byte accounting** per credential/session with restart-resilient baselines and audited resets; the migration-0034 availability gate blocks only on live pending reservations, and a periodic reconciler releases abandoned ones (crash-safe).
+- **First-connection validity** starts only on an authenticated CONNECT — never by opening the panel or reading a QR.
+- **Steering / cover site** (default off) and **fleet mTLS pull** are wired.
 
 ---
 
 ## Security model
 
-- Sessions: `__Host-pvnaive_session` (HttpOnly/Secure/SameSite) + CSRF token; hashed user-agent binding; MFA (TOTP + recovery codes).
-- Secrets: runtime passwords AES-GCM encrypted at rest (`runtime-v1` key); subscription tokens stored as SHA-256 hashes; generated passwords shown exactly once.
-- Read-only operations (view QR, copy links, details) are provably non-mutating — contract-tested.
-- Audit trail for every lifecycle action; security log with per-request IDs; diagnostics bundles.
-- The `/s/` page is private-by-obscurity with `noindex` and a public-sharing warning.
+- Sessions: `__Host-pvnaive_session` + CSRF, UA-bound; optional MFA (TOTP + recovery codes).
+- Secrets: runtime credentials AES-GCM encrypted; subscription tokens stored as SHA-256; generated passwords shown once.
+- Read-only operations (viewing QRs, copying links) are contract-tested to mutate nothing.
+- `/s/` is private: `noindex` + locked-down headers.
 
 ---
 
 ## Tests & deployment
 
 ```bash
-# Go (unit + contract + subscription rendering + concurrency)
+# Go tests
 go test ./...
 
-# Web (115 tests: geometry, API contracts, QR encoding, UI contracts)
+# Web tests (117)
 cd web && npx vitest run
 
-# Production build (Go binary + web dist + pinned accounting Caddy)
-bash /root/pvnaive-fin3-build.sh   # clones GitHub main, builds image pvnaive:repo-fin3-<ts>
-bash /root/pvnaive-fin3-deploy.sh  # DB dump → image swap → health checks
+# One-line install/upgrade on any server
+PVNAIVE_DOMAIN=panel.example.com bash <(curl -fsSL https://raw.githubusercontent.com/DashSaman/PV-NativePanel/main/docker/install.sh)
 ```
 
-Deployment invariants: DB backup before every deploy; schema migrations forward-only; runtime credentials reconciled from DB truth on boot; health probe `GET /api/v1/health/ready`.
+Deployment rules: full database backup before every deploy; forward-only checksum-verified migrations; credentials reconciled from the database at boot; `GET /api/v1/health/ready` probe gates traffic.
 
 ---
 
 ## Roadmap
 
-### Shipped ✅
+### Done
 
 | Area | Delivered |
 | --- | --- |
-| Domain | `naive.softarg.ir` live (panel + subscriptions + TLS), IP fallback `45.141.148.59.nip.io` |
-| Theme | R10 "Private Gold on Midnight Glass": gold brand from Private Network logo, frosted glass, gold nav/buttons |
-| Chart typography | Latin-digit tabular mono on every gauge/axis/badge (fixes broken Persian-digit axis rendering) |
-| Dual QR | Subscription QR + direct `naive+https://` QR, prominent in panel and on `/s/` page |
-| Account page | Full FA/EN per-client connection guide + troubleshooting |
-| Cache hygiene | `index.html` no-cache, hashed assets immutable — no stale bundles after deploys |
-| Data hygiene | All test users/plans purged (35 users, 16 Test10GB plans, accounting rows); single clean `demo` customer |
-| Docs | This bilingual README with screenshots for every page |
+| Domain | `naive.softarg.ir` live (panel + subscriptions + TLS) |
+| Theme | "Private Gold on Midnight Glass" + dimensional depth: perspective hovers, living aurora, chart halos, floating login |
+| Numerals | Fully consistent Persian digits across every page (previously mixed) |
+| Charts | HTML axis labels (fixes stretched numerals), percent-centered gauges with usage chips |
+| `/sub/` in browsers | Redirects to the account page instead of downloading |
+| Connectivity | Abandoned-reservation reconciler (v34) — crashes no longer brick users |
+| Auto profile naming | `PVNaive-<username>` in URI, filename and sing-box tags |
+| One-line installer | `install.sh` — auto clone, secrets, build, health check |
+| Auto best-server | Healthy pool nodes join subscriptions; `PV-AUTO` picks the fastest |
 
-### In progress / next 🔜
+### Remaining
 
-| Area | Remaining |
+| Area | Item |
 | --- | --- |
-| Named-client evidence (#120/#101) | Real disposable Karing import → parse → CONNECT acceptance on exact main |
-| Pool PKI (#114) | Certificate overlap/rotation + revocation/replay fail-closed proofs |
-| R6-FLIP (#115) | Cover/persona rehearsal before enabling by default |
-| Production promotion (#100) | Fresh audit + backup/rollback gates on the trusted primary |
-| Reseller storefront | Public purchase flow on top of the reseller ledger |
+| Pool PKI | certificate rotation and fail-closed revocation |
+| R6-FLIP | cover/persona pipeline before default-on |
+| Reseller shop | public purchase flow on the reseller ledger |
 
 ---
 
 ## Design credits
 
-Visual methodology (glass surfaces, gold accent system, typography pairing, chart color separation) follows the open **[ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** design-system dataset — Glassmorphism + Modern Dark profiles — adapted to Persian RTL with Vazirmatn and JetBrains Mono.
+The visual methodology (glass surfaces, dimensional layering, gold accent system, hover/tilt motion) follows the open-source **[ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** dataset — Glassmorphism, Dimensional Layering and Real-Time Monitoring profiles — adapted to RTL Persian with Vazirmatn and JetBrains Mono.

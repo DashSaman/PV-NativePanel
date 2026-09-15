@@ -110,15 +110,16 @@ export function dependencyEntries(dependencies: SystemDependencies): Array<{ lab
   ];
 }
 
-// Byte/rate/uptime strings appear inside mono, tabular contexts (gauge
-// captions, rate badges). Latin digits keep JetBrains Mono glyphs intact —
-// Persian digits would fall back to Vazirmatn and break the column rhythm.
+// Byte/rate/uptime strings are display values in a fully Persian panel —
+// they use fa-IR (Persian digits) so the monitor console matches every other
+// page. Unit symbols (GB/MB/s) stay Latin; unicode-bidi:plaintext in CSS
+// keeps the mixed-direction chips readable.
 export function formatBytes(value: number): string {
   if (!Number.isFinite(value) || value < 0) return "—";
-  if (value >= 1_073_741_824) return `${(value / 1_073_741_824).toLocaleString("en-US", { maximumFractionDigits: 2 })} GB`;
-  if (value >= 1_048_576) return `${(value / 1_048_576).toLocaleString("en-US", { maximumFractionDigits: 1 })} MB`;
-  if (value >= 1024) return `${(value / 1024).toLocaleString("en-US", { maximumFractionDigits: 1 })} KB`;
-  return `${value.toLocaleString("en-US")} B`;
+  if (value >= 1_073_741_824) return `${(value / 1_073_741_824).toLocaleString("fa-IR", { maximumFractionDigits: 2 })} GB`;
+  if (value >= 1_048_576) return `${(value / 1_048_576).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} MB`;
+  if (value >= 1024) return `${(value / 1024).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} KB`;
+  return `${value.toLocaleString("fa-IR")} B`;
 }
 
 export function formatRate(value: number, available: boolean): string {
@@ -130,9 +131,9 @@ export function formatUptime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "—";
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
-  if (days > 0) return `${days.toLocaleString("en-US")} روز ${hours.toLocaleString("en-US")} ساعت`;
+  if (days > 0) return `${days.toLocaleString("fa-IR")} روز ${hours.toLocaleString("fa-IR")} ساعت`;
   const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours.toLocaleString("en-US")} ساعت ${minutes.toLocaleString("en-US")} دقیقه`;
+  return `${hours.toLocaleString("fa-IR")} ساعت ${minutes.toLocaleString("fa-IR")} دقیقه`;
 }
 
 export async function fetchSystemStatus(fetcher: Fetcher = fetch): Promise<SystemStatus> {

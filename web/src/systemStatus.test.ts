@@ -76,4 +76,12 @@ describe("system status", () => {
     expect(uptime).toContain("روز");
     expect(uptime).not.toBe("—");
   });
+
+  it("formats monitor values with Persian digits like every other page", () => {
+    expect(formatBytes(1_073_741_824)).toBe("۱ GB");
+    expect(formatBytes(2_147_483_648)).toBe("۲ GB");
+    const rate = formatRate(1024, true);
+    expect(rate).toContain("۱");
+    expect(rate).toContain("KB/s");
+  });
 });

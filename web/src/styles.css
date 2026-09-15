@@ -90,6 +90,21 @@ body{
     var(--bg);
   background-attachment:fixed;
 }
+/* Living aurora layer (ui-ux-pro-max: Glassmorphism needs a luminous,
+   slowly-moving backdrop so the frosted surfaces have depth to refract). */
+body::before{
+  content:"";position:fixed;inset:-22%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(640px 460px at 24% 28%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 70%),
+    radial-gradient(760px 540px at 78% 62%,color-mix(in srgb,var(--blue) 9%,transparent),transparent 72%),
+    radial-gradient(540px 460px at 58% 18%,color-mix(in srgb,var(--accent-2) 6%,transparent),transparent 70%);
+  filter:blur(34px);
+  animation:auroraDrift 28s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift{
+  from{transform:translate3d(-2.2%,-1.4%,0) scale(1)}
+  to{transform:translate3d(2.4%,2%,0) scale(1.07)}
+}
 a{color:inherit;text-decoration:none}
 button,a{touch-action:manipulation}
 button,input,select,textarea{font:inherit}
@@ -136,7 +151,11 @@ button,input,select,textarea{font:inherit}
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 24%,transparent);
 }
 .nav-link.active::after{content:"";position:absolute;right:-14px;top:22%;bottom:22%;width:3px;border-radius:99px;background:linear-gradient(180deg,var(--accent),var(--accent-2));box-shadow:0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
-.nav-link.active b{color:var(--accent)}
+.nav-link.active b{color:var(--accent);animation:navGlow 2.8s ease-in-out infinite}
+@keyframes navGlow{
+  0%,100%{filter:drop-shadow(0 0 2px color-mix(in srgb,var(--accent) 42%,transparent))}
+  50%{filter:drop-shadow(0 0 9px color-mix(in srgb,var(--accent) 80%,transparent))}
+}
 .sidebar-footer{margin-top:auto;display:grid;gap:8px;padding-top:16px;border-top:1px solid var(--border)}
 .sidebar-footer small{display:block;color:var(--muted);font-size:10px;padding:6px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .theme-switch,.logout-button{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:40px;border:1px solid var(--border);background:transparent!important;color:var(--muted)!important;border-radius:var(--radius-s);padding:8px 11px!important;font-size:12px;box-shadow:none}
@@ -166,7 +185,16 @@ button{
   cursor:pointer;
   transition:transform .15s ease,filter .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease;
   box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 20%,transparent),inset 0 1px 0 rgba(255,255,255,.35);
+  position:relative;overflow:hidden;
 }
+/* Glossy sheen sweep — a glass glint crossing every action on hover. */
+button::after{
+  content:"";position:absolute;top:-2px;bottom:-2px;width:56%;right:-80%;
+  transform:skewX(-18deg);pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.24),transparent);
+  transition:right .5s cubic-bezier(.22,1,.36,1);
+}
+button:not(:disabled):hover::after{right:132%}
 button:not(:disabled):hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
 button:not(:disabled):active{transform:translateY(0);filter:brightness(.97)}
 button:disabled{cursor:not-allowed;opacity:.45}
@@ -226,7 +254,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .dashboard-kpis article:nth-child(2){animation-delay:.06s}
 .dashboard-kpis article:nth-child(3){animation-delay:.12s}
 .dashboard-kpis article:nth-child(4){animation-delay:.18s}
-.dashboard-kpis article:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 34%,var(--border));box-shadow:var(--shadow-2)}
+.dashboard-kpis article:hover{transform:perspective(900px) rotateX(2.5deg) translateY(-4px);border-color:color-mix(in srgb,var(--accent) 34%,var(--border));box-shadow:var(--shadow-2)}
 .dashboard-kpis article::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;left:-34px;bottom:-56px;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%);pointer-events:none}
 .kpi-symbol{
   width:46px;height:46px;display:grid;place-items:center;flex:0 0 46px;border-radius:13px;
@@ -268,7 +296,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .dashboard-card-head a{font-size:10px;color:var(--accent-soft);display:inline-flex;align-items:center;gap:4px;transition:gap .15s ease}
 .dashboard-card-head a:hover{gap:7px}
 .dashboard-card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
-.dashboard-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 26%,var(--border));box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous)}
+.dashboard-card:hover{transform:perspective(1000px) rotateX(1.6deg) translateY(-3px);border-color:color-mix(in srgb,var(--accent) 26%,var(--border));box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous)}
 .status-overview{display:grid;grid-template-columns:175px 1fr;gap:24px;align-items:center}
 .dashboard-donut{width:158px;height:158px;border-radius:50%;display:grid;place-items:center;position:relative;margin:auto;box-shadow:0 0 44px color-mix(in srgb,var(--accent) 9%,transparent),inset 0 0 24px rgba(0,0,0,.25)}
 .dashboard-donut:after{content:"";position:absolute;inset:18px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 2px 10px rgba(0,0,0,.3)}
@@ -342,4 +370,4 @@ button:disabled{cursor:not-allowed;opacity:.45}
   .dashboard-card{padding:15px}
 }
 @media(max-width:390px){.dashboard-kpis{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}body::before{animation:none}}

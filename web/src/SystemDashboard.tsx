@@ -137,14 +137,14 @@ export function SystemDashboard() {
     {error && <div className="system-warning" role="alert">{error} آخرین نمونه معتبر نگه داشته شده است.</div>}
 
     <div className="monitor-gauges">
-      <RadialGauge percent={sample.cpu_percent} label="پردازنده" valueText={percentText(sample.cpu_percent)} caption={`load ${fmtNum(sample.load_1, 2)}`} />
+      <RadialGauge percent={sample.cpu_percent} label="پردازنده" valueText={percentText(sample.cpu_percent)} caption={`بار سیستم ${fmtNum(sample.load_1, 2)}`} />
       <RadialGauge percent={sample.memory_used_percent} label="حافظه" valueText={percentText(sample.memory_used_percent)} caption={`${formatBytes(memoryUsedBytes)} / ${formatBytes(sample.memory_total_bytes)}`} />
       <RadialGauge percent={sample.disk_used_percent} label="دیسک" valueText={percentText(sample.disk_used_percent)} caption={`${formatBytes(diskUsedBytes)} / ${formatBytes(sample.disk_total_bytes)}`} />
       <div className="monitor-uptime">
         <span className="monitor-uptime-label">آپ‌تایم سرور</span>
         <strong>{formatUptime(sample.uptime_seconds)}</strong>
         <div className="monitor-uptime-meta">
-          <div><span>Load 1/5/15</span><b>{fmtNum(sample.load_1, 2)} · {fmtNum(sample.load_5, 2)} · {fmtNum(sample.load_15, 2)}</b></div>
+          <div><span>بار سیستم ۱/۵/۱۵</span><b>{fmtNum(sample.load_1, 2)} · {fmtNum(sample.load_5, 2)} · {fmtNum(sample.load_15, 2)}</b></div>
           <div><span>اینترفیس</span><b>{sample.network_interface || "—"}</b></div>
         </div>
       </div>
@@ -162,6 +162,6 @@ export function SystemDashboard() {
       <p className="monitor-net-note">{sample.rate_available ? `نرخ‌های واقعی سرور · پنجره ${fmtNum(sample.sample_window_seconds, 1)} ثانیه` : "نرخ‌های واقعی سرور"}</p>
     </div>
 
-    <p className="sample-meta">آخرین نمونه: {updatedAt?.toLocaleTimeString("en-GB", { hour12: false }) || "—"}</p>
+    <p className="sample-meta">آخرین نمونه: {updatedAt?.toLocaleTimeString("fa-IR", { hour12: false }) || "—"}</p>
   </section>;
 }

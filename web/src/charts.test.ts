@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSmoothPath,
+  fmtNum,
   donutArc,
   donutSegments,
   gaugeColor,
@@ -79,5 +80,14 @@ describe("monitoring chart math", () => {
     expect(arc).toContain("0 1");
     const bigArc = donutArc(60, 60, 40, 0, 200);
     expect(bigArc).toContain("1 1");
+  });
+});
+
+describe("Persian numeral formatting", () => {
+  it("renders all chart/dashboard numerals with Persian digits", () => {
+    expect(fmtNum(0)).toBe("۰");
+    expect(fmtNum(1234)).toBe("۱٬۲۳۴");
+    expect(fmtNum(70.5, 1)).toBe("۷۰٫۵");
+    expect(fmtNum(Number.NaN)).toBe("—");
   });
 });

@@ -30,22 +30,26 @@
 .monitor-gauge{
   position:relative;display:grid;justify-items:center;gap:6px;padding:14px 10px 12px;
   border:1px solid var(--border);border-radius:var(--radius-m);
-  background:linear-gradient(160deg,color-mix(in srgb,var(--surface) 86%,transparent),color-mix(in srgb,var(--surface-2) 92%,transparent));
+  background:
+    radial-gradient(130px 90px at 50% 8%,rgba(255,255,255,.055),transparent 62%),
+    linear-gradient(160deg,color-mix(in srgb,var(--surface) 86%,transparent),color-mix(in srgb,var(--surface-2) 92%,transparent));
   backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);
-  box-shadow:var(--shadow-1),inset 0 1px 0 var(--border-luminous);
+  box-shadow:var(--shadow-1),inset 0 1px 0 var(--border-luminous),inset 0 -14px 26px -18px rgba(0,0,0,.5);
   overflow:hidden;
-  transition:transform .18s ease,border-color .18s ease;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
 }
 .monitor-gauge::before{content:"";position:absolute;top:0;right:0;left:0;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 30%,transparent),transparent);opacity:.5}
-.monitor-gauge:hover{transform:translateY(-3px);border-color:var(--border-strong);box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous)}
+.monitor-gauge:hover{transform:perspective(820px) rotateX(2.4deg) translateY(-3px);border-color:var(--border-strong);box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous)}
 .monitor-gauge-track{fill:none;stroke:color-mix(in srgb,var(--surface-3) 82%,transparent);stroke-width:9;stroke-linecap:round}
-.monitor-gauge-value{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .7s cubic-bezier(.22,1,.36,1),stroke .4s ease;filter:drop-shadow(0 0 7px rgba(255,255,255,.18))}
-.monitor-gauge-num{font-size:19px;font-weight:800;paint-order:stroke;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.monitor-gauge-value{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .7s cubic-bezier(.22,1,.36,1),stroke .4s ease;filter:drop-shadow(0 0 8px rgba(255,255,255,.22)) drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.monitor-gauge-num{font-size:19px;font-weight:800;paint-order:stroke;font-family:var(--font-mono);font-variant-numeric:tabular-nums;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 .monitor-gauge-label{font-size:11px;font-weight:700;color:var(--muted)}
-/* Usage caption below the gauge — outside the arc, clean mono chip. */
+/* Usage caption below the gauge — outside the arc. unicode-bidi:plaintext
+   keeps Persian captions (بار سیستم ۰٫۴۲) RTL and byte captions
+   (۲٫۱ GB / ۵۰ GB) LTR, each parsed by its own first strong character. */
 .monitor-gauge-caption{
   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  direction:ltr;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  direction:ltr;unicode-bidi:plaintext;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
   font-size:9.5px;color:var(--muted);
   padding:3px 8px;border-radius:999px;border:1px solid var(--border);
   background:color-mix(in srgb,var(--surface-3) 55%,transparent);
@@ -89,17 +93,24 @@
 .net-stat.rx i{background:var(--blue);box-shadow:0 0 10px color-mix(in srgb,var(--blue) 65%,transparent)}
 .net-stat.tx i{background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 65%,transparent)}
 
-.monitor-chart{display:block;direction:ltr;overflow:visible;border-radius:8px}
+.monitor-chart{position:relative;display:block;direction:ltr;overflow:visible;border-radius:8px}
+.monitor-chart>svg{display:block}
 .monitor-grid{stroke:color-mix(in srgb,var(--accent) 8%,var(--border));stroke-width:1;stroke-dasharray:2 5;opacity:.75}
 .monitor-axis{stroke:var(--border-strong);stroke-width:1;opacity:.9}
 .monitor-cursor{stroke:var(--accent);stroke-width:1;stroke-dasharray:3 4;opacity:.45}
-.monitor-tick{
-  fill:color-mix(in srgb,var(--muted) 82%,var(--text));
-  font-size:9.5px;font-weight:500;
-  font-family:var(--font-mono);
-  font-variant-numeric:tabular-nums;
+.monitor-line{filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))}
+.monitor-line-halo{pointer-events:none}
+/* HTML overlay labels — never stretched, crisp Persian digits. */
+.monitor-ylabels{position:absolute;inset:0;pointer-events:none}
+.monitor-ylabel{
+  position:absolute;right:6px;transform:translateY(-50%);
+  font-size:9.5px;font-weight:600;color:color-mix(in srgb,var(--muted) 85%,var(--text));
+  font-variant-numeric:tabular-nums;unicode-bidi:plaintext;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--bg) 74%,transparent) 34%);
+  padding:1px 5px;border-radius:6px;white-space:nowrap;
 }
-.monitor-line{filter:drop-shadow(0 0 6px rgba(255,255,255,.14)) drop-shadow(0 1px 3px rgba(0,0,0,.35))}
+.monitor-xlabels{position:absolute;right:2px;left:2px;bottom:0;display:flex;justify-content:space-between;pointer-events:none}
+.monitor-xlabel{font-size:9.5px;font-weight:600;color:color-mix(in srgb,var(--muted) 85%,var(--text));unicode-bidi:plaintext;white-space:nowrap}
 .monitor-net-note{margin:0;font-size:10px;color:var(--muted);line-height:1.8;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .monitor-net-note::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px color-mix(in srgb,var(--green) 55%,transparent);flex:0 0 6px}
 

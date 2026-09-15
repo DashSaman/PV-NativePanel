@@ -36,12 +36,29 @@ func (s *server) publicSubscription(w http.ResponseWriter, r *http.Request) {
                 return
         }
 
+        // Browsers opening the machine endpoint must land on the human account
+        // page instead of downloading a file (user-visible bug: /sub/<token>
+        // opened a download dialog). An explicit ?family= override always
+        // serves the raw payload so operators can preview formats from a
+        // browser, and non-browser agents (Karing, NekoBox, curl, …) keep the
+        // exact raw behavior they depend on.
+        userAgent := r.Header.Get("User-Agent")
+        override, overrideErr := subscription.FamilyFromQuery(r.URL.Query())
+        if overrideErr != nil {
+                http.Error(w, "subscription: unknown family override", http.StatusBadRequest)
+                return
+        }
+        if override == "" && looksLikeBrowser(userAgent) {
+                http.Redirect(w, r, "/s/"+url.PathEscape(token), http.StatusFound)
+                return
+        }
+
         if !profile.Available || profile.DirectURI == "" {
                 http.NotFound(w, r)
                 return
         }
 
-        family, err := negotiateFamily(r.URL.Query(), r.Header.Get("User-Agent"))
+        family, err := negotiateFamily(r.URL.Query(), userAgent)
         if err != nil {
                 http.Error(w, "subscription: unknown family override", http.StatusBadRequest)
                 return
@@ -152,6 +169,16 @@ func negotiateFamily(query url.Values, userAgent string) (subscription.Family, e
                 return override, nil
         }
         return subscription.DetectFamily(userAgent), nil
+}
+
+// looksLikeBrowser reports whether the User-Agent is an interactive web
+// browser. Every mainstream browser engine (Chromium, Gecko, WebKit, Trident,
+// Blink) prefixes its UA with "Mozilla/5.0", while machine clients (Karing,
+// sing-box, NekoBox, NekoRay, v2rayNG, Clash, curl, wget, …) do not. A blank
+// UA is treated as a machine client: raw delivery stays the default.
+func looksLikeBrowser(userAgent string) bool {
+        ua := strings.ToLower(strings.TrimSpace(userAgent))
+        return strings.Contains(ua, "mozilla/")
 }
 
 // renderOptions builds the machine render context. The Mihomo provider URL
