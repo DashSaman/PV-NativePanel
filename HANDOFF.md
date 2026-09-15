@@ -1,10 +1,10 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-15 11:38 Asia/Tehran
+Checkpoint: 2026-09-15 12:37 Asia/Tehran
 
 ## Verified baseline
 
-- Pre-doc checkpoint main: `1ca37e717ca56ed5701ae167b8f1ff6f681b3e8a`; CI `34941672566` SUCCESS.
+- Current verified main: `8209701f1b4561b190b423b7e9d38bd3baf15ced`; CI `34945421993` SUCCESS.
 - Latest code validation remains gofmt clean; `go vet ./...` PASS; `go test ./...` PASS; Web 23/23 files / 117/117 tests PASS; production build PASS. Commits since that validation are docs-only.
 - Task13 #108 remains accepted with target-only HTTP/1.1+HTTP/2 kill and exactly-once accounting.
 - R8 monitoring/race fixes are integrated.
@@ -37,6 +37,6 @@ Checkpoint: 2026-09-15 11:38 Asia/Tehran
 ## Latest actions
 
 - Re-inspected current main, open PRs, CI, Production issue and fresh device inventory.
-- Resolved the previous pending-CI uncertainty: run `34941672566` is terminal SUCCESS.
+- Verified exact-main CI `34945421993` terminal SUCCESS and independently reran Go/Web/build gates GREEN.
 - Refreshed #101, #114 and #100 with current exact baseline and worker instructions.
 - Production untouched; no deploy/migration/restart/Caddy/DB/credential/backup/rollback mutation.

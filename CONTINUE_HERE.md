@@ -1,10 +1,10 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-15 11:38 Asia/Tehran
+Verified checkpoint: 2026-09-15 12:37 Asia/Tehran
 
 ## GitHub truth
 
-- Pre-documentation checkpoint main: `1ca37e717ca56ed5701ae167b8f1ff6f681b3e8a`; CI `34941672566` SUCCESS.
+- Current verified main: `8209701f1b4561b190b423b7e9d38bd3baf15ced`; CI `34945421993` SUCCESS.
 - Latest code validation: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS. Newer commits are documentation-only.
 - #101 is the only open PR: DRAFT, stale head `669139263...`, fresh GitHub inspection says `mergeable=false`. Reconstruct/reconcile from exact current main, rerun exact-head CI/accounting/pinned-forwardproxy, then real Karing import → parse → CONNECT → cleanup/revoke. Never reuse historical CI for merge.
 - #114: basic real two-node mTLS pull proof is retained; remaining gate is certificate overlap/rotation + explicit revocation/replay/fail-closed lifecycle proof.

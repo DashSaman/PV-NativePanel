@@ -1,10 +1,10 @@
 # PVNaive — Canonical Project Status
 
-Last updated: 2026-09-15 11:38 (Asia/Tehran)
+Last updated: 2026-09-15 12:37 (Asia/Tehran)
 
 ## Current verified GitHub truth
 
-- Current pre-documentation `main`: `1ca37e717ca56ed5701ae167b8f1ff6f681b3e8a`; GitHub CI `34941672566` is terminal SUCCESS.
+- Current verified `main`: `8209701f1b4561b190b423b7e9d38bd3baf15ced`; GitHub CI `34945421993` is terminal SUCCESS.
 - Previous independent execution-worker validation remains: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS. No newer code commit exists after that validation; latest commits are documentation-only.
 - Task13 #108 remains merged/accepted with target-only HTTP/1.1+HTTP/2 session kill and exactly-once final accounting.
 - R8 monitoring/race fixes are integrated.
@@ -35,10 +35,10 @@ Last updated: 2026-09-15 11:38 (Asia/Tehran)
 - Client compatibility claims require real-client evidence.
 - Production promotion order: exact-head CI → disposable rehearsal → trusted read-only audit → fresh encrypted backup + independent rollback snapshot → staged promotion → postflight → retain rollback.
 
-## Coordinator checkpoint — 2026-09-15 11:38 Asia/Tehran
+## Coordinator checkpoint — 2026-09-15 12:37 Asia/Tehran
 
 - Re-inspected current main, CI, the only open PR, Production lane and fresh connected-device inventory.
-- CI `34941672566` for `1ca37e7...` is terminal SUCCESS; the prior pending status is resolved.
+- CI `34945421993` for exact main `8209701f...` is terminal SUCCESS; independent exact-main Go/Web/build rerun is also GREEN.
 - #101 is now mechanically non-mergeable on its stale head and remains acceptance-blocked; W4 instructions were refreshed against exact current main.
 - #114 worker allocation was refreshed for certificate lifecycle/replay/fail-closed evidence.
 - #100 records the fresh disconnected-Primary state and preserves schema 33 / repo-fin2 as the Production truth ceiling.
