@@ -163,16 +163,14 @@ Every customer carries one subscription token rendered three ways:
 
 ## Connecting clients
 
-The account page ships a complete bilingual guide. Summary:
+The account page ships a complete bilingual guide. Supported clients: **Karing** (recommended) and **NekoBox / NekoRay**.
 
 | Client | Platform | Fastest import |
 | --- | --- | --- |
-| **Karing** (recommended) | Android / iOS / Windows / macOS | “+” → Scan QR → scan the subscription QR |
-| v2rayNG | Android | Subscriptions → + → paste sub URL |
+| **Karing** (recommended) | Android / iOS / Windows / macOS | “+” → Scan QR → scan the subscription QR — the profile is named `PVNaive-<username>` automatically |
 | NekoBox / NekoRay | Android / PC | Group → new subscription, or clipboard import of `naive+https://` |
-| Hiddify | Android / iOS / PC | + → Add from clipboard / scan QR |
-| sing-box | PC | fetch `/sub/<token>?family=singbox` |
-| Clash Meta / Mihomo | PC | fetch `/sub/<token>?family=clash` |
+
+**Automatic best-server switching:** every rendered profile carries a `PV-AUTO` url-test group. All healthy, in-sync **pool nodes** (پنل ← استخر گره‌ها) join the subscription automatically, the client probes them every 5 min (50 ms tolerance) and always uses the fastest one — no manual switching needed.
 
 Troubleshooting tips (rendered on the page): status flips to **فعال / آنلاین** after a successful connect; refresh the subscription after quota/password changes; depleted/expired accounts cannot connect; if all else fails use the Direct Naive QR.
 
