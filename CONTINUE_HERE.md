@@ -1,54 +1,37 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-15 (Asia/Tehran)
+Verified checkpoint: 2026-09-15 09:42 Asia/Tehran
 
 ## GitHub truth
 
-- Current code main before docs refresh: `4886b2730515dc6acac1e4a8d6eeb7b13067e2a5`. R10 follow-up UI commits `a715083...` and `c9d56a9...` are terminal CI green (`34908530057`, `34908840088`); coordinator also reran Web 23/23 files, 115/115 tests and production build. `4886b27...` is a one-line unused-import cleanup with the same local Web gates green; wait for its exact-head GitHub CI before promotion.
-- R10 is not Production-approved merely because CI is passing: named-client compatibility is a separate truth gate in #120. #101 Karing remains DRAFT/non-mergeable and must be reconciled to latest verified main before a real import → parse → CONNECT → cleanup/revoke acceptance.
-- Task13 #108 is merged and accepted with real HTTP/1.1+HTTP/2 target-only kill plus exactly-once final accounting.
-- R8 monitoring/race fixes are integrated.
-- R5 registry and real basic two-node mTLS pull/heartbeat/drift E2E are green; #114 remains for cert rotation/overlap + explicit revocation/replay/fail-closed lifecycle proof.
+- Verified pre-docs main: `d85fbace33efc09299a656692adc0978543d0d81`; CI `34927848620` SUCCESS.
+- Fresh exact-main worker validation: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS.
+- #101 is the only open PR: DRAFT, stale head `669139263...`, currently mergeable by GitHub mechanics but acceptance-blocked. Reconcile minimally to current main, rerun exact-head gates, then real Karing import → parse → CONNECT → cleanup/revoke. Never reuse historical CI for merge.
+- #114: basic real two-node mTLS pull proof is retained; remaining gate is certificate overlap/rotation + explicit revocation/replay/fail-closed lifecycle proof.
 
 ## Production truth
 
-- Persistent verified ceiling: schema 33 / repo-fin2 checkpoint.
-- One execution-worker Remote Desktop registration is online and one duplicate is offline; no trusted Production Primary is connected.
-- Do not infer fresh image/schema/backup/disk/rollback/Caddy state and do not mutate Production.
+- Persistent ceiling: schema 33 / repo-fin2.
+- One execution worker is online; duplicate registration offline. No trusted `PVNaive-Production-Primary` is connected.
+- Do not infer fresh Production image/schema/backup/disk/Caddy/rollback state. Do not mutate Production.
 
 ## Execute next
 
-1. #120/#101: validate every advertised client claim. Real Karing exact-main acceptance first; remove or qualify any unverified client claims rather than presenting them as supported.
-2. #114: implement/prove certificate overlap/rotation + explicit revocation/replay/fail-closed behavior; TLS client cert remains authoritative.
-3. R8: ledger reconciliation/per-node/per-user projections and stream-RBAC isolation with Unknown gaps preserved.
-4. #115: disposable default-OFF cover/persona/probe-sweep/failure rehearsal.
-5. Production Primary reconnect: read-only identity/SHA/schema/services/Caddy/backup/disk/rollback audit first; only then fresh encrypted backup + independent rollback snapshot and staged promotion.
-
-## Worker allocation
-
-- W1: R10 support-claim/security review → R5 PKI/revocation → R6/R8 RBAC/accessibility.
-- W2: RED-first R10 truth tests → R8 ledger/projections.
-- W3: R10 export/direct format semantics → R5 cert lifecycle/STEER-006.
-- W4: real Karing acceptance → disposable R5/R6 E2E.
-
-One registered execution worker is online. Keep the queue in GitHub and execute only with receipts; do not treat that worker as Production.
+1. W4 — #101/#120 real Karing exact-main acceptance, then disposable R5/R6 E2E.
+2. W3 — #114 cert overlap/rotation/revocation, then STEER-006.
+3. W1 — independent PKI/client-truth/RBAC review, especially fail-closed revocation and TLS identity authority.
+4. W2 — replay/registry monotonicity tests, then R8 ledger/per-node/per-user truthful projections.
+5. On trusted Production Primary reconnect only: read-only identity/SHA/image/schema/services/Caddy/backup/disk/rollback audit → fresh encrypted backup + independent rollback snapshot → staged promotion/postflight.
 
 ## Invariants
 
-- Exact accounting/session/quota truth is never inferred from network telemetry.
-- Task13 kills only the selected session and preserves credentials/siblings.
-- Missing telemetry remains Unknown.
-- Applied migrations are immutable and future migrations are forward-only.
-- Client compatibility claims are evidence-backed.
-- Production promotion order: exact-head CI → disposable rehearsal → trusted audit → fresh encrypted backup + rollback snapshot → staged promotion → postflight → retain rollback.
+- Exact accounting/session/quota truth is never inferred from telemetry.
+- Task13 is selected-session-only and preserves credentials/siblings.
+- Missing telemetry stays Unknown.
+- TLS client certificate is authoritative fleet identity.
+- Applied migrations immutable; future changes forward-only.
+- Client compatibility requires real-client evidence.
 
-## Coordinator checkpoint — 2026-09-15
+## Latest actions
 
-- Current code head: `edfae4efc7e5da7f714757fe74804901f24a9d13`. The gofmt regression is repaired; the follow-on 0034 rollback defects (destructive marker + schema ledger removal) are repaired and migration checksums refreshed.
-- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is terminal SUCCESS; docs-tip CI `34920603677` is also terminal SUCCESS. The internal #121 CI/0034 recovery gate is cleared.
-- Production remains untouched and blocked on a trusted `PVNaive-Production-Primary` reconnect plus read-only audit, fresh encrypted backup and independent rollback snapshot.
-- #101 still requires real Karing import → parse → CONNECT → cleanup/revoke.
-
-## Latest verified continuation point — 2026-09-15 07:39 Asia/Tehran
-
-Current main is `f437f352b855775a5ba736f26595ff932a0f510f` with CI `34920603677` SUCCESS. Exact code head `edfae4efc7e5da7f714757fe74804901f24a9d13` has CI `34920505396` SUCCESS. Worker-side current-main Web suite is 23/23 files, 117/117 tests PASS and build PASS. Production Primary is still disconnected; do not deploy until read-only audit + fresh encrypted backup + independent rollback snapshot. Advance #120/#101, #114, #115 and R8 independently.
+Current main/PR/CI/device state and persistent worker reports were inspected. The old Task36 security report is partial historical evidence, not a new completion. #101 and #114 instructions were refreshed in GitHub. Production remained untouched.
