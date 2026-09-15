@@ -41,3 +41,12 @@ Last updated: 2026-09-15 20:43 (Asia/Tehran)
 - Reconciled `afb332ab...` only after terminal exact-head CI; independently reran Web tests/build successfully on the connected execution worker.
 - Refreshed #101 with the new current-main Karing truth; stale sing-box code is not eligible for merge.
 - Production remained untouched because the trusted Primary is disconnected.
+## Coordinator checkpoint — 2026-09-15 22:41 Asia/Tehran
+
+- Current verified `main`: `9891fdc650e4e65c6bdc91c5b4bd3719c507eb2c`; exact-main GitHub CI `35008842524` is terminal SUCCESS.
+- Reconciled new Karing field-result fix: Karing UA / `?family=karing` now receives the direct Clash-compatible Naive profile (`type: naive`) rather than the rejected base64 `naive+https` list. Guidance explicitly excludes FlClash / Clash Meta for Android / v2rayNG for NaiveProxy.
+- Independent execution-worker rerun on exact main: Web 23/23 files, 117/117 tests PASS; production build PASS. Go is not installed on this worker, so Go truth remains exact-head GitHub CI.
+- #101 remains stale DRAFT and MUST NOT merge; current main supersedes both its old sing-box approach and the intermediate base64 approach. Real Karing CONNECT + cleanup/revoke remains required before closing the acceptance lane.
+- Production Primary is still absent from connected-device inventory. No Production mutation is permitted; verified Production ceiling remains schema 33 / repo-fin2.
+- Worker queue: W4 real-Karing validation of current direct Clash Naive profile then disposable R5/R6 E2E; W3 cert rotation/overlap + explicit revocation; W2 replay/registry/accounting monotonicity; W1 PKI/RBAC/client-truth and dependency-audit review.
+

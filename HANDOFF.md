@@ -39,3 +39,6 @@ Checkpoint: 2026-09-15 19:39 Asia/Tehran
 - Reconciled and accepted the two newly landed main commits only after terminal exact-head CI evidence.
 - Refreshed #101, #114 and #100 with current exact baseline and worker instructions.
 - Updated canonical status/handoff; Production untouched: no deploy/migration/restart/Caddy/DB/credential/backup/rollback mutation.
+
+### Fresh coordinator reconciliation — 2026-09-15 22:41 Asia/Tehran
+Current exact-main is `9891fdc650e4e65c6bdc91c5b4bd3719c507eb2c`, CI `35008842524` SUCCESS. Karing now receives the direct Clash-compatible Naive profile; do not reconstruct/merge stale #101 sing-box code and do not revert to the intermediate base64 Karing path. Real Karing CONNECT + cleanup/revoke remains the acceptance gate. Production Primary remains unavailable; no Production mutation.

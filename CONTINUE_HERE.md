@@ -35,3 +35,6 @@ Verified checkpoint: 2026-09-15 19:39 Asia/Tehran
 ## Latest actions
 
 At 19:39, current main/open PR/CI/device state was re-inspected. Newly landed main work was reconciled against terminal exact-head CI. #101, #114 and #100 were refreshed with exact current state and next worker assignments. Canonical status/handoff/continuation files were advanced. Production remained untouched because the trusted Primary is still disconnected.
+
+### Fresh coordinator reconciliation — 2026-09-15 22:41 Asia/Tehran
+Current exact-main is `9891fdc650e4e65c6bdc91c5b4bd3719c507eb2c`, CI `35008842524` SUCCESS. Karing now receives the direct Clash-compatible Naive profile; do not reconstruct/merge stale #101 sing-box code and do not revert to the intermediate base64 Karing path. Real Karing CONNECT + cleanup/revoke remains the acceptance gate. Production Primary remains unavailable; no Production mutation.
