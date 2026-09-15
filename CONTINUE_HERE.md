@@ -1,23 +1,23 @@
 # Continue Here — PVNaive
 
-Verified checkpoint: 2026-09-15 10:55 Asia/Tehran
+Verified checkpoint: 2026-09-15 11:38 Asia/Tehran
 
 ## GitHub truth
 
-- Current main: `4871a39f3602574f0aeaab1328d192d4a555ed12`; CI `34935830963` SUCCESS.
-- Fresh exact-main worker validation: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS.
-- #101 is the only open PR: DRAFT, stale head `669139263...`, currently mergeable by GitHub mechanics but acceptance-blocked. Reconcile minimally to current main, rerun exact-head gates, then real Karing import → parse → CONNECT → cleanup/revoke. Never reuse historical CI for merge.
+- Pre-documentation checkpoint main: `1ca37e717ca56ed5701ae167b8f1ff6f681b3e8a`; CI `34941672566` SUCCESS.
+- Latest code validation: gofmt clean, `go vet ./...` PASS, `go test ./...` PASS, Web 23/23 files / 117/117 tests PASS, production build PASS. Newer commits are documentation-only.
+- #101 is the only open PR: DRAFT, stale head `669139263...`, fresh GitHub inspection says `mergeable=false`. Reconstruct/reconcile from exact current main, rerun exact-head CI/accounting/pinned-forwardproxy, then real Karing import → parse → CONNECT → cleanup/revoke. Never reuse historical CI for merge.
 - #114: basic real two-node mTLS pull proof is retained; remaining gate is certificate overlap/rotation + explicit revocation/replay/fail-closed lifecycle proof.
 
 ## Production truth
 
 - Persistent ceiling: schema 33 / repo-fin2.
-- One execution worker is online; duplicate registration offline. No trusted `PVNaive-Production-Primary` is connected.
+- Fresh inventory: one execution worker online; duplicate registration offline. No trusted `PVNaive-Production-Primary` is connected.
 - Do not infer fresh Production image/schema/backup/disk/Caddy/rollback state. Do not mutate Production.
 
 ## Execute next
 
-1. W4 — #101/#120 real Karing exact-main acceptance, then disposable R5/R6 E2E.
+1. W4 — #101/#120 reconstruct from exact current main and obtain real Karing acceptance, then disposable R5/R6 E2E.
 2. W3 — #114 cert overlap/rotation/revocation, then STEER-006.
 3. W1 — independent PKI/client-truth/RBAC review, especially fail-closed revocation and TLS identity authority.
 4. W2 — replay/registry monotonicity tests, then R8 ledger/per-node/per-user truthful projections.
@@ -34,6 +34,4 @@ Verified checkpoint: 2026-09-15 10:55 Asia/Tehran
 
 ## Latest actions
 
-Current main/PR/CI/device state and persistent worker reports were inspected. The old Task36 security report is partial historical evidence, not a new completion. #101 and #114 instructions were refreshed in GitHub. Production remained untouched.
-
-- 10:55: exact main `4871a39...` CI `34935830963` SUCCESS; independent Go/Web/build rerun PASS. Continue #120/#114/#115 while Production Primary remains disconnected.
+At 11:38, current main/PR/CI/device state was re-inspected. CI `34941672566` is now terminal SUCCESS. #101 is mechanically non-mergeable on its stale head and was re-dispatched to W4 from exact current main. #114 lifecycle work was re-dispatched across W1-W4. #100 records the still-disconnected Production Primary. Production remained untouched.
