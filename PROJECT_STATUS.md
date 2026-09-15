@@ -46,6 +46,13 @@ Last updated: 2026-09-15 (Asia/Tehran)
 ## Coordinator checkpoint — 2026-09-15
 
 - Current code head: `edfae4efc7e5da7f714757fe74804901f24a9d13`. The gofmt regression is repaired; the follow-on 0034 rollback defects (destructive marker + schema ledger removal) are repaired and migration checksums refreshed.
-- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is still running; do not promote until terminal green.
+- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is terminal SUCCESS; docs-tip CI `34920603677` is also terminal SUCCESS. The internal #121 CI/0034 recovery gate is cleared.
 - Production remains untouched and blocked on a trusted `PVNaive-Production-Primary` reconnect plus read-only audit, fresh encrypted backup and independent rollback snapshot.
 - #101 still requires real Karing import → parse → CONNECT → cleanup/revoke.
+
+## Coordinator refresh — 2026-09-15 07:39 Asia/Tehran
+
+- Current main `f437f352b855775a5ba736f26595ff932a0f510f`; CI `34920603677` SUCCESS. Exact code head `edfae4efc7e5da7f714757fe74804901f24a9d13`; CI `34920505396` SUCCESS.
+- Execution worker independently reran current-main Web: 23/23 files, 117/117 tests PASS; production build PASS. Host lacks native Go toolchain; GitHub exact-head Go/DB/rehearsal CI remains the authoritative green evidence.
+- Fresh device inventory still has no trusted Production Primary. No Production mutation performed.
+- #120/#101 real-client truth, #114 cert lifecycle, #115 disposable R6 rehearsal, and R8 truth/RBAC remain active independent lanes.

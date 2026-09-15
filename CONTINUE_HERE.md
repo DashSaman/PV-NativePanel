@@ -45,6 +45,10 @@ One registered execution worker is online. Keep the queue in GitHub and execute 
 ## Coordinator checkpoint — 2026-09-15
 
 - Current code head: `edfae4efc7e5da7f714757fe74804901f24a9d13`. The gofmt regression is repaired; the follow-on 0034 rollback defects (destructive marker + schema ledger removal) are repaired and migration checksums refreshed.
-- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is still running; do not promote until terminal green.
+- Disposable PostgreSQL 18 `tests/db/migration_test.sh` passes on the exact checkout. Exact-head GitHub CI `34920505396` is terminal SUCCESS; docs-tip CI `34920603677` is also terminal SUCCESS. The internal #121 CI/0034 recovery gate is cleared.
 - Production remains untouched and blocked on a trusted `PVNaive-Production-Primary` reconnect plus read-only audit, fresh encrypted backup and independent rollback snapshot.
 - #101 still requires real Karing import → parse → CONNECT → cleanup/revoke.
+
+## Latest verified continuation point — 2026-09-15 07:39 Asia/Tehran
+
+Current main is `f437f352b855775a5ba736f26595ff932a0f510f` with CI `34920603677` SUCCESS. Exact code head `edfae4efc7e5da7f714757fe74804901f24a9d13` has CI `34920505396` SUCCESS. Worker-side current-main Web suite is 23/23 files, 117/117 tests PASS and build PASS. Production Primary is still disconnected; do not deploy until read-only audit + fresh encrypted backup + independent rollback snapshot. Advance #120/#101, #114, #115 and R8 independently.
