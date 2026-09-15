@@ -26,7 +26,7 @@ func TestDetectFamily(t *testing.T) {
 		"mihomo/1.18.1":                     FamilyClash,
 		"Stash/2.6.0 (iOS)":                 FamilyClash,
 		"sing-box 1.8.0 (darwin)":           FamilySingBox,
-		"Karing/1.0.30 (Android)":           FamilyV2Ray,
+		"Karing/1.0.30 (Android)":           FamilyClash,
 		"Hiddify-Next/2.0.5":                FamilyV2Ray,
 		"Dart/3.5 (dart:io)":                FamilyV2Ray,
 		"v2rayNG/1.8.23":                    FamilyV2Ray,
@@ -67,7 +67,7 @@ func TestRenderClashProviderPayload(t *testing.T) {
 		Proxies []struct {
 			Name     string `yaml:"name"`
 			Type     string `yaml:"type"`
-			Host     string `yaml:"host"`
+			Server   string `yaml:"server"`
 			Port     int    `yaml:"port"`
 			Username string `yaml:"username"`
 			SNI      string `yaml:"sni"`
@@ -78,7 +78,7 @@ func TestRenderClashProviderPayload(t *testing.T) {
 	if err := yaml.Unmarshal(body, &doc); err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Proxies) != 2 || doc.Proxies[0].Type != "naive" || doc.Proxies[0].Host != "203.0.113.10" || doc.Proxies[0].Port != 443 {
+	if len(doc.Proxies) != 2 || doc.Proxies[0].Type != "naive" || doc.Proxies[0].Server != "203.0.113.10" || doc.Proxies[0].Port != 443 {
 		t.Fatalf("proxies render wrong: %+v", doc.Proxies)
 	}
 	if doc.Proxies[0].SNI != "placeholder.example" || doc.Proxies[1].SNI != "203.0.113.11" {
@@ -86,6 +86,53 @@ func TestRenderClashProviderPayload(t *testing.T) {
 	}
 	if doc.ProxyProviders != nil || doc.Groups != nil {
 		t.Fatal("provider payload must be a bare proxies document")
+	}
+}
+
+func TestRenderClashDirectProfile(t *testing.T) {
+	body, err := RenderClashDirectProfile(sampleNodes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	if strings.Contains(text, "interrupt-exist-connections") {
+		t.Fatal("clash render must never set interrupt-exist-connections")
+	}
+	if strings.Contains(text, "proxy-providers") {
+		t.Fatal("direct profile must not use proxy-providers")
+	}
+	var doc struct {
+		Proxies []struct {
+			Name     string `yaml:"name"`
+			Type     string `yaml:"type"`
+			Server   string `yaml:"server"`
+			Port     int    `yaml:"port"`
+			Username string `yaml:"username"`
+			Password string `yaml:"password"`
+			SNI      string `yaml:"sni"`
+		} `yaml:"proxies"`
+		Groups []struct {
+			Name    string   `yaml:"name"`
+			Type    string   `yaml:"type"`
+			Proxies []string `yaml:"proxies"`
+			Use     []string `yaml:"use"`
+		} `yaml:"proxy-groups"`
+		Rules []string `yaml:"rules"`
+	}
+	if err := yaml.Unmarshal(body, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Proxies) != 2 || doc.Proxies[0].Type != "naive" || doc.Proxies[0].Server == "" || doc.Proxies[0].Port != 443 {
+		t.Fatalf("proxies wrong: %+v", doc.Proxies)
+	}
+	if len(doc.Groups) != 1 || doc.Groups[0].Name != "PV-AUTO" || doc.Groups[0].Type != "url-test" || len(doc.Groups[0].Use) != 0 {
+		t.Fatalf("groups wrong: %+v", doc.Groups)
+	}
+	if len(doc.Groups[0].Proxies) != 2 || doc.Groups[0].Proxies[0] != doc.Proxies[0].Name {
+		t.Fatalf("group members wrong: %+v", doc.Groups[0].Proxies)
+	}
+	if len(doc.Rules) != 1 || doc.Rules[0] != "MATCH,PV-AUTO" {
+		t.Fatalf("rules wrong: %+v", doc.Rules)
 	}
 }
 
@@ -343,13 +390,15 @@ func TestRenderMachinePayloadFamilies(t *testing.T) {
 	if _, _, err := RenderMachinePayload(FamilyClash, nil, opts); err == nil {
 		t.Fatal("empty node list must error")
 	}
-	// Clash profile vs provider payload split (spec §3 self-referential URL).
+	// Clash profile vs provider payload split: plain profile fetches serve
+	// the direct naive profile (Karing/Stash), while the explicit
+	// ?family=mihomo override keeps the bare provider document (spec §3).
 	profileBody, _, err := RenderMachinePayload(FamilyClash, nodes, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(profileBody), "proxy-providers:") {
-		t.Fatal("profile fetch must embed the proxy-provider block")
+	if strings.Contains(string(profileBody), "proxy-providers:") || !strings.Contains(string(profileBody), "type: naive") {
+		t.Fatal("profile fetch must serve the direct naive profile")
 	}
 	payloadBody, _, err := RenderMachinePayload(FamilyClash, nodes, RenderOptions{ProviderPayload: true})
 	if err != nil {
@@ -358,8 +407,8 @@ func TestRenderMachinePayloadFamilies(t *testing.T) {
 	if strings.Contains(string(payloadBody), "proxy-providers:") || !strings.HasPrefix(string(payloadBody), "proxies:") {
 		t.Fatal("provider payload fetch must return the bare proxies document")
 	}
-	if _, _, err := RenderMachinePayload(FamilyClash, nodes, RenderOptions{}); err == nil {
-		t.Fatal("clash profile without provider url must error")
+	if _, _, err := RenderMachinePayload(FamilyClash, nil, opts); err == nil {
+		t.Fatal("empty node list must error")
 	}
 }
 

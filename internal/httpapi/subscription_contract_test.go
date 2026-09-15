@@ -68,10 +68,13 @@ func TestMachineSubscriptionEndpointIgnoresBrowserAcceptHeader(t *testing.T) {
 	}
 }
 
-func TestMachineSubscriptionServesMihomoProfileWithProviderURL(t *testing.T) {
+func TestMachineSubscriptionServesClashDirectProfile(t *testing.T) {
+	// Karing and Stash understand the naive clash proxy; mihomo cores do
+	// not support naive at all, so the profile embeds the nodes directly
+	// (no proxy-providers) and keeps a single url-test group.
 	handler, token := subscriptionContractFixture(t, subscription.Record{})
 	req := httptest.NewRequest(http.MethodGet, "/sub/"+token, nil)
-	req.Header.Set("User-Agent", "ClashMetaForAndroid/2.10.7")
+	req.Header.Set("User-Agent", "Karing/1.2.23.2606 (Android 14)")
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
@@ -80,23 +83,25 @@ func TestMachineSubscriptionServesMihomoProfileWithProviderURL(t *testing.T) {
 	}
 	body := res.Body.String()
 	for _, want := range []string{
-		"proxy-providers:",
-		"pvnaive:",
-		"url: https://namir.softarg.ir:443/sub/" + token + "?family=mihomo",
-		"interval: 14400",
-		"health-check:",
-		"use:",
+		"type: naive",
+		"server: namir.softarg.ir",
+		"port: 443",
+		"username: Amir22",
 		"PV-AUTO",
-		"PV-RR",
-		"round-robin",
+		"url-test",
 		"MATCH,PV-AUTO",
 	} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("mihomo profile missing %q\n%s", want, body)
+			t.Fatalf("clash direct profile missing %q\n%s", want, body)
+		}
+	}
+	for _, banned := range []string{"proxy-providers:", "PV-RR", "load-balance", "round-robin"} {
+		if strings.Contains(body, banned) {
+			t.Fatalf("clash direct profile must not carry %s\n%s", banned, body)
 		}
 	}
 	if strings.Contains(body, "interrupt-exist-connections") {
-		t.Fatal("mihomo profile must never set interrupt-exist-connections")
+		t.Fatal("clash profile must never set interrupt-exist-connections")
 	}
 	if got := res.Header().Get("Profile-Update-Interval"); got != "4" {
 		t.Fatalf("Profile-Update-Interval=%q", got)
@@ -125,16 +130,16 @@ func TestMachineSubscriptionServesProviderPayloadOnMihomoOverride(t *testing.T) 
 			t.Fatalf("provider payload must not carry %s\n%s", banned, body)
 		}
 	}
-	if !strings.Contains(body, "host: namir.softarg.ir") || !strings.Contains(body, "username: Amir22") {
+	if !strings.Contains(body, "server: namir.softarg.ir") || !strings.Contains(body, "username: Amir22") {
 		t.Fatalf("provider payload must carry the render node:\n%s", body)
 	}
 
-	// Any other explicit override (e.g. family=clash) keeps the full profile
-	// so operators can preview the exact client-facing document.
+	// Any other explicit override (e.g. family=clash) previews the exact
+	// client-facing document: the direct naive profile.
 	previewReq := httptest.NewRequest(http.MethodGet, "/sub/"+token+"?family=clash", nil)
 	previewRes := httptest.NewRecorder()
 	handler.ServeHTTP(previewRes, previewReq)
-	if previewRes.Code != http.StatusOK || !strings.Contains(previewRes.Body.String(), "proxy-providers:") {
+	if previewRes.Code != http.StatusOK || !strings.Contains(previewRes.Body.String(), "type: naive") {
 		t.Fatalf("clash preview status=%d body=%s", previewRes.Code, previewRes.Body.String())
 	}
 }

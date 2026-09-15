@@ -264,6 +264,9 @@ func messagesForLanguage(lang string) accountMessages {
 			HelpIntro:     "Two independent ways exist to connect. The Subscription QR keeps your client updated automatically; the Direct Naive QR adds the server manually without a subscription. Both work with a scan - no typing required.",
 			HelpTipsTitle: "If the connection fails",
 			HelpTips: []string{
+				"FlClash, Clash Meta for Android and v2rayNG cannot import NaiveProxy nodes - use Karing or NekoBox/NekoRay.",
+				"FlClash, Clash Meta for Android and v2rayNG cannot import NaiveProxy nodes - use Karing or NekoBox/NekoRay.",
+				"FlClash, Clash Meta for Android and v2rayNG cannot import NaiveProxy nodes - use Karing or NekoBox/NekoRay.",
 				"After a successful connect, this page flips to 'Active / Online' - use it to verify your service works.",
 				"Pull-to-refresh the subscription inside your client after quota or password changes.",
 				"Check quota and expiry at the top of this page; a depleted or expired account cannot connect.",
@@ -275,6 +278,9 @@ func messagesForLanguage(lang string) accountMessages {
 					"Install Karing from karing.app, Google Play or the App Store.",
 					"Tap '+', choose 'Scan QR code' and scan the Subscription QR on this page (or paste the Subscription URL).",
 					"Save the profile - it lands named PVNaive-<username> automatically.",
+					"If an update ever reports 'No server available', re-add the subscription link with the suffix ?family=karing.",
+					"If an update ever reports 'No server available', re-add the subscription link with the suffix ?family=karing.",
+					"If an update ever reports 'No server available', re-add the subscription link with the suffix ?family=karing.",
 					"Run Karing's latency test and keep the fastest PVNaive node selected, then connect.",
 				}},
 				{Name: "NekoBox / NekoRay (Android / PC)", Summary: "sing-box based client, full naive+https URI support.", Steps: []string{
@@ -299,6 +305,7 @@ func messagesForLanguage(lang string) accountMessages {
 		HelpIntro:     "دو راه مستقل برای اتصال وجود دارد: QR ساب کلاینت را خودکار به‌روز نگه می‌دارد و QR مستقیم Naive سرور را بدون ساب اضافه می‌کند. هر دو فقط با اسکن کار می‌کنند و نیازی به تایپ نیست.",
 		HelpTipsTitle: "اگر اتصال برقرار نشد",
 		HelpTips: []string{
+			"FlClash، Clash Meta برای اندروید و v2rayNG نودهای NaiveProxy را نمی‌پذیرند؛ از Karing یا NekoBox/NekoRay استفاده کن.",
 			"بعد از اتصال موفق، وضعیت همین صفحه به «فعال / آنلاین» تغییر می‌کند؛ از آن برای اطمینان از سلامت سرویس استفاده کن.",
 			"بعد از تغییر حجم یا رمز، ساب را داخل کلاینت Refresh کن.",
 			"حجم و انقضای حساب را در بالای همین صفحه چک کن؛ حساب تمام‌شده یا منقضی وصل نمی‌شود.",
@@ -310,6 +317,7 @@ func messagesForLanguage(lang string) accountMessages {
 				"Karing را از karing.app یا گوگل‌پلی / اپ‌استور نصب کن.",
 				"دکمه «+» را بزن، «اسکن کد QR» را انتخاب و QR لینک ساب همین صفحه را اسکن کن (یا لینک ساب را بچسبان).",
 				"پروفایل ذخیره می‌شود و به‌طور خودکار با نام PVNaive-<نام‌کاربری> ثبت می‌گردد.",
+				"اگر بعداً افزودن یا بروزرسانی ساب پیام «No server available» داد، لینک ساب را با پسوند ?family=karing دوباره اضافه کن.",
 				"تست تأخیر داخل Karing را بزن و سریع‌ترین نود PVNaive را انتخاب کن، بعد اتصال را بزن.",
 			}},
 			{Name: "NekoBox / NekoRay (اندروید / کامپیوتر)", Summary: "کلاینت مبتنی بر sing-box با پشتیبانی کامل naive+https.", Steps: []string{

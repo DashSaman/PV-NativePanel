@@ -31,19 +31,22 @@ const (
 func DetectFamily(userAgent string) Family {
 	ua := strings.ToLower(userAgent)
 	switch {
-	case strings.Contains(ua, "clash"), strings.Contains(ua, "mihomo"), strings.Contains(ua, "stash"):
+	case strings.Contains(ua, "clash"), strings.Contains(ua, "mihomo"), strings.Contains(ua, "stash"),
+		strings.Contains(ua, "karing"):
+		// Karing fetches subscriptions through its Clash engine and its own
+		// Clash-compat table marks the naive outbound as supported; its
+		// V2ray link parser does NOT understand naive+https URIs (field
+		// report: the base64 list produced "clash proxies/proxy-providers:
+		// No server available" on Karing 1.2.23.2606 Android), so Karing
+		// rides the Clash family with the direct naive profile.
 		return FamilyClash
 	case strings.Contains(ua, "sing-box"), strings.Contains(ua, "singbox"):
 		return FamilySingBox
-	case strings.Contains(ua, "karing"), strings.Contains(ua, "hiddify"),
+	case strings.Contains(ua, "hiddify"),
 		strings.Contains(ua, "v2ray"), strings.Contains(ua, "nekoray"), strings.Contains(ua, "neko"),
 		strings.Contains(ua, "dart"):
-		// Karing and Hiddify are sing-box GUIs, but their subscription
-		// importers reject the naive outbound type (naive is not part of
-		// the standard sing-box outbound schema), so the JSON profile is
-		// unusable there. The universal base64 link list is the format
-		// they reliably import for naive+https nodes (field report:
-		// Karing would not accept the sing-box JSON subscription).
+		// Hiddify (sing-box GUI) imports the universal base64 link list;
+		// its URI importer parses the naive+https entries.
 		return FamilyV2Ray
 	default:
 		return FamilyNaive
@@ -62,9 +65,11 @@ func FamilyFromQuery(query url.Values) (Family, error) {
 		return FamilyClash, nil
 	case "singbox", "sing-box":
 		return FamilySingBox, nil
-	// karing/hiddify mirror the actual UA negotiation: those clients
-	// import the base64 link list, not the sing-box JSON profile.
-	case "karing", "hiddify", "v2ray", "base64":
+	// karing mirrors the actual UA negotiation (Clash family, direct
+	// naive profile). hiddify keeps the universal base64 link list.
+	case "karing":
+		return FamilyClash, nil
+	case "hiddify", "v2ray", "base64":
 		return FamilyV2Ray, nil
 	default:
 		return "", fmt.Errorf("subscription: unknown family override")
@@ -151,7 +156,7 @@ func ProviderPayloadOverride(query url.Values) bool {
 type clashProxy struct {
 	Name     string `yaml:"name"`
 	Type     string `yaml:"type"`
-	Host     string `yaml:"host"`
+	Host     string `yaml:"server"`
 	Port     int    `yaml:"port"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
@@ -159,13 +164,14 @@ type clashProxy struct {
 }
 
 type clashGroup struct {
-	Name  string   `yaml:"name"`
-	Type  string   `yaml:"type"`
-	Use   []string `yaml:"use,omitempty"`
-	URL   string   `yaml:"url"`
-	Inter int      `yaml:"interval"`
-	Tol   int      `yaml:"tolerance,omitempty"`
-	Strat string   `yaml:"strategy,omitempty"`
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Proxies []string `yaml:"proxies,omitempty"`
+	Use     []string `yaml:"use,omitempty"`
+	URL     string   `yaml:"url"`
+	Inter   int      `yaml:"interval"`
+	Tol     int      `yaml:"tolerance,omitempty"`
+	Strat   string   `yaml:"strategy,omitempty"`
 }
 
 const clashHealthURL = "http://www.gstatic.com/generate_204"
@@ -258,6 +264,41 @@ func RenderClashProfile(providerURL string, nodes []Node) ([]byte, error) {
 	out, err := yaml.Marshal(doc)
 	if err != nil {
 		return nil, fmt.Errorf("subscription: render clash profile: %w", err)
+	}
+	return out, nil
+}
+
+// RenderClashDirectProfile renders a Clash profile whose node list is
+// embedded directly (no proxy-providers): naive proxies in preference
+// order, a PV-AUTO url-test group (interval 5m, tolerance 50ms,
+// STEER-005 anti-flap) and a MATCH rule. This is the payload Karing
+// (and other Clash-family clients that support the naive proxy type,
+// e.g. Stash) import: it avoids Karing's unsupported load-balance
+// group and needs no provider engine. Real mihomo cores cannot speak
+// naive at all - no payload fixes that; the /s page steers those
+// users to Karing or NekoBox instead.
+func RenderClashDirectProfile(nodes []Node) ([]byte, error) {
+	if len(nodes) == 0 {
+		return nil, errors.New("subscription: at least one node is required")
+	}
+	proxies, err := clashProxies(nodes)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(nodes))
+	for _, n := range nodes {
+		names = append(names, n.displayName())
+	}
+	doc := map[string]any{
+		"proxies": proxies,
+		"proxy-groups": []clashGroup{
+			{Name: "PV-AUTO", Type: "url-test", Proxies: names, URL: clashHealthURL, Inter: 300, Tol: 50},
+		},
+		"rules": []string{"MATCH,PV-AUTO"},
+	}
+	out, err := yaml.Marshal(doc)
+	if err != nil {
+		return nil, fmt.Errorf("subscription: render clash direct profile: %w", err)
 	}
 	return out, nil
 }
@@ -380,7 +421,9 @@ func RenderMachinePayload(family Family, nodes []Node, opts RenderOptions) ([]by
 			body, err := RenderClashProviderPayload(nodes)
 			return body, "application/yaml; charset=utf-8", err
 		}
-		body, err := RenderClashProfile(opts.ProviderURL, nodes)
+		// Direct embedded profile (Karing/Stash naive support; no
+		// provider engine and no load-balance group Karing lacks).
+		body, err := RenderClashDirectProfile(nodes)
 		return body, "application/yaml; charset=utf-8", err
 	case FamilySingBox, FamilyHiddify:
 		body, err := RenderSingBox(nodes)

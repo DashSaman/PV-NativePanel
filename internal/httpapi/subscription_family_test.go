@@ -32,7 +32,7 @@ func TestNegotiateFamily(t *testing.T) {
 	}
 	// UA detection applies without override.
 	f, err = negotiateFamily(url.Values{}, "Karing/1.0.30 (Android)")
-	if err != nil || f != subscription.FamilyV2Ray {
+	if err != nil || f != subscription.FamilyClash {
 		t.Fatalf("karing UA = %q %v", f, err)
 	}
 	// Default stays naive for unknown/empty UAs (backwards compatible).

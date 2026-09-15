@@ -282,10 +282,10 @@ function SubscriptionContent({ delivery }: { delivery: ProductSubscriptionDelive
   const [copied, setCopied] = useState("");
   async function copy(key: string, value: string) { await navigator.clipboard.writeText(value); setCopied(key); window.setTimeout(() => setCopied(""), 1000); }
   return <div className="subscription-delivery">
-    <p className="readonly-banner">دو راه اتصال: <strong>QR ساب</strong> برای کلاینت‌هایی مثل Karing که Subscription می‌خوانند، و <strong>QR مستقیم Naive</strong> برای افزودن دستی سرور بدون ساب. هر دو با اسکن کار می‌کنند.</p>
+    <p className="readonly-banner">دو راه اتصال: <strong>QR ساب</strong> برای کلاینت‌هایی مثل Karing که Subscription می‌خوانند، و <strong>QR مستقیم Naive</strong> برای افزودن دستی سرور بدون ساب. هر دو با اسکن کار می‌کنند. توجه: FlClash / Clash Meta for Android / v2rayNG با NaiveProxy سازگار نیستند.</p>
     <section className="qr-duo-grid">
       <article className="qr-duo-card">
-        <header><span className="subscription-kicker">۱ · Subscription</span><h3>QR لینک ساب</h3><small>Karing / v2rayNG / NekoBox / Hiddify</small></header>
+        <header><span className="subscription-kicker">۱ · Subscription</span><h3>QR لینک ساب</h3><small>Karing / NekoBox / NekoRay</small></header>
         <div className="qr-duo-frame"><QR value={subscription} /></div>
         <p className="field-hint">در Karing: دکمه «+» ← «اسکن کد QR» ← همین تصویر. کلاینت سرویس را خودکار می‌خواند و به‌روزرسانی ساب هم فعال می‌ماند.</p>
         <div className="copy-row"><input readOnly value={subscription} /><button className="primary-action" onClick={() => void copy("sub", subscription)}>{copied === "sub" ? "کپی شد ✓" : "کپی لینک ساب"}</button></div>
