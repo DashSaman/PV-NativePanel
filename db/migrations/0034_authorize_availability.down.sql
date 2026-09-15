@@ -15,3 +15,5 @@ ALTER FUNCTION pvnaive.direct_naive_accounting_authorize_v10(uuid,timestamptz)
 
 REVOKE ALL ON FUNCTION pvnaive.direct_naive_accounting_authorize(uuid,timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION pvnaive.direct_naive_accounting_authorize(uuid,timestamptz) TO pvnaive_app;
+
+DELETE FROM pvnaive.schema_migrations WHERE version = 34;
