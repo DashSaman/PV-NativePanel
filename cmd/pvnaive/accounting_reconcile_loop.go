@@ -23,7 +23,7 @@ import (
 // costs users at most one reconcile window of connectivity instead of a
 // permanent outage.
 const (
-	defaultReconcileTickSeconds = 60
+	defaultReconcileTickSeconds  = 60
 	defaultReconcileStaleSeconds = 120
 	defaultReconcileBatch        = 500
 	defaultReconcileQueryTimeout = 10 * time.Second
