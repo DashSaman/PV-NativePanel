@@ -146,7 +146,6 @@ export function SystemDashboard() {
         <div className="monitor-uptime-meta">
           <div><span>Load 1/5/15</span><b>{fmtNum(sample.load_1, 2)} · {fmtNum(sample.load_5, 2)} · {fmtNum(sample.load_15, 2)}</b></div>
           <div><span>اینترفیس</span><b>{sample.network_interface || "—"}</b></div>
-          <div><span>معناشناسی ترافیک</span><b className="system-semantics">{status.traffic_semantics}</b></div>
         </div>
       </div>
     </div>
@@ -160,9 +159,9 @@ export function SystemDashboard() {
         </div>
       </div>
       <LiveAreaChart series={series} height={190} formatValue={(v) => formatRate(v, true)} ariaLabel="نمودار زنده ترافیک شبکه" />
-      <p className="monitor-net-note">نرخ از اختلاف counter و timestamp سمت سرور محاسبه می‌شود؛ مرورگر عددی حدس نمی‌زند. {sample.rate_available ? `پنجره نمونه: ${fmtNum(sample.sample_window_seconds, 1)} ثانیه` : ""}</p>
+      <p className="monitor-net-note">{sample.rate_available ? `نرخ‌های واقعی سرور · پنجره ${fmtNum(sample.sample_window_seconds, 1)} ثانیه` : "نرخ‌های واقعی سرور"}</p>
     </div>
 
-    <p className="sample-meta">آخرین نمونه معتبر: {updatedAt?.toLocaleTimeString("en-GB", { hour12: false }) || "—"} · server sample: {new Date(sample.sampled_at).toLocaleTimeString("en-GB", { hour12: false })}</p>
+    <p className="sample-meta">آخرین نمونه: {updatedAt?.toLocaleTimeString("en-GB", { hour12: false }) || "—"}</p>
   </section>;
 }

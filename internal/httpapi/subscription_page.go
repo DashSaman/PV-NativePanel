@@ -1,99 +1,100 @@
 package httpapi
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"html/template"
-	"net/http"
-	"strings"
-	"time"
+        "crypto/rand"
+        "encoding/base64"
+        "html/template"
+        "net/http"
+        "net/url"
+        "strings"
+        "time"
 
-	"github.com/DashSaman/PV-NaivePanel/internal/customer"
-	"github.com/DashSaman/PV-NaivePanel/internal/subscription"
+        "github.com/DashSaman/PV-NaivePanel/internal/customer"
+        "github.com/DashSaman/PV-NaivePanel/internal/subscription"
 )
 
 type accountMessages struct {
-	Title            string
-	Subtitle         string
-	ReadOnlyNotice   string
-	Status           map[string]string
-	TotalQuota       string
-	Used             string
-	Upload           string
-	Download         string
-	RemainingTraffic string
-	Expiry           string
-	RemainingDays    string
-	StartPolicy      string
-	Online           string
-	OnlineValue      string
-	OfflineValue     string
-	LastOnline       string
-	UsageUnavailable string
-	Unavailable      string
-	Unlimited        string
-	NoExpiry         string
-	Expired          string
-	DaysSuffix       string
-	FromCreation     string
-	FromFirstConnect string
-	FixedTimestamp   string
-	Subscription     string
-	DirectNaive      string
-	SubscriptionQR   string
-	DirectNaiveQR    string
-	CopySubscription string
-	CopyDirect       string
-	Copied           string
-	InactiveNotice   string
-	SecurityFootnote string
-	Overview         string
-	Connection       string
-	ConnectionHint   string
-	HelpTitle        string
-	StepOne          string
-	StepTwo          string
-	StepThree        string
-	PrivateBadge     string
-	SubscriptionHint string
-	DirectHint       string
-	HelpIntro        string
-	HelpTipsTitle    string
-	HelpTips         []string
-	HelpClients      []helpClient
+        Title            string
+        Subtitle         string
+        ReadOnlyNotice   string
+        Status           map[string]string
+        TotalQuota       string
+        Used             string
+        Upload           string
+        Download         string
+        RemainingTraffic string
+        Expiry           string
+        RemainingDays    string
+        StartPolicy      string
+        Online           string
+        OnlineValue      string
+        OfflineValue     string
+        LastOnline       string
+        UsageUnavailable string
+        Unavailable      string
+        Unlimited        string
+        NoExpiry         string
+        Expired          string
+        DaysSuffix       string
+        FromCreation     string
+        FromFirstConnect string
+        FixedTimestamp   string
+        Subscription     string
+        DirectNaive      string
+        SubscriptionQR   string
+        DirectNaiveQR    string
+        CopySubscription string
+        CopyDirect       string
+        Copied           string
+        InactiveNotice   string
+        SecurityFootnote string
+        Overview         string
+        Connection       string
+        ConnectionHint   string
+        HelpTitle        string
+        StepOne          string
+        StepTwo          string
+        StepThree        string
+        PrivateBadge     string
+        SubscriptionHint string
+        DirectHint       string
+        HelpIntro        string
+        HelpTipsTitle    string
+        HelpTips         []string
+        HelpClients      []helpClient
 }
 
 // helpClient is one per-client connection guide block on the /s/<token>
 // account page. Steps render as an ordered list; html/template escapes them.
 type helpClient struct {
-	Name    string
-	Summary string
-	Steps   []string
+        Name    string
+        Summary string
+        Steps   []string
 }
 
 type accountPageData struct {
-	Lang               string
-	Dir                string
-	Nonce              string
-	Username           string
-	StatusLabel        string
-	StatusClass        string
-	QuotaLabel         string
-	UsageLabel         string
-	UploadLabel        string
-	DownloadLabel      string
-	RemainingTraffic   string
-	ExpiryLabel        string
-	RemainingDaysLabel string
-	StartLabel         string
-	OnlineLabel        string
-	LastOnlineLabel    string
-	SubscriptionURL    string
-	DirectURI          string
-	SubscriptionQR     template.URL
-	DirectQR           template.URL
-	Available          bool
-	M                  accountMessages
+        Lang               string
+        Dir                string
+        Nonce              string
+        Username           string
+        StatusLabel        string
+        StatusClass        string
+        QuotaLabel         string
+        UsageLabel         string
+        UploadLabel        string
+        DownloadLabel      string
+        RemainingTraffic   string
+        ExpiryLabel        string
+        RemainingDaysLabel string
+        StartLabel         string
+        OnlineLabel        string
+        LastOnlineLabel    string
+        SubscriptionURL    string
+        DirectURI          string
+        SubscriptionQR     template.URL
+        DirectQR           template.URL
+        Available          bool
+        M                  accountMessages
 }
 
 var accountPageTemplate = template.Must(template.New("pvnaive-account").Parse(`<!doctype html>
@@ -144,238 +145,217 @@ var accountPageTemplate = template.Must(template.New("pvnaive-account").Parse(`<
 </main><script nonce="{{.Nonce}}">document.querySelectorAll('[data-copy-target]').forEach(function(b){b.addEventListener('click',async function(){var n=document.getElementById(b.getAttribute('data-copy-target'));if(!n)return;try{await navigator.clipboard.writeText(n.textContent||'');var o=b.textContent;b.textContent={{printf "%q" .M.Copied}};setTimeout(function(){b.textContent=o},1200)}catch(e){}})})</script></body></html>`))
 
 func (s *server) renderAccountPage(w http.ResponseWriter, r *http.Request, token string, profile subscription.Profile) {
-	nonceBytes := make([]byte, 18)
-	if _, err := rand.Read(nonceBytes); err != nil {
-		http.Error(w, "account page unavailable", http.StatusServiceUnavailable)
-		return
-	}
-	nonce := base64.RawURLEncoding.EncodeToString(nonceBytes)
-	lang := accountLanguage(r)
-	messages := messagesForLanguage(lang)
-	dir := "rtl"
-	if lang == "en" {
-		dir = "ltr"
-	}
-	subscriptionURL, err := canonicalSubscriptionURL(s.config.SubscriptionProxyHost, token)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	subscriptionQR, _ := localQRDataURI(subscriptionURL)
-	directQR := ""
-	if profile.Available && profile.DirectURI != "" {
-		directQR, _ = localQRDataURI(profile.DirectURI)
-	}
-	usageLabel := messages.UsageUnavailable
-	uploadLabel := messages.UsageUnavailable
-	downloadLabel := messages.UsageUnavailable
-	remainingTraffic := messages.UsageUnavailable
-	onlineLabel := messages.Unavailable
-	lastOnlineLabel := messages.Unavailable
-	if s.config.AccountingStore != nil && profile.ServiceTermID != "" {
-		now := time.Now().UTC()
-		model, readErr := s.config.AccountingStore.Read(r.Context(), profile.ServiceTermID, now, customerAccountingStaleAfter)
-		if readErr == nil {
-			if model.LastOnline != nil {
-				lastOnlineLabel = model.LastOnline.UTC().Format("2006-01-02 15:04 UTC")
-			}
-			if model.AccountingComplete {
-				onlineLabel = messages.OfflineValue
-				if model.Online {
-					onlineLabel = messages.OnlineValue
-				}
-			}
-			baseline := customer.AccountingBaseline{
-				State:         customer.AccountingBaselineState(profile.AccountingBaseline.State),
-				Source:        customer.AccountingBaselineSource(profile.AccountingBaseline.Source),
-				CutoffAt:      profile.AccountingBaseline.CutoffAt,
-				UploadBytes:   profile.AccountingBaseline.UploadBytes,
-				DownloadBytes: profile.AccountingBaseline.DownloadBytes,
-			}
-			usage, capability, composeErr := customer.ComposeCustomerUsageForPeriod(baseline, model.LastResetAt, model.UploadBytes, model.DownloadBytes, profile.QuotaBytes, model.AccountingComplete)
-			if composeErr == nil && capability.Available && usage.UsedBytes != nil && usage.UploadBytes != nil && usage.DownloadBytes != nil {
-				usageLabel = subscriptionByteLabel(*usage.UsedBytes)
-				uploadLabel = subscriptionByteLabel(*usage.UploadBytes)
-				downloadLabel = subscriptionByteLabel(*usage.DownloadBytes)
-				if usage.RemainingBytes != nil {
-					remainingTraffic = subscriptionByteLabel(*usage.RemainingBytes)
-				} else if profile.QuotaBytes == nil {
-					remainingTraffic = messages.Unlimited
-				}
-			}
-		}
-	}
-	data := accountPageData{
-		Lang:               lang,
-		Dir:                dir,
-		Nonce:              nonce,
-		Username:           profile.Username,
-		StatusLabel:        messages.Status[subscriptionStatusKey(profile)],
-		StatusClass:        subscriptionStatusClass(profile),
-		QuotaLabel:         accountQuotaLabel(profile.QuotaBytes, messages),
-		UsageLabel:         usageLabel,
-		UploadLabel:        uploadLabel,
-		DownloadLabel:      downloadLabel,
-		RemainingTraffic:   remainingTraffic,
-		ExpiryLabel:        accountExpiryLabel(profile, messages),
-		RemainingDaysLabel: accountRemainingDays(profile, messages),
-		StartLabel:         accountStartLabel(profile.StartPolicy, messages),
-		OnlineLabel:        onlineLabel,
-		LastOnlineLabel:    lastOnlineLabel,
-		SubscriptionURL:    subscriptionURL,
-		DirectURI:          profile.DirectURI,
-		SubscriptionQR:     template.URL(subscriptionQR),
-		DirectQR:           template.URL(directQR),
-		Available:          profile.Available && profile.DirectURI != "",
-		M:                  messages,
-	}
-	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'nonce-"+nonce+"'; script-src 'nonce-"+nonce+"'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_ = accountPageTemplate.Execute(w, data)
+        nonceBytes := make([]byte, 18)
+        if _, err := rand.Read(nonceBytes); err != nil {
+                http.Error(w, "account page unavailable", http.StatusServiceUnavailable)
+                return
+        }
+        nonce := base64.RawURLEncoding.EncodeToString(nonceBytes)
+        lang := accountLanguage(r)
+        messages := messagesForLanguage(lang)
+        dir := "rtl"
+        if lang == "en" {
+                dir = "ltr"
+        }
+        subscriptionURL, err := canonicalSubscriptionURL(s.config.SubscriptionProxyHost, token)
+        if err != nil {
+                http.NotFound(w, r)
+                return
+        }
+        // Remark fragment: scanning clients name the imported profile after it.
+        if parsed, parseErr := url.Parse(subscriptionURL); parseErr == nil {
+                parsed.Fragment = subscriptionProfileRemark(profile)
+                subscriptionURL = parsed.String()
+        }
+        subscriptionQR, _ := localQRDataURI(subscriptionURL)
+        directQR := ""
+        if profile.Available && profile.DirectURI != "" {
+                directQR, _ = localQRDataURI(profile.DirectURI)
+        }
+        usageLabel := messages.UsageUnavailable
+        uploadLabel := messages.UsageUnavailable
+        downloadLabel := messages.UsageUnavailable
+        remainingTraffic := messages.UsageUnavailable
+        onlineLabel := messages.Unavailable
+        lastOnlineLabel := messages.Unavailable
+        if s.config.AccountingStore != nil && profile.ServiceTermID != "" {
+                now := time.Now().UTC()
+                model, readErr := s.config.AccountingStore.Read(r.Context(), profile.ServiceTermID, now, customerAccountingStaleAfter)
+                if readErr == nil {
+                        if model.LastOnline != nil {
+                                lastOnlineLabel = model.LastOnline.UTC().Format("2006-01-02 15:04 UTC")
+                        }
+                        if model.AccountingComplete {
+                                onlineLabel = messages.OfflineValue
+                                if model.Online {
+                                        onlineLabel = messages.OnlineValue
+                                }
+                        }
+                        baseline := customer.AccountingBaseline{
+                                State:         customer.AccountingBaselineState(profile.AccountingBaseline.State),
+                                Source:        customer.AccountingBaselineSource(profile.AccountingBaseline.Source),
+                                CutoffAt:      profile.AccountingBaseline.CutoffAt,
+                                UploadBytes:   profile.AccountingBaseline.UploadBytes,
+                                DownloadBytes: profile.AccountingBaseline.DownloadBytes,
+                        }
+                        usage, capability, composeErr := customer.ComposeCustomerUsageForPeriod(baseline, model.LastResetAt, model.UploadBytes, model.DownloadBytes, profile.QuotaBytes, model.AccountingComplete)
+                        if composeErr == nil && capability.Available && usage.UsedBytes != nil && usage.UploadBytes != nil && usage.DownloadBytes != nil {
+                                usageLabel = subscriptionByteLabel(*usage.UsedBytes)
+                                uploadLabel = subscriptionByteLabel(*usage.UploadBytes)
+                                downloadLabel = subscriptionByteLabel(*usage.DownloadBytes)
+                                if usage.RemainingBytes != nil {
+                                        remainingTraffic = subscriptionByteLabel(*usage.RemainingBytes)
+                                } else if profile.QuotaBytes == nil {
+                                        remainingTraffic = messages.Unlimited
+                                }
+                        }
+                }
+        }
+        data := accountPageData{
+                Lang:               lang,
+                Dir:                dir,
+                Nonce:              nonce,
+                Username:           profile.Username,
+                StatusLabel:        messages.Status[subscriptionStatusKey(profile)],
+                StatusClass:        subscriptionStatusClass(profile),
+                QuotaLabel:         accountQuotaLabel(profile.QuotaBytes, messages),
+                UsageLabel:         usageLabel,
+                UploadLabel:        uploadLabel,
+                DownloadLabel:      downloadLabel,
+                RemainingTraffic:   remainingTraffic,
+                ExpiryLabel:        accountExpiryLabel(profile, messages),
+                RemainingDaysLabel: accountRemainingDays(profile, messages),
+                StartLabel:         accountStartLabel(profile.StartPolicy, messages),
+                OnlineLabel:        onlineLabel,
+                LastOnlineLabel:    lastOnlineLabel,
+                SubscriptionURL:    subscriptionURL,
+                DirectURI:          profile.DirectURI,
+                SubscriptionQR:     template.URL(subscriptionQR),
+                DirectQR:           template.URL(directQR),
+                Available:          profile.Available && profile.DirectURI != "",
+                M:                  messages,
+        }
+        w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'nonce-"+nonce+"'; script-src 'nonce-"+nonce+"'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'")
+        w.Header().Set("Content-Type", "text/html; charset=utf-8")
+        w.WriteHeader(http.StatusOK)
+        _ = accountPageTemplate.Execute(w, data)
 }
 
 func accountLanguage(r *http.Request) string {
-	if lang := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("lang"))); lang == "en" || lang == "fa" {
-		return lang
-	}
-	return "fa"
+        if lang := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("lang"))); lang == "en" || lang == "fa" {
+                return lang
+        }
+        return "fa"
 }
 
 func messagesForLanguage(lang string) accountMessages {
-	if lang == "en" {
-		return accountMessages{
-			Title: "Account status", Subtitle: "NaiveProxy account", ReadOnlyNotice: "This page is read-only. Opening or copying it never changes your token, password, quota, expiry, first-use state, or Runtime credential.",
-			Status:     map[string]string{"active": "Active", "pending": "Pending first connection", "suspended": "Suspended", "expired": "Expired", "depleted": "Quota depleted", "revoked": "Revoked", "inactive": "Inactive"},
-			TotalQuota: "Total quota", Used: "Used", Upload: "Upload", Download: "Download", RemainingTraffic: "Remaining", Expiry: "Expiry", RemainingDays: "Remaining days", StartPolicy: "Start policy", Online: "Online", OnlineValue: "Online", OfflineValue: "Offline", LastOnline: "Last online",
-			UsageUnavailable: "Usage unavailable", Unavailable: "Unavailable", Unlimited: "Unlimited", NoExpiry: "No expiry", Expired: "Expired", DaysSuffix: "days",
-			FromCreation: "From creation", FromFirstConnect: "From first successful connection", FixedTimestamp: "Fixed expiry",
-			Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "Subscription QR", DirectNaiveQR: "Direct Naive QR", CopySubscription: "Copy Subscription", CopyDirect: "Copy Direct Naive", Copied: "Copied ✓",
-			InactiveNotice: "Direct access is unavailable while this service is inactive.", SecurityFootnote: "Private account page — do not share publicly",
-			Overview: "Service overview", Connection: "Quick connection", ConnectionHint: "Choose the method that fits your client", HelpTitle: "Connect with Karing", PrivateBadge: "Private account",
-			SubscriptionHint: "Recommended for Karing: add this as a Subscription URL so future profile updates can be refreshed from the same link.", DirectHint: "Direct Naive is useful for one-off/manual imports.",
-			StepOne: "Install a client (Karing is recommended) on your device.", StepTwo: "Scan the Subscription QR, or copy the Subscription URL and add it as a profile.", StepThree: "Refresh the subscription, select the PVNaive server, then connect.",
-			HelpIntro:     "Two independent ways exist to connect. The Subscription QR keeps your client updated automatically; the Direct Naive QR adds the server manually without a subscription. Both work with a scan - no typing required.",
-			HelpTipsTitle: "If the connection fails",
-			HelpTips: []string{
-				"After a successful connect, this page flips to 'Active / Online' - use it to verify your service works.",
-				"Pull-to-refresh the subscription inside your client after quota or password changes.",
-				"Check quota and expiry at the top of this page; a depleted or expired account cannot connect.",
-				"Still failing? Use the Direct Naive QR instead - it bypasses the subscription entirely.",
-				"Never share this page: anyone holding it can read your usage and connection details.",
-			},
-			HelpClients: []helpClient{
-				{Name: "Karing (Android / iOS / Windows / macOS) - recommended", Summary: "Modern sing-box client with native Naive support.", Steps: []string{
-					"Install Karing from karing.app, Google Play or the App Store.",
-					"Tap '+', choose 'Scan QR code' and scan the Subscription QR on this page (or paste the Subscription URL).",
-					"Save the profile, pick the PVNaive server and tap connect.",
-					"To update later: refresh the subscription from the profile menu.",
-				}},
-				{Name: "v2rayNG (Android)", Summary: "Classic Xray client, naive via link import.", Steps: []string{
-					"Open the 'Subscriptions' screen, tap '+', paste the Subscription URL and save.",
-					"Swipe to update the group, then pick the server and connect.",
-					"Or copy the Direct Naive link and use 'Import config from clipboard'.",
-				}},
-				{Name: "NekoBox / NekoRay (Android / PC)", Summary: "sing-box based client, full naive+https URI support.", Steps: []string{
-					"Groups, then New subscription, paste the Subscription URL and confirm.",
-					"Update the group, then right-click the server and run a URL test.",
-					"Direct import: copy the naive+https link and use 'Add profile from clipboard'.",
-				}},
-				{Name: "Hiddify (Android / iOS / PC)", Summary: "Multi-core client, beginner friendly.", Steps: []string{
-					"Tap '+', choose 'Add from clipboard' with the Subscription URL copied, or scan its QR.",
-					"Select the profile and press the big connect button.",
-				}},
-				{Name: "sing-box / Clash Meta (PC)", Summary: "Advanced: direct config download.", Steps: []string{
-					"sing-box: request this subscription with ?family=singbox for a ready outbound JSON.",
-					"Clash Meta / Mihomo / Stash: use ?family=clash to get a Clash-format profile.",
-				}},
-			},
-		}
-	}
-	return accountMessages{
-		Title: "وضعیت حساب", Subtitle: "سرویس NaiveProxy", ReadOnlyNotice: "این صفحه فقط خواندنی است؛ باز کردن یا کپی کردن آن توکن، رمز، حجم، انقضا، اولین اتصال یا اطلاعات Runtime را تغییر نمی‌دهد.",
-		Status:     map[string]string{"active": "فعال", "pending": "منتظر اولین اتصال", "suspended": "تعلیق", "expired": "منقضی", "depleted": "حجم تمام", "revoked": "لغوشده", "inactive": "غیرفعال"},
-		TotalQuota: "حجم کل", Used: "مصرف", Upload: "آپلود", Download: "دانلود", RemainingTraffic: "حجم باقی‌مانده", Expiry: "انقضا", RemainingDays: "روز باقی‌مانده", StartPolicy: "شروع اعتبار", Online: "آنلاین", OnlineValue: "آنلاین", OfflineValue: "آفلاین", LastOnline: "آخرین آنلاین",
-		UsageUnavailable: "در دسترس نیست", Unavailable: "در دسترس نیست", Unlimited: "نامحدود", NoExpiry: "بدون انقضا", Expired: "منقضی", DaysSuffix: "روز",
-		FromCreation: "از زمان ثبت", FromFirstConnect: "از اولین اتصال موفق", FixedTimestamp: "تاریخ دستی",
-		Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "QR اشتراک", DirectNaiveQR: "QR مستقیم Naive", CopySubscription: "کپی لینک ساب", CopyDirect: "کپی Direct Naive", Copied: "کپی شد ✓",
-		InactiveNotice: "تا زمانی که سرویس غیرفعال است اتصال مستقیم در دسترس نیست.", SecurityFootnote: "صفحه خصوصی حساب — عمومی منتشر نکنید",
-		Overview: "نمای کلی سرویس", Connection: "اتصال سریع", ConnectionHint: "روش مناسب کلاینت خودت را انتخاب کن", HelpTitle: "راهنمای کامل اتصال", PrivateBadge: "حساب خصوصی",
-		SubscriptionHint: "روش پیشنهادی برای Karing: این لینک را به‌عنوان Subscription اضافه کن تا بروزرسانی‌های بعدی از همین لینک دریافت شوند.", DirectHint: "Direct Naive برای ورود دستی یا اتصال مستقیم قابل استفاده است.",
-		StepOne: "اول یک کلاینت نصب کن (پیشنهاد: Karing).", StepTwo: "QR لینک ساب را اسکن کن یا لینک ساب را کپی و به‌عنوان پروفایل اضافه کن.", StepThree: "ساب را Refresh کن، سرور PVNaive را انتخاب و اتصال را بزن.",
-		HelpIntro:     "دو راه مستقل برای اتصال وجود دارد: QR ساب کلاینت را خودکار به‌روز نگه می‌دارد و QR مستقیم Naive سرور را بدون ساب اضافه می‌کند. هر دو فقط با اسکن کار می‌کنند و نیازی به تایپ نیست.",
-		HelpTipsTitle: "اگر اتصال برقرار نشد",
-		HelpTips: []string{
-			"بعد از اتصال موفق، وضعیت همین صفحه به «فعال / آنلاین» تغییر می‌کند؛ از آن برای اطمینان از سلامت سرویس استفاده کن.",
-			"بعد از تغییر حجم یا رمز، ساب را داخل کلاینت Refresh کن.",
-			"حجم و انقضای حساب را در بالای همین صفحه چک کن؛ حساب تمام‌شده یا منقضی وصل نمی‌شود.",
-			"اگر باز هم وصل نشدی، QR مستقیم Naive را امتحان کن؛ ساب را دور می‌زند.",
-			"این صفحه را با کسی به اشتراک نگذار؛ هر کس لینک را داشته باشد مصرف و جزئیات اتصال تو را می‌بیند.",
-		},
-		HelpClients: []helpClient{
-			{Name: "Karing (اندروید / iOS / ویندوز / مک) — پیشنهادی", Summary: "کلاینت مدرن sing-box با پشتیبانی کامل Naive.", Steps: []string{
-				"Karing را از karing.app یا گوگل‌پلی / اپ‌استور نصب کن.",
-				"دکمه «+» را بزن، «اسکن کد QR» را انتخاب و QR لینک ساب همین صفحه را اسکن کن (یا لینک ساب را بچسبان).",
-				"پروفایل را ذخیره کن، سرور PVNaive را انتخاب و دکمه اتصال را بزن.",
-				"برای به‌روزرسانی بعدی: از منوی پروفایل، Subscription را Refresh کن.",
-			}},
-			{Name: "v2rayNG (اندروید)", Summary: "کلاینت کلاسیک Xray؛ naive از طریق ایمپورت لینک.", Steps: []string{
-				"به بخش «Subscriptions» برو، «+» را بزن، لینک ساب را بچسبان و ذخیره کن.",
-				"گروه را آپدیت کن، سرور را انتخاب و وصل شو.",
-				"یا لینک مستقیم Naive را کپی و با «Import config from clipboard» اضافه کن.",
-			}},
-			{Name: "NekoBox / NekoRay (اندروید / کامپیوتر)", Summary: "کلاینت مبتنی بر sing-box با پشتیبانی کامل naive+https.", Steps: []string{
-				"Groups را باز کن، «New subscription» بساز، لینک ساب را بچسبان و تأیید کن.",
-				"گروه را Update کن، روی سرور راست‌کلیک و URL test بزن.",
-				"ایمپورت مستقیم: لینک naive+https را کپی و با «Add profile from clipboard» اضافه کن.",
-			}},
-			{Name: "Hiddify (اندروید / iOS / کامپیوتر)", Summary: "کلاینت چند‌هسته‌ای با راه‌اندازی ساده.", Steps: []string{
-				"دکمه «+»، سپس «افزودن از کلیپ‌بورد» با لینک ساب کپی‌شده، یا اسکن QR آن.",
-				"پروفایل را انتخاب و دکمه اتصال بزرگ را بزن.",
-			}},
-			{Name: "sing-box / Clash Meta (کامپیوتر)", Summary: "کاربران حرفه‌ای: دانلود مستقیم کانفیگ.", Steps: []string{
-				"sing-box: همین لینک ساب را با ?family=singbox بخواه تا خروجی JSON آماده بگیری.",
-				"Clash Meta / Mihomo / Stash: با ?family=clash پروفایل Clash بگیر.",
-			}},
-		},
-	}
+        if lang == "en" {
+                return accountMessages{
+                        Title: "Account status", Subtitle: "NaiveProxy account", ReadOnlyNotice: "This page is read-only. Opening or copying it never changes your token, password, quota, expiry, first-use state, or Runtime credential.",
+                        Status:     map[string]string{"active": "Active", "pending": "Pending first connection", "suspended": "Suspended", "expired": "Expired", "depleted": "Quota depleted", "revoked": "Revoked", "inactive": "Inactive"},
+                        TotalQuota: "Total quota", Used: "Used", Upload: "Upload", Download: "Download", RemainingTraffic: "Remaining", Expiry: "Expiry", RemainingDays: "Remaining days", StartPolicy: "Start policy", Online: "Online", OnlineValue: "Online", OfflineValue: "Offline", LastOnline: "Last online",
+                        UsageUnavailable: "Usage unavailable", Unavailable: "Unavailable", Unlimited: "Unlimited", NoExpiry: "No expiry", Expired: "Expired", DaysSuffix: "days",
+                        FromCreation: "From creation", FromFirstConnect: "From first successful connection", FixedTimestamp: "Fixed expiry",
+                        Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "Subscription QR", DirectNaiveQR: "Direct Naive QR", CopySubscription: "Copy Subscription", CopyDirect: "Copy Direct Naive", Copied: "Copied ✓",
+                        InactiveNotice: "Direct access is unavailable while this service is inactive.", SecurityFootnote: "Private account page — do not share publicly",
+                        Overview: "Service overview", Connection: "Quick connection", ConnectionHint: "Choose the method that fits your client", HelpTitle: "Connect with Karing", PrivateBadge: "Private account",
+                        SubscriptionHint: "Recommended for Karing: add this as a Subscription URL so future profile updates can be refreshed from the same link.", DirectHint: "Direct Naive is useful for one-off/manual imports.",
+                        StepOne: "Install a client (Karing is recommended) on your device.", StepTwo: "Scan the Subscription QR, or copy the Subscription URL and add it as a profile.", StepThree: "Refresh the subscription, pick PV-AUTO (best server is chosen automatically), then connect.",
+                        HelpIntro:     "Two independent ways exist to connect. The Subscription QR keeps your client updated automatically; the Direct Naive QR adds the server manually without a subscription. Both work with a scan - no typing required.",
+                        HelpTipsTitle: "If the connection fails",
+                        HelpTips: []string{
+                                "After a successful connect, this page flips to 'Active / Online' - use it to verify your service works.",
+                                "Pull-to-refresh the subscription inside your client after quota or password changes.",
+                                "Check quota and expiry at the top of this page; a depleted or expired account cannot connect.",
+                                "Still failing? Use the Direct Naive QR instead - it bypasses the subscription entirely.",
+                                "Never share this page: anyone holding it can read your usage and connection details.",
+                        },
+                        HelpClients: []helpClient{
+                                {Name: "Karing (Android / iOS / Windows / macOS) - recommended", Summary: "Modern sing-box client with native Naive support and automatic best-server switching.", Steps: []string{
+                                        "Install Karing from karing.app, Google Play or the App Store.",
+                                        "Tap '+', choose 'Scan QR code' and scan the Subscription QR on this page (or paste the Subscription URL).",
+                                        "Save the profile - it lands named PVNaive-<username> automatically.",
+                                        "Pick PV-AUTO so Karing keeps probing and always uses the fastest server, then connect.",
+                                }},
+                                {Name: "NekoBox / NekoRay (Android / PC)", Summary: "sing-box based client, full naive+https URI support.", Steps: []string{
+                                        "Groups, then New subscription, paste the Subscription URL and confirm.",
+                                        "Update the group, then right-click the server group and run a URL test.",
+                                        "Direct import: copy the naive+https link and use 'Add profile from clipboard'.",
+                                }},
+                        },
+                }
+        }
+        return accountMessages{
+                Title: "وضعیت حساب", Subtitle: "سرویس NaiveProxy", ReadOnlyNotice: "این صفحه فقط خواندنی است؛ باز کردن یا کپی کردن آن توکن، رمز، حجم، انقضا، اولین اتصال یا اطلاعات Runtime را تغییر نمی‌دهد.",
+                Status:     map[string]string{"active": "فعال", "pending": "منتظر اولین اتصال", "suspended": "تعلیق", "expired": "منقضی", "depleted": "حجم تمام", "revoked": "لغوشده", "inactive": "غیرفعال"},
+                TotalQuota: "حجم کل", Used: "مصرف", Upload: "آپلود", Download: "دانلود", RemainingTraffic: "حجم باقی‌مانده", Expiry: "انقضا", RemainingDays: "روز باقی‌مانده", StartPolicy: "شروع اعتبار", Online: "آنلاین", OnlineValue: "آنلاین", OfflineValue: "آفلاین", LastOnline: "آخرین آنلاین",
+                UsageUnavailable: "در دسترس نیست", Unavailable: "در دسترس نیست", Unlimited: "نامحدود", NoExpiry: "بدون انقضا", Expired: "منقضی", DaysSuffix: "روز",
+                FromCreation: "از زمان ثبت", FromFirstConnect: "از اولین اتصال موفق", FixedTimestamp: "تاریخ دستی",
+                Subscription: "Subscription", DirectNaive: "Direct Naive", SubscriptionQR: "QR اشتراک", DirectNaiveQR: "QR مستقیم Naive", CopySubscription: "کپی لینک ساب", CopyDirect: "کپی Direct Naive", Copied: "کپی شد ✓",
+                InactiveNotice: "تا زمانی که سرویس غیرفعال است اتصال مستقیم در دسترس نیست.", SecurityFootnote: "صفحه خصوصی حساب — عمومی منتشر نکنید",
+                Overview: "نمای کلی سرویس", Connection: "اتصال سریع", ConnectionHint: "روش مناسب کلاینت خودت را انتخاب کن", HelpTitle: "راهنمای کامل اتصال", PrivateBadge: "حساب خصوصی",
+                SubscriptionHint: "روش پیشنهادی برای Karing: این لینک را به‌عنوان Subscription اضافه کن تا بروزرسانی‌های بعدی از همین لینک دریافت شوند.", DirectHint: "Direct Naive برای ورود دستی یا اتصال مستقیم قابل استفاده است.",
+                StepOne: "اول یک کلاینت نصب کن (پیشنهاد: Karing).", StepTwo: "QR لینک ساب را اسکن کن یا لینک ساب را کپی و به‌عنوان پروفایل اضافه کن.", StepThree: "ساب را Refresh کن، PV-AUTO را انتخاب کن (بهترین سرور خودکار انتخاب می‌شود) و اتصال را بزن.",
+                HelpIntro:     "دو راه مستقل برای اتصال وجود دارد: QR ساب کلاینت را خودکار به‌روز نگه می‌دارد و QR مستقیم Naive سرور را بدون ساب اضافه می‌کند. هر دو فقط با اسکن کار می‌کنند و نیازی به تایپ نیست.",
+                HelpTipsTitle: "اگر اتصال برقرار نشد",
+                HelpTips: []string{
+                        "بعد از اتصال موفق، وضعیت همین صفحه به «فعال / آنلاین» تغییر می‌کند؛ از آن برای اطمینان از سلامت سرویس استفاده کن.",
+                        "بعد از تغییر حجم یا رمز، ساب را داخل کلاینت Refresh کن.",
+                        "حجم و انقضای حساب را در بالای همین صفحه چک کن؛ حساب تمام‌شده یا منقضی وصل نمی‌شود.",
+                        "اگر باز هم وصل نشدی، QR مستقیم Naive را امتحان کن؛ ساب را دور می‌زند.",
+                        "این صفحه را با کسی به اشتراک نگذار؛ هر کس لینک را داشته باشد مصرف و جزئیات اتصال تو را می‌بیند.",
+                },
+                HelpClients: []helpClient{
+                        {Name: "Karing (اندروید / iOS / ویندوز / مک) — پیشنهادی", Summary: "کلاینت مدرن sing-box با پشتیبانی کامل Naive و سوییچ خودکار به بهترین سرور.", Steps: []string{
+                                "Karing را از karing.app یا گوگل‌پلی / اپ‌استور نصب کن.",
+                                "دکمه «+» را بزن، «اسکن کد QR» را انتخاب و QR لینک ساب همین صفحه را اسکن کن (یا لینک ساب را بچسبان).",
+                                "پروفایل ذخیره می‌شود و به‌طور خودکار با نام PVNaive-<نام‌کاربری> ثبت می‌گردد.",
+                                "PV-AUTO را انتخاب کن تا Karing همیشه سریع‌ترین سرور را پیدا و استفاده کند، بعد اتصال را بزن.",
+                        }},
+                        {Name: "NekoBox / NekoRay (اندروید / کامپیوتر)", Summary: "کلاینت مبتنی بر sing-box با پشتیبانی کامل naive+https.", Steps: []string{
+                                "Groups را باز کن، «New subscription» بساز، لینک ساب را بچسبان و تأیید کن.",
+                                "گروه را Update کن، روی گروه سرورها راست‌کلیک و URL test بزن.",
+                                "ایمپورت مستقیم: لینک naive+https را کپی و با «Add profile from clipboard» اضافه کن.",
+                        }},
+                },
+        }
 }
 
 func accountQuotaLabel(quota *int64, messages accountMessages) string {
-	if quota == nil {
-		return messages.Unlimited
-	}
-	return subscriptionQuotaLabel(quota)
+        if quota == nil {
+                return messages.Unlimited
+        }
+        return subscriptionQuotaLabel(quota)
 }
 
 func accountExpiryLabel(profile subscription.Profile, messages accountMessages) string {
-	if profile.ExpiresAt == nil {
-		return messages.NoExpiry
-	}
-	return profile.ExpiresAt.UTC().Format("2006-01-02 15:04 UTC")
+        if profile.ExpiresAt == nil {
+                return messages.NoExpiry
+        }
+        return profile.ExpiresAt.UTC().Format("2006-01-02 15:04 UTC")
 }
 
 func accountRemainingDays(profile subscription.Profile, messages accountMessages) string {
-	if profile.ExpiresAt == nil {
-		return messages.Unlimited
-	}
-	label := subscriptionRemainingLabel(profile.ExpiresAt)
-	if langDays := strings.TrimSuffix(label, " days"); langDays != label && messages.DaysSuffix != "days" {
-		return langDays + " " + messages.DaysSuffix
-	}
-	if label == "Expired" {
-		return messages.Expired
-	}
-	return label
+        if profile.ExpiresAt == nil {
+                return messages.Unlimited
+        }
+        label := subscriptionRemainingLabel(profile.ExpiresAt)
+        if langDays := strings.TrimSuffix(label, " days"); langDays != label && messages.DaysSuffix != "days" {
+                return langDays + " " + messages.DaysSuffix
+        }
+        if label == "Expired" {
+                return messages.Expired
+        }
+        return label
 }
 
 func accountStartLabel(policy string, messages accountMessages) string {
-	switch policy {
-	case "on_first_successful_connection":
-		return messages.FromFirstConnect
-	case "fixed_timestamp":
-		return messages.FixedTimestamp
-	default:
-		return messages.FromCreation
-	}
+        switch policy {
+        case "on_first_successful_connection":
+                return messages.FromFirstConnect
+        case "fixed_timestamp":
+                return messages.FixedTimestamp
+        default:
+                return messages.FromCreation
+        }
 }

@@ -37,12 +37,19 @@
   transition:transform .18s ease,border-color .18s ease;
 }
 .monitor-gauge::before{content:"";position:absolute;top:0;right:0;left:0;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 30%,transparent),transparent);opacity:.5}
-.monitor-gauge:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+.monitor-gauge:hover{transform:translateY(-3px);border-color:var(--border-strong);box-shadow:var(--shadow-2),inset 0 1px 0 var(--border-luminous)}
 .monitor-gauge-track{fill:none;stroke:color-mix(in srgb,var(--surface-3) 82%,transparent);stroke-width:9;stroke-linecap:round}
 .monitor-gauge-value{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .7s cubic-bezier(.22,1,.36,1),stroke .4s ease;filter:drop-shadow(0 0 7px rgba(255,255,255,.18))}
 .monitor-gauge-num{font-size:19px;font-weight:800;paint-order:stroke;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-.monitor-gauge-cap{font-size:8.5px;fill:var(--muted);direction:ltr;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .monitor-gauge-label{font-size:11px;font-weight:700;color:var(--muted)}
+/* Usage caption below the gauge — outside the arc, clean mono chip. */
+.monitor-gauge-caption{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  direction:ltr;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  font-size:9.5px;color:var(--muted);
+  padding:3px 8px;border-radius:999px;border:1px solid var(--border);
+  background:color-mix(in srgb,var(--surface-3) 55%,transparent);
+}
 
 .monitor-uptime{
   display:grid;align-content:center;gap:9px;padding:16px;
@@ -93,7 +100,8 @@
   font-variant-numeric:tabular-nums;
 }
 .monitor-line{filter:drop-shadow(0 0 6px rgba(255,255,255,.14)) drop-shadow(0 1px 3px rgba(0,0,0,.35))}
-.monitor-net-note{margin:0;font-size:9.5px;color:var(--muted);line-height:1.8}
+.monitor-net-note{margin:0;font-size:10px;color:var(--muted);line-height:1.8;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.monitor-net-note::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px color-mix(in srgb,var(--green) 55%,transparent);flex:0 0 6px}
 
 /* ---------- legacy alert + dependencies (kept) ---------- */
 .system-warning{padding:10px 12px;border:1px solid color-mix(in srgb,var(--orange) 35%,var(--border));border-radius:9px;background:color-mix(in srgb,var(--orange) 8%,var(--surface));color:var(--orange);font-size:11px;line-height:1.8}
@@ -109,7 +117,7 @@
 .dependency.ok i{background:var(--green);box-shadow:0 0 7px color-mix(in srgb,var(--green) 60%,transparent)}
 .dependency.bad{color:var(--red);border-color:color-mix(in srgb,var(--red) 28%,var(--border))}
 .dependency.bad i{background:var(--red);box-shadow:0 0 7px color-mix(in srgb,var(--red) 60%,transparent)}
-.sample-meta{margin:0;color:var(--muted);font-size:9px;direction:rtl}
+.sample-meta{margin:0;color:var(--muted);font-size:9.5px;direction:rtl;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .system-fallback{min-height:120px;align-content:center;gap:12px}
 .system-semantics{direction:rtl}
 

@@ -30,6 +30,9 @@ const PATHS: Record<string, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
   gauge: <><path d="M4 14a8 8 0 1 1 16 0" /><path d="m12 14 4-4.5" /><path d="M5.5 18.5h13" /></>,
   key: <><circle cx="8" cy="14.5" r="4.5" /><path d="m11.5 11 8-8M17 4.5 19.5 7M14.5 7.5 17 10" /></>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></>,
+  eye: <><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></>,
+  "eye-off": <><path d="M4 4l16 16" /><path d="M10.6 5.9A9.8 9.8 0 0 1 12 5.8c6 0 9.5 6.2 9.5 6.2a17.6 17.6 0 0 1-2.8 3.5M6.6 6.9A16.9 16.9 0 0 0 2.5 12S6 18.2 12 18.2a9.4 9.4 0 0 0 3.4-.6" /><path d="M9.9 10.1a3 3 0 0 0 4.2 4.2" /></>,
 };
 
 export type IconName = keyof typeof PATHS;

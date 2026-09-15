@@ -220,12 +220,14 @@ export function RadialGauge({ percent, label, caption, valueText }: {
           <circle cx="60" cy="46" r="34" pathLength="100" className="monitor-gauge-value"
             stroke={color} strokeDasharray={`${dash.toFixed(2)} 100`} />
         </g>
-        <text x="60" y="48" textAnchor="middle" className="monitor-gauge-num" fill={color}>
+        <text x="60" y="52" textAnchor="middle" className="monitor-gauge-num" fill={color}>
           {valueText ?? `${faFormat(percent, 1)}٪`}
         </text>
-        <text x="60" y="66" textAnchor="middle" className="monitor-gauge-cap">{caption}</text>
       </svg>
       <span className="monitor-gauge-label">{label}</span>
+      {/* Usage caption lives OUTSIDE the arc: no collision with the gauge
+          stroke, full-width mono text, readable at a glance. */}
+      {caption && <span className="monitor-gauge-caption">{caption}</span>}
     </div>
   );
 }

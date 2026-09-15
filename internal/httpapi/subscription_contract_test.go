@@ -63,7 +63,7 @@ func TestMachineSubscriptionEndpointIgnoresBrowserAcceptHeader(t *testing.T) {
 	if strings.Contains(strings.ToLower(res.Body.String()), "<!doctype html") {
 		t.Fatal("machine endpoint returned HTML because of Accept header")
 	}
-	if got := strings.TrimSpace(res.Body.String()); got != "naive+https://Amir22:customer-secret-123@namir.softarg.ir:443#PVNaive" {
+	if got := strings.TrimSpace(res.Body.String()); got != "naive+https://Amir22:customer-secret-123@namir.softarg.ir:443#PVNaive-Amir22" {
 		t.Fatalf("machine body=%q", got)
 	}
 }
