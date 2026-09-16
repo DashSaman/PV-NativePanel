@@ -1,44 +1,34 @@
 # PVNaive Handoff
 
-Checkpoint: 2026-09-15 19:39 Asia/Tehran
+Checkpoint: 2026-09-16 22:42 Asia/Tehran
 
 ## Verified baseline
 
-- Verified code main before this docs refresh: `51e5084d78fba6866258aee69f7a0418b038b1c7`; exact-main CI `34988909834` SUCCESS.
-- New validated main work: node tutorial `4b366cda...` (CI SUCCESS) and subscription browser-delivery fix `51e5084d...` (`Content-Disposition: inline`; focused subscription/httpapi tests recorded green; exact-main CI SUCCESS).
-- Task13 #108 remains accepted with target-only HTTP/1.1+HTTP/2 kill and exactly-once accounting; R8 fixes remain integrated.
-- #101 Karing remains DRAFT on stale `669139263...`; fresh GitHub inspection reports `mergeable=false`. Merge is forbidden until reconstruction/reconciliation from current main + fresh exact-head gates + real Karing import/parse/CONNECT/cleanup-revoke acceptance.
-- #114 retains basic real two-node mTLS proof; cert overlap/rotation, old-cert retirement or explicit revocation, replay and fail-closed lifecycle proof remain the acceptance gap.
+- Exact code/docs baseline before this refresh: `a7ac95fd00aba1cde450ba92cac3d6fbc75dbe01`; push CI `35062589782` is terminal SUCCESS.
+- Code parent `9891fdc650e4e65c6bdc91c5b4bd3719c507eb2c` serves Karing a direct Clash-compatible Naive profile. Do not revert to the rejected sing-box or intermediate base64 Karing paths.
+- Fresh clean-clone validation on the only online execution worker: Web 23/23 files, 117/117 tests PASS; production Vite/TypeScript build PASS. Go toolchain is unavailable on that worker, so exact-head GitHub CI remains the Go gate.
+- #101 is the only open PR and remains stale/DRAFT; its sing-box implementation is superseded and must not merge. Real Karing import/update -> CONNECT -> cleanup/revoke on current main is still required before superseding/closing it.
+- #114 retains the real basic two-node mTLS proof. Remaining acceptance is certificate overlap/rotation, old-cert retirement or explicit revocation, replay and fail-closed lifecycle proof.
 
 ## Production blocker
 
-- Fresh device inventory at 19:39: one online execution worker `Pak-Nasheeee-haaaaaaaaa`, one duplicate offline; no trusted `PVNaive-Production-Primary`.
-- Production truth ceiling remains schema 33 / repo-fin2. Do not claim fresh image/schema/backup/disk/Caddy/rollback state.
-- On Primary reconnect: read-only identity/SHA/image/schema/services/listeners/Caddy/backup/disk/rollback audit first; then fresh encrypted backup + independent rollback snapshot; only then staged promotion.
+- Fresh device inventory at 22:42: one online execution worker `Pak-Nasheeee-haaaaaaaaa`, one stale duplicate offline; no trusted `PVNaive-Production-Primary`.
+- Production truth ceiling remains schema 33 / repo-fin2. Do not infer fresh image/schema/backup/disk/Caddy/rollback state.
+- No Production mutation until Primary reconnect -> read-only audit -> fresh encrypted backup + independent rollback snapshot -> staged promotion/postflight.
 
 ## Worker queue
 
-- W1: independent client-truth + PKI/RBAC review; focus fail-closed revocation, TLS identity authority and advertised-client truth.
-- W2: registry/replay monotonicity assertions; then R8 ledger/per-node/per-user truth.
-- W3: #114 RED-first certificate overlap/rotation/revocation lifecycle, then STEER-006.
-- W4: #101 reconstruct from exact current main, preserving newer subscription/runtime behavior + real Karing acceptance; then disposable R5/R6 E2E.
-- Coordinator: merge only exact-head validated work; never substitute historical CI or inferred Production state.
+- W1 / currently available execution lane: current-main claim/security/dependency review and exact-head validation; do not force dependency upgrades without compatibility evidence.
+- W2 when available: capability/content truth plus registry/replay monotonicity and accounting/session invariants; then R8 truthful projections.
+- W3 when available: #114 RED-first certificate overlap/rotation/revocation mechanism and tests; then STEER-006.
+- W4 when available: real disposable Karing acceptance on exact current main; then disposable R5/R6 lifecycle E2E.
+- Coordinator: integrate only exact-head validated work; migrations forward-only; never substitute historical CI or inferred Production state.
 
-## Invariants
+## Locked invariants
 
-- Exact accounting/session/quota/credential semantics are locked.
-- Task13 is selected-session-only, not credential revocation.
-- Missing telemetry remains Unknown.
-- TLS client cert is authoritative fleet identity; headers cannot override it.
-- Applied migrations immutable; future DB work forward-only.
-- Client compatibility requires real-client evidence.
-
-## Latest actions
-
-- Re-inspected current main, open PRs, CI, Production lane and fresh device inventory.
-- Reconciled and accepted the two newly landed main commits only after terminal exact-head CI evidence.
-- Refreshed #101, #114 and #100 with current exact baseline and worker instructions.
-- Updated canonical status/handoff; Production untouched: no deploy/migration/restart/Caddy/DB/credential/backup/rollback mutation.
-
-### Fresh coordinator reconciliation — 2026-09-15 22:41 Asia/Tehran
-Current exact-main is `9891fdc650e4e65c6bdc91c5b4bd3719c507eb2c`, CI `35008842524` SUCCESS. Karing now receives the direct Clash-compatible Naive profile; do not reconstruct/merge stale #101 sing-box code and do not revert to the intermediate base64 Karing path. Real Karing CONNECT + cleanup/revoke remains the acceptance gate. Production Primary remains unavailable; no Production mutation.
+- Accounting/session/quota/credential semantics remain canonical truth.
+- Task13 kills only the selected session and preserves credential/sibling sessions.
+- Missing telemetry is Unknown, never fabricated zero/health.
+- TLS client certificate is authoritative fleet identity; headers cannot override it.
+- Applied migrations are immutable; future DB changes are forward-only and ledger-checked.
+- Client compatibility claims require real-client evidence.
